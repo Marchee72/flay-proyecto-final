@@ -1,0 +1,25 @@
+# Sistema operativo
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# Temporales de ofimatica
+~$*
+*.tmp
+
+# Dependencias y compilados (cuando arranque el codigo)
+node_modules/
+dist/
+build/
+.next/
+coverage/
+
+# Entorno
+.env
+.env.*
+!.env.example

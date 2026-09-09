@@ -336,6 +336,11 @@ sigue. Se ejecutan desde la raíz del repositorio, en PowerShell sobre Windows.
      contenedor; en demostración el propietario es el rol administrador del proveedor y `flay_app`
      el rol de la cadena de conexión de la aplicación. La aplicación **siempre** se conecta como
      `flay_app`; el propietario solo se usa para `db:deploy`.
+  Las tres extensiones las crea el paso administrador (`npm run db:preparar`) antes de migrar:
+  instalarlas exige superusuario en un PostgreSQL común, y `flay_owner` deliberadamente no lo es.
+  La migración las sigue declarando con `IF NOT EXISTS`, que sin privilegios es una operación nula:
+  así el orden queda asentado en la migración y el privilegio no se le concede al rol equivocado.
+
   1. `CREATE EXTENSION IF NOT EXISTS vector;` — índice vectorial de `RF-20`.
   2. `CREATE EXTENSION IF NOT EXISTS btree_gist;` — restricciones de exclusión de las reglas RN-09
      y RN-10 (§ 7.2), que las etapas 2 y 4 necesitan.

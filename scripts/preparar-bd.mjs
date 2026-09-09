@@ -19,6 +19,9 @@ const CLAVE_APP = process.env.FLAY_APP_PASSWORD ?? 'flay_local'
 const BASE = process.env.FLAY_DB ?? 'flay'
 const SOMBRA = process.env.FLAY_DB_SOMBRA ?? 'flay_shadow'
 
+// Las mismas tres que declara la migracion inicial (FR-010).
+const EXTENSIONES = ['vector', 'btree_gist', 'pgcrypto']
+
 const prisma = new PrismaClient({ datasourceUrl: admin })
 
 const rol = (nombre, clave) => `
@@ -58,6 +61,13 @@ try {
   await prisma.$executeRawUnsafe(`GRANT CONNECT ON DATABASE "${BASE}" TO flay_app;`)
   await intentar('REVOKE CREATE ON SCHEMA public FROM PUBLIC;', 'quitar CREATE a PUBLIC')
 
+  // Las extensiones exigen superusuario en un PostgreSQL comun, y flay_owner no
+  // lo es. Se crean aca, con la cadena administradora; la migracion las declara
+  // igual con IF NOT EXISTS (FR-010), que sin privilegios es un no-op.
+  for (const extension of EXTENSIONES) {
+    await prisma.$executeRawUnsafe(`CREATE EXTENSION IF NOT EXISTS ${extension};`)
+  }
+
   const existe = await prisma.$queryRawUnsafe(
     `SELECT 1 AS hay FROM pg_database WHERE datname = '${SOMBRA}'`,
   )
@@ -65,7 +75,22 @@ try {
     await prisma.$executeRawUnsafe(`CREATE DATABASE "${SOMBRA}" OWNER flay_owner;`)
   }
 
-  console.log(`Roles flay_owner/flay_app listos; base sombra ${SOMBRA} disponible.`)
+  // La sombra replica las migraciones para detectar deriva: necesita las mismas
+  // extensiones, y tampoco puede crearlas flay_owner.
+  const urlSombra = new URL(admin)
+  urlSombra.pathname = `/${SOMBRA}`
+  const sombra = new PrismaClient({ datasourceUrl: urlSombra.toString() })
+  try {
+    for (const extension of EXTENSIONES) {
+      await sombra.$executeRawUnsafe(`CREATE EXTENSION IF NOT EXISTS ${extension};`)
+    }
+  } finally {
+    await sombra.$disconnect()
+  }
+
+  console.log(
+    `Roles flay_owner/flay_app listos; extensiones creadas; base sombra ${SOMBRA} disponible.`,
+  )
 } finally {
   await prisma.$disconnect()
 }

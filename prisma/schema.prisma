@@ -77,3 +77,75 @@ enum EstadoTrabajo {
   despachado
   agotado
 }
+
+/// Persona fisica, con o sin usuario. Datos personales bajo Ley 25.326 (RNF-13).
+model Persona {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre        String   @db.Text
+  apellido      String   @db.Text
+  documento     String?  @unique @db.Text
+  correo        String?  @unique @db.Text
+  telefono      String?  @db.Text
+  creadoEn      DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  usuario Usuario?
+}
+
+/// Credencial de acceso de una persona.
+model Usuario {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  personaId       String        @unique @map("persona_id") @db.Uuid
+  correo          String        @unique @db.Text
+  claveDerivada   String?       @map("clave_derivada") @db.Text
+  estado          EstadoUsuario @default(invitado)
+  bloqueadoHasta  DateTime?     @map("bloqueado_hasta") @db.Timestamptz(6)
+  invitacionHash  String?       @map("invitacion_hash") @db.Text
+  invitacionVence DateTime?     @map("invitacion_vence") @db.Timestamptz(6)
+  creadoEn        DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn   DateTime      @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  persona        Persona        @relation(fields: [personaId], references: [id])
+  habilitaciones Habilitacion[]
+}
+
+/// Cada intento, exitoso o no, con su origen. Cinco fallos seguidos bloquean
+/// quince minutos (FR-001b). Se guarda aunque la cuenta no exista.
+model IntentoInicioSesion {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  correoProbado String   @map("correo_probado") @db.Text
+  origen        String   @db.Text
+  exitoso       Boolean
+  momento       DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([correoProbado, momento])
+}
+
+/// Permiso vigente de un usuario sobre un consorcio, con rol.
+/// **Es la tabla que materializa el Principio I.**
+model Habilitacion {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuarioId     String    @map("usuario_id") @db.Uuid
+  consorcioId   String    @map("consorcio_id") @db.Uuid
+  rol           Rol
+  vigenciaDesde DateTime  @map("vigencia_desde") @db.Date
+  vigenciaHasta DateTime? @map("vigencia_hasta") @db.Date
+  creadoEn      DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime  @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId, consorcioId])
+}
+
+enum EstadoUsuario {
+  invitado
+  activo
+  suspendido
+}
+
+enum Rol {
+  administrador
+  consejo
+  consorcista
+}

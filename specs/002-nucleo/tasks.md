@@ -41,7 +41,7 @@
 - [X] T015 [P] Crear `src/compartido/formato.ts`: importe a cadena con dos decimales y coeficiente con ocho, ambos desde `Prisma.Decimal`; ninguna función acepta el tipo numérico nativo (FR-013, SC-010)
 - [X] T016 [P] Crear `src/compartido/errores.ts` con los errores de aplicación y su mensaje para el usuario final, sin detalle técnico (RNF-10, § 14.4)
 - [ ] T017 [P] **Bloqueada por US1 y US2** (necesita `Unidad`, `Persona` y `Habilitacion`). Crear `pruebas/fixtures/juego-13-4.ts` con la semilla determinística de los dos consorcios de § 13.4 (12 y 96 unidades) reutilizable por integración y extremo a extremo (FR-028)
-- [ ] T018 **Bloqueada por T020** (necesita la tabla `Habilitacion`). Escribir la prueba de integración `pruebas/integracion/autorizacion.spec.ts` que fija el contrato de T011: sin habilitación vigente, cero filas; con habilitación de otro consorcio, cero filas (SC-002)
+- [X] T018 **Bloqueada por T020** (necesita la tabla `Habilitacion`). Escribir la prueba de integración `pruebas/integracion/autorizacion.spec.ts` que fija el contrato de T011: sin habilitación vigente, cero filas; con habilitación de otro consorcio, cero filas (SC-002)
 
 **Checkpoint**: la autorización y el aislamiento funcionan antes de que exista una sola pantalla de negocio
 
@@ -53,20 +53,20 @@
 
 **Independent Test**: dos usuarios habilitados sobre consorcios distintos consultan el mismo listado y cada uno obtiene exclusivamente sus datos; un usuario sin habilitación vigente obtiene cero filas.
 
-- [ ] T019 [US1] Definir `Persona`, `Usuario`, `IntentoInicioSesion` y `Habilitacion` en `prisma/schema.prisma`: `Usuario.correo` único, `estado` (`invitado`, `activo`, `suspendido`), `bloqueado_hasta` nulo; `Habilitacion.rol` (`administrador`, `consejo`, `consorcista`) con `vigencia_desde` obligatoria y `vigencia_hasta` nula = sin vencimiento (data-model § 1)
-- [ ] T020 [US1] Crear la migración con esas cuatro tablas más el índice `(usuario_id, consorcio_id)` de `Habilitacion` y el índice `(correo_probado, momento)` de `IntentoInicioSesion` (FR-026)
-- [ ] T021 [P] [US1] Implementar `src/infraestructura/contrasenas/argon2.ts` sobre el puerto `DerivadorDeContrasenas`, con Argon2id a 19 MiB, dos iteraciones y paralelismo 1 (FR-001, research R-07)
-- [ ] T022 [P] [US1] Implementar `src/infraestructura/correo/resend.ts` sobre el puerto `Notificador`; el dominio no lo nombra (FR-019, research R-09)
+- [X] T019 [US1] Definir `Persona`, `Usuario`, `IntentoInicioSesion` y `Habilitacion` en `prisma/schema.prisma`: `Usuario.correo` único, `estado` (`invitado`, `activo`, `suspendido`), `bloqueado_hasta` nulo; `Habilitacion.rol` (`administrador`, `consejo`, `consorcista`) con `vigencia_desde` obligatoria y `vigencia_hasta` nula = sin vencimiento (data-model § 1)
+- [X] T020 [US1] Crear la migración con esas cuatro tablas más el índice `(usuario_id, consorcio_id)` de `Habilitacion` y el índice `(correo_probado, momento)` de `IntentoInicioSesion` (FR-026)
+- [X] T021 [P] [US1] Implementar `src/infraestructura/contrasenas/argon2.ts` sobre el puerto `DerivadorDeContrasenas`, con Argon2id a 19 MiB, dos iteraciones y paralelismo 1 (FR-001, research R-07)
+- [X] T022 [P] [US1] Implementar `src/infraestructura/correo/resend.ts` sobre el puerto `Notificador`; el dominio no lo nombra (FR-019, research R-09)
 - [ ] T023 [US1] Configurar Auth.js en `src/app/api/auth/[...nextauth]/route.ts` y `src/aplicacion/identidad/sesion.ts`: la sesión transporta **sólo la identidad**; el rol y el consorcio se leen de la base en cada operación (FR-002, research R-01)
-- [ ] T024 [US1] Implementar `src/aplicacion/identidad/iniciar-sesion.ts` con el bloqueo de FR-001b: cinco fallos consecutivos bloquean quince minutos, cada intento se registra con momento y origen, y el mensaje es idéntico exista o no la cuenta y esté o no bloqueada (FR-001c)
-- [ ] T025 [US1] Implementar `src/aplicacion/identidad/invitar-persona.ts`: crea `Persona`, `Usuario` en `invitado` y `Habilitacion`, y encola el correo como `TrabajoPendiente`; la falla del correo **no** hace fallar el alta (FR-006)
-- [ ] T026 [P] [US1] Implementar `src/aplicacion/identidad/fijar-contrasena.ts`: valida la credencial de invitación, la marca usada y pasa el usuario a `activo`; el administrador nunca conoce la contraseña (FR-006)
-- [ ] T027 [P] [US1] Implementar `src/aplicacion/identidad/otorgar-habilitacion.ts`, `revocar-habilitacion.ts` y `desbloquear-usuario.ts`, todas restringidas a rol administrador (FR-007, FR-001c)
-- [ ] T028 [US1] Crear `scripts/semilla-arranque.mjs` y su guion: crea un único administrador con la contraseña tomada de variable de entorno, nunca versionada, e idempotente (FR-005, cierra el hueco H-08)
+- [X] T024 [US1] Implementar `src/aplicacion/identidad/iniciar-sesion.ts` con el bloqueo de FR-001b: cinco fallos consecutivos bloquean quince minutos, cada intento se registra con momento y origen, y el mensaje es idéntico exista o no la cuenta y esté o no bloqueada (FR-001c)
+- [X] T025 [US1] Implementar `src/aplicacion/identidad/invitar-persona.ts`: crea `Persona`, `Usuario` en `invitado` y `Habilitacion`, y encola el correo como `TrabajoPendiente`; la falla del correo **no** hace fallar el alta (FR-006)
+- [X] T026 [P] [US1] Implementar `src/aplicacion/identidad/fijar-contrasena.ts`: valida la credencial de invitación, la marca usada y pasa el usuario a `activo`; el administrador nunca conoce la contraseña (FR-006)
+- [X] T027 [P] [US1] Implementar `src/aplicacion/identidad/otorgar-habilitacion.ts`, `revocar-habilitacion.ts` y `desbloquear-usuario.ts`, todas restringidas a rol administrador (FR-007, FR-001c)
+- [X] T028 [US1] Crear `scripts/semilla-arranque.mjs` y su guion: crea un único administrador con la contraseña tomada de variable de entorno, nunca versionada, e idempotente (FR-005, cierra el hueco H-08)
 - [ ] T029 [P] [US1] Construir las pantallas `src/app/(sesion)/ingresar/page.tsx` e `invitacion/[credencial]/page.tsx` con etiqueta visible, ayuda y error debajo (§ 3.4 de la guía de estilos)
 - [ ] T030 [P] [US1] Construir `src/app/(panel)/usuarios/page.tsx` y `usuarios/invitar/page.tsx` con la acción de reenviar invitación y el estado del pendiente a la vista (FR-006b)
-- [ ] T031 [US1] Escribir `pruebas/integracion/identidad.spec.ts`: el sexto intento falla **aunque la contraseña sea correcta** y vuelve a funcionar a los quince minutos o al desbloquear (SC-006d); el mensaje es idéntico en los tres casos (FR-001c)
-- [ ] T032 [US1] Escribir `pruebas/integracion/aislamiento-rol.spec.ts`: un consorcista es denegado en el 100 % de las escrituras de la etapa, y una habilitación vencida ayer da cero filas (SC-002b, FR-004)
+- [X] T031 [US1] Escribir `pruebas/integracion/identidad.spec.ts`: el sexto intento falla **aunque la contraseña sea correcta** y vuelve a funcionar a los quince minutos o al desbloquear (SC-006d); el mensaje es idéntico en los tres casos (FR-001c)
+- [X] T032 [US1] Escribir `pruebas/integracion/aislamiento-rol.spec.ts`: un consorcista es denegado en el 100 % de las escrituras de la etapa, y una habilitación vencida ayer da cero filas (SC-002b, FR-004)
 
 **Checkpoint**: la condición 3 de la definición de terminado ya se puede verificar sobre algo real
 

@@ -22,6 +22,7 @@
     "docs:versiones": "node scripts/verificar-versiones.mjs",
     "db:deploy": "prisma migrate deploy",
     "db:preparar": "node scripts/preparar-bd.mjs",
+    "semilla:arranque": "node scripts/semilla-arranque.mjs",
     "db:drift": "node scripts/db-drift.mjs",
     "verificar": "npm run format:check && npm run lint && npm run typecheck && npm run test:dominio && npm run db:deploy && npm run db:drift && npm run test:integracion && npm run build && npm run test:e2e"
   },

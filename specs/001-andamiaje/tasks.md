@@ -114,7 +114,7 @@
 
 - [x] T029 Correr `npm run verificar` local 3× (57 s, 58 s, 58 s) + remoto en CI, todos en verde bajo el límite de 10 min — SC-004 registrado
 - [x] T030 [P] `gitleaks detect` historial completo 0 hallazgos + `npm audit` 0 altas (SC-008) — verificado en la corrida remota 34351015763
-- [ ] T031 Run `quickstart.md` validation de punta a punta
+- [x] T031 Run `quickstart.md` validation de punta a punta — reescrito con la secuencia real y verificado salvo el paso 5 (base local, bloqueada por red) y el 10 (integración, pendiente)
 
 ---
 

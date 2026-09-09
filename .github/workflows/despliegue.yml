@@ -1,0 +1,118 @@
+# Despliegue sin accion manual (FR-019, M-09, §8.3.5).
+# Demostracion: se publica sola cuando la verificacion cierra en verde sobre la
+# rama principal. Produccion: solo desde etiqueta y con aprobacion manual.
+name: despliegue
+
+on:
+  workflow_run:
+    workflows: [verificacion]
+    types: [completed]
+    branches: [main]
+  push:
+    tags: ['v*']
+
+env:
+  VERSION_VERCEL: 59.13.1
+
+jobs:
+  demo:
+    # Verde o no hay despliegue: con la verificacion en rojo, 0 despliegues.
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: demo
+      url: ${{ steps.publicar.outputs.url }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Migrar antes de servir: si esto falla, no se publica nada y la base
+      # queda como estaba. Sin correcciones manuales sobre la base (M-09).
+      - name: Migraciones
+        id: migrar
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+        run: npm run db:deploy
+
+      - name: Publicar
+        id: publicar
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          url=$(npx --yes vercel@$VERSION_VERCEL deploy --prod --yes \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            --build-env FLAY_VERSION=${{ github.event.workflow_run.head_sha }})
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      # La ruta de salud informa que migracion esta aplicada: si el despliegue
+      # sirvio antes de migrar, esto lo delata (contrato de /api/salud).
+      - name: Comprobar salud
+        run: |
+          salud=$(curl -fsS --retry 5 --retry-delay 5 "${{ steps.publicar.outputs.url }}/api/salud")
+          echo "$salud"
+          echo "$salud" | grep -q '"estado":"ok"'
+
+      - name: Alerta si el despliegue quedo bloqueado
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "Despliegue a demostracion bloqueado (${{ github.event.workflow_run.head_sha }})" \
+            --body "El flujo de despliegue fallo en el paso de migraciones o de salud. La base quedo como estaba: no corregir a mano, corregir la migracion y volver a integrar. Detalle: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --label despliegue
+
+  produccion:
+    # Produccion se despliega desde etiqueta, con aprobacion manual configurada
+    # en el entorno `produccion` del repositorio (§8.3.5).
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: produccion
+      url: ${{ steps.publicar.outputs.url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Migraciones
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+        run: npm run db:deploy
+
+      - name: Publicar
+        id: publicar
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          url=$(npx --yes vercel@$VERSION_VERCEL deploy --prod --yes \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            --build-env FLAY_VERSION=${{ github.ref_name }})
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Comprobar salud
+        run: |
+          salud=$(curl -fsS --retry 5 --retry-delay 5 "${{ steps.publicar.outputs.url }}/api/salud")
+          echo "$salud"
+          echo "$salud" | grep -q '"estado":"ok"'

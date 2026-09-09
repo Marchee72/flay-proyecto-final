@@ -31,7 +31,11 @@ sostenga.
 3. **§ 12** — actores y matriz rol×acción con los cinco roles y sus tres niveles. El actor
    «Operador» de `CU-02` se unifica con `administrador`: era el mismo trabajo con otro nombre.
 4. **`RF-03`** — enunciar el conjunto de roles vigente.
-5. **Regla RN-13** — sigue igual en el fondo (la nómina nominada es de administrador y consejo),
+5. **Regla RN-09** — hoy dice «una unidad no puede tener dos ocupaciones vigentes **del mismo
+   tipo**», lo que prohíbe el condominio. Debe acotarse a `inquilino`: varios propietarios vigentes
+   sobre una unidad son lo normal, y la carga real de datos del cliente lo va a mostrar en la
+   primera unidad de un matrimonio.
+6. **Regla RN-13** — sigue igual en el fondo (la nómina nominada es de administrador y consejo),
    pero conviene decir que el consejo es una habilitación que se suma, con la vigencia del mandato.
 
 ## Qué **no** hay que hacer

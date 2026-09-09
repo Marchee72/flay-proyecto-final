@@ -137,8 +137,13 @@ vigencia anterior y abre una nueva **hacia el futuro**, en la misma transacción
 | `tipo` | enum | `propietario`, `inquilino` |
 | `vigencia` | **rango de fechas** | Tipo de rango de la base, no dos columnas |
 
-**Restricción de exclusión** `EXCLUDE USING gist (unidad_id WITH =, tipo WITH =, vigencia WITH &&)`:
-la base rechaza dos ocupaciones vigentes del mismo tipo sobre la misma unidad (regla RN-09, SC-005).
+**Restricción de exclusión** `EXCLUDE USING gist (unidad_id WITH =, vigencia WITH &&) WHERE (tipo =
+'inquilino')`: la base rechaza un segundo inquilino vigente sobre la misma unidad (regla RN-09,
+SC-005). **No** alcanza a `propietario`: varios propietarios vigentes son el condominio, que es lo
+normal en propiedad horizontal.
+
+Una persona puede tener ocupaciones sobre varias unidades, del mismo consorcio o de varios. Al
+registrar una, se crea su habilitación de consorcista sobre ese consorcio si no la tiene (FR-008c).
 
 ## 3. Gastos, rubros, proveedores y comprobantes
 

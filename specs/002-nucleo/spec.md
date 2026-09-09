@@ -53,6 +53,11 @@ de terminado.
   misma persona.
 - Q: ¿Quién registra al inquilino de una unidad? (FR-008) → A: La administración, y también el
   **propietario de esa unidad**, limitado a su unidad y a ocupaciones de tipo inquilino.
+- Q: ¿Una unidad puede tener más de un propietario vigente? (regla RN-09 § 7.2) → A: Sí: el
+  condominio es lo normal en propiedad horizontal. La exclusión se acota a `inquilino`.
+- Q: Si una persona es dueña en varios consorcios, ¿quién le da la habilitación en cada uno?
+  (FR-008) → A: Registrar una ocupación crea la habilitación de consorcista en la misma
+  transacción, si no existe.
 
 ---
 
@@ -325,8 +330,16 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
   reescribe una entrega ya presentada.
 
 - **FR-008**: La relación entre persona y unidad **DEBE** registrarse como ocupación con tipo
-  (propietario o inquilino) y rango de vigencia, y la superposición **DEBE** impedirse con
-  **restricción de exclusión en la base de datos**, no en el código (regla RN-09 § 7.2).
+  (propietario o inquilino) y rango de vigencia. La superposición **DEBE** impedirse con
+  **restricción de exclusión en la base de datos**, no en el código (regla RN-09 § 7.2), pero
+  **sólo para `inquilino`**: dos contratos de alquiler vigentes sobre la misma unidad son un error
+  de carga, mientras que **varios propietarios vigentes son el condominio**, que es lo normal en
+  propiedad horizontal —un matrimonio, hermanos que heredaron, padre e hijo—. La exclusión lleva
+  entonces una condición sobre el tipo.
+
+  Una persona puede además ser propietaria de **varias unidades**, en el mismo consorcio o en
+  varios: `Ocupacion` cuelga del par (unidad, persona) y `Persona` no cuelga de consorcio, así que
+  el modelo ya lo admite sin cambios.
 
   Dueño e inquilino **no son roles**: son el tipo del vínculo. El punto 7 ya corrigió esa confusión
   al separar `Persona` de `Ocupacion` —«un propietario que además habita su unidad no tenía
@@ -346,6 +359,11 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
 
   Pedirle a la administración que lo cargue **no es funcionalidad nueva**: es el administrador
   haciendo lo que ya puede. Un circuito de solicitudes con estado pendiente queda fuera de alcance.
+- **FR-008c**: Registrar una ocupación **DEBE** crear, en la **misma transacción**, la habilitación
+  de consorcista de esa persona sobre ese consorcio, si todavía no la tiene. Sin esto, alguien
+  dueño en tres consorcios necesita tres habilitaciones cargadas a mano y olvidarse de una deja a
+  un propietario sin poder ver su propio edificio. Es el mismo criterio que el resto del modelo:
+  una sola fuente de verdad, para que el padrón y los permisos no puedan contradecirse.
 
 #### Bloque B — Consorcios, unidades y coeficientes (`RF-01`, `RF-02`)
 
@@ -524,6 +542,12 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
 - **SC-002f**: Un propietario puede registrar un inquilino en **su** unidad y recibe «no
   encontrado» al intentarlo sobre la unidad de otro; tampoco puede registrar una ocupación de tipo
   propietario (FR-008b).
+- **SC-002g**: Una unidad admite **dos o más propietarios vigentes** a la vez (condominio) y
+  **rechaza** por restricción de exclusión un segundo inquilino vigente, verificado saltándose la
+  capa de aplicación (regla RN-09 § 7.2, FR-008).
+- **SC-002h**: Registrar la ocupación de una persona que no tenía habilitación sobre ese consorcio
+  la deja habilitada como consorcista en la misma transacción; registrar una segunda ocupación no
+  duplica la habilitación (FR-008c).
 - **SC-007**: Cada una de las **5** tablas económicas de la etapa deja exactamente un asiento de
   auditoría por operación, con imagen anterior y posterior. Cero operaciones sin asiento.
 - **SC-008**: `INSERT`, `UPDATE` y `DELETE` sobre la bitácora con el usuario de aplicación fallan

@@ -93,21 +93,25 @@ cálculo económico a costo bajo. El punto débil del lenguaje se compensa con l
 
 *Selección comprometida. Versiones fijadas en el acta del Paso 0 (2026-09-09); FR-023 de
 `001-andamiaje` las verifica contra `package-lock.json`. Runtime: Node.js 22.21.0 LTS + npm 11.12.1
-(`engines` + `.nvmrc`). Generador: `create-next-app@15.3.4`.*
+(`engines` + `.nvmrc`). Generador: `create-next-app@15.3.4`. Correcciones del 2026-09-09 al instalar,
+registradas en el acta del Paso 0: Next 15.5.25 (15.3.4 quedó deprecada por CVE-2025-66478), Auth.js
+5.0.0-beta.32 (la 5.0.0 estable no existe), Playwright 1.63.0 (par exigido por Next y aviso <1.55.1) y
+Vitest 3.2.7 (aviso crítico <=3.2.5). Las transitivas `postcss` 8.5.28 y `sharp` 0.35.4 se fuerzan por
+`overrides`, de modo que `npm audit --audit-level=high` cierra en cero.*
 
 | Componente | Herramienta | Versión | Licencia | Justificación |
 |---|---|---|---|---|
-| Entorno de ejecución y renderizado | Next.js sobre Node.js | Next 15.3.4 / Node 22.21.0 | MIT | Interfaz y lógica de servidor en un mismo proyecto mediante acciones de servidor y manejadores de ruta, conforme al punto 4.2. Portable a cualquier alojamiento con Node.js, lo que acota la dependencia de una plataforma |
+| Entorno de ejecución y renderizado | Next.js sobre Node.js | Next 15.5.25 / Node 22.21.0 | MIT | Interfaz y lógica de servidor en un mismo proyecto mediante acciones de servidor y manejadores de ruta, conforme al punto 4.2. Portable a cualquier alojamiento con Node.js, lo que acota la dependencia de una plataforma |
 | Base de datos | PostgreSQL administrado, con extensión `pgvector` | PG 17.4 + pgvector 0.8.0 (`pgvector/pgvector:pg17`) | PostgreSQL License | `NUMERIC` de precisión arbitraria para C3, restricciones de exclusión para RN-09 y RN-10, disparadores para RN-15 e índice vectorial para RF-20, en un único motor |
 | Mapeador objeto-relacional | Prisma | 6.7.0 | Apache-2.0 | Esquema tipado y migraciones versionadas (C6, punto 8.3.5). Su tipo `Decimal` es el vehículo de la medida 1 de contención |
 | Validación de esquemas | Zod | 3.24.2 | MIT | Compensa el borrado de tipos en ejecución (C2): valida todo dato que cruza el límite de confianza |
-| Autenticación | Auth.js | 5.0.0 (`next-auth`) | ISC | Sesiones y control de acceso basado en roles, base de RNF-03 |
+| Autenticación | Auth.js | 5.0.0-beta.32 (`next-auth`) | ISC | Sesiones y control de acceso basado en roles, base de RNF-03 |
 | Derivación de contraseñas | Argon2id | 2.0.2 (`@node-rs/argon2`) | MIT | Función resistente a fuerza bruta exigida por RNF-04 |
 | Aritmética decimal | `decimal.js`, a través del tipo `Decimal` del mapeador | 10.4.3 | MIT | Contención del incumplimiento de C3 |
 | Generación de documentos descargables | `@react-pdf/renderer` | 4.1.3 | MIT | Genera en el propio proceso, sin navegador sin interfaz: sostenible dentro de los límites de la capa gratuita para los 96 documentos del proceso diferido de RNF-07 |
 | Gráficos del panel de indicadores | Recharts | 2.15.0 | MIT | Biblioteca de gráficos dentro de la aplicación, conforme a la decisión del punto 14.2: los indicadores heredan la autorización por consorcio |
 | Iconos de interfaz | Lucide (`lucide-react`) | 0.525.0 | ISC | Set abierto de trazo consistente 24px (urgencias, estados, navegación); se verifica contra `package-lock` junto al resto |
-| Pruebas automatizadas | Vitest y Playwright | Vitest 3.0.5 + `@vitest/coverage-v8` 3.0.5 / Playwright 1.50.1 + `@axe-core/playwright` 4.9.0 | MIT y Apache-2.0 | Vitest ejercita el dominio sin base de datos (punto 8.3.3); Playwright cubre extremo a extremo y verifica RNF-01 sobre ventana de teléfono |
+| Pruebas automatizadas | Vitest y Playwright | Vitest 3.2.7 + `@vitest/coverage-v8` 3.2.7 / Playwright 1.63.0 + `@axe-core/playwright` 4.9.0 | MIT y Apache-2.0 | Vitest ejercita el dominio sin base de datos (punto 8.3.3); Playwright cubre extremo a extremo y verifica RNF-01 sobre ventana de teléfono |
 | Análisis estático y formato | ESLint y Prettier | ESLint 9.20.0 + Prettier 3.4.2 + `eslint-config-prettier` 10.0.1 + `@typescript-eslint` 8.20.0 | MIT | Verificación automática en cada envío (punto 8.3.5) y sede de la medida 4 de contención |
 
 Ninguna de las licencias listadas es recíproca fuerte, conforme exige el punto 5.3.4. La verificación

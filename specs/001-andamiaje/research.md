@@ -10,9 +10,10 @@ Cero NEEDS CLARIFICATION al 2026-09-09.
 - Ratificación: Paso 0 en reunión de arranque, acta con cláusulas Ley 25.326; por defecto rige la propuesta.
 
 ## R-02 Versiones (H-02, I-03, M-06)
-- Decision: tabla §14.1 fijada 2026-09-09 (Next 15.3.4, Prisma 6.7.0, Zod 3.24.2, Auth 5.0.0, Argon2id 2.0.2, decimal.js 10.4.3, react-pdf 4.1.3, Recharts 2.15.0, Vitest 3.0.5, Playwright 1.50.1, axe 4.9.0, ESLint 9.20.0, Prettier 3.4.2) + Node 22.21.0/npm 11.12.1 + generador `create-next-app@15.3.4` pinnado.
+- Decision: tabla §14.1 fijada 2026-09-09 (Next 15.5.25, Prisma 6.7.0, Zod 3.24.2, Auth 5.0.0-beta.32, Argon2id 2.0.2, decimal.js 10.4.3, react-pdf 4.1.3, Recharts 2.15.0, Vitest 3.2.7, Playwright 1.63.0, axe 4.9.0, ESLint 9.20.0, Prettier 3.4.2) + Node 22.21.0/npm 11.12.1 + generador `create-next-app@15.3.4` pinnado.
 - Rationale: reproducibilidad + inventario licencias §5.3.4; FR-023 verifica contra `package-lock`, no descubre.
 - Alternatives: `latest` (rechazado: dos ejecutores divergen).
+- Correccion 2026-09-09 al instalar: Next 15.5.25, Auth.js 5.0.0-beta.32, Playwright 1.63.0, Vitest 3.2.7 y `overrides` de `postcss`/`sharp`; motivos en el acta del Paso 0 §2.1 (avisos altos y pares exigidos).
 
 ## R-03 Base y roles (I-01, I-02)
 - Decision: imagen `pgvector/pgvector:pg17`; extensiones `vector`, `btree_gist`, `pgcrypto` idempotentes; roles `flay_owner` (DDL/migraciones) y `flay_app` (DML); app siempre como `flay_app`; `SHADOW_DATABASE_URL` en `.env.example/.env.local` + servicio sombra en CI para `db:drift`.

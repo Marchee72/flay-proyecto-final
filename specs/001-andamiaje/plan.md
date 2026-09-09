@@ -13,13 +13,13 @@ demo, bitácora inviolable, aislamiento en un punto, 4 fixtures negativas, arnes
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.6 sobre Next.js 15.3.4, Node.js 22.21.0 LTS + npm 11.12.1 (`engines` + `.nvmrc` + `setup-node`)
+**Language/Version**: TypeScript 5.6 sobre Next.js 15.5.25, Node.js 22.21.0 LTS + npm 11.12.1 (`engines` + `.nvmrc` + `setup-node`)
 
-**Primary Dependencies**: Prisma 6.7.0, Zod 3.24.2, Auth.js 5.0.0 (`next-auth`), `@node-rs/argon2` 2.0.2, `decimal.js` 10.4.3 (vía `Prisma.Decimal`), `@react-pdf/renderer` 4.1.3, Recharts 2.15.0
+**Primary Dependencies**: Prisma 6.7.0, Zod 3.24.2, Auth.js 5.0.0-beta.32 (`next-auth`), `@node-rs/argon2` 2.0.2, `decimal.js` 10.4.3 (vía `Prisma.Decimal`), `@react-pdf/renderer` 4.1.3, Recharts 2.15.0
 
 **Storage**: PostgreSQL 17.4 + pgvector 0.8.0 (`pgvector/pgvector:pg17` local y Neon `aws-sa-east-1` demo); Prisma migraciones versionadas; `SHADOW_DATABASE_URL` para `db:drift`; objetos tras interfaz de dominio (Vercel Blob); correo Resend
 
-**Testing**: Vitest 3.0.5 (proyectos `dominio` sin `DATABASE_URL` y `integracion`), Playwright 1.50.1 (escritorio + 390×844 + `test:a11y` con `@axe-core/playwright` 4.9.0), ESLint 9.20.0 + Prettier 3.4.2 + `flay/sin-aritmetica-monetaria`, `gitleaks` + `npm audit --audit-level=high`
+**Testing**: Vitest 3.2.7 (proyectos `dominio` sin `DATABASE_URL` y `integracion`), Playwright 1.63.0 (escritorio + 390×844 + `test:a11y` con `@axe-core/playwright` 4.9.0), ESLint 9.20.0 + Prettier 3.4.2 + `flay/sin-aritmetica-monetaria`, `gitleaks` + `npm audit --audit-level=high`
 
 **Target Platform**: Windows PowerShell local (Docker para DB) + GitHub Actions Linux (CI) + Vercel `gru1` demo; producción desde etiqueta con aprobación
 

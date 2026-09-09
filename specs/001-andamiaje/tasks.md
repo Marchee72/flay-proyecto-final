@@ -13,10 +13,10 @@
 
 **Purpose**: Acta Paso 0 + proyecto base + dependencias pinnadas
 
-- [ ] T001 Ratificar plataforma y versiones en acta Paso 0 (FR-001, I-12): Vercel gru1, Neon sa-east-1, Blob, Resend, Actions + tabla §14.1 + cláusulas Ley 25.326
-- [ ] T002 [P] Fijar runtime Node 22.21.0 + npm 11.12.1 en `package.json` (engines), `.nvmrc` y flujo `setup-node` en `.github/workflows/verificacion.yml` (FR-003, M-06)
-- [ ] T003 Generar proyecto con `create-next-app@15.3.4` en `.tmp-flay` y trasladar a raíz + `npm install` con versiones §14.1 (FR-004, FR-005, I-03)
-- [ ] T004 [P] Instalar dependencias exactas + Playwright chromium + `@axe-core/playwright` 4.9.0 (FR-005, I-09)
+- [x] T001 Ratificar plataforma y versiones en acta Paso 0 (FR-001, I-12): Vercel gru1, Neon sa-east-1, Blob, Resend, Actions + tabla §14.1 + cláusulas Ley 25.326
+- [ ] T002 [P] Fijar runtime Node 22.21.0 + npm 11.12.1 en `package.json` (engines), `.nvmrc` y flujo `setup-node` en `.github/workflows/verificacion.yml` (FR-003, M-06) — `engines` y `.nvmrc` hechos; `setup-node` queda con T022
+- [x] T003 Generar proyecto con `create-next-app@15.3.4` en `tmp-flay` y trasladar a raíz + `npm install` con versiones §14.1 (FR-004, FR-005, I-03)
+- [x] T004 [P] Instalar dependencias exactas + Playwright chromium + `@axe-core/playwright` 4.9.0 (FR-005, I-09)
 
 ---
 

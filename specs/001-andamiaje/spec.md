@@ -234,11 +234,17 @@ sigue. Se ejecutan desde la raíz del repositorio, en PowerShell sobre Windows.
   ya contiene `docs/`, `CLAUDE.md` y `.specify/`, y el generador exige un directorio vacío:
 
   ```powershell
-  npx --yes create-next-app@15.3.4 .tmp-flay --typescript --eslint --app --src-dir --no-tailwind --use-npm --import-alias "@/*" --skip-install
-  Get-ChildItem -Path .tmp-flay -Force | Move-Item -Destination . -Force
-  Remove-Item .tmp-flay -Recurse -Force
+  npx --yes create-next-app@15.3.4 tmp-flay --typescript --eslint --app --src-dir --no-tailwind --use-npm --import-alias "@/*" --skip-install --no-turbopack
+  Get-ChildItem -Path tmp-flay -Force | Where-Object { $_.Name -notin 'README.md', '.gitignore' } | Move-Item -Destination . -Force
+  Remove-Item tmp-flay -Recurse -Force
   npm install
   ```
+
+  El directorio temporal no lleva punto inicial: npm rechaza nombres de proyecto que empiezan con
+  punto. El `README.md` y el `.gitignore` del generador se descartan —el repositorio ya tiene los
+  suyos— y al `.gitignore` propio se le agregan las entradas de Next (`/out/`, `.vercel`,
+  `*.tsbuildinfo`, `next-env.d.ts`). `--no-turbopack` evita la única pregunta que las banderas no
+  cubren.
 
   La versión del generador queda fijada (no `latest`) y se registra en el acta del Paso 0 (M-06).
 
@@ -251,10 +257,15 @@ sigue. Se ejecutan desde la raíz del repositorio, en PowerShell sobre Windows.
   no las descubre después:
 
   ```powershell
-  npm install prisma @prisma/client zod next-auth @node-rs/argon2 decimal.js @react-pdf/renderer recharts
-  npm install --save-dev vitest @vitest/coverage-v8 @playwright/test prettier eslint-config-prettier @typescript-eslint/parser @typescript-eslint/eslint-plugin
-  npx playwright install --with-deps chromium
+  npm install --save-exact next@15.5.25 @prisma/client@6.7.0 prisma@6.7.0 zod@3.24.2 next-auth@5.0.0-beta.32 @node-rs/argon2@2.0.2 decimal.js@10.4.3 @react-pdf/renderer@4.1.3 recharts@2.15.0 lucide-react@0.525.0
+  npm install -D --save-exact eslint@9.20.0 eslint-config-next@15.5.25 vitest@3.2.7 @vitest/coverage-v8@3.2.7 @playwright/test@1.63.0 @axe-core/playwright@4.9.0 prettier@3.4.2 eslint-config-prettier@10.0.1 @typescript-eslint/parser@8.20.0 @typescript-eslint/eslint-plugin@8.20.0
+  npx playwright install chromium
   ```
+
+  `--save-exact` es lo que hace verificable a FR-023: sin él, `^` deja que dos ejecutores instalen
+  versiones distintas. Los `overrides` de `postcss` 8.5.28 y `sharp` 0.35.4 en `package.json` son
+  parte de la instalación: sin ellos `npm audit --audit-level=high` no cierra en cero. En Windows,
+  `playwright install` va sin `--with-deps` (esa bandera solo aplica a Linux).
 
 - **FR-006**: Crear la estructura de carpetas por capa. Es la materialización del Principio III y
   de § 12.1.2, y es también el estándar de carpetas que § 14.4 debe registrar:

@@ -1,6 +1,6 @@
 # Data Model — 002-nucleo (Fase 1)
 
-Trece entidades nuevas más `BitacoraAuditoria`, que ya existe. Convenciones de § 7.4: identificador
+Dieciséis entidades nuevas más `BitacoraAuditoria`, que ya existe. Convenciones de § 7.4: identificador
 universalmente único generado por la base, `creado_en` y `actualizado_en` en toda tabla, nombres en
 español. Todo importe y todo coeficiente en `NUMERIC`; **ningún** tipo de punto flotante.
 
@@ -56,29 +56,47 @@ levantar el bloqueo poniendo `bloqueado_hasta` en nulo (FR-001c).
 | `vigencia_desde` | date | Obligatoria |
 | `vigencia_hasta` | date nulo | Nulo = sin vencimiento |
 
-Índice por `(usuario_id, consorcio_id)`. **Una habilitación no vigente equivale a inexistente**
-(FR-004): la vigencia se evalúa contra la fecha, no contra la existencia de la fila.
+Clave única `(usuario_id, consorcio_id, rol)`, como ya declara el punto 7: **una persona puede
+tener varias habilitaciones en el mismo consorcio**. Es lo que permite que el consejo se sume a
+consorcista con la vigencia de su mandato, en vez de reemplazarlo. Índice por
+`(usuario_id, consorcio_id)`. **Una habilitación no vigente equivale a inexistente** (FR-004).
 
-### `HabilitacionCartera` — el cuarto rol
+### `Administradora` — el segundo eje
+
+| Campo | Tipo | Reglas |
+|---|---|---|
+| `id` | UUID | Clave |
+| `razon_social` | texto | Obligatoria |
+| `cuit` | texto | Único |
+
+La empresa que administra una cartera de consorcios. El punto 9 la compromete en el factor 13
+—«instancia única multiempresa, con aislamiento por consorcio y por administradora»— y el punto 7
+no la tiene: esta etapa cierra esa contradicción. `Consorcio.administradora_id` es obligatorio.
+
+### `HabilitacionAdministradora` y `HabilitacionPlataforma`
 
 | Campo | Tipo | Reglas |
 |---|---|---|
 | `id` | UUID | Clave |
 | `usuario_id` | UUID | Obligatorio |
-| `vigencia_desde` | date | Obligatoria |
-| `vigencia_hasta` | date nulo | Nulo = sin vencimiento |
+| `administradora_id` | UUID | Solo en `HabilitacionAdministradora` |
+| `vigencia_desde` / `vigencia_hasta` | date / date nulo | Igual que `Habilitacion` |
 
-Su existencia vigente **es** el rol: no hace falta un enum de un solo valor. Habilita el alta de
-consorcios (FR-007b), que no se puede autorizar por par (rol, consorcio). Tabla propia y no
-`consorcio_id` nulo en `Habilitacion`: un nulo ahí sería un agujero en el Principio I.
+Su existencia vigente **es** el rol: no hace falta un enum de un solo valor. Van en tablas propias
+y no como columnas nulas en `Habilitacion`: un `consorcio_id` nulo en la tabla que materializa el
+Principio I sería un `WHERE` que no filtra nada el día que alguien olvide el caso.
 
-## 2. Consorcios, unidades y coeficientes
+**Ninguna de las dos abre contexto de aislamiento por sí sola.** El contexto se abre siempre sobre
+un consorcio concreto; lo que estas tablas hacen es **decidir el rol efectivo** sobre él (FR-007c).
+
+## 2. Consorcios, unidades y coeficientes## 2. Consorcios, unidades y coeficientes
 
 ### `Consorcio`
 
 | Campo | Tipo | Reglas |
 |---|---|---|
 | `id` | UUID | Clave. **Raíz del aislamiento** |
+| `administradora_id` | UUID | Obligatorio. Segundo eje: define quién ve la cartera |
 | `nombre`, `direccion`, `localidad` | texto | Obligatorios |
 | `cuit` | texto | Único |
 

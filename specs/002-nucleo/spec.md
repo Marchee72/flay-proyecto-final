@@ -42,8 +42,17 @@ de terminado.
 - Q: ¿Qué protege al inicio de sesión de un atacante que prueba contraseñas una tras otra? (FR-001,
   RNF-04) → A: Bloqueo temporal de la cuenta tras cinco intentos fallidos, durante quince minutos.
 - Q: Dar de alta un consorcio no se puede autorizar por par (rol, consorcio) porque todavía no hay
-  consorcio. ¿Cómo se autoriza? (FR-009) → A: Un cuarto rol de cartera, por encima de los tres del
-  punto 12, en tabla propia.
+  consorcio. ¿Cómo se autoriza? (FR-009) → A: Un rol por encima de los del punto 12, en tabla propia.
+- Q: ¿Cuáles son los roles del sistema y con qué alcance? (FR-007) → A: Tres niveles.
+  **Plataforma**: super administrador (configuración general, alta de administradoras y de
+  consorcios). **Empresa**: administradora (todos los consorcios de su cartera). **Consorcio**:
+  administrador delegado (los consorcios asignados), consorcista (su unidad) y consejo, que **se
+  suma** a consorcista con su propia vigencia en lugar de reemplazarlo.
+- Q: ¿Dueño e inquilino son roles distintos? (FR-008) → A: No. Un solo rol de consorcista; la
+  distinción se deriva de la ocupación vigente, que ya la guarda con tipo y vigencia. Pueden ser la
+  misma persona.
+- Q: ¿Quién registra al inquilino de una unidad? (FR-008) → A: La administración, y también el
+  **propietario de esa unidad**, limitado a su unidad y a ocupaciones de tipo inquilino.
 
 ---
 
@@ -275,25 +284,68 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
   el administrador **DEBE** contar con una acción explícita de reintento y ver el estado del
   pendiente. No se construye ejecutor programado en esta etapa: `004-servicios` decide si el
   despachador de `RF-14` lo necesita, y esta tabla es la costura que va a usar.
-- **FR-007**: Los roles **DEBEN** ser los del punto 12: administrador, consejo de propietarios y
-  consorcista. La nómina nominada de deudores se reserva a los dos primeros (regla RN-13 § 7.2);
-  esta etapa aún no la produce, pero el rol ya la contempla.
-- **FR-007b**: Además de los tres roles por consorcio, **DEBE** existir un cuarto rol, de
-  **cartera**, por encima de ellos: es quien da de alta consorcios. La razón es estructural, no de
-  conveniencia: el alta de un consorcio no se puede autorizar por par (rol, consorcio) porque al
-  crear el primero no hay ninguno contra el cual evaluar.
+- **FR-007**: Los roles **DEBEN** organizarse en **tres niveles de alcance**, porque el punto 9
+  compromete «instancia única multiempresa, con aislamiento por consorcio **y por administradora**»
+  (factor 13) y el producto se comercializa a varias administradoras sin modificaciones (factor 10,
+  y § 6.2, modelo adoptado):
 
-  Se modela como **tabla propia** (`HabilitacionCartera`, con vigencia), no como una habilitación
-  con consorcio nulo: un nulo en la tabla que materializa el Principio I es la clase de agujero que
-  después filtra datos ajenos. La habilitación de cartera **no** abre contexto de aislamiento —
-  quien opera con ella trabaja por encima de él—, y por eso el rol es escaso, tiene vigencia y
-  queda auditado.
+  | Nivel | Rol | Alcance | Dónde vive |
+  |---|---|---|---|
+  | Plataforma | **super administrador** | Toda la instancia | `HabilitacionPlataforma` |
+  | Empresa | **administradora** | Todos los consorcios de su cartera | `HabilitacionAdministradora` |
+  | Consorcio | **administrador** | Los consorcios asignados (delegado) | `Habilitacion.rol` |
+  | Consorcio | **consorcista** | Su consorcio y su unidad | `Habilitacion.rol` |
+  | Consorcio | **consejo** | Se **suma** a consorcista | `Habilitacion.rol` |
 
-  **Impacto documental**: el punto 12 enumera tres roles. La corrección corresponde asentarla allí
-  y en `RF-03`; se registra en el acta de la iteración y no reescribiendo una entrega ya presentada.
+  El **consejo no es una clase aparte de usuario**: a sus integrantes los elige la asamblea entre
+  los propietarios, así que es una habilitación que **se agrega** a la de consorcista, con la
+  vigencia del mandato. La clave única `(usuario, consorcio, rol)` que el punto 7 ya declara es
+  exactamente lo que lo permite: cuando el mandato vence, esa habilitación deja de estar vigente y
+  la persona sigue siendo consorcista. Un consorcio sin consejo simplemente no tiene ninguna.
+
+  La nómina nominada de deudores se reserva a administrador y consejo (regla RN-13 § 7.2); esta
+  etapa aún no la produce, pero el modelo ya la contempla.
+- **FR-007c**: El rol **efectivo** de un usuario sobre un consorcio **DEBE** resolverse en un solo
+  lugar, considerando los tres niveles en este orden: habilitación de plataforma, habilitación
+  sobre la administradora dueña del consorcio, y habilitación sobre el consorcio. Los dos ejes de
+  aislamiento colapsan ahí y no en cada consulta: es el mismo criterio del Principio I.
+- **FR-007b**: El **super administrador** de plataforma es quien da de alta administradoras y
+  consorcios. La razón es estructural: el alta de un consorcio no se puede autorizar por par
+  (rol, consorcio) porque al crear el primero no hay ninguno contra el cual evaluar.
+
+  Se modela como **tabla propia** con vigencia, no como una habilitación con consorcio nulo: un
+  nulo en la tabla que materializa el Principio I es la clase de agujero que después filtra datos
+  ajenos. Lo mismo vale para la habilitación de empresa. Ninguna de las dos abre contexto de
+  aislamiento por sí sola: el contexto se abre siempre sobre un consorcio concreto.
+
+  **Impacto documental**: el punto 7 declara `rol` como `administrador, operador, consejo,
+  consorcista`, todos por consorcio, y no tiene entidad para la administradora; el punto 9 promete
+  un aislamiento por administradora que ningún otro documento sostiene. La corrección corresponde
+  asentarla en los puntos 7 y 12 y en `RF-03`, y se registra en el acta de la iteración: no se
+  reescribe una entrega ya presentada.
+
 - **FR-008**: La relación entre persona y unidad **DEBE** registrarse como ocupación con tipo
   (propietario o inquilino) y rango de vigencia, y la superposición **DEBE** impedirse con
   **restricción de exclusión en la base de datos**, no en el código (regla RN-09 § 7.2).
+
+  Dueño e inquilino **no son roles**: son el tipo del vínculo. El punto 7 ya corrigió esa confusión
+  al separar `Persona` de `Ocupacion` —«un propietario que además habita su unidad no tenía
+  representación»— y volver a meterlos en la habilitación reintroduciría el mismo defecto: quien es
+  dueño y habita necesitaría dos habilitaciones, y al vender la unidad el rol y el padrón quedarían
+  contradiciéndose. Ambos ven lo que pasa en el edificio; lo que la ocupación decide es a quién se
+  le cobra la expensa, que es alcance de `003-liquidacion`.
+- **FR-008b**: El **propietario vigente de una unidad DEBE** poder registrar la ocupación de **su**
+  unidad, limitado a ocupaciones de tipo inquilino, e invitar a esa persona como usuario del
+  consorcio. Sin lo segundo, el dueño carga al inquilino en el padrón y el inquilino nunca puede
+  entrar.
+
+  Esto agrega una **condición de fila** a la autorización: hasta aquí bastaba el par
+  (rol, consorcio), y ahora hay una operación donde además importa *sobre qué unidad*. Se resuelve
+  en el mismo lugar que el resto (FR-007c) y se verifica: un propietario que intenta cargar un
+  inquilino en la unidad del vecino recibe «no encontrado», nunca «prohibido».
+
+  Pedirle a la administración que lo cargue **no es funcionalidad nueva**: es el administrador
+  haciendo lo que ya puede. Un circuito de solicitudes con estado pendiente queda fuera de alcance.
 
 #### Bloque B — Consorcios, unidades y coeficientes (`RF-01`, `RF-02`)
 
@@ -405,7 +457,10 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
 | `Persona` | Persona física, con o sin usuario | Raíz; datos personales bajo Ley 25.326 (RNF-13) |
 | `Usuario` | Credencial de acceso de una persona | Contraseña derivada con Argon2id (RNF-04) |
 | `Ocupacion` | Vínculo persona–unidad como propietario o inquilino | Restricción de exclusión sobre la vigencia (regla RN-09 § 7.2) |
-| `Habilitacion` | Permiso vigente de un usuario sobre un consorcio, con rol | **Es la tabla que materializa el Principio I** |
+| `Administradora` | Empresa que administra una cartera de consorcios | Segundo eje del aislamiento (§ 9, factor 13). El producto es multiempresa (§ 6.2) |
+| `Habilitacion` | Permiso vigente de un usuario sobre un consorcio, con rol | **Es la tabla que materializa el Principio I.** Clave única `(usuario, consorcio, rol)`: el consejo se suma a consorcista |
+| `HabilitacionAdministradora` | Permiso vigente sobre toda la cartera de una empresa | Su existencia vigente es el rol |
+| `HabilitacionPlataforma` | Permiso de super administrador | Su existencia vigente es el rol; es el único que da de alta administradoras |
 | `RubroGasto` | Clasificación del gasto, con marca ordinario/extraordinario | Precargado por semilla; alta y modificación diferidas (§ 9.11) |
 | `Proveedor` | Prestador de servicios o bienes al consorcio | Raíz del grafo: sin dependencias obligatorias |
 | `Gasto` | Erogación del consorcio imputada a un período | `periodo_id` y `rubro_id` obligatorios; inmutable si el período fue liquidado (reglas RN-03 y RN-04 § 7.2) |
@@ -458,9 +513,17 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
   contraseña sea correcta**, y vuelve a funcionar pasados quince minutos o cuando el administrador
   levanta el bloqueo. El mensaje es idéntico para cuenta inexistente, contraseña incorrecta y
   cuenta bloqueada (FR-001b, FR-001c).
-- **SC-002c**: Un usuario **sin** habilitación de cartera no puede dar de alta un consorcio, ni
-  siquiera siendo administrador de otro; una habilitación de cartera vencida ayer tampoco alcanza
-  (FR-007b, FR-009).
+- **SC-002c**: Un usuario **sin** habilitación de plataforma no puede dar de alta un consorcio ni
+  una administradora, ni siquiera siendo administrador de otro consorcio; una habilitación de
+  plataforma vencida ayer tampoco alcanza (FR-007b, FR-009).
+- **SC-002d**: Un usuario con habilitación sobre la **administradora** obtiene rol efectivo de
+  administrador sobre el **100 %** de los consorcios de esa cartera y **cero** filas de los
+  consorcios de cualquier otra administradora (FR-007, FR-007c, § 9 factor 13).
+- **SC-002e**: Un **administrador delegado** obtiene datos únicamente de los consorcios que tiene
+  asignados, aunque pertenezcan a la misma administradora que otros que no tiene (FR-007).
+- **SC-002f**: Un propietario puede registrar un inquilino en **su** unidad y recibe «no
+  encontrado» al intentarlo sobre la unidad de otro; tampoco puede registrar una ocupación de tipo
+  propietario (FR-008b).
 - **SC-007**: Cada una de las **5** tablas económicas de la etapa deja exactamente un asiento de
   auditoría por operación, con imagen anterior y posterior. Cero operaciones sin asiento.
 - **SC-008**: `INSERT`, `UPDATE` y `DELETE` sobre la bitácora con el usuario de aplicación fallan

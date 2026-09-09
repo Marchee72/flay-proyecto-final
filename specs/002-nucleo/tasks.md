@@ -17,11 +17,11 @@
 
 **Purpose**: dependencias nuevas y su registro documental
 
-- [ ] T001 [P] Instalar `@vercel/blob` 2.8.0 y `resend` 6.26.0 con `--save-exact` en `package.json` (research R-05, R-09)
-- [ ] T002 [P] Agregar las dependencias nuevas a la tabla de `docs/entrega-final/14-codificacion.md` § 14.1 con licencia y justificación; `npm run docs:versiones` debe pasar (FR-023 de `001`)
-- [ ] T003 [P] Agregar `BLOB_READ_WRITE_TOKEN`, `RESEND_API_KEY`, `ADMIN_SEMILLA_CORREO` y `ADMIN_SEMILLA_CLAVE` a `.env.example` con nombres y sin valores (FR-005, FR-008 de `001`)
-- [ ] T004 Cargar los secretos de correo y almacenamiento en el proveedor de despliegue y en los secretos del repositorio; ninguno versionado (§ 18.7)
-- [ ] T005 [P] Crear `scripts/semilla.mjs` y `scripts/semilla-volumen.mjs` vacíos con sus guiones `semilla` y `semilla:volumen` en `package.json` (FR-028, SC-006)
+- [X] T001 [P] Instalar `@vercel/blob` 2.8.0 y `resend` 6.26.0 con `--save-exact` en `package.json` (research R-05, R-09)
+- [X] T002 [P] Agregar las dependencias nuevas a la tabla de `docs/entrega-final/14-codificacion.md` § 14.1 con licencia y justificación; `npm run docs:versiones` debe pasar (FR-023 de `001`)
+- [X] T003 [P] Agregar `BLOB_READ_WRITE_TOKEN`, `RESEND_API_KEY`, `ADMIN_SEMILLA_CORREO` y `ADMIN_SEMILLA_CLAVE` a `.env.example` con nombres y sin valores (FR-005, FR-008 de `001`)
+- [ ] T004 **Requiere acción del equipo.** Cargar los secretos de correo y almacenamiento en el proveedor de despliegue y en los secretos del repositorio; ninguno versionado (§ 18.7)
+- [ ] T005 [P] Crear `scripts/semilla.mjs` y `scripts/semilla-volumen.mjs` con sus guiones en `package.json` (FR-028, SC-006) — se hace junto con T017, cuando existan las tablas que la semilla llena: un guion vacío que dice cargar datos y no carga nada es peor que no tenerlo
 
 ---
 
@@ -29,19 +29,19 @@
 
 **Purpose**: lo que toda historia necesita. **BLOQUEA todas las historias**
 
-- [ ] T006 Declarar los puertos del dominio en `src/dominio/contratos/`: `reloj.ts`, `almacen-objetos.ts`, `notificador.ts`, `derivador-contrasenas.ts`, según `contracts/puertos-dominio.md` (Principio III, FR-019)
-- [ ] T007 [P] Implementar `src/infraestructura/reloj.ts` (reloj real) y `pruebas/dominio/reloj-fijo.ts` (reloj de prueba con fecha fija)
-- [ ] T008 Definir `Consorcio` en `prisma/schema.prisma` con `id` UUID por `gen_random_uuid()`, `nombre`, `direccion`, `localidad` obligatorios y `cuit` único, más `creado_en`/`actualizado_en` en `timestamptz(6)` (data-model § 2)
-- [ ] T009 Definir `TrabajoPendiente` en `prisma/schema.prisma`: `tipo` (`invitacion`, `confirmacion_subida`), `carga` JSONB, `estado` (`pendiente`, `despachado`, `agotado`), `intentos`, `proximo_intento`, `ultimo_error` nulo, con índice `(estado, proximo_intento)` (FR-006b)
-- [ ] T010 Crear la migración de la base de esta etapa en `prisma/migrations/` con `Consorcio` y `TrabajoPendiente`; verificar `npm run db:drift` sin diferencias (FR-026)
-- [ ] T011 Implementar `src/aplicacion/autorizacion.ts`: resuelve la habilitación vigente por par (rol, consorcio) contra la base y abre `enConsorcio(...)`; es el único lugar que autoriza (FR-002, FR-003, `contracts/puertos-dominio.md` § Regla de invocación)
-- [ ] T012 Implementar `src/aplicacion/pendientes/encolar.ts` y `drenar.ts`: el drenaje toma un lote con bloqueo de fila salteando lo bloqueado, aplica espera creciente y marca `agotado` al límite de intentos (FR-006b, research R-06)
-- [ ] T013 Enganchar el drenaje con `after()` de `next/server` en el grupo `src/app/(panel)/layout.tsx`, de modo que corra después de responder y no sume latencia (research R-06)
-- [ ] T014 [P] Crear el armazón de interfaz en `src/app/(panel)/layout.tsx` y `src/app/globals.css` con los tokens de `docs/guia-estilos-ejemplo.html`: barra, lateral, menú de teléfono, foco visible y objetivos táctiles de 44 px (§ 3 de `docs/guia-estilos.md`)
-- [ ] T015 [P] Crear `src/compartido/formato.ts`: importe a cadena con dos decimales y coeficiente con ocho, ambos desde `Prisma.Decimal`; ninguna función acepta el tipo numérico nativo (FR-013, SC-010)
-- [ ] T016 [P] Crear `src/compartido/errores.ts` con los errores de aplicación y su mensaje para el usuario final, sin detalle técnico (RNF-10, § 14.4)
-- [ ] T017 [P] Crear `pruebas/fixtures/juego-13-4.ts` con la semilla determinística de los dos consorcios de § 13.4 (12 y 96 unidades) reutilizable por integración y extremo a extremo (FR-028)
-- [ ] T018 Escribir la prueba de integración `pruebas/integracion/autorizacion.spec.ts` que fija el contrato de T011: sin habilitación vigente, cero filas; con habilitación de otro consorcio, cero filas (SC-002)
+- [X] T006 Declarar los puertos del dominio en `src/dominio/contratos/`: `reloj.ts`, `almacen-objetos.ts`, `notificador.ts`, `derivador-contrasenas.ts`, según `contracts/puertos-dominio.md` (Principio III, FR-019)
+- [X] T007 [P] Implementar `src/infraestructura/reloj.ts` (reloj real) y `pruebas/dominio/reloj-fijo.ts` (reloj de prueba con fecha fija)
+- [X] T008 Definir `Consorcio` en `prisma/schema.prisma` con `id` UUID por `gen_random_uuid()`, `nombre`, `direccion`, `localidad` obligatorios y `cuit` único, más `creado_en`/`actualizado_en` en `timestamptz(6)` (data-model § 2)
+- [X] T009 Definir `TrabajoPendiente` en `prisma/schema.prisma`: `tipo` (`invitacion`, `confirmacion_subida`), `carga` JSONB, `estado` (`pendiente`, `despachado`, `agotado`), `intentos`, `proximo_intento`, `ultimo_error` nulo, con índice `(estado, proximo_intento)` (FR-006b)
+- [X] T010 Crear la migración de la base de esta etapa en `prisma/migrations/` con `Consorcio` y `TrabajoPendiente`; verificar `npm run db:drift` sin diferencias (FR-026)
+- [X] T011 Implementar `src/aplicacion/autorizacion.ts`: resuelve la habilitación vigente por par (rol, consorcio) contra la base y abre `enConsorcio(...)`; es el único lugar que autoriza (FR-002, FR-003, `contracts/puertos-dominio.md` § Regla de invocación)
+- [X] T012 Implementar `src/aplicacion/pendientes/encolar.ts` y `drenar.ts`: el drenaje toma un lote con bloqueo de fila salteando lo bloqueado, aplica espera creciente y marca `agotado` al límite de intentos (FR-006b, research R-06)
+- [X] T013 Enganchar el drenaje con `after()` de `next/server` en el grupo `src/app/(panel)/layout.tsx`, de modo que corra después de responder y no sume latencia (research R-06)
+- [X] T014 [P] Crear el armazón de interfaz en `src/app/(panel)/layout.tsx` y `src/app/globals.css` con los tokens de `docs/guia-estilos-ejemplo.html`: barra, lateral, menú de teléfono, foco visible y objetivos táctiles de 44 px (§ 3 de `docs/guia-estilos.md`)
+- [X] T015 [P] Crear `src/compartido/formato.ts`: importe a cadena con dos decimales y coeficiente con ocho, ambos desde `Prisma.Decimal`; ninguna función acepta el tipo numérico nativo (FR-013, SC-010)
+- [X] T016 [P] Crear `src/compartido/errores.ts` con los errores de aplicación y su mensaje para el usuario final, sin detalle técnico (RNF-10, § 14.4)
+- [ ] T017 [P] **Bloqueada por US1 y US2** (necesita `Unidad`, `Persona` y `Habilitacion`). Crear `pruebas/fixtures/juego-13-4.ts` con la semilla determinística de los dos consorcios de § 13.4 (12 y 96 unidades) reutilizable por integración y extremo a extremo (FR-028)
+- [ ] T018 **Bloqueada por T020** (necesita la tabla `Habilitacion`). Escribir la prueba de integración `pruebas/integracion/autorizacion.spec.ts` que fija el contrato de T011: sin habilitación vigente, cero filas; con habilitación de otro consorcio, cero filas (SC-002)
 
 **Checkpoint**: la autorización y el aislamiento funcionan antes de que exista una sola pantalla de negocio
 

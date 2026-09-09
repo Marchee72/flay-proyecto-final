@@ -37,3 +37,43 @@ enum Operacion {
   MODIFICA
   BORRA
 }
+
+/// Un edificio de propiedad horizontal. Raiz del aislamiento: casi toda entidad
+/// cuelga de el (regla RN-12 § 7.2).
+model Consorcio {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre        String   @db.Text
+  direccion     String   @db.Text
+  localidad     String   @db.Text
+  cuit          String   @unique @db.Text
+  creadoEn      DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+}
+
+/// Efecto externo que fallo y hay que reintentar: correo o confirmacion de
+/// subida (FR-006b). El camino feliz tambien pasa por aca, para que el de
+/// reintento no se ejercite solo cuando el proveedor falla.
+model TrabajoPendiente {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tipo           TipoTrabajo
+  carga          Json          @db.JsonB
+  estado         EstadoTrabajo @default(pendiente)
+  intentos       Int           @default(0)
+  proximoIntento DateTime      @default(now()) @map("proximo_intento") @db.Timestamptz(6)
+  ultimoError    String?       @map("ultimo_error") @db.Text
+  creadoEn       DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn  DateTime      @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  @@index([estado, proximoIntento])
+}
+
+enum TipoTrabajo {
+  invitacion
+  confirmacion_subida
+}
+
+enum EstadoTrabajo {
+  pendiente
+  despachado
+  agotado
+}

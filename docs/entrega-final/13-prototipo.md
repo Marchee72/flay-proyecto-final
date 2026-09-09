@@ -28,7 +28,7 @@ operativo, no una maqueta.
 |---|---|---|---|
 | Prototipo de interfaz 2.5 | 24/07/2026 | No cumplido | Sin pantallas ni acta en el repo; se reprograma al arranque de 001 |
 | Prueba de concepto 5.1 | semana del 24/08/2026 | No cumplida | Sin código desechable ni medición 80/85 %; pasa a paquete 5.1 de 004 con datos de `datos-cliente/` |
-| Demo de iteración 1 | 04/09/2026 | No cumplida | Sin entorno desplegado: `001-andamiaje` deja la aplicación y el flujo de despliegue (FR-019) listos, pero falta conectar el proveedor; pasa a SC-014 de 002 sobre demo desplegado |
+| Demo de iteración 1 | 04/09/2026 | No cumplida | Entorno de demostración desplegado y actualizándose solo desde el 09/09/2026, pero sin funcionalidad que demostrar: `001-andamiaje` no construye ningún `RF-nn`. Pasa a SC-014 de 002 |
 
 *Validación con cliente (paquete 2.5 del punto 10.2), pendiente de reprogramación:*
 

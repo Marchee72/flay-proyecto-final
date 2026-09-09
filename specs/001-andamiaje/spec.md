@@ -287,7 +287,7 @@ sigue. Se ejecutan desde la raíz del repositorio, en PowerShell sobre Windows.
 
   ```powershell
   if (-not (docker ps -a --format "{{.Names}}" | Select-String -Quiet "^flay-db$")) {
-    docker run -d --name flay-db -p 5432:5432 -e POSTGRES_PASSWORD=flay_local -e POSTGRES_DB=flay pgvector/pgvector:pg17
+    docker run -d --name flay-db -p 5432:5432 -e POSTGRES_PASSWORD=flay_local -e POSTGRES_DB=flay pgvector/pgvector:0.8.6-pg18
   }
   ```
 
@@ -408,7 +408,7 @@ sigue. Se ejecutan desde la raíz del repositorio, en PowerShell sobre Windows.
   lo que las pruebas de extremo a extremo y la comprobación de despliegue verifican.
 
 - **FR-018**: Crear el flujo de verificación `.github/workflows/verificacion.yml`, disparado en
-  cada envío y en cada solicitud de incorporación, con un servicio `pgvector/pgvector:pg17` y
+  cada envío y en cada solicitud de incorporación, con un servicio `pgvector/pgvector:0.8.6-pg18` y
   variable `SHADOW_DATABASE_URL` apuntando a una base sombra del propio servicio (I-01), que
   ejecuta `npm ci` y `npm run verificar`. **DEBE** completar en menos de 10 minutos.
 

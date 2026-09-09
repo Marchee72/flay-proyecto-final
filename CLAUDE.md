@@ -32,7 +32,7 @@ el primer minuto.
 | `npm run db:deploy` / `db:drift` | Migraciones y detección de deriva |
 | `npm run medir:p95` | Arnés de RNF-06 sobre `/api/salud` |
 
-Base local: `docker run -d --name flay-db -p 5432:5432 -e POSTGRES_PASSWORD=flay_local -e POSTGRES_DB=flay pgvector/pgvector:pg17`.
+Base local: `docker run -d --name flay-db -p 5432:5432 -e POSTGRES_PASSWORD=flay_local -e POSTGRES_DB=flay pgvector/pgvector:0.8.6-pg18`.
 Variables en `.env` (nunca versionado); plantilla en `.env.example`. `DATABASE_URL` es la cadena de
 `flay_app` y `DIRECT_DATABASE_URL` la de `flay_owner`: la aplicación no tiene DDL, las migraciones sí.
 

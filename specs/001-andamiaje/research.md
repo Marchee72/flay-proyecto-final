@@ -16,7 +16,7 @@ Cero NEEDS CLARIFICATION al 2026-09-09.
 - Correccion 2026-09-09 al instalar: Next 15.5.25, Auth.js 5.0.0-beta.32, Playwright 1.63.0, Vitest 3.2.7 y `overrides` de `postcss`/`sharp`; motivos en el acta del Paso 0 §2.1 (avisos altos y pares exigidos).
 
 ## R-03 Base y roles (I-01, I-02)
-- Decision: imagen `pgvector/pgvector:pg17`; extensiones `vector`, `btree_gist`, `pgcrypto` idempotentes; roles `flay_owner` (DDL/migraciones) y `flay_app` (DML); app siempre como `flay_app`; `SHADOW_DATABASE_URL` en `.env.example/.env.local` + servicio sombra en CI para `db:drift`.
+- Decision: imagen `pgvector/pgvector:0.8.6-pg18`; extensiones `vector`, `btree_gist`, `pgcrypto` idempotentes; roles `flay_owner` (DDL/migraciones) y `flay_app` (DML); app siempre como `flay_app`; `SHADOW_DATABASE_URL` en `.env.example/.env.local` + servicio sombra en CI para `db:drift`.
 - Rationale: RNF-12 + SC-006 + SC-005 (deploy sobre vacía + drift 0) + re-ejecutabilidad M-06.
 
 ## R-04 Frontera de capas (I-04)

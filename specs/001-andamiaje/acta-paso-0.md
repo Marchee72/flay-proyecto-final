@@ -17,7 +17,7 @@ Cambios sobre la propuesta: ninguno. Regla aplicada: la propuesta rige ante ause
 
 ## 2. Versiones fijadas (§14.1)
 
-Next 15.5.25 / Node 22.21.0 / npm 11.12.1 · PG 17.4 + pgvector 0.8.0 · Prisma 6.7.0 · Zod 3.24.2 ·
+Next 15.5.25 / Node 22.21.0 / npm 11.12.1 · PG 18.6 + pgvector 0.8.6 · Prisma 6.7.0 · Zod 3.24.2 ·
 Auth.js 5.0.0-beta.32 · Argon2id 2.0.2 · decimal.js 10.4.3 · react-pdf 4.1.3 · Recharts 2.15.0 ·
 Vitest 3.2.7 + coverage-v8 3.2.7 · Playwright 1.63.0 + axe 4.9.0 · ESLint 9.20.0 + Prettier 3.4.2 ·
 Lucide 0.525.0 · Generador `create-next-app@15.3.4`. Verificación contra `package-lock` (FR-023).
@@ -49,10 +49,17 @@ respecto de §1; la de region se corrigio el mismo dia:
 | Punto | Ratificado | En uso | Estado |
 |---|---|---|---|
 | Region | `aws-sa-east-1` (San Pablo) | `sa-east-1` (San Pablo) | **Cerrado** el 2026-09-09: proyecto recreado en San Pablo, conforme a §5.5.4 |
-| Version del motor | PostgreSQL 17.4 | PostgreSQL 18.6 | **Abierto**: Neon deja elegir la version al crear el proyecto. O se recrea con 17, o §14.1 pasa a 18 |
+| Version del motor | PostgreSQL 17.4 | PostgreSQL 18.6 | **Cerrado** el 2026-09-09: §14.1 pasa a 18.6 e imagen `pgvector/pgvector:0.8.6-pg18` |
 
-La base local con `pgvector/pgvector:pg17` sigue siendo el entorno de desarrollo comprometido
-(FR-007); el flujo de verificacion la usa como servicio y no depende de esta base provisoria.
+Sobre el motor: se adopta 18.6 en vez de recrear el proyecto en 17. Nada de lo que §14.1 le pide a
+la base cambia entre una version y otra —`NUMERIC` de precision arbitraria, restricciones de
+exclusion, disparadores e indice vectorial estan en las dos—, y la extension `pgvector` es la 0.8.6
+en ambas. Adoptar 18.6 mantiene una sola version entre desarrollo local, verificacion y
+demostracion, que es lo que importa: la imagen `pgvector/pgvector:0.8.6-pg18` fija exactamente el
+mismo par motor+extension que corre la base administrada.
+
+La base local con esa imagen sigue siendo el entorno de desarrollo comprometido (FR-007); el flujo
+de verificacion la usa como servicio y no depende de la base administrada.
 
 ## 3. Ley 25.326 (§5.5.4)
 

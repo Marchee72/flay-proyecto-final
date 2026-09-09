@@ -25,7 +25,7 @@
 **Purpose**: Estructura, DB, env, lint, tests y scripts — BLOQUEA todas las historias
 
 - [x] T005 Crear carpetas por capa `src/app, src/aplicacion, src/dominio, src/dominio/contratos, src/infraestructura, src/compartido, prisma/migrations, pruebas/dominio, pruebas/integracion, pruebas/e2e, pruebas/fixtures-negativas, reglas-eslint` (FR-006)
-- [ ] T006 Levantar DB local idempotente `flay-db` (`pgvector/pgvector:pg17`) con guarda de existencia (FR-007, M-06) — BLOQUEADA por red: la CDN de Docker se resetea desde el host (ver acta §2.2). La etapa corre contra Neon; CI usa la imagen como servicio
+- [ ] T006 Levantar DB local idempotente `flay-db` (`pgvector/pgvector:0.8.6-pg18`) con guarda de existencia (FR-007, M-06) — BLOQUEADA por red: la CDN de Docker se resetea desde el host (ver acta §2.2). La etapa corre contra Neon; CI usa la imagen como servicio
 - [x] T007 Crear `.gitignore` idempotente + `.env.example` (con `SHADOW_DATABASE_URL`, I-01) + `.env` solo si no existe + `npx auth secret` nunca versionado (FR-008, M-06)
 - [x] T008 Definir `prisma/schema.prisma` + migración `inicial`: `vector`, `btree_gist`, `pgcrypto`, `BitacoraAuditoria` + `fn_auditar()` `SECURITY DEFINER` + `REVOKE ... FROM flay_app` con roles `flay_owner`/`flay_app` (FR-009, FR-010, I-02) — aplicada sobre Neon; `db:drift` sin diferencias
 - [x] T009 [P] Configurar ESLint: zonas por capa + zona anti-proveedor en dominio + `flay/sin-aritmetica-monetaria` con tipos + `no-restricted-imports` cliente crudo (FR-012, I-04)

@@ -13,7 +13,7 @@ demo, bitácora inviolable, aislamiento en un punto, 4 fixtures negativas, arnes
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.6 sobre Next.js 15.3.4, Node.js 22.17.0 LTS + npm 10.9.0 (`engines` + `.nvmrc` + `setup-node`)
+**Language/Version**: TypeScript 5.6 sobre Next.js 15.3.4, Node.js 22.21.0 LTS + npm 11.12.1 (`engines` + `.nvmrc` + `setup-node`)
 
 **Primary Dependencies**: Prisma 6.7.0, Zod 3.24.2, Auth.js 5.0.0 (`next-auth`), `@node-rs/argon2` 2.0.2, `decimal.js` 10.4.3 (vía `Prisma.Decimal`), `@react-pdf/renderer` 4.1.3, Recharts 2.15.0
 

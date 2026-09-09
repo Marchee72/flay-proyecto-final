@@ -92,12 +92,12 @@ cálculo económico a costo bajo. El punto débil del lenguaje se compensa con l
 ### Bibliotecas y herramientas adoptadas
 
 *Selección comprometida. Versiones fijadas en el acta del Paso 0 (2026-09-09); FR-023 de
-`001-andamiaje` las verifica contra `package-lock.json`. Runtime: Node.js 22.17.0 LTS + npm 10.9.0
+`001-andamiaje` las verifica contra `package-lock.json`. Runtime: Node.js 22.21.0 LTS + npm 11.12.1
 (`engines` + `.nvmrc`). Generador: `create-next-app@15.3.4`.*
 
 | Componente | Herramienta | Versión | Licencia | Justificación |
 |---|---|---|---|---|
-| Entorno de ejecución y renderizado | Next.js sobre Node.js | Next 15.3.4 / Node 22.17.0 | MIT | Interfaz y lógica de servidor en un mismo proyecto mediante acciones de servidor y manejadores de ruta, conforme al punto 4.2. Portable a cualquier alojamiento con Node.js, lo que acota la dependencia de una plataforma |
+| Entorno de ejecución y renderizado | Next.js sobre Node.js | Next 15.3.4 / Node 22.21.0 | MIT | Interfaz y lógica de servidor en un mismo proyecto mediante acciones de servidor y manejadores de ruta, conforme al punto 4.2. Portable a cualquier alojamiento con Node.js, lo que acota la dependencia de una plataforma |
 | Base de datos | PostgreSQL administrado, con extensión `pgvector` | PG 17.4 + pgvector 0.8.0 (`pgvector/pgvector:pg17`) | PostgreSQL License | `NUMERIC` de precisión arbitraria para C3, restricciones de exclusión para RN-09 y RN-10, disparadores para RN-15 e índice vectorial para RF-20, en un único motor |
 | Mapeador objeto-relacional | Prisma | 6.7.0 | Apache-2.0 | Esquema tipado y migraciones versionadas (C6, punto 8.3.5). Su tipo `Decimal` es el vehículo de la medida 1 de contención |
 | Validación de esquemas | Zod | 3.24.2 | MIT | Compensa el borrado de tipos en ejecución (C2): valida todo dato que cruza el límite de confianza |

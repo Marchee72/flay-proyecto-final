@@ -13,9 +13,13 @@ export const ROLES_DE_CARGA: readonly Rol[] = ['administrador']
 export const ROLES_NOMINA: readonly Rol[] = ['administrador', 'consejo']
 
 /**
- * El cuarto rol, de **cartera**, no vive en este enum: no es un rol *sobre un
- * consorcio*, sino por encima de todos (FR-007b). Lo lleva `HabilitacionCartera`
- * y su existencia vigente es el rol. Ponerlo aca obligaria a que
- * `Habilitacion.consorcio_id` admitiera nulo, que es justo el agujero que el
- * Principio I no puede tener.
+ * Los roles de plataforma y de empresa **no viven en este enum**: no son roles
+ * *sobre un consorcio*, sino por encima (FR-007). Los llevan
+ * `HabilitacionPlataforma` y `HabilitacionAdministradora`, y su existencia
+ * vigente es el rol. Ponerlos aca obligaria a que `Habilitacion.consorcio_id`
+ * admitiera nulo, que es justo el agujero que el Principio I no puede tener.
+ *
+ * `consejo` **se suma** a `consorcista` en vez de reemplazarlo: la clave unica
+ * es (usuario, consorcio, rol), asi que una persona puede tener las dos
+ * habilitaciones, cada una con su vigencia.
  */

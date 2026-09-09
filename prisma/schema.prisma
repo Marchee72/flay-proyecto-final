@@ -41,13 +41,32 @@ enum Operacion {
 /// Un edificio de propiedad horizontal. Raiz del aislamiento: casi toda entidad
 /// cuelga de el (regla RN-12 § 7.2).
 model Consorcio {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  administradoraId String   @map("administradora_id") @db.Uuid
+  nombre           String   @db.Text
+  direccion        String   @db.Text
+  localidad        String   @db.Text
+  cuit             String   @unique @db.Text
+  creadoEn         DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn    DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  administradora Administradora @relation(fields: [administradoraId], references: [id])
+
+  @@index([administradoraId])
+}
+
+/// Empresa que administra una cartera de consorcios. Segundo eje del
+/// aislamiento: el punto 9 lo compromete en el factor 13 y el punto 7 no lo
+/// tenia (ver correcciones-documentales.md).
+model Administradora {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nombre        String   @db.Text
-  direccion     String   @db.Text
-  localidad     String   @db.Text
+  razonSocial   String   @map("razon_social") @db.Text
   cuit          String   @unique @db.Text
   creadoEn      DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcios     Consorcio[]
+  habilitaciones HabilitacionAdministradora[]
 }
 
 /// Efecto externo que fallo y hay que reintentar: correo o confirmacion de
@@ -105,9 +124,10 @@ model Usuario {
   creadoEn        DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn   DateTime      @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  persona             Persona               @relation(fields: [personaId], references: [id])
-  habilitaciones      Habilitacion[]
-  HabilitacionCartera HabilitacionCartera[]
+  persona                      Persona                      @relation(fields: [personaId], references: [id])
+  habilitaciones               Habilitacion[]
+  habilitacionesPlataforma     HabilitacionPlataforma[]
+  habilitacionesAdministradora HabilitacionAdministradora[]
 }
 
 /// Cada intento, exitoso o no, con su origen. Cinco fallos seguidos bloquean
@@ -136,6 +156,7 @@ model Habilitacion {
 
   usuario Usuario @relation(fields: [usuarioId], references: [id])
 
+  @@unique([usuarioId, consorcioId, rol])
   @@index([usuarioId, consorcioId])
 }
 
@@ -151,14 +172,14 @@ enum Rol {
   consorcista
 }
 
-/// Habilitacion de cartera: el cuarto rol, por encima de los tres del punto 12.
-/// Es quien da de alta consorcios, que no se puede autorizar por par (rol,
-/// consorcio) porque todavia no hay consorcio.
+/// Super administrador de la plataforma: configuracion general, alta de
+/// administradoras y de consorcios (FR-007b). No se puede autorizar por par
+/// (rol, consorcio) porque al crear el primero no hay ninguno.
 ///
 /// Va en tabla propia y no como `consorcio_id` nulo en `Habilitacion`: un nulo
 /// en la tabla que materializa el Principio I es la clase de agujero que
 /// despues filtra datos.
-model HabilitacionCartera {
+model HabilitacionPlataforma {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   usuarioId     String    @map("usuario_id") @db.Uuid
   vigenciaDesde DateTime  @map("vigencia_desde") @db.Date
@@ -169,4 +190,22 @@ model HabilitacionCartera {
   usuario Usuario @relation(fields: [usuarioId], references: [id])
 
   @@index([usuarioId])
+}
+
+/// Habilitacion sobre toda la cartera de una administradora (FR-007). Su
+/// existencia vigente es el rol: da administrador efectivo sobre cada consorcio
+/// de esa empresa, y sobre ninguno de otra.
+model HabilitacionAdministradora {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuarioId        String    @map("usuario_id") @db.Uuid
+  administradoraId String    @map("administradora_id") @db.Uuid
+  vigenciaDesde    DateTime  @map("vigencia_desde") @db.Date
+  vigenciaHasta    DateTime? @map("vigencia_hasta") @db.Date
+  creadoEn         DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn    DateTime  @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  usuario        Usuario        @relation(fields: [usuarioId], references: [id])
+  administradora Administradora @relation(fields: [administradoraId], references: [id])
+
+  @@unique([usuarioId, administradoraId])
 }

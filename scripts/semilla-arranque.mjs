@@ -34,12 +34,12 @@ try {
     process.exit(0)
   }
 
-  // El administrador de arranque es **de cartera**: el cuarto rol, el que da de
-  // alta consorcios. No se le inventa un consorcio de mentira; crea el primero
-  // desde la aplicacion (FR-007b).
+  // El administrador de arranque es el **super administrador de plataforma**:
+  // el que da de alta administradoras y consorcios. No se le inventa una
+  // empresa ni un consorcio de mentira; los crea desde la aplicacion (FR-007b).
   await prisma.$transaction(async (tx) => {
     const persona = await tx.persona.create({
-      data: { nombre: 'Administrador', apellido: 'de cartera', correo },
+      data: { nombre: 'Administrador', apellido: 'de plataforma', correo },
     })
 
     const usuario = await tx.usuario.create({
@@ -51,12 +51,12 @@ try {
       },
     })
 
-    await tx.habilitacionCartera.create({
+    await tx.habilitacionPlataforma.create({
       data: { usuarioId: usuario.id, vigenciaDesde: new Date() },
     })
   })
 
-  console.log(`Administrador de cartera ${correo} creado. Ya puede dar de alta consorcios.`)
+  console.log(`Super administrador ${correo} creado. Ya puede dar de alta administradoras.`)
   console.log('Rotá la clave de la semilla apenas entres por primera vez.')
 } finally {
   await prisma.$disconnect()

@@ -10,6 +10,7 @@ import { argon2id } from '@/infraestructura/contrasenas/argon2'
 import { prismaBase } from '@/infraestructura/prisma'
 
 import { relojFijo } from '../dominio/reloj-fijo'
+import { crearAdministradora, crearConsorcio, limpiar } from './ayudas'
 
 /**
  * FR-001b y FR-001c: Argon2id protege la base robada; el bloqueo protege el
@@ -37,13 +38,7 @@ beforeEach(async () => {
   usuarioId = usuario.id
 })
 
-afterEach(async () => {
-  await prismaBase.intentoInicioSesion.deleteMany({})
-  await prismaBase.habilitacion.deleteMany({})
-  await prismaBase.usuario.deleteMany({})
-  await prismaBase.persona.deleteMany({})
-  await prismaBase.consorcio.deleteMany({})
-})
+afterEach(limpiar)
 
 const intentar = (contrasena: string) =>
   iniciarSesion(argon2id, RELOJ, { correo, contrasena, origen: '203.0.113.7' })
@@ -116,14 +111,7 @@ describe('inicio de sesion', () => {
 
 describe('invitacion', () => {
   it('crea persona, usuario invitado y habilitacion, y encola el correo sin enviarlo', async () => {
-    const consorcio = await prismaBase.consorcio.create({
-      data: {
-        nombre: 'Mitre 456',
-        direccion: 'Mitre 456',
-        localidad: 'Rosario',
-        cuit: `C-${crypto.randomUUID()}`,
-      },
-    })
+    const consorcio = await crearConsorcio((await crearAdministradora()).id, 'Mitre 456')
 
     const { usuarioId: invitado } = await invitarPersona(RELOJ, {
       nombre: 'Franco',
@@ -150,14 +138,7 @@ describe('invitacion', () => {
   })
 
   it('la credencial no se guarda en claro: en la base queda solo su resumen', async () => {
-    const consorcio = await prismaBase.consorcio.create({
-      data: {
-        nombre: 'San Luis 900',
-        direccion: 'San Luis 900',
-        localidad: 'Rosario',
-        cuit: `D-${crypto.randomUUID()}`,
-      },
-    })
+    const consorcio = await crearConsorcio((await crearAdministradora()).id, 'San Luis 900')
 
     const { usuarioId: invitado } = await invitarPersona(RELOJ, {
       nombre: 'Lucia',

@@ -37,6 +37,23 @@ Las transitivas `postcss` 8.5.28 y `sharp` 0.35.4 se fuerzan con `overrides` en 
 Con esas cuatro correcciones y los dos `overrides`, `npm audit --audit-level=high` cierra en cero
 (SC-008). El generador se mantiene en `create-next-app@15.3.4`: es el andamio ya trasladado.
 
+### 2.2 Base de trabajo provisoria (2026-09-09)
+
+La estacion de trabajo no puede descargar imagenes de contenedor: la conexion a la red de entrega
+de Docker se reinicia desde el propio host, fuera de Docker, mientras otras descargas grandes andan
+normalmente. Bloqueo de red del proveedor de internet o de la proteccion local, no configuracion.
+
+Para no detener la etapa, `001-andamiaje` se construyo contra una base **Neon** existente. Dos
+desviaciones respecto de §1, que quedan abiertas:
+
+| Punto | Ratificado | En uso | Estado |
+|---|---|---|---|
+| Region | `aws-sa-east-1` (San Pablo) | `us-east-2` (Ohio) | A corregir antes de la demostracion: §5.5.4 fija la region por proximidad y por las clausulas de Ley 25.326 |
+| Version del motor | PostgreSQL 17.4 | PostgreSQL 18.6 | A decidir: fijar 17 al crear el proyecto definitivo, o actualizar §14.1 |
+
+La base local con `pgvector/pgvector:pg17` sigue siendo el entorno de desarrollo comprometido
+(FR-007); el flujo de verificacion la usa como servicio y no depende de esta base provisoria.
+
 ## 3. Ley 25.326 (§5.5.4)
 
 Datos personales bajo Ley 25.326. Región San Pablo (próxima a Rosario); tratamiento por

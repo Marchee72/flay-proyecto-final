@@ -5,7 +5,8 @@ import { defineConfig, devices } from '@playwright/test'
  * una opinion (FR-015, condicion 4 de §8.3.4). El proyecto `a11y` corre axe
  * sobre las mismas pantallas y exige 0 infracciones A/AA (I-09, RNF-11).
  */
-const URL_BASE = process.env.URL_BASE ?? 'http://localhost:3000'
+const PUERTO = process.env.PUERTO ?? '3000'
+const URL_BASE = process.env.URL_BASE ?? `http://localhost:${PUERTO}`
 
 export default defineConfig({
   testDir: 'pruebas/e2e',
@@ -15,7 +16,7 @@ export default defineConfig({
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : [['list']],
   use: { baseURL: URL_BASE, trace: 'on-first-retry' },
   webServer: {
-    command: 'npm run start',
+    command: `npm run start -- --port ${PUERTO}`,
     url: `${URL_BASE}/api/salud`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

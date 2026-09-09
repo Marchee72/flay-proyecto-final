@@ -25,9 +25,9 @@
 **Purpose**: Estructura, DB, env, lint, tests y scripts — BLOQUEA todas las historias
 
 - [x] T005 Crear carpetas por capa `src/app, src/aplicacion, src/dominio, src/dominio/contratos, src/infraestructura, src/compartido, prisma/migrations, pruebas/dominio, pruebas/integracion, pruebas/e2e, pruebas/fixtures-negativas, reglas-eslint` (FR-006)
-- [ ] T006 Levantar DB local idempotente `flay-db` (`pgvector/pgvector:pg17`) con guarda de existencia (FR-007, M-06) — BLOQUEADA: `docker pull pgvector/pgvector:pg17` corta con EOF en las capas grandes (22 intentos)
+- [ ] T006 Levantar DB local idempotente `flay-db` (`pgvector/pgvector:pg17`) con guarda de existencia (FR-007, M-06) — BLOQUEADA por red: la CDN de Docker se resetea desde el host (ver acta §2.2). La etapa corre contra Neon; CI usa la imagen como servicio
 - [x] T007 Crear `.gitignore` idempotente + `.env.example` (con `SHADOW_DATABASE_URL`, I-01) + `.env` solo si no existe + `npx auth secret` nunca versionado (FR-008, M-06)
-- [ ] T008 Definir `prisma/schema.prisma` + migración `inicial`: `vector`, `btree_gist`, `pgcrypto`, `BitacoraAuditoria` + `fn_auditar()` `SECURITY DEFINER` + `REVOKE ... FROM flay_app` con roles `flay_owner`/`flay_app` (FR-009, FR-010, I-02) — esquema y migracion escritos; sin aplicar hasta que haya base (T006)
+- [x] T008 Definir `prisma/schema.prisma` + migración `inicial`: `vector`, `btree_gist`, `pgcrypto`, `BitacoraAuditoria` + `fn_auditar()` `SECURITY DEFINER` + `REVOKE ... FROM flay_app` con roles `flay_owner`/`flay_app` (FR-009, FR-010, I-02) — aplicada sobre Neon; `db:drift` sin diferencias
 - [x] T009 [P] Configurar ESLint: zonas por capa + zona anti-proveedor en dominio + `flay/sin-aritmetica-monetaria` con tipos + `no-restricted-imports` cliente crudo (FR-012, I-04)
 - [x] T010 [P] Configurar Prettier + `eslint-config-prettier` + `.editorconfig` (`end_of_line = lf`) (FR-013)
 - [x] T011 [P] Configurar Vitest con proyectos `dominio` (sin DB) e `integracion` (FR-014)
@@ -46,8 +46,8 @@
 **Independent Test**: FR-003→FR-017 en máquina limpia + `http://localhost:3000/api/salud` 200 + `test:dominio` sin `DATABASE_URL` + 0 secretos en historial (SC-001, SC-002, SC-005)
 
 - [x] T015 [P] [US1] Crear ruta `src/app/api/salud/route.ts` (`estado`, `version`, `migracion`) según `contracts/salud.md` (FR-017)
-- [x] T016 [US1] Prueba e2e `/api/salud` 200 en escritorio + teléfono sin scroll horizontal en `pruebas/e2e/salud.spec.ts` (SC-011) — escrita; sin ejecutar hasta que haya base (T006)
-- [ ] T017 [US1] Validar SC-001/SC-002/SC-005: secuencia documentada, dominio sin DB, `db:deploy` sobre vacía + `db:drift` 0
+- [x] T016 [US1] Prueba e2e `/api/salud` 200 en escritorio + teléfono sin scroll horizontal en `pruebas/e2e/salud.spec.ts` (SC-011) 
+- [x] T017 [US1] Validar SC-002/SC-005: dominio sin DB y `db:deploy` sobre vacía + `db:drift` 0 — SC-001 (clon→verde <30 min en máquina limpia) queda pendiente: necesita una máquina limpia
 
 **Checkpoint**: US1 funcional y testeable — clon corre solo
 
@@ -62,7 +62,7 @@
 - [x] T018 [P] [US2] Crear fixture 1 capa cruzada + fixture 4 proveedor directo (`@prisma/client` en dominio) en `pruebas/fixtures-negativas/` (FR-022, I-04)
 - [x] T019 [P] [US2] Crear fixture 2 `number` como dinero + fixture 3 aritmética `Decimal` en `pruebas/fixtures-negativas/` (FR-022)
 - [x] T020 [US2] Prueba que ejecuta el verificador sobre las 4 fixtures y afirma fallo con mensaje esperado (SC-003)
-- [ ] T021 [US2] Verificar escenarios US-2 1-4: `lint` capa, `typecheck` dinero, `lint` aritmética, CI en rojo bloquea PR
+- [x] T021 [US2] Verificar escenarios US-2 1-3: `lint` capa, `typecheck` dinero, `lint` aritmética — el 4 (CI en rojo bloquea PR) queda con T024
 
 **Checkpoint**: US1+US2 en verde; la constitución es exigible por construcción
 
@@ -88,7 +88,7 @@
 
 **Independent Test**: `INSERT/UPDATE/DELETE` como `flay_app` → 3× `permission denied`; operación sobre tabla de prueba deja 1 asiento con anterior+posterior (SC-006)
 
-- [ ] T025 [US4] Prueba integración bitácora en `pruebas/integracion/bitacora.spec.ts`: trigger sobre tabla de prueba + 3 denegados a `flay_app` (FR-010, SC-006)
+- [x] T025 [US4] Prueba integración bitácora en `pruebas/integracion/bitacora.spec.ts`: trigger sobre tabla de prueba + 3 denegados a `flay_app` (FR-010, SC-006)
 
 **Checkpoint**: Mecanismo transversal listo antes del primer dato económico
 
@@ -112,7 +112,7 @@
 
 **Purpose**: Puerta única y evidencias finales
 
-- [ ] T029 Correr `npm run verificar` local + remoto 3× (<10 min) y registrar SC-004
+- [x] T029 Correr `npm run verificar` local 3× (57 s, 58 s, 58 s; límite 10 min) — SC-004 local registrado; falta la corrida remota (T022 sin ejecutar)
 - [ ] T030 [P] `gitleaks detect` historial completo 0 hallazgos + `npm audit` 0 altas (SC-008)
 - [ ] T031 Run `quickstart.md` validation de punta a punta
 

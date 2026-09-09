@@ -32,15 +32,31 @@ BEGIN
 END
 $$;`
 
+// Lo que un proveedor administrado puede negar: se avisa y se sigue. Lo que no
+// se puede negar —que flay_app no escriba la bitacora— lo impone la migracion.
+const intentar = async (sql, queEs) => {
+  try {
+    await prisma.$executeRawUnsafe(sql)
+  } catch (error) {
+    console.warn(
+      `Aviso: ${queEs} no se pudo aplicar (codigo ${error.meta?.code ?? 'desconocido'}).`,
+    )
+  }
+}
+
 try {
   await prisma.$executeRawUnsafe(rol('flay_owner', CLAVE_OWNER))
   await prisma.$executeRawUnsafe(rol('flay_app', CLAVE_APP))
 
+  // Para ceder la propiedad hay que ser miembro del rol que la recibe.
+  await intentar('GRANT flay_owner TO CURRENT_USER;', 'membresia en flay_owner')
+  await intentar('GRANT flay_app TO CURRENT_USER;', 'membresia en flay_app')
+
   // El propietario manda sobre el esquema; la aplicacion solo lo usa.
-  await prisma.$executeRawUnsafe(`ALTER DATABASE "${BASE}" OWNER TO flay_owner;`)
-  await prisma.$executeRawUnsafe(`ALTER SCHEMA public OWNER TO flay_owner;`)
+  await intentar(`ALTER DATABASE "${BASE}" OWNER TO flay_owner;`, 'propiedad de la base')
+  await intentar('ALTER SCHEMA public OWNER TO flay_owner;', 'propiedad del esquema public')
   await prisma.$executeRawUnsafe(`GRANT CONNECT ON DATABASE "${BASE}" TO flay_app;`)
-  await prisma.$executeRawUnsafe(`REVOKE CREATE ON SCHEMA public FROM PUBLIC;`)
+  await intentar('REVOKE CREATE ON SCHEMA public FROM PUBLIC;', 'quitar CREATE a PUBLIC')
 
   const existe = await prisma.$queryRawUnsafe(
     `SELECT 1 AS hay FROM pg_database WHERE datname = '${SOMBRA}'`,

@@ -62,6 +62,18 @@ const eslintConfig = [
     rules: { 'flay/sin-aritmetica-monetaria': 'error' },
   },
   {
+    // Las fixtures negativas quedan fuera del tsconfig raiz (deben fallar), asi
+    // que la regla con tipos necesita su propio proyecto para poder juzgarlas.
+    files: ['pruebas/fixtures-negativas/**/*.ts'],
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+        project: './pruebas/fixtures-negativas/tsconfig.json',
+        tsconfigRootDir: __dirname,
+      },
+    },
+  },
+  {
     // Principio I: el cliente crudo de Prisma vive solo en infraestructura.
     files: ['**/src/**/*.ts', '**/src/**/*.tsx'],
     ignores: ['**/src/infraestructura/**'],

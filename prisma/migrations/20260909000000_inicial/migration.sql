@@ -32,7 +32,7 @@ CREATE TABLE "BitacoraAuditoria" (
     "anterior" JSONB,
     "posterior" JSONB,
     "creado_en" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "actualizado_en" TIMESTAMPTZ(6) NOT NULL,
+    "actualizado_en" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "BitacoraAuditoria_pkey" PRIMARY KEY ("id")
 );
@@ -89,6 +89,17 @@ $$;
 GRANT USAGE ON SCHEMA public TO flay_app;
 GRANT SELECT ON "BitacoraAuditoria" TO flay_app;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON "BitacoraAuditoria" FROM flay_app;
+
+-- El registro de migraciones lo crea Prisma antes de esta migracion, asi que
+-- queda fuera de los privilegios por defecto de mas abajo. /api/salud lo lee
+-- como flay_app para poder informar que migracion esta aplicada (FR-017).
+DO $$
+BEGIN
+  IF to_regclass('public._prisma_migrations') IS NOT NULL THEN
+    EXECUTE 'GRANT SELECT ON "_prisma_migrations" TO flay_app';
+  END IF;
+END
+$$;
 
 -- Las tablas de negocio futuras nacen con DML para flay_app y sin DDL.
 ALTER DEFAULT PRIVILEGES IN SCHEMA public

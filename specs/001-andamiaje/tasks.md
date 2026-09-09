@@ -75,7 +75,7 @@
 **Independent Test**: Cambiar `version` de `/api/salud`, integrar y verlo en demo sin acción manual (SC-007)
 
 - [x] T022 [US3] Crear `.github/workflows/verificacion.yml` (servicio pgvector + `SHADOW_DATABASE_URL`, `npm ci` + `verificar` <10 min) (FR-018, I-01) — incluye `setup-node` con `.nvmrc` (cierra T002), `db:preparar`, `test:a11y`, gitleaks y `npm audit`; corrida 34351015763 en verde
-- [x] T023 [US3] Crear flujo despliegue: verde → `db:deploy` demo + publicar; secretos desde proveedor; migrar-antes-de-servir; migración fallida bloquea + alerta (FR-019, M-09) — escrito en `.github/workflows/despliegue.yml`; falta conectar el proyecto de Vercel y cargar los secretos
+- [x] T023 [US3] Crear flujo despliegue: verde → `db:deploy` demo + publicar; secretos desde proveedor; migrar-antes-de-servir; migración fallida bloquea + alerta (FR-019, M-09) — escrito en `.github/workflows/despliegue.yml`; falta conectar el proyecto de Vercel, cargar los secretos y poner `DESPLIEGUE_DEMO=true`
 - [x] T024 [US3] Proteger `main`: sin push directo, PR + revisión del otro + verde (FR-020, SC-012) — repositorio hecho público (acta §2.3); 1 revisión aprobada, `verificar` requerido y estricto, alcanza a administradores, sin force push ni borrado; envío directo a `main` rechazado por GH006
 
 **Checkpoint**: US3 desplegando solo; condición 6 de §8.3.4 garantizada

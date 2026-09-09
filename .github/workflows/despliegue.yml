@@ -17,7 +17,12 @@ env:
 jobs:
   demo:
     # Verde o no hay despliegue: con la verificacion en rojo, 0 despliegues.
-    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
+    # La variable DESPLIEGUE_DEMO se pone en 'true' al conectar el proyecto de
+    # Vercel y cargar los secretos; hasta entonces no hay adonde publicar.
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      vars.DESPLIEGUE_DEMO == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -77,7 +82,7 @@ jobs:
   produccion:
     # Produccion se despliega desde etiqueta, con aprobacion manual configurada
     # en el entorno `produccion` del repositorio (§8.3.5).
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') && vars.DESPLIEGUE_PRODUCCION == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:

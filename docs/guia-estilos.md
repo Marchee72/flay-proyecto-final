@@ -31,7 +31,9 @@
 
 ### 3.1 Tipografía
 - Poppins en todo (titulares, navegación, tablas, formularios, textos), salvo las cifras, que van
-  en Inter tabular (Google Fonts con fallback a Inter). Titulares 20/24, cuerpo 14/16, ayuda 12/13.
+  en Inter tabular (Google Fonts, ambas familias cargadas). Escala fija, verificada en
+  `guia-estilos-ejemplo.html`: ayuda 12, menor 13, cuerpo 15, títulos 18 / 22 / 28. Las cifras
+  llevan la clase `cifra`: sin ella, las columnas de dinero no alinean coma con coma.
 - Regla dura de contraste: **nunca texto claro sobre fondo claro ni texto oscuro sobre fondo
   oscuro** (mínimo 4.5:1, AA). Secundario sobre blanco: `#4A5158`. Sobre grafito: `#E8EAED`
   con opacidad mínima 75 %.
@@ -46,6 +48,11 @@
   ámbar `#B7791F`, peligro rojo `#B3261E`. Banners con texto oscuro: ámbar pálido `#FDF3D7`
   con borde `#8A5F14`, rojo pálido `#FDECEA` con borde `#8F1D16`, barra lateral de 4px.
 - El color nunca es la única señal: siempre hay texto que lo acompaña.
+- Fondos pálidos de etiqueta: verde `#F1F8F1`, ámbar `#FDF3D7`, rojo `#FDECEA`, gris `#ECEFEC`.
+  El verde se aclaró respecto del pálido natural porque con `#2E7D32` a 12 px daba 4,45:1 y AA
+  pide 4,5:1; así queda en 4,75:1.
+- Borde de control de formulario `#767E76`, no `#C9CFC9`: WCAG 1.4.11 pide 3:1 para el contorno de
+  un control y el borde general da 1,58:1. El resto de los bordes sí usa `#C9CFC9` / `#E2E6EA`.
 - Escala de urgencias estándar en toda la app (color + icono Lucide + palabra): **URGENTE** rojo
   `#B3261E` + `siren` (agua, gas, electricidad, seguridad · 72 h), **ALTA** ámbar `#8A5F14` +
   `triangle-alert` (bloquea el uso · 7 días), **ORDINARIA** grafito `#4A5158` + `circle`
@@ -84,9 +91,19 @@
 
 ## 5. Accesibilidad y dispositivos (RNF-01, RNF-11)
 
-- Foco visible, orden lógico, todo operable por teclado; imágenes con alternativo.
+- Foco visible con contorno de 3 px (`#2E7D32`; sobre grafito, `#9CCC65`) y 2 px de separación:
+  se define una vez y nunca se quita. Orden lógico, todo operable por teclado; imágenes con
+  alternativo. Lo que parece accionable es un `a` o un `button` de verdad: nada de texto subrayado
+  que simule un enlace, porque no recibe foco y no existe para un lector de pantalla.
+- Ninguna página desplaza en horizontal. Lo que no entra —una tabla financiera— se desplaza dentro
+  de su propio contenedor, alcanzable por teclado (`tabindex="0"` con `role="region"` y nombre).
+  En una retícula, el hijo lleva `min-width: 0` o el contenido la estira y desborda igual.
+- El menú de teléfono es `details`/`summary` nativo: sin guion, operable por teclado desde el día 1.
+  Esconder la navegación sin reemplazarla la deja inalcanzable.
 - `test:a11y` (axe) con 0 infracciones A/AA en pantallas del consorcista; Playwright 390×844
-  sin desplazamiento horizontal en cada entrega.
+  sin desplazamiento horizontal en cada entrega. La propia guía está cubierta:
+  `pruebas/e2e/guia-estilos.spec.ts` y `guia-estilos.a11y.spec.ts` verifican desborde, navegación en
+  teléfono, enlaces reales y foco.
 
 ## 6. Rendimiento percibido (RNF-06, RNF-07)
 

@@ -5,61 +5,589 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Flay — Ejemplo de estilo (grafito y lima)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--side:#23272E;--lime:#7CB342;--lime-hi:#9CCC65;--green:#2E7D32;--amber-bd:#8A5F14;--amber-bg:#FDF3D7;--red:#B3261E;--red-bg:#FDECEA;--red-bd:#8F1D16;--bg:#F4F6F4;--card:#fff;--ink:#1A1D21;--muted:#4A5158;--line:#C9CFC9;--r:8px}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,-apple-system,"Segoe UI",Roboto,sans-serif}
-h2,h3{font-family:Poppins,Inter,-apple-system,"Segoe UI",sans-serif}
-.top{background:var(--side);color:#E8EAED;padding:12px 20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-.top .brand{font-weight:700;font-size:17px}.top .cons{margin-left:auto;font-size:13px;color:#C9CFC9;border:1px solid #4A5158;border-radius:8px;padding:6px 10px}
-.wrap{max-width:1200px;margin:0 auto;padding:20px}
-.layout{display:grid;grid-template-columns:210px 1fr;gap:20px}@media(max-width:760px){.layout{grid-template-columns:1fr}.nav{display:none}}
-.nav{background:var(--side);color:#E8EAED;border-radius:10px;padding:14px;font-size:14px}
-.nav a{display:block;padding:8px;border-radius:6px;color:#E8EAED;text-decoration:none}.nav a.on{font-weight:700;color:var(--lime-hi)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:14px 0}
-.kpi{background:var(--side);border-radius:10px;padding:12px 14px;display:flex;gap:12px;align-items:center}
-.kpi .ic{width:40px;height:40px;border-radius:8px;background:var(--lime-hi);color:var(--side);font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
-.kpi h3{margin:0;font-size:10px;letter-spacing:.06em;color:var(--lime-hi);font-weight:600;font-family:Inter,sans-serif}
-.kpi .num{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:#fff;font-family:Inter,sans-serif}
-.kpi .d{font-size:12px;color:#E8EAED}
-.banner{border-radius:8px;padding:10px 14px;font-size:14px;color:var(--ink);margin:10px 0}
-.banner.amber{background:var(--amber-bg);border:1px solid var(--amber-bd);border-left:4px solid var(--amber-bd)}
-.banner.red{background:var(--red-bg);border:1px solid var(--red-bd);border-left:4px solid var(--red)}
-.banner u{color:var(--ink)}
-.btn{display:inline-block;border-radius:99px;padding:11px 20px;font-weight:700;border:1px solid transparent;cursor:pointer;font-size:14px}
-.primary{background:var(--lime);color:var(--side)}.ghost{background:#fff;border:2px solid var(--side);color:var(--side)}.danger{background:#fff;border:2px solid var(--red);color:var(--red)}
-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-th,td{text-align:left;padding:12px;border-bottom:1px solid var(--line);font-size:14px;color:var(--ink)}
-th{background:#ECEFEC;color:var(--muted);font-size:12px}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
-.tag{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;border:1px solid var(--muted);background:#ECEFEC;color:var(--ink)}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
-label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}input{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:14px;color:var(--ink)}
-.help{font-size:12px;color:var(--muted)}.err{font-size:13px;color:var(--red);font-weight:600}
-.empty{border:1px dashed var(--line);border-radius:10px;padding:24px;text-align:center;color:var(--muted);background:#fff}
-small.m{color:var(--muted)}
+/* ------------------------------------------------------------------ *
+ * Tokens. Unica fuente de valores: ninguna regla de abajo escribe un
+ * color o un espacio a mano. Corresponden a docs/guia-estilos.md §3.
+ * ------------------------------------------------------------------ */
+:root {
+  /* Superficies */
+  --grafito: #23272E;
+  --fondo: #F4F6F4;
+  --superficie: #FFFFFF;
+
+  /* Texto */
+  --tinta: #1A1D21;
+  --tinta-apagada: #4A5158;
+  --tinta-clara: #E8EAED;
+
+  /* Acentos: semaforo */
+  --verde: #2E7D32;          /* al dia */
+  --lima: #7CB342;           /* enfasis, accion principal */
+  --lima-alto: #9CCC65;      /* solo sobre grafito */
+  --ambar: #8A5F14;          /* atencion */
+  --rojo: #B3261E;           /* peligro, deuda vencida */
+
+  /* Fondos palidos de aviso y etiqueta */
+  --verde-palido: #F1F8F1;  /* mas palido que el de guia: con #2E7D32 da 4,75:1 */
+  --ambar-palido: #FDF3D7;
+  --rojo-palido: #FDECEA;
+  --gris-palido: #ECEFEC;
+
+  /* Bordes: el de control cumple 3:1 sobre blanco (WCAG 1.4.11) */
+  --linea: #C9CFC9;
+  --linea-suave: #E2E6EA;
+  --linea-control: #767E76;
+
+  /* Espaciado, base 4 */
+  --e1: 4px;
+  --e2: 8px;
+  --e3: 12px;
+  --e4: 16px;
+  --e5: 24px;
+  --e6: 32px;
+
+  /* Tipografia */
+  --t-ayuda: 12px;
+  --t-menor: 13px;
+  --t-cuerpo: 15px;
+  --t-titulo3: 18px;
+  --t-titulo2: 22px;
+  --t-titulo1: 28px;
+
+  --radio: 10px;
+  --radio-chico: 8px;
+  --pastilla: 999px;
+  --toque: 44px;             /* objetivo tactil minimo */
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--tinta);
+  font: var(--t-cuerpo)/1.5 Poppins, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+h1, h2, h3 { font-weight: 600; margin: 0; }
+h1 { font-size: var(--t-titulo1); }
+h2 { font-size: var(--t-titulo2); }
+h3 { font-size: var(--t-titulo3); }
+
+/* Las cifras van en Inter tabular para que las columnas de dinero
+   alineen coma con coma (§3.1). */
+.cifra {
+  font-family: Inter, Poppins, -apple-system, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.apagado { color: var(--tinta-apagada); }
+.ayuda { font-size: var(--t-ayuda); color: var(--tinta-apagada); }
+
+a { color: var(--tinta); }
+a:hover { color: var(--verde); }
+
+/* Foco visible en todo lo operable, tambien sobre grafito (§5). */
+:focus-visible {
+  outline: 3px solid var(--verde);
+  outline-offset: 2px;
+  border-radius: var(--radio-chico);
+}
+.barra :focus-visible,
+.lateral :focus-visible { outline-color: var(--lima-alto); }
+
+.icono { width: 20px; height: 20px; flex: none; }
+
+/* ------------------------------------------------------------------ *
+ * Estructura
+ * ------------------------------------------------------------------ */
+.barra {
+  background: var(--grafito);
+  color: var(--tinta-clara);
+  padding: var(--e3) var(--e5);
+  display: flex;
+  gap: var(--e3);
+  align-items: center;
+}
+.marca { font-weight: 700; font-size: 17px; letter-spacing: .04em; }
+.consorcio {
+  margin-left: auto;
+  font-size: var(--t-menor);
+  border: 1px solid var(--tinta-apagada);
+  border-radius: var(--radio-chico);
+  padding: var(--e2) var(--e3);
+  min-height: var(--toque);
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  background: transparent;
+  color: var(--tinta-clara);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.envoltorio { max-width: 1200px; margin: 0 auto; padding: var(--e5); }
+.disposicion { display: grid; grid-template-columns: 220px 1fr; gap: var(--e5); align-items: start; }
+/* Sin esto, el contenido de la tabla estira la columna y desborda la pagina. */
+.disposicion > * { min-width: 0; }
+
+.lateral {
+  background: var(--grafito);
+  border-radius: var(--radio);
+  padding: var(--e3);
+  font-size: 14px;
+}
+.lateral a {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  min-height: var(--toque);
+  padding: 0 var(--e3);
+  border-radius: var(--radio-chico);
+  color: var(--tinta-clara);
+  text-decoration: none;
+}
+.lateral a:hover { background: #2E333B; color: var(--tinta-clara); }
+.lateral a[aria-current="page"] { font-weight: 700; color: var(--lima-alto); background: #2E333B; }
+.lateral .cuenta { margin-left: auto; font-size: var(--t-ayuda); }
+
+/* Menu de telefono: apertura nativa, sin guion (§3.4). */
+.menu { display: none; }
+.menu > summary {
+  list-style: none;
+  min-height: var(--toque);
+  min-width: var(--toque);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e2);
+  border: 1px solid var(--tinta-apagada);
+  border-radius: var(--radio-chico);
+  cursor: pointer;
+}
+.menu > summary::-webkit-details-marker { display: none; }
+.menu[open] .lateral { display: block; position: absolute; left: var(--e4); right: var(--e4); z-index: 2; }
+
+.seccion { margin-top: var(--e5); }
+.titulo-seccion { display: flex; flex-wrap: wrap; gap: var(--e3); align-items: baseline; margin-bottom: var(--e3); }
+
+/* ------------------------------------------------------------------ *
+ * Tarjetas KPI: fondo grafito, icono en pastilla lima, cifra blanca.
+ * ------------------------------------------------------------------ */
+.rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--e3); }
+
+.kpi {
+  background: var(--grafito);
+  border-radius: var(--radio);
+  padding: var(--e3) var(--e4);
+  display: flex;
+  gap: var(--e3);
+  align-items: center;
+}
+.kpi__icono {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radio-chico);
+  background: var(--lima-alto);
+  color: var(--grafito);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.kpi__rotulo {
+  font-size: 10px;
+  letter-spacing: .06em;
+  color: var(--lima-alto);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.kpi__cifra { font-size: var(--t-titulo2); font-weight: 700; color: var(--superficie); }
+.kpi__detalle { font-size: var(--t-ayuda); color: var(--tinta-clara); }
+
+/* ------------------------------------------------------------------ *
+ * Avisos: causa y accion. Texto oscuro sobre fondo palido.
+ * ------------------------------------------------------------------ */
+.aviso {
+  border-radius: var(--radio-chico);
+  padding: var(--e3) var(--e4);
+  font-size: 14px;
+  margin: var(--e3) 0;
+  display: flex;
+  gap: var(--e3);
+  align-items: flex-start;
+}
+.aviso--atencion { background: var(--ambar-palido); border: 1px solid var(--ambar); border-left-width: 4px; }
+.aviso--problema { background: var(--rojo-palido); border: 1px solid #8F1D16; border-left: 4px solid var(--rojo); }
+.aviso svg { margin-top: 2px; }
+
+/* ------------------------------------------------------------------ *
+ * Botones: pastilla, 44 px de alto, una accion principal por vista.
+ * ------------------------------------------------------------------ */
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e2);
+  min-height: var(--toque);
+  padding: 0 var(--e5);
+  border-radius: var(--pastilla);
+  font: 700 14px/1 Poppins, sans-serif;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+.boton--primario { background: var(--lima); color: var(--grafito); }
+.boton--fantasma { background: var(--superficie); border-color: var(--grafito); color: var(--grafito); }
+.boton--peligro { background: var(--superficie); border-color: var(--rojo); color: var(--rojo); }
+.boton[disabled] { opacity: .5; cursor: not-allowed; }
+
+/* ------------------------------------------------------------------ *
+ * Tablas. El envoltorio desplaza en horizontal solo la tabla, nunca la
+ * pagina (RNF-01), y es alcanzable por teclado.
+ * ------------------------------------------------------------------ */
+.tabla-desplazable {
+  overflow-x: auto;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  background: var(--superficie);
+}
+table { width: 100%; border-collapse: collapse; min-width: 560px; }
+caption { text-align: left; padding: var(--e3) var(--e4); font-size: var(--t-ayuda); color: var(--tinta-apagada); }
+th, td { text-align: left; padding: var(--e3) var(--e4); border-bottom: 1px solid var(--linea-suave); font-size: 14px; height: var(--toque); }
+thead th { background: var(--gris-palido); color: var(--tinta-apagada); font-size: var(--t-ayuda); text-transform: uppercase; letter-spacing: .04em; }
+td.numero, th.numero { text-align: right; }
+tfoot td { font-weight: 700; border-top: 2px solid var(--linea); border-bottom: none; background: var(--gris-palido); }
+
+/* Etiquetas de estado: color + palabra, nunca color solo. */
+.etiqueta {
+  display: inline-block;
+  font-size: var(--t-ayuda);
+  font-weight: 600;
+  padding: var(--e1) var(--e3);
+  border-radius: var(--pastilla);
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.etiqueta--rendido { color: var(--verde); background: var(--verde-palido); }
+.etiqueta--propietario { color: var(--ambar); background: var(--ambar-palido); }
+.etiqueta--pendiente { color: var(--tinta-apagada); background: var(--gris-palido); }
+.etiqueta--vencido { color: var(--rojo); background: var(--rojo-palido); }
+
+/* ------------------------------------------------------------------ *
+ * Tarjetas, formularios, vacios y carga
+ * ------------------------------------------------------------------ */
+.tarjeta { background: var(--superficie); border: 1px solid var(--linea-suave); border-radius: var(--radio); padding: var(--e4); }
+
+.campo { margin-top: var(--e3); max-width: 320px; }
+.campo label { display: block; font-size: var(--t-menor); font-weight: 600; margin-bottom: var(--e1); }
+.campo input {
+  width: 100%;
+  min-height: var(--toque);
+  padding: 0 var(--e3);
+  border: 1px solid var(--linea-control);
+  border-radius: var(--radio-chico);
+  font: var(--t-cuerpo) Inter, Poppins, sans-serif;
+  color: var(--tinta);
+}
+.campo input[aria-invalid="true"] { border-color: var(--rojo); border-width: 2px; }
+.error { font-size: var(--t-menor); color: var(--rojo); font-weight: 600; margin-top: var(--e1); display: flex; gap: var(--e1); align-items: center; }
+
+.vacio { border: 1px dashed var(--linea); border-radius: var(--radio); padding: var(--e6); text-align: center; background: var(--superficie); }
+.vacio svg { width: 32px; height: 32px; color: var(--tinta-apagada); }
+
+.esqueleto { height: 14px; border-radius: var(--radio-chico); background: var(--linea-suave); animation: latir 1.4s ease-in-out infinite; }
+.esqueleto + .esqueleto { margin-top: var(--e2); }
+@keyframes latir { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .esqueleto { animation: none; } }
+
+/* Escala de urgencias: color + icono + palabra, igual en toda la app. */
+.urgencia { display: inline-flex; align-items: center; gap: var(--e2); font-weight: 600; font-size: var(--t-menor); }
+.urgencia--urgente { color: var(--rojo); }
+.urgencia--alta { color: var(--ambar); }
+.urgencia--ordinaria { color: var(--tinta-apagada); }
+.urgencia--aldia { color: var(--verde); }
+
+/* Referencia de tokens */
+.muestras { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--e3); margin-top: var(--e3); }
+.muestra { border: 1px solid var(--linea-suave); border-radius: var(--radio-chico); overflow: hidden; background: var(--superficie); }
+.muestra .tono { height: 44px; }
+.muestra .pie { padding: var(--e2) var(--e3); font-size: var(--t-ayuda); }
+.muestra code { font-size: 11px; color: var(--tinta-apagada); }
+
+/* ------------------------------------------------------------------ *
+ * 390 px: una columna, menu en la barra, cero desplazamiento lateral.
+ * ------------------------------------------------------------------ */
+@media (max-width: 760px) {
+  .envoltorio { padding: var(--e4); }
+  .disposicion { grid-template-columns: 1fr; }
+  .disposicion > .lateral { display: none; }
+  .menu { display: block; }
+  .menu .lateral { margin-top: var(--e2); }
+  .consorcio { margin-left: 0; }
+  .barra { flex-wrap: wrap; }
+  h1 { font-size: var(--t-titulo2); }
+}
 </style>
 </head>
 <body>
-<div class="top"><span class="brand">FLAY</span><span class="cons">Mitre 456 · administrador</span></div>
-<div class="wrap"><div class="layout">
-<nav class="nav"><a class="on" href="#">● Liquidación</a><a href="#">Gastos</a><a href="#">Pagos</a><a href="#">Reclamos · 2</a><a href="#">Reservas</a><a href="#">Documentos</a><a href="#">Indicadores</a></nav>
-<div>
-<h2 style="margin:4px 0">Liquidación 2026-08 · abierta <small class="m">coeficientes 100,00000000 ✓</small></h2>
-<div class="banner amber"><b>Morosidad 13,2 %</b> — supera el 12 % de referencia (+3,1 pts en 2 meses). <u>Ver nómina (solo admin y consejo)</u></div>
-<div class="grid">
-<div class="kpi"><div class="ic">✓</div><div><h3>MI EXPENSA · 1A</h3><div class="num">$ 165.625,00</div><div class="d">al día · vence 10/09</div></div></div>
-<div class="kpi"><div class="ic">$</div><div><h3>TOTAL · 12 UDS</h3><div class="num">$ 1.325.000,00</div><div class="d">ord. 1.150.000 + extr. 175.000</div></div></div>
-<div class="kpi"><div class="ic">↗</div><div><h3>DESVÍO LIMPIEZA</h3><div class="num">+34 %</div><div class="d">vs. prom. 12 períodos</div></div></div>
+
+<header class="barra">
+  <span class="marca">FLAY</span>
+
+  <details class="menu">
+    <summary aria-label="Abrir menú de navegación">
+      <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 12h16"/><path d="M4 18h16"/><path d="M4 6h16"/></svg>
+    </summary>
+    <nav class="lateral" aria-label="Secciones">
+      <a href="#" aria-current="page">Liquidación</a>
+      <a href="#">Gastos</a>
+      <a href="#">Pagos</a>
+      <a href="#">Reclamos <span class="cuenta">2 abiertos</span></a>
+      <a href="#">Reservas</a>
+      <a href="#">Documentos</a>
+      <a href="#">Indicadores</a>
+      <a href="#">Notificaciones</a>
+    </nav>
+  </details>
+
+  <button class="consorcio" type="button">
+    Mitre 456 · administrador
+    <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+  </button>
+</header>
+
+<div class="envoltorio">
+<div class="disposicion">
+
+  <nav class="lateral" aria-label="Secciones">
+    <a href="#" aria-current="page">Liquidación</a>
+    <a href="#">Gastos</a>
+    <a href="#">Pagos</a>
+    <a href="#">Reclamos <span class="cuenta">2 abiertos</span></a>
+    <a href="#">Reservas</a>
+    <a href="#">Documentos</a>
+    <a href="#">Indicadores</a>
+    <a href="#">Notificaciones</a>
+  </nav>
+
+  <main>
+    <h1>Liquidación 2026-08 · abierta</h1>
+    <p class="apagado">Coeficientes <span class="cifra">100,00000000</span> % — suman exacto, la liquidación puede emitirse.</p>
+
+    <div class="aviso aviso--atencion">
+      <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+      <span><b>Morosidad <span class="cifra">13,2</span> %</b> — supera el 12 % de referencia (+3,1 puntos en dos meses). <a href="#">Ver nómina</a> (solo administrador y consejo).</span>
+    </div>
+
+    <div class="rejilla seccion">
+      <div class="kpi">
+        <div class="kpi__icono">
+          <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <div>
+          <div class="kpi__rotulo">Mi expensa · 1A</div>
+          <div class="kpi__cifra cifra">$ 165.625,00</div>
+          <div class="kpi__detalle">al día · vence 10/09</div>
+        </div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi__icono">
+          <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
+        </div>
+        <div>
+          <div class="kpi__rotulo">Total · 12 unidades</div>
+          <div class="kpi__cifra cifra">$ 1.325.000,00</div>
+          <div class="kpi__detalle">ordinarias 1.150.000 + extraordinarias 175.000</div>
+        </div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi__icono">
+          <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></svg>
+        </div>
+        <div>
+          <div class="kpi__rotulo">Desvío limpieza</div>
+          <div class="kpi__cifra cifra">+34 %</div>
+          <div class="kpi__detalle">contra el promedio de 12 períodos</div>
+        </div>
+      </div>
+    </div>
+
+    <section class="seccion">
+      <div class="titulo-seccion">
+        <h2>Gastos del período</h2>
+        <span class="apagado">2026-08 · todos los rubros</span>
+      </div>
+
+      <div class="tabla-desplazable" tabindex="0" role="region" aria-label="Gastos del período 2026-08">
+        <table>
+          <caption>Importes en pesos. Los extraordinarios no prorratean por coeficiente.</caption>
+          <thead>
+            <tr>
+              <th scope="col">Fecha</th>
+              <th scope="col">Proveedor</th>
+              <th scope="col">Rubro</th>
+              <th scope="col" class="numero">Importe</th>
+              <th scope="col">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="cifra">05/08/2026</td>
+              <td>Consorcio Personal SRL</td>
+              <td>Sueldos</td>
+              <td class="numero cifra">$ 490.000,00</td>
+              <td><span class="etiqueta etiqueta--rendido">rendido</span></td>
+            </tr>
+            <tr>
+              <td class="cifra">10/08/2026</td>
+              <td>EPE</td>
+              <td>Luz de espacios comunes</td>
+              <td class="numero cifra">$ 92.000,00</td>
+              <td><span class="etiqueta etiqueta--rendido">rendido</span></td>
+            </tr>
+            <tr>
+              <td class="cifra">22/08/2026</td>
+              <td>Ascensores Rosario SA</td>
+              <td>Mantenimiento</td>
+              <td class="numero cifra">$ 568.000,00</td>
+              <td><span class="etiqueta etiqueta--pendiente">pendiente de rendir</span></td>
+            </tr>
+            <tr>
+              <td class="cifra">28/08/2026</td>
+              <td>Tableros AEA SRL</td>
+              <td>Tableros (extraordinario)</td>
+              <td class="numero cifra">$ 175.000,00</td>
+              <td><span class="etiqueta etiqueta--propietario">a cargo del propietario</span></td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3">Total del período</td>
+              <td class="numero cifra">$ 1.325.000,00</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+
+    <div class="aviso aviso--problema">
+      <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z"/><path d="M21 12h1"/><path d="M18.5 4.5 18 5"/><path d="M2 12h1"/><path d="M12 2v1"/><path d="m4.929 4.929.707.707"/><path d="M12 12v6"/></svg>
+      <span><b>Unidad 3B: 3 períodos vencidos.</b> Deuda total <span class="cifra">$ 225.000,00</span>. <a href="#">Ver estado de cuenta</a></span>
+    </div>
+
+    <section class="seccion">
+      <h2>Diálogo de dinero</h2>
+      <p class="apagado">El importe va en grande y la confirmación es explícita: nada automático toca dinero (RN-14).</p>
+      <div class="tarjeta">
+        <h3>Anular liquidación</h3>
+        <p>Se anula la <span class="cifra">2026-08</span> por <span class="cifra">$ 1.325.000,00</span> y se emite una nueva que la referencia. Ambas quedan registradas.</p>
+
+        <div class="campo">
+          <label for="motivo">Motivo de la anulación</label>
+          <input id="motivo" name="motivo" type="text" aria-invalid="true" aria-describedby="motivo-error" value="">
+          <p class="error" id="motivo-error">
+            <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+            Falta el motivo: queda asentado en la auditoría, así que no puede estar vacío.
+          </p>
+        </div>
+
+        <p style="margin-top:24px">
+          <button class="boton boton--peligro" type="button">Confirmar anulación</button>
+          <button class="boton boton--fantasma" type="button">Cancelar</button>
+        </p>
+      </div>
+    </section>
+
+    <section class="seccion">
+      <h2>Estados de la interfaz</h2>
+
+      <h3 style="margin-top:16px">Vacío, con la acción a mano</h3>
+      <div class="vacio">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+        <p>Sin gastos cargados en 2026-09.</p>
+        <button class="boton boton--primario" type="button">Cargar gasto</button>
+      </div>
+
+      <h3 style="margin-top:24px">Cargando: esqueleto, nunca pantalla en blanco</h3>
+      <div class="tarjeta" aria-hidden="true">
+        <div class="esqueleto" style="width:40%"></div>
+        <div class="esqueleto" style="width:85%"></div>
+        <div class="esqueleto" style="width:70%"></div>
+      </div>
+
+      <h3 style="margin-top:24px">Escala de urgencias</h3>
+      <p class="apagado">La misma en reclamos, reservas y avisos: color, icono y palabra, siempre los tres.</p>
+      <p>
+        <span class="urgencia urgencia--urgente">
+          <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z"/><path d="M21 12h1"/><path d="M18.5 4.5 18 5"/><path d="M2 12h1"/><path d="M12 2v1"/><path d="m4.929 4.929.707.707"/><path d="M12 12v6"/></svg>
+          URGENTE · 72 h
+        </span>
+        &nbsp;
+        <span class="urgencia urgencia--alta">
+          <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          ALTA · 7 días
+        </span>
+        &nbsp;
+        <span class="urgencia urgencia--ordinaria">
+          <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/></svg>
+          ORDINARIA · 15 días
+        </span>
+        &nbsp;
+        <span class="urgencia urgencia--aldia">
+          <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></svg>
+          AL DÍA
+        </span>
+      </p>
+    </section>
+
+    <section class="seccion">
+      <h2>Tokens</h2>
+      <p class="apagado">Los valores viven en <code>:root</code>. Ninguna pantalla escribe un color a mano.</p>
+
+      <div class="muestras">
+        <div class="muestra"><div class="tono" style="background:var(--grafito)"></div><div class="pie">Grafito<br><code>--grafito · barra, lateral, KPI</code></div></div>
+        <div class="muestra"><div class="tono" style="background:var(--lima)"></div><div class="pie">Lima<br><code>--lima · acción principal</code></div></div>
+        <div class="muestra"><div class="tono" style="background:var(--verde)"></div><div class="pie">Verde<br><code>--verde · al día</code></div></div>
+        <div class="muestra"><div class="tono" style="background:var(--ambar)"></div><div class="pie">Ámbar<br><code>--ambar · atención</code></div></div>
+        <div class="muestra"><div class="tono" style="background:var(--rojo)"></div><div class="pie">Rojo<br><code>--rojo · peligro, deuda</code></div></div>
+        <div class="muestra"><div class="tono" style="background:var(--fondo);border-bottom:1px solid var(--linea)"></div><div class="pie">Fondo<br><code>--fondo · lienzo</code></div></div>
+      </div>
+
+      <div class="tabla-desplazable" style="margin-top:24px" tabindex="0" role="region" aria-label="Reglas de uso">
+        <table>
+          <thead>
+            <tr><th scope="col">Decisión</th><th scope="col">Regla</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Espaciado</td><td>Base 4: <span class="cifra">4 · 8 · 12 · 16 · 24 · 32</span>. Ningún valor fuera de la escala.</td></tr>
+            <tr><td>Tipografía</td><td>Poppins en todo; las cifras en Inter tabular con la clase <code>cifra</code>.</td></tr>
+            <tr><td>Tamaños</td><td><span class="cifra">12</span> ayuda · <span class="cifra">13</span> menor · <span class="cifra">15</span> cuerpo · <span class="cifra">18/22/28</span> títulos.</td></tr>
+            <tr><td>Aviso ámbar</td><td>Algo requiere atención y todavía se puede corregir.</td></tr>
+            <tr><td>Aviso rojo</td><td>Ya hay consecuencia económica: deuda vencida, liquidación abortada.</td></tr>
+            <tr><td>Botón primario</td><td>Uno por vista. El resto, fantasma. Peligro solo con confirmación explícita.</td></tr>
+            <tr><td>Objetivo táctil</td><td>Mínimo <span class="cifra">44</span> px de alto en todo lo que se toca.</td></tr>
+            <tr><td>Color</td><td>Nunca es la única señal: siempre hay palabra, y en urgencias también icono.</td></tr>
+            <tr><td>Dinero</td><td><span class="cifra">$ 1.234.567,89</span> alineado a la derecha, tabular, como cadena.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <p class="ayuda seccion">
+      A 390 px el lateral se reemplaza por el menú de la barra, todo pasa a una columna y solo la
+      tabla se desplaza en horizontal, nunca la página. Cita documental: «…hasta las 02:00
+      (Art. 3, Reglamento)».
+    </p>
+  </main>
+
 </div>
-<h3>Gastos del período <small class="m">2026-08 · todos los rubros</small></h3>
-<table><tr><th>Fecha</th><th>Proveedor</th><th>Rubro</th><th class="n">Importe</th><th>Estado</th></tr>
-<tr><td>05/08/2026</td><td>Consorcio Personal SRL</td><td>Sueldos</td><td class="n">$ 490.000,00</td><td><span class="tag">rendido</span></td></tr>
-<tr><td>10/08/2026</td><td>EPE</td><td>Luz comunes</td><td class="n">$ 92.000,00</td><td><span class="tag">rendido</span></td></tr>
-<tr><td>28/08/2026</td><td>Tableros AEA SRL</td><td>Tableros (extr.)</td><td class="n">$ 175.000,00</td><td><span class="tag">a cargo propietario</span></td></tr></table>
-<div class="banner red" style="margin-top:14px"><b>Unidad 3B: 3 períodos vencidos.</b> Deuda total $ 225.000,00. <u>Ver estado de cuenta</u></div>
-<div class="card" style="margin-top:14px"><b>Anular liquidación</b><div class="help">Se anula la 2026-08 ($ 1.325.000,00) y se emite una nueva que la referencia. Ambas quedan registradas.</div><p><button class="btn danger">Confirmar anulación</button> <button class="btn ghost">Cancelar</button></p></div>
-<p><small class="m">390 px: sidebar → topbar + hamburguesa, 1 columna, sin scroll horizontal. Cita documental: "…hasta las 02:00 (Art. 3, Reglamento)".</small></p>
 </div>
-</div></div>
+
 </body>
 </html>

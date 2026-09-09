@@ -304,6 +304,10 @@ sigue. Se ejecutan desde la raíz del repositorio, en PowerShell sobre Windows.
   if (-not (Test-Path .env.local)) { Set-Content .env.local "DATABASE_URL=postgresql://postgres:flay_local@localhost:5432/flay`nSHADOW_DATABASE_URL=postgresql://postgres:flay_local@localhost:5432/flay_shadow" }
   ```
 
+  `SHADOW_DATABASE_URL` lleva la cadena administradora, no la de `flay_owner`: Prisma resetea la
+  base sombra en cada comprobación de deriva y ese reseteo se lleva las extensiones, que hay que
+  volver a instalar. La sombra es descartable y la aplicación no la usa nunca.
+
   Guarda idempotente (M-06): no duplica líneas de `.gitignore` ni sobrescribe el archivo de valores
   con secretos al re-ejecutarse. `SHADOW_DATABASE_URL` queda definido aquí (I-01) con default local.
 

@@ -36,7 +36,9 @@ jobs:
       DATABASE_URL: postgresql://flay_app:flay_ci@localhost:5432/flay
       DIRECT_DATABASE_URL: postgresql://flay_owner:flay_ci@localhost:5432/flay
       ADMIN_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flay
-      SHADOW_DATABASE_URL: postgresql://flay_owner:flay_ci@localhost:5432/flay_shadow
+      # La sombra la resetea Prisma en cada corrida, lo que se lleva las extensiones:
+      # por eso va con la cadena administradora. La aplicacion no la usa nunca.
+      SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flay_shadow
       FLAY_OWNER_PASSWORD: flay_ci
       FLAY_APP_PASSWORD: flay_ci
 

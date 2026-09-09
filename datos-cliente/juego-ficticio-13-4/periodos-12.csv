@@ -1,0 +1,15 @@
+consorcio;periodo;estado;ordinarios;extraordinarios;observacion
+C-A;2025-09;liquidado;980000.00;0.00;histórico indicador
+C-A;2025-10;liquidado;1010000.00;150000.00;histórico
+C-A;2025-11;liquidado;990000.00;0.00;histórico
+C-A;2025-12;liquidado;1100000.00;200000.00;histórico aguinaldo
+C-A;2026-01;liquidado;950000.00;0.00;histórico
+C-A;2026-02;liquidado;960000.00;0.00;histórico
+C-A;2026-03;liquidado;1000000.00;175000.00;histórico
+C-A;2026-04;liquidado;1020000.00;0.00;histórico
+C-A;2026-05;liquidado;990000.00;0.00;histórico
+C-A;2026-06;liquidado;1200000.00;300000.00;igual a planilla real 06
+C-A;2026-07;liquidado;1000001.00;200000.00;igual a planilla real 07 con ajuste
+C-A;2026-08;abierto;1150000.00;175000.00;en curso, igual a gastos 08
+C-B;2025-09 a 2026-07;liquidados;950000.00 c/u promedio;0.00;11 períodos histórico para I-2
+C-B;2026-08;abierto;980000.00;0.00;en curso

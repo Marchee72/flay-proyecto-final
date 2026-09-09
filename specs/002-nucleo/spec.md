@@ -1,0 +1,415 @@
+# Especificación de etapa: Núcleo (iteración 1)
+
+**Feature Branch**: `002-nucleo`
+
+**Created**: 2026-09-08
+
+**Status**: Draft
+
+**Input**: Iteración 1 del cronograma (§ 8.3.1), 6 semanas. Alcance comprometido: `RF-01` a
+`RF-05`, `RF-10`, `RF-17` y `RF-26` — usuarios, roles y habilitaciones; consorcios, unidades y
+coeficientes; gastos, rubros, proveedores y comprobantes; y la bitácora de auditoría. Casos de uso
+`CU-01`, `CU-02` y `CU-05`. Se agrega el **mínimo de períodos** que `RF-04` necesita para existir
+(hallazgo 1 del análisis de insumos).
+
+> **Convención de códigos.** `FR-nnn` numera los requisitos **locales de esta especificación**.
+> Los códigos del proyecto conservan su prefijo: `RF-nn`, `RNF-nn`, `CU-nn`, `RT-nn`. Ante la
+> colisión del prefijo `RN-` entre las quince reglas de negocio del punto 7 y los seis riesgos de
+> negocio del punto 11, se escribe siempre **«regla RN-nn (§ 7.2)»** y **«riesgo RN-nn (§ 11.2)»**.
+
+**Depende de**: `001-andamiaje` terminada. Sin la verificación automática, el aislamiento en un
+solo punto y la bitácora inviolable, ningún requerimiento de esta etapa puede cumplir la definición
+de terminado.
+
+---
+
+## User Scenarios & Testing *(mandatory)*
+
+### User Story 1 — El administrador entra al sistema y ve sólo lo suyo (Priority: P1)
+
+`RF-03` · `CU-01` · regla RN-12 (§ 7.2) · RNF-03 · RNF-04 · riesgo RT-04
+
+El primer administrador existe por semilla de arranque. Inicia sesión, invita a otra persona por
+correo, le asigna un rol y una habilitación sobre un consorcio concreto. Esa persona ve ese
+consorcio y ningún otro.
+
+**Why this priority**: es la primera historia porque todo lo demás cuelga de ella. `Habilitacion`
+es la tabla que materializa el Principio I, y hasta que exista no hay forma de verificar la
+condición 3 de la definición de terminado sobre nada. Además cierra el hueco H-08: ningún documento
+decía quién crea al primer administrador.
+
+**Independent Test**: dos usuarios habilitados sobre consorcios distintos consultan el mismo
+listado; cada uno obtiene exclusivamente sus datos, y un usuario sin habilitación vigente obtiene
+cero filas.
+
+**Acceptance Scenarios**:
+
+1. **Given** una base recién migrada, **When** se ejecuta la semilla de arranque, **Then** existe
+   exactamente un usuario administrador con contraseña derivada con Argon2id (RNF-04) y ninguna
+   contraseña en texto plano ni en el repositorio.
+2. **Given** un administrador autenticado, **When** invita a una persona por correo electrónico,
+   **Then** se envía la invitación y la persona puede fijar su contraseña sin que el administrador
+   la conozca.
+3. **Given** un usuario con habilitación vigente sobre el consorcio A y ninguna sobre el B,
+   **When** solicita cualquier dato del consorcio B por cualquier vía —listado, detalle,
+   identificador directo en la dirección—, **Then** obtiene cero resultados o «no encontrado»,
+   nunca un mensaje que revele la existencia del recurso.
+4. **Given** una habilitación cuya vigencia terminó ayer, **When** el usuario consulta, **Then**
+   obtiene cero resultados: la vigencia se evalúa contra la fecha, no contra la existencia de la
+   fila.
+5. **Given** una persona ocupante de una unidad, **When** se intenta registrar una segunda
+   ocupación vigente del mismo tipo sobre esa unidad en la misma fecha, **Then** la **base de
+   datos** la rechaza por restricción de exclusión (regla RN-09 § 7.2), no el código.
+
+---
+
+### User Story 2 — El administrador carga el consorcio, sus unidades y los coeficientes (Priority: P1)
+
+`RF-01` · `RF-02` · `CU-01` · reglas RN-01 y RN-02 (§ 7.2)
+
+El administrador da de alta un consorcio, carga sus unidades funcionales con el coeficiente de cada
+una, y el sistema no lo deja cerrar el alta hasta que la suma sea exactamente 100,000000 %. Un
+cambio de coeficiente rige hacia el futuro y no altera ninguna liquidación ya emitida.
+
+**Why this priority**: es la precondición aritmética de toda la etapa 3. Un coeficiente mal cargado
+no produce un error visible: produce una liquidación incorrecta meses después.
+
+**Independent Test**: cargar el consorcio de 96 unidades del juego de datos de § 13.4 y comprobar
+que la suma de coeficientes da exactamente `100.00000000` y que el alta con suma distinta es
+rechazada con el detalle de la diferencia.
+
+**Acceptance Scenarios**:
+
+1. **Given** un consorcio con unidades cuya suma de coeficientes es `99.99999999`, **When** se
+   intenta confirmar, **Then** el sistema rechaza y muestra la diferencia exacta y las unidades
+   involucradas, en un mensaje comprensible para el usuario final (RNF-10).
+2. **Given** un consorcio cuyos coeficientes suman exactamente `100.00000000`, **When** se
+   confirma, **Then** el alta se registra y queda apto para liquidar.
+3. **Given** un coeficiente vigente, **When** se lo modifica, **Then** se cierra la vigencia del
+   anterior y se abre una nueva desde una fecha futura, y ambos quedan en `CoeficienteHistorico`
+   (regla RN-02 § 7.2).
+4. **Given** un intento de modificar un coeficiente con vigencia retroactiva, **When** se confirma,
+   **Then** el sistema lo rechaza.
+5. **Given** cualquier coeficiente, **When** se lo persiste, **Then** se almacena con ocho
+   decimales en tipo decimal de precisión fija, nunca en punto flotante (Principio II).
+
+---
+
+### User Story 3 — El administrador registra un gasto con su comprobante (Priority: P1)
+
+`RF-04` · `RF-05` · `RF-17` · `CU-02` · reglas RN-03 y RN-04 (§ 7.2)
+
+El administrador registra un gasto del consorcio, clasificado en un rubro y como ordinario o
+extraordinario, imputado a un período abierto, asociado a un proveedor, y le adjunta el comprobante
+digitalizado.
+
+**Why this priority**: es la entrada de datos que alimenta toda la etapa 3 y los indicadores de la
+etapa 4. Sin gastos no hay nada que liquidar ni que analizar.
+
+**Independent Test**: cargar 30 gastos con comprobante sobre un período abierto, y comprobar que
+cada uno queda clasificado, imputado y con su archivo recuperable.
+
+**Acceptance Scenarios**:
+
+1. **Given** un período abierto, **When** se registra un gasto con rubro, proveedor, importe y
+   fecha, **Then** queda persistido con el importe en decimal de precisión fija y clasificado como
+   ordinario o extraordinario (regla RN-04 § 7.2).
+2. **Given** un período liquidado, **When** se intenta registrar o modificar un gasto sobre él,
+   **Then** el sistema lo rechaza (regla RN-03 § 7.2).
+3. **Given** un gasto registrado, **When** se adjunta un comprobante en imagen o PDF, **Then** el
+   archivo queda en el almacenamiento de objetos y el gasto lo referencia; el archivo sólo es
+   recuperable por usuarios con habilitación vigente sobre ese consorcio.
+4. **Given** la pantalla de registro de gasto, **When** se la construye, **Then** deja la costura
+   prevista para que la etapa 4 enchufe la extracción asistida (`RF-06`) **sin rediseñarla**: el
+   formulario acepta valores precargados y exige confirmación humana explícita antes de crear el
+   gasto (regla RN-14 § 7.2, Principio IV).
+5. **Given** un gasto creado, modificado o borrado, **When** termina la operación, **Then** la
+   bitácora contiene el asiento correspondiente, puesto por disparador (regla RN-15 § 7.2).
+
+---
+
+### User Story 4 — El consorcista consulta los gastos y comprobantes de su consorcio (Priority: P2)
+
+`RF-10` · `CU-05` · RNF-06 · regla RN-12 (§ 7.2)
+
+El consorcista entra desde el teléfono, filtra los gastos de su consorcio por período y por rubro,
+y abre el comprobante de cualquiera de ellos.
+
+**Why this priority**: es la primera funcionalidad que un usuario final ve y la que hace
+demostrable la iteración ante el cliente. Es de sólo lectura sobre lo que las historias 2 y 3 ya
+construyeron, y por eso va después.
+
+**Independent Test**: con el juego de datos de § 13.4 cargado, filtrar por período y rubro desde un
+teléfono y medir el tiempo de respuesta.
+
+**Acceptance Scenarios**:
+
+1. **Given** un consorcista habilitado, **When** filtra gastos por período y rubro, **Then** ve
+   únicamente los de sus consorcios y el listado responde en menos de 2 segundos (RNF-06).
+2. **Given** un consorcista, **When** abre un comprobante, **Then** lo ve; **When** manipula la
+   dirección para pedir uno de otro consorcio, **Then** obtiene «no encontrado».
+3. **Given** un teléfono de 390 px de ancho, **When** se abre el listado, **Then** se ve completo
+   sin desplazamiento horizontal (RNF-01) y cumple WCAG 2.1 AA en la pantalla del consorcista
+   (RNF-11).
+
+---
+
+### User Story 5 — Toda operación económica queda auditada y el período existe (Priority: P2)
+
+`RF-26` · regla RN-15 (§ 7.2) · RNF-12 · hallazgo 1 del análisis de insumos
+
+Las tablas económicas de esta etapa quedan enganchadas al disparador de auditoría construido en
+`001-andamiaje`, y se incorpora el mínimo de la entidad `Periodo` —apertura y listado— para que
+`RF-04` tenga contra qué imputar.
+
+**Why this priority**: la auditoría es barata (11 h del paquete 3.7) y su ausencia invalida la
+condición 7 de la definición de terminado en cada requerimiento anterior. El mínimo de `Periodo`
+es un movimiento chico que desbloquea `RF-04`, cuya ausencia dejaría la historia 3 sin período
+imputable.
+
+**Independent Test**: recorrer las tablas económicas de la etapa, hacer una operación sobre cada
+una y verificar que todas dejan asiento; abrir un período y comprobar que un gasto puede imputarse.
+
+**Acceptance Scenarios**:
+
+1. **Given** cada una de las tablas económicas de esta etapa, **When** se inserta, modifica o borra
+   una fila, **Then** la bitácora recibe un asiento con imagen anterior y posterior.
+2. **Given** el usuario de aplicación, **When** intenta alterar la bitácora, **Then** la base lo
+   rechaza (RNF-12).
+3. **Given** un consorcio sin períodos, **When** el administrador abre el período del mes, **Then**
+   queda en estado abierto y los gastos pueden imputarse a él.
+4. **Given** un período abierto, **When** se intenta abrir otro para el mismo consorcio y mes,
+   **Then** el sistema lo rechaza: un consorcio tiene un solo período por mes.
+5. **Given** esta etapa, **When** se cierra, **Then** la máquina de estados completa del período
+   —cierre, liquidación y anulación— **no** está construida: es alcance explícito de
+   `003-liquidacion` (paquete 4.1).
+
+---
+
+### Edge Cases
+
+- **Un consorcio con una sola unidad.** El coeficiente es `100.00000000` y el caso debe pasar sin
+  tratamiento especial.
+- **Un coeficiente de 96 unidades que suma `99.99999999` por redondeo del cliente.** El sistema no
+  «arregla» la diferencia: la rechaza y la informa. Corregir coeficientes es decisión del
+  administrador, no del sistema.
+- **Una persona con dos roles distintos en dos consorcios.** Es el caso normal y no una excepción:
+  la autorización se evalúa por par (rol, consorcio), nunca por rol global.
+- **Un comprobante de 30 MB o de un formato no soportado.** Se rechaza con mensaje comprensible
+  (RNF-10) antes de subirlo, y el gasto queda registrado igual: el comprobante es un adjunto, no
+  una precondición del gasto.
+- **El almacenamiento de objetos no responde.** El registro del gasto no falla: el adjunto queda
+  pendiente y se reintenta (RNF-14).
+- **El servicio de correo no responde al invitar.** La invitación queda persistida en estado
+  pendiente y se reintenta; el alta del usuario no falla (hueco H-06).
+- **Un rubro que el cliente no contempló.** El alta y la modificación de rubros están **diferidas**
+  (§ 9.11, ítems 9 y 10): se resuelve por soporte sobre la lista semilla, y eso se le dice al
+  cliente en la demostración.
+- **Un usuario que pierde su habilitación mientras tiene una sesión abierta.** La autorización se
+  evalúa en cada operación, no al iniciar sesión.
+
+---
+
+## Requirements *(mandatory)*
+
+### Functional Requirements
+
+#### Bloque A — Identidad, roles y aislamiento (`RF-03`)
+
+- **FR-001**: El sistema **DEBE** autenticar por correo electrónico y contraseña, con la contraseña
+  derivada mediante Argon2id (RNF-04). Ninguna contraseña se almacena en texto plano ni con función
+  de resumen simple.
+- **FR-002**: El sistema **DEBE** evaluar la autorización por **par (rol, consorcio)** en cada
+  operación de la capa de aplicación (RNF-03, regla RN-12 § 7.2), y no por rol global.
+- **FR-003**: El filtro por consorcio **DEBE** aplicarse en la extensión del cliente de datos
+  construida en `001-andamiaje` (FR-011 de aquella etapa), **en un solo lugar**. Ninguna consulta
+  de negocio de esta etapa repite el filtro; ninguna usa el cliente crudo.
+- **FR-004**: Una habilitación **DEBE** tener vigencia con fecha de inicio y fecha de fin opcional.
+  Una habilitación no vigente equivale a inexistente a efectos de autorización.
+- **FR-005**: El sistema **DEBE** proveer una **semilla de arranque** que cree el primer usuario
+  administrador y su primera habilitación, con la contraseña provista por variable de entorno y
+  nunca versionada. Cierra el hueco H-08.
+- **FR-006**: El sistema **DEBE** permitir invitar a una persona por correo electrónico; el
+  invitado fija su propia contraseña. El envío se persiste y se reintenta ante falla, sin que la
+  falla del correo haga fallar el alta (RNF-14, hueco H-06).
+- **FR-007**: Los roles **DEBEN** ser los del punto 12: administrador, consejo de propietarios y
+  consorcista. La nómina nominada de deudores se reserva a los dos primeros (regla RN-13 § 7.2);
+  esta etapa aún no la produce, pero el rol ya la contempla.
+- **FR-008**: La relación entre persona y unidad **DEBE** registrarse como ocupación con tipo
+  (propietario o inquilino) y rango de vigencia, y la superposición **DEBE** impedirse con
+  **restricción de exclusión en la base de datos**, no en el código (regla RN-09 § 7.2).
+
+#### Bloque B — Consorcios, unidades y coeficientes (`RF-01`, `RF-02`)
+
+- **FR-009**: El sistema **DEBE** permitir dar de alta y modificar consorcios. La **baja está
+  diferida** (§ 9.11) y se resuelve por soporte; la interfaz no la ofrece.
+- **FR-010**: El sistema **DEBE** permitir registrar unidades funcionales con su coeficiente en
+  decimal de precisión fija de **ocho decimales**.
+- **FR-011**: El sistema **DEBE** rechazar toda operación que deje la suma de coeficientes de un
+  consorcio distinta de `100.00000000` exacto, informando la diferencia y las unidades involucradas
+  (regla RN-01 § 7.2). La verificación es de aplicación, y se repite obligatoriamente antes de
+  liquidar en la etapa 3.
+- **FR-012**: Un coeficiente **DEBE** poder modificarse sólo hacia el futuro. El histórico se
+  conserva en `CoeficienteHistorico` con vigencia, para que una liquidación pasada se pueda
+  reconstruir (regla RN-02 § 7.2).
+- **FR-013**: Ninguna firma pública del dominio **DEBE** aceptar ni devolver el tipo numérico
+  nativo para un coeficiente o un importe (medida 2 de § 14.1, Principio II). La regla de análisis
+  estático de `001-andamiaje` lo verifica en cada envío.
+
+#### Bloque C — Rubros, proveedores, gastos y comprobantes (`RF-04`, `RF-05`, `RF-17`)
+
+- **FR-014**: El sistema **DEBE** cargar una **lista semilla de `RubroGasto`** acordada con el
+  cliente, con la clasificación ordinario/extraordinario de cada rubro (regla RN-04 § 7.2). El alta
+  y la modificación de rubros están diferidas (§ 9.11): se operan por soporte sobre la semilla.
+  Cierra el hueco H-07.
+- **FR-015**: El sistema **DEBE** permitir registrar y modificar proveedores. `Proveedor` no tiene
+  dependencias obligatorias: es raíz del grafo y se construye antes que `Gasto`.
+- **FR-016**: El sistema **DEBE** registrar gastos con consorcio, período, rubro, proveedor,
+  importe, fecha y autor de la carga. El importe se almacena en `NUMERIC` y viaja como decimal de
+  precisión arbitraria en toda la aplicación; hacia la interfaz se serializa **como cadena**
+  (medidas 1 y 3 de § 14.1).
+- **FR-017**: El sistema **DEBE** impedir registrar o modificar un gasto de un período ya liquidado
+  (regla RN-03 § 7.2). Como esta etapa no liquida, declara ya en `src/dominio/contratos` el
+  contrato mínimo del estado (valores y transiciones válidas, M-04) que `003` comparte, y la prueba
+  lo usa en lugar de fabricar un estado propio.
+- **FR-018**: El sistema **DEBE** permitir adjuntar un comprobante digitalizado (imagen o PDF) a un
+  gasto, almacenado en el almacenamiento de objetos y accesible sólo con habilitación vigente sobre
+  el consorcio.
+- **FR-019**: El acceso al almacenamiento de objetos **DEBE** consumirse a través de una interfaz
+  declarada en `src/dominio/contratos`, implementada en infraestructura (Principio III, decisión 4
+  de § 12.1.3). El dominio no conoce al proveedor.
+- **FR-020**: La pantalla de registro de gasto **DEBE** admitir valores precargados y exigir
+  confirmación humana explícita antes de crear el gasto, de modo que `RF-06` (etapa 4) se enchufe
+  sin rediseñarla (regla RN-14 § 7.2, Principio IV).
+
+#### Bloque D — Consulta de gastos (`RF-10`)
+
+- **FR-021**: El sistema **DEBE** ofrecer un listado de gastos filtrable por consorcio, período y
+  rubro, con acceso al comprobante de cada uno.
+- **FR-022**: El listado **DEBE** responder en menos de 2 segundos en el percentil 95 (RNF-06) con
+  el volumen de un año del punto 7.5 (10.800 gastos), apoyado en los índices previstos en § 7.6.
+- **FR-023**: Las pantallas destinadas al consorcista **DEBEN** cumplir WCAG 2.1 nivel AA (RNF-11)
+  y verse correctamente en teléfono (RNF-01).
+
+#### Bloque E — Períodos mínimos y auditoría (hallazgo 1, `RF-26`)
+
+- **FR-024**: El sistema **DEBE** permitir abrir y listar períodos por consorcio, con un único
+  período por consorcio y mes. **Sólo eso**: el cierre, la liquidación y la anulación son alcance
+  de `003-liquidacion` (paquete 4.1). Esta división resuelve el hallazgo 1 sin anticipar la
+  liquidación.
+- **FR-025**: Todas las tablas económicas de esta etapa —`Gasto`, `Comprobante`, `Unidad`,
+  `CoeficienteHistorico`, `Periodo`— **DEBEN** quedar enganchadas al disparador `fn_auditar()`
+  construido en `001-andamiaje` (regla RN-15 § 7.2, `RF-26`).
+- **FR-026**: Cada migración de esta etapa **DEBE** estar versionada en el repositorio. Ningún
+  cambio manual sobre la base, en ningún entorno (§ 8.3.5).
+
+#### Bloque F — Datos y cierre documental
+
+- **FR-027**: El equipo **DEBE** obtener del cliente **tres liquidaciones reales** antes de que
+  comience `003-liquidacion`. El riesgo RT-01 (§ 11.2) exige tenerlas «antes de escribir el código»
+  del motor; pedirlas es trabajo de esta etapa porque conseguirlas depende del cliente y toma
+  tiempo. Cierra la parte de calendario del hueco H-09.
+- **FR-028**: El equipo **DEBE** construir el juego de datos ficticios de § 13.4 —dos consorcios de
+  tamaño contrastante, uno de 12 y otro de 96 unidades— y usarlo como fixture de las pruebas de
+  integración y de extremo a extremo. Un juego de datos que sirve para demostrar y para probar se
+  mantiene solo.
+- **FR-029**: `docs/entrega-final/13-prototipo.md` § 13.3 **DEBE** reflejar el estado por módulo al
+  cierre de la etapa (condición 8 de § 8.3.4).
+
+### Key Entities
+
+| Entidad | Qué representa | Relaciones y restricciones clave |
+|---|---|---|
+| `Consorcio` | Un edificio de propiedad horizontal de la cartera | Raíz del aislamiento: casi toda entidad cuelga de él (regla RN-12 § 7.2) |
+| `Unidad` | Unidad funcional con su coeficiente vigente | `consorcio_id` obligatorio; suma de coeficientes = `100.00000000` (regla RN-01 § 7.2) |
+| `CoeficienteHistorico` | Coeficiente de una unidad con rango de vigencia | Permite reconstruir una liquidación pasada (regla RN-02 § 7.2) |
+| `Persona` | Persona física, con o sin usuario | Raíz; datos personales bajo Ley 25.326 (RNF-13) |
+| `Usuario` | Credencial de acceso de una persona | Contraseña derivada con Argon2id (RNF-04) |
+| `Ocupacion` | Vínculo persona–unidad como propietario o inquilino | Restricción de exclusión sobre la vigencia (regla RN-09 § 7.2) |
+| `Habilitacion` | Permiso vigente de un usuario sobre un consorcio, con rol | **Es la tabla que materializa el Principio I** |
+| `RubroGasto` | Clasificación del gasto, con marca ordinario/extraordinario | Precargado por semilla; alta y modificación diferidas (§ 9.11) |
+| `Proveedor` | Prestador de servicios o bienes al consorcio | Raíz del grafo: sin dependencias obligatorias |
+| `Gasto` | Erogación del consorcio imputada a un período | `periodo_id` y `rubro_id` obligatorios; inmutable si el período fue liquidado (reglas RN-03 y RN-04 § 7.2) |
+| `Comprobante` | Archivo digitalizado que respalda un gasto | `gasto_id` obligatorio; contenido en almacenamiento de objetos |
+| `Periodo` | Mes de operación de un consorcio | **Sólo apertura y listado en esta etapa.** Un período por consorcio y mes |
+| `BitacoraAuditoria` | Asiento inmutable (creada en `001-andamiaje`) | Esta etapa le engancha sus tablas económicas |
+
+---
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: Sobre los **2** consorcios del juego de datos de § 13.4 (12 y 96 unidades), la suma
+  de coeficientes es exactamente `100.00000000` en ambos, verificada con comparación decimal, no
+  con tolerancia.
+- **SC-002**: **100 %** de las entidades con `consorcio_id` tienen una prueba automatizada que
+  confirma que un usuario sin habilitación vigente obtiene **cero filas**, tanto por listado como
+  por identificador directo en la dirección. Cero entidades sin esa prueba.
+- **SC-002b**: Matriz rol×acción (I-11): un usuario con habilitación vigente pero rol sin permiso
+  (p. ej. consorcista intentando alta de gasto o de usuario) es denegado en el **100 %** de las
+  operaciones de escritura de la etapa. La dimensión rol queda probada, no solo consorcio.
+- **SC-003**: El filtro por consorcio aparece **en un solo archivo** del repositorio. Una búsqueda
+  del filtro fuera de la extensión del cliente de datos devuelve **0 coincidencias** (Principio I,
+  riesgo RT-04).
+- **SC-004**: Un intento de alta de unidades cuya suma de coeficientes difiere en `0.00000001` es
+  rechazado, y el mensaje nombra la diferencia exacta y las unidades involucradas.
+- **SC-005**: Un intento de registrar una segunda ocupación vigente del mismo tipo sobre la misma
+  unidad y fecha es rechazado **por la base de datos**, no por el código (regla RN-09 § 7.2). La
+  prueba lo verifica saltándose la capa de aplicación.
+- **SC-006**: Con **10.800 gastos** cargados —volumen de un año del punto 7.5—, el listado filtrado
+  de `RF-10` responde en **menos de 2 segundos en el percentil 95** sobre 100 consultas con el
+  arnés `medir:p95` en el entorno de demostración (RNF-06, I-07).
+- **SC-007**: Cada una de las **5** tablas económicas de la etapa deja exactamente un asiento de
+  auditoría por operación, con imagen anterior y posterior. Cero operaciones sin asiento.
+- **SC-008**: `INSERT`, `UPDATE` y `DELETE` sobre la bitácora con el usuario de aplicación fallan
+  en los **3** casos (RNF-12).
+- **SC-009**: Cero importes y cero coeficientes representados en punto flotante en cualquier capa,
+  verificado por la regla de análisis estático de `001-andamiaje` y por inspección de los tipos
+  generados por el mapeador (medidas 1, 2 y 4 de § 14.1).
+- **SC-010**: La serialización de un importe hacia la interfaz es **cadena** en el 100 % de los
+  casos, verificado con una prueba de extremo a extremo sobre un importe de más de quince dígitos
+  significativos (medida 3 de § 14.1).
+- **SC-011**: Las **3** pantallas del consorcista (`CU-05` y su detalle) se ven sin desplazamiento
+  horizontal a 390 px (RNF-01) y pasan la verificación automática de WCAG 2.1 AA sin infracciones
+  de nivel A o AA (RNF-11).
+- **SC-012**: Un período abierto acepta gastos; un período marcado como liquidado los rechaza en
+  el **100 %** de los intentos, de alta y de modificación (regla RN-03 § 7.2).
+- **SC-013**: Las **3 liquidaciones reales** del cliente están en poder del equipo antes de abrir
+  `003-liquidacion` (riesgo RT-01 § 11.2). Sin ellas, la etapa 3 no arranca.
+- **SC-014**: La demostración al cliente recorre `CU-01`, `CU-02` y `CU-05` de punta a punta sobre
+  el entorno de demostración desplegado, en **1 hora** (§ 8.3.2), sin ningún paso ejecutado desde
+  una máquina de desarrollo.
+
+### Cierre contra la definición de terminado (§ 8.3.4)
+
+| # | Condición | Cómo la cierra esta etapa |
+|---|---|---|
+| 1 | Integrado y revisado | Una rama por `RF-nn`, incorporación con revisión aprobada; el paquete 3.2 se hace **en pares** por ser superficie de seguridad (§ 10) |
+| 2 | Pruebas y verificación en verde | La verificación de `001-andamiaje` corre en cada envío; SC-002 y SC-006 son parte de ella |
+| 3 | Autorización por rol y consorcio | SC-002 y SC-003: es la condición central de esta etapa, y la que la historia 1 construye |
+| 4 | Opera en teléfono | SC-011 |
+| 5 | Mensajes de error comprensibles | SC-004 y el estándar de § 14.4 fijado en `001-andamiaje` |
+| 6 | Desplegado en demostración | SC-014: la demostración corre sobre el entorno desplegado |
+| 7 | Auditoría de datos económicos | SC-007 y SC-008 |
+| 8 | Documentación actualizada | FR-029 |
+
+---
+
+## Assumptions
+
+- `001-andamiaje` está terminada. Esta etapa **no** construye verificación automática, despliegue,
+  mecanismo de aislamiento ni bitácora: los usa.
+- El cliente entrega la lista semilla de rubros (FR-014) y las tres liquidaciones reales (FR-027).
+  Ambos dependen de él y no del equipo; por eso se piden al inicio de la etapa y no al final.
+- Las **23 funcionalidades diferidas** de § 9.11 recortan buena parte de los ABM: altas y bajas de
+  rubro, bajas de consorcio, unidad, usuario, proveedor y documento. Se operan por soporte y así se
+  le comunica al cliente en la demostración. La interfaz no ofrece lo que no está construido.
+- El presupuesto de esta etapa es de **187 h**: las 221 h de la iteración 1 del punto 10 menos las
+  34 h del paquete 3.1, que `001-andamiaje` ya consumió. No hay horas nuevas.
+- `Periodo` se parte deliberadamente entre esta etapa (apertura y listado) y `003-liquidacion`
+  (máquina de estados completa). Es la resolución del hallazgo 1 del análisis de insumos.
+- El servicio de correo se contrata en esta etapa aunque el despachador general de `RF-14` llegue
+  en `004-servicios`: la invitación de usuario lo necesita ya (hueco H-06).
+- El 10 % de la capacidad de la iteración se reserva para refactorización, conforme a la
+  constitución.

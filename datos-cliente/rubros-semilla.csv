@@ -1,0 +1,19 @@
+codigo;nombre;tipo;descripcion
+R01;Sueldos y cargas sociales;ordinario;Encargado, suplencias, ART, aportes
+R02;Limpieza y maestranza;ordinario;Insumos y servicio tercerizado
+R03;Seguridad y portería virtual;ordinario;Monitoreo, cámaras, control de acceso
+R04;Energía eléctrica espacios comunes;ordinario;EPE medidor general, luz pasillos y bomba
+R05;Agua y cloacas;ordinario;Aguas Santafesinas servicio general
+R06;Gas espacios comunes;ordinario;Litoral Gas caldera y portería
+R07;Ascensores mantenimiento;ordinario;Abono mensual conservador, 2 equipos
+R08;Seguro integral del edificio;ordinario;Incendio, RC, cristales
+R09;Honorarios administración;ordinario;Grupo Delta gestión mensual
+R10;Mantenimiento general y reparaciones menores;ordinario;Plomería, electricidad, pintura menor
+R11;Jardinería y patio;ordinario;Poda, riego, insumos
+R12;Desinfección y control de plagas;ordinario;Fumigación bimestral prorrateada
+R13;Comunicaciones y gastos bancarios;ordinario;Cuenta consorcio, comisiones, papelería
+R14;Fondo de reserva ordinario;ordinario;Previsión mensual aprobada en asamblea
+R15;Reparación extraordinaria cubierta y frentes;extraordinario;Obra aprobada asamblea 03/2026
+R16;Recambio caldera y termotanques;extraordinario;Obra aprobada asamblea 05/2026
+R17;Actualización tableros eléctricos;extraordinario;Normativa AEA, 2 etapas
+R18;Gastos judiciales y mediaciones;extraordinario;Juicio por filtración UF 3B, honorarios

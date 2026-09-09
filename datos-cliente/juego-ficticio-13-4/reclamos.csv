@@ -1,0 +1,6 @@
+id;consorcio;autor;rubro;estado;responsable;urgencia;observacion
+RC-01;C-A;vecino1a;R10;cerrado;operador1;ordinaria;filtración cocina, vinculado a gasto
+RC-02;C-A;inquilino1c;R07;en curso;operador1;urgente;ascensor ruidoso
+RC-03;C-A;moroso3b;R04;inicial;;ordinaria;sin responsable (RN-11)
+RC-04;C-B;vecinob010;R02;cerrado;operador1;ordinaria;luz pasillo piso 3
+RC-05;C-B;vecinob010;R10;en curso;operador1;urgente;pérdida agua patio

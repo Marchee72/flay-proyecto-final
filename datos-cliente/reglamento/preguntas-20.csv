@@ -1,0 +1,21 @@
+n;pregunta;fragmento_esperado;fuente
+P01;¿Hasta qué hora puedo hacer una fiesta en el SUM?;Fiestas en SUM hasta las 02:00 con aviso de 72 h;Art. 3
+P02;¿Quién paga las expensas extraordinarias?;extraordinarias del propietario (Ley 27.551);Art. 4
+P03;¿Cuándo vencen las expensas y qué interés corre?;vencen el día 10. Mora desde el día 11 con 3 % mensual;Art. 5
+P04;¿Puedo ver quién debe expensas?;nómina de deudores solo administración y consejo;Art. 6
+P05;¿Se puede corregir una liquidación ya emitida?;anularse y reemplazarse por otra que la referencia;Art. 7
+P06;¿Qué datos lleva un reclamo?;rubro y descripción. Estado y responsable salvo inicial;Art. 8
+P07;¿En cuánto atienden una urgencia de agua?;urgencias 72 h;Art. 9
+P08;¿Puedo reservar el SUM si debo expensas?;deuda vencida no puede reservar;Art. 12
+P09;¿Se pueden superponer dos reservas del quincho?;No se confirman reservas superpuestas;Art. 11
+P10;¿Cuántas personas entran al SUM?;Capacidad SUM: 40 personas;Art. 13
+P11;¿Qué mayoría necesita una obra grande?;2 expensas totales requieren asamblea con 2/3;Art. 14
+P12;¿Cómo evalúan a los proveedores?;costo plazo y calidad de reclamos;Art. 15
+P13;¿Quién ve un contrato marcado no visible?;solo administración y consejo;Art. 16
+P14;¿Si falla el correo pierdo la liquidación?;falla del correo no bloquea la operación;Art. 17
+P15;¿Qué pasa si pregunto algo sin fuente?;Sin fuente no hay respuesta, con cita;Art. 18
+P16;¿Puedo llevar el perro al SUM?;prohibidas en SUM y quincho durante eventos;Art. 19
+P17;¿Perdí la llave magnética, qué hago?;denuncia en 24 h;Art. 20
+P18;¿Puedo cerrar el balcón sin permiso?;afecten fachada requieren autorización escrita;Art. 2
+P19;¿Horario de silencio al mediodía?;13:00 a 16:00;Art. 3
+P20;¿El reclamo de la filtración aparece en gastos?;vincula al gasto correspondiente;Art. 10

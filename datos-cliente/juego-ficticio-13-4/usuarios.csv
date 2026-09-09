@@ -1,0 +1,8 @@
+usuario;rol;consorcio;email_ficticio;observacion
+admin1;administrador;C-A + C-B;admin1@flay.demo;habilitación vigente ambos
+consejo1;consejo;C-A;consejo1@flay.demo;ve nómina C-A
+consorcista1;consorcista;C-A U-1A;vecino1a@flay.demo;al día
+moroso1;consorcista;C-A U-3B;moroso3b@flay.demo;mora 3 períodos
+inquilino1;consorcista;C-A U-1C;inquilino1c@flay.demo;mora 2 períodos
+operador1;administrador;C-B;operador1@flay.demo;carga gastos C-B
+consorcistaB;consorcista;C-B B-010;vecinob010@flay.demo;al día

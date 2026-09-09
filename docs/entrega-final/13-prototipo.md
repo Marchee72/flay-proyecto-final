@@ -22,7 +22,15 @@ operativo, no una maqueta.
 
 ## 13.2 Prototipo de interfaz — resultado de la validación
 
-*A completar tras el paquete 2.5 del punto 10.2.*
+*Verificación FR-027 (`001-andamiaje`) al 09/09/2026 — H-09 parte verificable:*
+
+| Hito (punto 10) | Fecha prevista | Estado real | Evidencia |
+|---|---|---|---|
+| Prototipo de interfaz 2.5 | 24/07/2026 | No cumplido | Sin pantallas ni acta en el repo; se reprograma al arranque de 001 |
+| Prueba de concepto 5.1 | semana del 24/08/2026 | No cumplida | Sin código desechable ni medición 80/85 %; pasa a paquete 5.1 de 004 con datos de `datos-cliente/` |
+| Demo de iteración 1 | 04/09/2026 | No cumplida | Sin entorno desplegado (no hay código); pasa a SC-014 de 002 sobre demo desplegado |
+
+*Validación con cliente (paquete 2.5 del punto 10.2), pendiente de reprogramación:*
 
 | Pantalla | Usuario validador | Fecha | Observaciones recibidas | Resolución |
 |---|---|---|---|---|
@@ -56,14 +64,24 @@ ajustar, con las 23 funcionalidades diferidas allí enumeradas.*
 
 ## 13.4 Datos de demostración
 
-*A completar.* El prototipo se entrega con un juego de datos que permita evaluarlo sin carga previa:
+*Semilla versionada en `datos-cliente/juego-ficticio-13-4/` (M-08). La demostración corre únicamente
+sobre esta semilla; se registra su hash SHA256 por archivo:*
 
-- Dos consorcios de tamaño contrastante, uno de 12 y otro de 96 unidades.
-- Doce períodos con gastos y liquidaciones, para que los indicadores tengan histórico.
-- Unidades en distintos estados de mora.
-- Reclamos en todos los estados posibles.
-- Un reglamento de copropiedad indexado, para demostrar la consulta documental.
-- Un usuario por cada rol.
+- Dos consorcios contrastantes: C-A Mitre 456 (12 uds, 12.50000000/7.50000000/5.00000000 =
+  100.00000000) y C-B San Martín 7890 (96 uds, 95×1.04166667 + 1×1.04166635 = 100.00000000).
+- Doce períodos (C-A 2025-09 a 2026-08, 11 liquidados + 1 abierto; C-B 11 liquidados + 1 abierto).
+- Mora: C-A 3B (3 períodos), 1C (2), 2C (1); resto al día. Reclamos RC-01 a RC-05 en todos los estados.
+- Reglamento indexado: `datos-cliente/reglamento/reglamento-copropiedad.md` + 20 preguntas.
+- Un usuario por rol (`usuarios.csv`): administrador, consejo, consorcistas al día y morosos.
+
+| Archivo | SHA256 |
+|---|---|
+| `consorcios.csv` | `2F25629373F4AEE86121B27E2DB801852CA97737F00B069CCD4170D830AE0834` |
+| `unidades-12.csv` | `8B78D0AF2E09E20B6EC16193BD09F6E47D8F30F580381FAE9927BB791FF4E732` |
+| `unidades-96.csv` | `DA14E0F84A826BB03CD7C5FC187A1BA33FE80109B981B2B71AA08B0FCD9EC43B` |
+| `periodos-12.csv` | `6415808F00F47BD56835F41DB1E94AA5D27C3AF58BA8268FC8BF05238E69BB6C` |
+| `reclamos.csv` | `F87B669AD6E90864086DDA547350003896B188936F604A5B8421EDFF48524A4D` |
+| `usuarios.csv` | `6D6C2CCE06FA55329F5E71FBD14182EF8A2D64513D60CF06AEF1B2A21635B3F4` |
 
 Los datos son ficticios. **No se utilizan datos reales de Grupo Delta en el entorno de demostración**,
 conforme al punto 5.3.2.

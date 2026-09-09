@@ -51,7 +51,7 @@ transcripta y el mapeo de cada punto a su documento.
 | # | Documento | Estado |
 |---|---|---|
 | 13 | [Prototipo](entrega-final/13-prototipo.md) | Esqueleto — se completa durante la construcción |
-| 14 | [Codificación](entrega-final/14-codificacion.md) | Esqueleto |
+| 14 | [Codificación](entrega-final/14-codificacion.md) | Parcial — § 14.1 lenguaje resuelto; 14.3 a 14.5 abiertos |
 | 15 | [Pruebas](entrega-final/15-pruebas.md) | Esqueleto |
 | 16 | [Manual de usuario](entrega-final/16-manual-usuario.md) | Esqueleto |
 | 17 | [Cronograma de capacitación](entrega-final/17-cronograma-capacitacion.md) | Esqueleto |

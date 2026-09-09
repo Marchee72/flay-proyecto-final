@@ -61,6 +61,18 @@ mismo par motor+extension que corre la base administrada.
 La base local con esa imagen sigue siendo el entorno de desarrollo comprometido (FR-007); el flujo
 de verificacion la usa como servicio y no depende de la base administrada.
 
+### 2.3 Visibilidad del repositorio (2026-09-09)
+
+El repositorio pasa a **publico**, conforme a §1. La proteccion de la rama principal —condicion 1 de
+§8.3.4 y FR-020— no esta disponible en repositorios privados sin plan pago, y `gitleaks` (FR-021)
+tampoco corre sin licencia sobre repositorios privados. Antes del cambio se verifico que ningun
+archivo de entorno estuvo versionado, que el historial no contiene credenciales y que
+`datos-cliente/` es ficticio por construccion (§13.4).
+
+Queda configurado sobre `main`: sin envio directo, incorporacion por solicitud con **una revision
+aprobada** del otro integrante, `verificar` como comprobacion requerida en modo estricto, alcance a
+administradores, sin reescritura ni borrado de la rama.
+
 ## 3. Ley 25.326 (§5.5.4)
 
 Datos personales bajo Ley 25.326. Región San Pablo (próxima a Rosario); tratamiento por

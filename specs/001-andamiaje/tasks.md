@@ -14,7 +14,7 @@
 **Purpose**: Acta Paso 0 + proyecto base + dependencias pinnadas
 
 - [x] T001 Ratificar plataforma y versiones en acta Paso 0 (FR-001, I-12): Vercel gru1, Neon sa-east-1, Blob, Resend, Actions + tabla §14.1 + cláusulas Ley 25.326
-- [ ] T002 [P] Fijar runtime Node 22.21.0 + npm 11.12.1 en `package.json` (engines), `.nvmrc` y flujo `setup-node` en `.github/workflows/verificacion.yml` (FR-003, M-06) — `engines` y `.nvmrc` hechos; `setup-node` queda con T022
+- [x] T002 [P] Fijar runtime Node 22.21.0 + npm 11.12.1 en `package.json` (engines), `.nvmrc` y flujo `setup-node` en `.github/workflows/verificacion.yml` (FR-003, M-06)
 - [x] T003 Generar proyecto con `create-next-app@15.3.4` en `tmp-flay` y trasladar a raíz + `npm install` con versiones §14.1 (FR-004, FR-005, I-03)
 - [x] T004 [P] Instalar dependencias exactas + Playwright chromium + `@axe-core/playwright` 4.9.0 (FR-005, I-09)
 
@@ -74,7 +74,7 @@
 
 **Independent Test**: Cambiar `version` de `/api/salud`, integrar y verlo en demo sin acción manual (SC-007)
 
-- [ ] T022 [US3] Crear `.github/workflows/verificacion.yml` (servicio pgvector + `SHADOW_DATABASE_URL`, `npm ci` + `verificar` <10 min) (FR-018, I-01)
+- [x] T022 [US3] Crear `.github/workflows/verificacion.yml` (servicio pgvector + `SHADOW_DATABASE_URL`, `npm ci` + `verificar` <10 min) (FR-018, I-01) — incluye `setup-node` con `.nvmrc` (cierra T002), `db:preparar`, `test:a11y`, gitleaks y `npm audit`; sin ejecutar hasta el primer envio
 - [ ] T023 [US3] Crear flujo despliegue: verde → `db:deploy` demo + publicar; secretos desde proveedor; migrar-antes-de-servir; migración fallida bloquea + alerta (FR-019, M-09)
 - [ ] T024 [US3] Proteger `main`: sin push directo, PR + revisión del otro + verde (FR-020, SC-012)
 

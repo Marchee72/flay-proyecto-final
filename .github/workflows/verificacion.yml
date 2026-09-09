@@ -1,0 +1,73 @@
+# Puerta unica del repositorio (FR-018, §8.3.5). Si esto esta en rojo, no se
+# integra y no se despliega. Debe cerrar en menos de 10 minutos.
+name: verificacion
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: verificacion-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: flay
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # La aplicacion y las pruebas corren como flay_app; las migraciones, como
+      # flay_owner. La cadena administradora solo crea los roles (I-02).
+      DATABASE_URL: postgresql://flay_app:flay_ci@localhost:5432/flay
+      DIRECT_DATABASE_URL: postgresql://flay_owner:flay_ci@localhost:5432/flay
+      ADMIN_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flay
+      SHADOW_DATABASE_URL: postgresql://flay_owner:flay_ci@localhost:5432/flay_shadow
+      FLAY_OWNER_PASSWORD: flay_ci
+      FLAY_APP_PASSWORD: flay_ci
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # historial completo: lo necesita gitleaks (FR-021)
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Navegador de Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Roles y base sombra
+        run: npm run db:preparar
+
+      - name: Verificacion
+        run: npm run verificar
+
+      - name: Accesibilidad (axe, 0 infracciones A/AA)
+        run: npm run test:a11y
+
+      - name: Secretos en el historial
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Dependencias con vulnerabilidades altas
+        run: npm audit --audit-level=high

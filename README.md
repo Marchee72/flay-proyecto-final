@@ -34,7 +34,10 @@ la cátedra del que se desprenden todos los requisitos.
 |---|---|
 | Documentación de las entregas 1 a 3 (puntos 1 a 12) | Completa |
 | Documentación de la última entrega (puntos 13 a 18) | Esqueletos, se completan durante la construcción |
-| Código de la aplicación | Sin iniciar |
+| Etapa 0 — andamiaje (`specs/001-andamiaje/`) | Integrada el 09/09/2026: aplicación, base, verificación única y despliegue automático, sin negocio |
+| Iteración 1 — núcleo (`specs/002-nucleo/`) | Sin iniciar |
+
+Cómo se corre y se verifica: [`CLAUDE.md`](CLAUDE.md). La puerta única es `npm run verificar`.
 
 ## Alcance del sistema
 

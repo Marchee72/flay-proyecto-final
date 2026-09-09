@@ -66,6 +66,9 @@ jobs:
       - name: Accesibilidad (axe, 0 infracciones A/AA)
         run: npm run test:a11y
 
+      - name: §14.1 contra package-lock (FR-023)
+        run: npm run docs:versiones
+
       - name: Secretos en el historial
         uses: gitleaks/gitleaks-action@v2
         env:

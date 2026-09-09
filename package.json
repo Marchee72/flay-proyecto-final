@@ -19,6 +19,7 @@
     "test:e2e": "playwright test --project=escritorio --project=telefono",
     "test:a11y": "playwright test --project=a11y",
     "medir:p95": "node scripts/medir-p95.mjs",
+    "docs:versiones": "node scripts/verificar-versiones.mjs",
     "db:deploy": "prisma migrate deploy",
     "db:preparar": "node scripts/preparar-bd.mjs",
     "db:drift": "node scripts/db-drift.mjs",

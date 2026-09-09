@@ -100,9 +100,9 @@
 
 **Independent Test**: 0 `A fijar` en §14.1 (coincide con `package-lock`), 5 estándares §14.4, 0 `a definir` §18.7 (SC-009, SC-010)
 
-- [ ] T026 [P] [US5] Completar §14.1 desde `package-lock.json` + agregar `gitleaks` + `npm audit --audit-level=high` al flujo (FR-021, FR-023)
-- [ ] T027 [P] [US5] Escribir §14.4 (5 estándares) y §18.7 (secretos + dependencias) (FR-024, FR-025)
-- [ ] T028 [US5] Registrar comandos en `CLAUDE.md` + verificar hitos 2.5/5.1/demo-04-09 en §13.2 (FR-026, FR-027)
+- [x] T026 [P] [US5] Completar §14.1 desde `package-lock.json` + agregar `gitleaks` + `npm audit --audit-level=high` al flujo (FR-021, FR-023) — `npm run docs:versiones` compara las 18 dependencias comprometidas contra el `package-lock` y corre en CI
+- [x] T027 [P] [US5] Escribir §14.4 (5 estándares) y §18.7 (secretos + dependencias) (FR-024, FR-025)
+- [x] T028 [US5] Registrar comandos en `CLAUDE.md` + verificar hitos 2.5/5.1/demo-04-09 en §13.2 (FR-026, FR-027)
 
 **Checkpoint**: US5 cierra H-01–H-04/H-10; etapa documentada
 

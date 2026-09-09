@@ -226,8 +226,14 @@ sigue. Se ejecutan desde la raíz del repositorio, en PowerShell sobre Windows.
   docker --version  # para la base de datos local
   ```
 
-  El runtime queda fijado en `engines` de `package.json` + `.nvmrc` + `setup-node` del flujo FR-018,
-  para que desarrollo y verificación usen el mismo Node.
+  El runtime queda fijado en `.nvmrc` y en `setup-node` del flujo FR-018, que es donde el pin
+  exacto se cumple. En `engines` va el piso compatible (`>=22.21.0 <23`): la plataforma de
+  despliegue elige el runtime por versión mayor y trae su propio `npm`, así que un pin exacto ahí
+  no se cumple, solo genera advertencias.
+
+  `build` corre `prisma generate` antes de `next build`: la plataforma cachea dependencias y sin
+  esa llamada el cliente generado queda viejo, lo que rompe el despliegue sin romper la
+  verificación local.
 
 - **FR-004**: Generar el proyecto en un directorio temporal y trasladarlo a la raíz con versión
   **fijada** del generador (M-06). El repositorio

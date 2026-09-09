@@ -62,7 +62,7 @@
 - [x] T018 [P] [US2] Crear fixture 1 capa cruzada + fixture 4 proveedor directo (`@prisma/client` en dominio) en `pruebas/fixtures-negativas/` (FR-022, I-04)
 - [x] T019 [P] [US2] Crear fixture 2 `number` como dinero + fixture 3 aritmética `Decimal` en `pruebas/fixtures-negativas/` (FR-022)
 - [x] T020 [US2] Prueba que ejecuta el verificador sobre las 4 fixtures y afirma fallo con mensaje esperado (SC-003)
-- [x] T021 [US2] Verificar escenarios US-2 1-3: `lint` capa, `typecheck` dinero, `lint` aritmética — el 4 (CI en rojo bloquea PR) queda con T024
+- [x] T021 [US2] Verificar escenarios US-2 1-4: `lint` capa, `typecheck` dinero, `lint` aritmética, y CI en rojo bloquea la integración (dos corridas rojas rechazadas antes de la verde)
 
 **Checkpoint**: US1+US2 en verde; la constitución es exigible por construcción
 
@@ -74,9 +74,9 @@
 
 **Independent Test**: Cambiar `version` de `/api/salud`, integrar y verlo en demo sin acción manual (SC-007)
 
-- [x] T022 [US3] Crear `.github/workflows/verificacion.yml` (servicio pgvector + `SHADOW_DATABASE_URL`, `npm ci` + `verificar` <10 min) (FR-018, I-01) — incluye `setup-node` con `.nvmrc` (cierra T002), `db:preparar`, `test:a11y`, gitleaks y `npm audit`; sin ejecutar hasta el primer envio
+- [x] T022 [US3] Crear `.github/workflows/verificacion.yml` (servicio pgvector + `SHADOW_DATABASE_URL`, `npm ci` + `verificar` <10 min) (FR-018, I-01) — incluye `setup-node` con `.nvmrc` (cierra T002), `db:preparar`, `test:a11y`, gitleaks y `npm audit`; corrida 34351015763 en verde
 - [x] T023 [US3] Crear flujo despliegue: verde → `db:deploy` demo + publicar; secretos desde proveedor; migrar-antes-de-servir; migración fallida bloquea + alerta (FR-019, M-09) — escrito en `.github/workflows/despliegue.yml`; falta conectar el proyecto de Vercel y cargar los secretos
-- [ ] T024 [US3] Proteger `main`: sin push directo, PR + revisión del otro + verde (FR-020, SC-012)
+- [x] T024 [US3] Proteger `main`: sin push directo, PR + revisión del otro + verde (FR-020, SC-012) — repositorio hecho público (acta §2.3); 1 revisión aprobada, `verificar` requerido y estricto, alcanza a administradores, sin force push ni borrado; envío directo a `main` rechazado por GH006
 
 **Checkpoint**: US3 desplegando solo; condición 6 de §8.3.4 garantizada
 
@@ -112,8 +112,8 @@
 
 **Purpose**: Puerta única y evidencias finales
 
-- [x] T029 Correr `npm run verificar` local 3× (57 s, 58 s, 58 s; límite 10 min) — SC-004 local registrado; falta la corrida remota (T022 sin ejecutar)
-- [ ] T030 [P] `gitleaks detect` historial completo 0 hallazgos + `npm audit` 0 altas (SC-008)
+- [x] T029 Correr `npm run verificar` local 3× (57 s, 58 s, 58 s) + remoto en CI, todos en verde bajo el límite de 10 min — SC-004 registrado
+- [x] T030 [P] `gitleaks detect` historial completo 0 hallazgos + `npm audit` 0 altas (SC-008) — verificado en la corrida remota 34351015763
 - [ ] T031 Run `quickstart.md` validation de punta a punta
 
 ---

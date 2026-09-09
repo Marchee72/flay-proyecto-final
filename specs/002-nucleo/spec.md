@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-08
 
-**Status**: Draft
+**Status**: Clarificada (sesión 2026-09-09)
 
 **Input**: Iteración 1 del cronograma (§ 8.3.1), 6 semanas. Alcance comprometido: `RF-01` a
 `RF-05`, `RF-10`, `RF-17` y `RF-26` — usuarios, roles y habilitaciones; consorcios, unidades y
@@ -20,6 +20,27 @@ coeficientes; gastos, rubros, proveedores y comprobantes; y la bitácora de audi
 **Depende de**: `001-andamiaje` terminada. Sin la verificación automática, el aislamiento en un
 solo punto y la bitácora inviolable, ningún requerimiento de esta etapa puede cumplir la definición
 de terminado.
+
+---
+
+## Clarifications
+
+### Session 2026-09-09
+
+- Q: ¿Qué mecanismo ejecuta el reintento cuando falla el correo de invitación o la subida de un
+  comprobante? (FR-006, RNF-14) → A: Tabla de pendientes con reintento oportunista en el siguiente
+  pedido, más un botón «reenviar» explícito para el administrador.
+- Q: Cuando dos administradores editan coeficientes del mismo consorcio a la vez, ¿qué impide que la
+  suma quede distinta de `100.00000000`? (FR-011, regla RN-01 § 7.2) → A: Disparador diferido en la
+  base que valida la suma al confirmar la transacción.
+- Q: ¿Bajo qué condiciones se mide el percentil 95 de menos de 2 segundos del listado de gastos?
+  (SC-006, RNF-06) → A: En caliente, descartando la primera consulta tras la suspensión; el arranque
+  en frío se mide y se informa aparte, sin condicionar el criterio.
+- Q: ¿Qué tamaño máximo y qué formatos acepta un comprobante? (FR-018) → A: 25 MB; PDF, JPEG, PNG,
+  WebP, HEIC y TIFF. Obliga a subida directa al almacenamiento y a resolver la presentación de los
+  formatos que el navegador no muestra.
+- Q: ¿Qué protege al inicio de sesión de un atacante que prueba contraseñas una tras otra? (FR-001,
+  RNF-04) → A: Bloqueo temporal de la cuenta tras cinco intentos fallidos, durante quince minutos.
 
 ---
 
@@ -195,13 +216,15 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
   administrador, no del sistema.
 - **Una persona con dos roles distintos en dos consorcios.** Es el caso normal y no una excepción:
   la autorización se evalúa por par (rol, consorcio), nunca por rol global.
-- **Un comprobante de 30 MB o de un formato no soportado.** Se rechaza con mensaje comprensible
-  (RNF-10) antes de subirlo, y el gasto queda registrado igual: el comprobante es un adjunto, no
-  una precondición del gasto.
+- **Un comprobante de más de 25 MB o de un formato no soportado.** Se rechaza con mensaje
+  comprensible (RNF-10) **antes** de subirlo, y el gasto queda registrado igual: el comprobante es
+  un adjunto, no una precondición del gasto.
 - **El almacenamiento de objetos no responde.** El registro del gasto no falla: el adjunto queda
-  pendiente y se reintenta (RNF-14).
-- **El servicio de correo no responde al invitar.** La invitación queda persistida en estado
-  pendiente y se reintenta; el alta del usuario no falla (hueco H-06).
+  como `TrabajoPendiente` y se reintenta en el siguiente pedido, con la subida visible como
+  pendiente en la pantalla del gasto (RNF-14, FR-006b).
+- **El servicio de correo no responde al invitar.** La invitación queda como `TrabajoPendiente` y
+  se reintenta en el siguiente pedido; el alta del usuario no falla, y el administrador puede
+  forzar el reenvío (hueco H-06, FR-006b).
 - **Un rubro que el cliente no contempló.** El alta y la modificación de rubros están **diferidas**
   (§ 9.11, ítems 9 y 10): se resuelve por soporte sobre la lista semilla, y eso se le dice al
   cliente en la demostración.
@@ -219,6 +242,15 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
 - **FR-001**: El sistema **DEBE** autenticar por correo electrónico y contraseña, con la contraseña
   derivada mediante Argon2id (RNF-04). Ninguna contraseña se almacena en texto plano ni con función
   de resumen simple.
+- **FR-001b**: El sistema **DEBE** bloquear temporalmente la cuenta tras **cinco** intentos
+  fallidos consecutivos, durante **quince minutos**, y registrar cada intento fallido con momento y
+  origen. Argon2id encarece romper la base robada; esto es lo que frena la prueba de contraseñas
+  contra el formulario.
+- **FR-001c**: El mensaje de inicio de sesión fallido **DEBE** ser el mismo exista o no la cuenta y
+  esté o no bloqueada: no revela qué correos están registrados. El administrador **DEBE** poder
+  levantar el bloqueo sin esperar los quince minutos, porque el bloqueo por cuenta permite dejar
+  fuera a un usuario legítimo a quien se le conozca el correo; ese flanco se acepta a conciencia y
+  se registra en § 18.
 - **FR-002**: El sistema **DEBE** evaluar la autorización por **par (rol, consorcio)** en cada
   operación de la capa de aplicación (RNF-03, regla RN-12 § 7.2), y no por rol global.
 - **FR-003**: El filtro por consorcio **DEBE** aplicarse en la extensión del cliente de datos
@@ -232,6 +264,13 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
 - **FR-006**: El sistema **DEBE** permitir invitar a una persona por correo electrónico; el
   invitado fija su propia contraseña. El envío se persiste y se reintenta ante falla, sin que la
   falla del correo haga fallar el alta (RNF-14, hueco H-06).
+- **FR-006b**: Todo efecto externo que pueda fallar sin invalidar la operación —envío de correo y
+  subida de comprobante— **DEBE** registrarse como fila en `TrabajoPendiente` con su estado, la
+  cantidad de intentos y el momento del próximo. El reintento es **oportunista**: el siguiente
+  pedido que llega al servidor procesa lo vencido, con espera creciente entre intentos. Además,
+  el administrador **DEBE** contar con una acción explícita de reintento y ver el estado del
+  pendiente. No se construye ejecutor programado en esta etapa: `004-servicios` decide si el
+  despachador de `RF-14` lo necesita, y esta tabla es la costura que va a usar.
 - **FR-007**: Los roles **DEBEN** ser los del punto 12: administrador, consejo de propietarios y
   consorcista. La nómina nominada de deudores se reserva a los dos primeros (regla RN-13 § 7.2);
   esta etapa aún no la produce, pero el rol ya la contempla.
@@ -247,8 +286,17 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
   decimal de precisión fija de **ocho decimales**.
 - **FR-011**: El sistema **DEBE** rechazar toda operación que deje la suma de coeficientes de un
   consorcio distinta de `100.00000000` exacto, informando la diferencia y las unidades involucradas
-  (regla RN-01 § 7.2). La verificación es de aplicación, y se repite obligatoriamente antes de
-  liquidar en la etapa 3.
+  (regla RN-01 § 7.2). La verificación se repite obligatoriamente antes de liquidar en la etapa 3.
+- **FR-011b**: El invariante **DEBE** imponerse con un **disparador de restricción diferido** en la
+  base, evaluado al confirmar la transacción: ninguna transacción puede dejar un consorcio con
+  unidades cuya suma difiera de `100.00000000`, venga de la interfaz, de una migración o de una
+  corrección manual. La verificación de aplicación de FR-011 no desaparece: existe para dar el
+  mensaje comprensible que exige RNF-10, pero **no es la que garantiza el invariante**. Es el mismo
+  criterio que la regla RN-09 (§ 7.2) ya aplica a la superposición de ocupaciones.
+- **FR-011c**: Un consorcio **sin ninguna unidad** no viola la regla: el invariante se evalúa
+  únicamente sobre consorcios con al menos una unidad. Un alta de consorcio y sus unidades es **una
+  sola transacción**; agregar o subdividir unidades después obliga a ajustar las demás en esa misma
+  transacción, que es exactamente lo que la regla RN-01 quiere.
 - **FR-012**: Un coeficiente **DEBE** poder modificarse sólo hacia el futuro. El histórico se
   conserva en `CoeficienteHistorico` con vigencia, para que una liquidación pasada se pueda
   reconstruir (regla RN-02 § 7.2).
@@ -272,9 +320,19 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
   (regla RN-03 § 7.2). Como esta etapa no liquida, declara ya en `src/dominio/contratos` el
   contrato mínimo del estado (valores y transiciones válidas, M-04) que `003` comparte, y la prueba
   lo usa en lugar de fabricar un estado propio.
-- **FR-018**: El sistema **DEBE** permitir adjuntar un comprobante digitalizado (imagen o PDF) a un
-  gasto, almacenado en el almacenamiento de objetos y accesible sólo con habilitación vigente sobre
-  el consorcio.
+- **FR-018**: El sistema **DEBE** permitir adjuntar a un gasto un comprobante digitalizado de
+  **hasta 25 MB** en **PDF, JPEG, PNG, WebP, HEIC o TIFF**, almacenado en el almacenamiento de
+  objetos y accesible sólo con habilitación vigente sobre el consorcio. Tamaño y tipo se verifican
+  **antes** de subir, y el rechazo dice cuál es el límite y qué formatos se aceptan (RNF-10).
+- **FR-018b**: La subida **DEBE** ir del navegador al almacenamiento **directamente**, con un
+  permiso de corta duración que emite la aplicación; el archivo no atraviesa el servidor. No es una
+  optimización: la plataforma de despliegue limita el cuerpo de un pedido muy por debajo de 25 MB.
+  En consecuencia, la interfaz declarada en `src/dominio/contratos` (FR-019) expone **emitir permiso
+  de subida** y **resolver lectura autorizada**, nunca «recibir bytes».
+- **FR-018c**: HEIC y TIFF **no se muestran** en los navegadores. Para esos formatos la interfaz
+  **DEBE** ofrecer la descarga del original en lugar de la vista incrustada, y decir por qué.
+  Generar una vista previa convertida queda **fuera de alcance** de esta etapa: se evalúa en
+  `004-servicios`, junto con el procesamiento de documentos.
 - **FR-019**: El acceso al almacenamiento de objetos **DEBE** consumirse a través de una interfaz
   declarada en `src/dominio/contratos`, implementada en infraestructura (Principio III, decisión 4
   de § 12.1.3). El dominio no conoce al proveedor.
@@ -288,6 +346,7 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
   rubro, con acceso al comprobante de cada uno.
 - **FR-022**: El listado **DEBE** responder en menos de 2 segundos en el percentil 95 (RNF-06) con
   el volumen de un año del punto 7.5 (10.800 gastos), apoyado en los índices previstos en § 7.6.
+  La medición se hace en caliente y el arranque en frío se informa aparte (SC-006, SC-006b).
 - **FR-023**: Las pantallas destinadas al consorcista **DEBEN** cumplir WCAG 2.1 nivel AA (RNF-11)
   y verse correctamente en teléfono (RNF-01).
 
@@ -321,7 +380,7 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
 | Entidad | Qué representa | Relaciones y restricciones clave |
 |---|---|---|
 | `Consorcio` | Un edificio de propiedad horizontal de la cartera | Raíz del aislamiento: casi toda entidad cuelga de él (regla RN-12 § 7.2) |
-| `Unidad` | Unidad funcional con su coeficiente vigente | `consorcio_id` obligatorio; suma de coeficientes = `100.00000000` (regla RN-01 § 7.2) |
+| `Unidad` | Unidad funcional con su coeficiente vigente | `consorcio_id` obligatorio; suma de coeficientes = `100.00000000`, impuesta por disparador diferido en la base (regla RN-01 § 7.2, FR-011b) |
 | `CoeficienteHistorico` | Coeficiente de una unidad con rango de vigencia | Permite reconstruir una liquidación pasada (regla RN-02 § 7.2) |
 | `Persona` | Persona física, con o sin usuario | Raíz; datos personales bajo Ley 25.326 (RNF-13) |
 | `Usuario` | Credencial de acceso de una persona | Contraseña derivada con Argon2id (RNF-04) |
@@ -332,6 +391,7 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
 | `Gasto` | Erogación del consorcio imputada a un período | `periodo_id` y `rubro_id` obligatorios; inmutable si el período fue liquidado (reglas RN-03 y RN-04 § 7.2) |
 | `Comprobante` | Archivo digitalizado que respalda un gasto | `gasto_id` obligatorio; contenido en almacenamiento de objetos |
 | `Periodo` | Mes de operación de un consorcio | **Sólo apertura y listado en esta etapa.** Un período por consorcio y mes |
+| `TrabajoPendiente` | Efecto externo que falló y hay que reintentar: correo o subida | Estado, intentos y momento del próximo intento; lo procesa el siguiente pedido (FR-006b) |
 | `BitacoraAuditoria` | Asiento inmutable (creada en `001-andamiaje`) | Esta etapa le engancha sus tablas económicas |
 
 ---
@@ -354,12 +414,30 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
   riesgo RT-04).
 - **SC-004**: Un intento de alta de unidades cuya suma de coeficientes difiere en `0.00000001` es
   rechazado, y el mensaje nombra la diferencia exacta y las unidades involucradas.
+- **SC-004b**: Dos transacciones simultáneas que modifican coeficientes del mismo consorcio no
+  pueden dejar la suma fuera de `100.00000000`: la prueba las ejecuta en paralelo **salteándose la
+  capa de aplicación** y verifica que la base rechaza al menos una (FR-011b). Un consorcio sin
+  unidades no es rechazado.
 - **SC-005**: Un intento de registrar una segunda ocupación vigente del mismo tipo sobre la misma
   unidad y fecha es rechazado **por la base de datos**, no por el código (regla RN-09 § 7.2). La
   prueba lo verifica saltándose la capa de aplicación.
 - **SC-006**: Con **10.800 gastos** cargados —volumen de un año del punto 7.5—, el listado filtrado
   de `RF-10` responde en **menos de 2 segundos en el percentil 95** sobre 100 consultas con el
-  arnés `medir:p95` en el entorno de demostración (RNF-06, I-07).
+  arnés `medir:p95` en el entorno de demostración (RNF-06, I-07). La medición es **en caliente**: se
+  descarta la primera consulta posterior a una suspensión de la base o a un arranque en frío de la
+  función, porque mide la infraestructura de la capa gratuita y no la consulta. El criterio evalúa
+  lo que el equipo controla.
+- **SC-006b**: El **arranque en frío** se mide igual, se informa por separado en § 14.5 y **no
+  condiciona** SC-006. Es el dato que sostiene la justificación 5 del punto 5.5 —que el prototipo
+  puede permanecer publicado sin costo— y el que diría, si fuera desmesurado, que la capa gratuita
+  no alcanza para la demostración.
+- **SC-006c**: Un comprobante de **25 MB** en PDF se sube y se recupera; uno de **26 MB** se rechaza
+  **antes** de transferir un solo byte; un HEIC se recupera por descarga con la explicación de por
+  qué no se muestra incrustado. El archivo nunca atraviesa el servidor de la aplicación (FR-018b).
+- **SC-006d**: Al sexto intento fallido consecutivo, el inicio de sesión es rechazado **aunque la
+  contraseña sea correcta**, y vuelve a funcionar pasados quince minutos o cuando el administrador
+  levanta el bloqueo. El mensaje es idéntico para cuenta inexistente, contraseña incorrecta y
+  cuenta bloqueada (FR-001b, FR-001c).
 - **SC-007**: Cada una de las **5** tablas económicas de la etapa deja exactamente un asiento de
   auditoría por operación, con imagen anterior y posterior. Cero operaciones sin asiento.
 - **SC-008**: `INSERT`, `UPDATE` y `DELETE` sobre la bitácora con el usuario de aplicación fallan
@@ -377,6 +455,10 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
   el **100 %** de los intentos, de alta y de modificación (regla RN-03 § 7.2).
 - **SC-013**: Las **3 liquidaciones reales** del cliente están en poder del equipo antes de abrir
   `003-liquidacion` (riesgo RT-01 § 11.2). Sin ellas, la etapa 3 no arranca.
+- **SC-013b**: Con el servicio de correo caído, el alta de usuario **igual se completa** y queda un
+  `TrabajoPendiente`; al volver el servicio, el siguiente pedido lo despacha sin intervención, y la
+  acción de reenvío del administrador lo despacha aunque no haya llegado el momento del próximo
+  intento. Cero altas perdidas por caída del correo (RNF-14).
 - **SC-014**: La demostración al cliente recorre `CU-01`, `CU-02` y `CU-05` de punta a punta sobre
   el entorno de demostración desplegado, en **1 hora** (§ 8.3.2), sin ningún paso ejecutado desde
   una máquina de desarrollo.
@@ -413,3 +495,7 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
   en `004-servicios`: la invitación de usuario lo necesita ya (hueco H-06).
 - El 10 % de la capacidad de la iteración se reserva para refactorización, conforme a la
   constitución.
+- El bloqueo por cuenta de FR-001b se elige sabiendo que permite negar el servicio a un usuario
+  cuyo correo se conozca. Se acepta porque el universo de usuarios es cerrado y conocido —los
+  consorcistas de una cartera de administración, no un registro público— y porque el administrador
+  puede levantarlo. Si el sistema se abriera a registro libre, la decisión se revisa.

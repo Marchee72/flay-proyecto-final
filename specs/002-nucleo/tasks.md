@@ -63,6 +63,7 @@
 - [X] T026 [P] [US1] Implementar `src/aplicacion/identidad/fijar-contrasena.ts`: valida la credencial de invitación, la marca usada y pasa el usuario a `activo`; el administrador nunca conoce la contraseña (FR-006)
 - [X] T027 [P] [US1] Implementar `src/aplicacion/identidad/otorgar-habilitacion.ts`, `revocar-habilitacion.ts` y `desbloquear-usuario.ts`, todas restringidas a rol administrador (FR-007, FR-001c)
 - [X] T028 [US1] Crear `scripts/semilla-arranque.mjs` y su guion: crea un único administrador con la contraseña tomada de variable de entorno, nunca versionada, e idempotente (FR-005, cierra el hueco H-08)
+- [X] T028b [US1] Modelar el cuarto rol de cartera (FR-007b): tabla `HabilitacionCartera`, puerto `esAdministradorDeCartera`, `conAutorizacionDeCartera` y `src/aplicacion/consorcios/alta-consorcio.ts`, con `pruebas/integracion/cartera.spec.ts` (SC-002c)
 - [ ] T029 [P] [US1] Construir las pantallas `src/app/(sesion)/ingresar/page.tsx` e `invitacion/[credencial]/page.tsx` con etiqueta visible, ayuda y error debajo (§ 3.4 de la guía de estilos)
 - [ ] T030 [P] [US1] Construir `src/app/(panel)/usuarios/page.tsx` y `usuarios/invitar/page.tsx` con la acción de reenviar invitación y el estado del pendiente a la vista (FR-006b)
 - [X] T031 [US1] Escribir `pruebas/integracion/identidad.spec.ts`: el sexto intento falla **aunque la contraseña sea correcta** y vuelve a funcionar a los quince minutos o al desbloquear (SC-006d); el mensaje es idéntico en los tres casos (FR-001c)

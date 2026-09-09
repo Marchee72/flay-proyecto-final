@@ -41,6 +41,9 @@ de terminado.
   formatos que el navegador no muestra.
 - Q: ¿Qué protege al inicio de sesión de un atacante que prueba contraseñas una tras otra? (FR-001,
   RNF-04) → A: Bloqueo temporal de la cuenta tras cinco intentos fallidos, durante quince minutos.
+- Q: Dar de alta un consorcio no se puede autorizar por par (rol, consorcio) porque todavía no hay
+  consorcio. ¿Cómo se autoriza? (FR-009) → A: Un cuarto rol de cartera, por encima de los tres del
+  punto 12, en tabla propia.
 
 ---
 
@@ -259,8 +262,9 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
 - **FR-004**: Una habilitación **DEBE** tener vigencia con fecha de inicio y fecha de fin opcional.
   Una habilitación no vigente equivale a inexistente a efectos de autorización.
 - **FR-005**: El sistema **DEBE** proveer una **semilla de arranque** que cree el primer usuario
-  administrador y su primera habilitación, con la contraseña provista por variable de entorno y
-  nunca versionada. Cierra el hueco H-08.
+  **administrador de cartera**, con la contraseña provista por variable de entorno y nunca
+  versionada. No crea ningún consorcio: el primero lo da de alta ese usuario desde la aplicación,
+  de modo que la secuencia real quede probada desde el primer día. Cierra el hueco H-08.
 - **FR-006**: El sistema **DEBE** permitir invitar a una persona por correo electrónico; el
   invitado fija su propia contraseña. El envío se persiste y se reintenta ante falla, sin que la
   falla del correo haga fallar el alta (RNF-14, hueco H-06).
@@ -274,14 +278,30 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
 - **FR-007**: Los roles **DEBEN** ser los del punto 12: administrador, consejo de propietarios y
   consorcista. La nómina nominada de deudores se reserva a los dos primeros (regla RN-13 § 7.2);
   esta etapa aún no la produce, pero el rol ya la contempla.
+- **FR-007b**: Además de los tres roles por consorcio, **DEBE** existir un cuarto rol, de
+  **cartera**, por encima de ellos: es quien da de alta consorcios. La razón es estructural, no de
+  conveniencia: el alta de un consorcio no se puede autorizar por par (rol, consorcio) porque al
+  crear el primero no hay ninguno contra el cual evaluar.
+
+  Se modela como **tabla propia** (`HabilitacionCartera`, con vigencia), no como una habilitación
+  con consorcio nulo: un nulo en la tabla que materializa el Principio I es la clase de agujero que
+  después filtra datos ajenos. La habilitación de cartera **no** abre contexto de aislamiento —
+  quien opera con ella trabaja por encima de él—, y por eso el rol es escaso, tiene vigencia y
+  queda auditado.
+
+  **Impacto documental**: el punto 12 enumera tres roles. La corrección corresponde asentarla allí
+  y en `RF-03`; se registra en el acta de la iteración y no reescribiendo una entrega ya presentada.
 - **FR-008**: La relación entre persona y unidad **DEBE** registrarse como ocupación con tipo
   (propietario o inquilino) y rango de vigencia, y la superposición **DEBE** impedirse con
   **restricción de exclusión en la base de datos**, no en el código (regla RN-09 § 7.2).
 
 #### Bloque B — Consorcios, unidades y coeficientes (`RF-01`, `RF-02`)
 
-- **FR-009**: El sistema **DEBE** permitir dar de alta y modificar consorcios. La **baja está
-  diferida** (§ 9.11) y se resuelve por soporte; la interfaz no la ofrece.
+- **FR-009**: El sistema **DEBE** permitir dar de alta y modificar consorcios. El alta la autoriza
+  el **administrador de cartera** (FR-007b), y quien crea el consorcio queda habilitado sobre él
+  como administrador en la misma transacción: un consorcio sin nadie que lo administre no le sirve a
+  nadie. La modificación de la cabecera la puede hacer el administrador del consorcio. La **baja
+  está diferida** (§ 9.11) y se resuelve por soporte; la interfaz no la ofrece.
 - **FR-010**: El sistema **DEBE** permitir registrar unidades funcionales con su coeficiente en
   decimal de precisión fija de **ocho decimales**.
 - **FR-011**: El sistema **DEBE** rechazar toda operación que deje la suma de coeficientes de un
@@ -438,6 +458,9 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
   contraseña sea correcta**, y vuelve a funcionar pasados quince minutos o cuando el administrador
   levanta el bloqueo. El mensaje es idéntico para cuenta inexistente, contraseña incorrecta y
   cuenta bloqueada (FR-001b, FR-001c).
+- **SC-002c**: Un usuario **sin** habilitación de cartera no puede dar de alta un consorcio, ni
+  siquiera siendo administrador de otro; una habilitación de cartera vencida ayer tampoco alcanza
+  (FR-007b, FR-009).
 - **SC-007**: Cada una de las **5** tablas económicas de la etapa deja exactamente un asiento de
   auditoría por operación, con imagen anterior y posterior. Cero operaciones sin asiento.
 - **SC-008**: `INSERT`, `UPDATE` y `DELETE` sobre la bitácora con el usuario de aplicación fallan

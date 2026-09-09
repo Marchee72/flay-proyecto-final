@@ -25,6 +25,14 @@ export const repositorioHabilitaciones: RepositorioHabilitaciones = {
     return fila
   },
 
+  async esAdministradorDeCartera(usuarioId, fecha): Promise<boolean> {
+    const fila = await prismaBase.habilitacionCartera.findFirst({
+      where: { usuarioId, ...vigenteA(fecha) },
+      select: { id: true },
+    })
+    return fila !== null
+  },
+
   async consorciosDe(usuarioId, fecha): Promise<string[]> {
     const filas = await prismaBase.habilitacion.findMany({
       where: { usuarioId, ...vigenteA(fecha) },

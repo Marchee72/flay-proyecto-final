@@ -43,3 +43,23 @@ export async function conAutorizacion<T>(
 
   return enConsorcio(contexto.consorcioId, () => trabajo(habilitacion))
 }
+
+/**
+ * Autorizacion de cartera (FR-007b): para lo que no cuelga de un consorcio.
+ *
+ * Dar de alta un consorcio no se puede autorizar por par (rol, consorcio)
+ * porque todavia no hay consorcio. No se abre contexto de aislamiento: quien
+ * opera aca trabaja por encima de el, y por eso el rol es escaso y auditado.
+ */
+export async function conAutorizacionDeCartera<T>(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  contexto: { usuarioId: string; accion: string },
+  trabajo: () => Promise<T>,
+): Promise<T> {
+  if (!(await repositorio.esAdministradorDeCartera(contexto.usuarioId, reloj.hoy()))) {
+    throw new RolInsuficiente(contexto.accion)
+  }
+
+  return trabajo()
+}

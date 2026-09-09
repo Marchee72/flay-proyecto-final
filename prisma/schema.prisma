@@ -105,8 +105,9 @@ model Usuario {
   creadoEn        DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn   DateTime      @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  persona        Persona        @relation(fields: [personaId], references: [id])
-  habilitaciones Habilitacion[]
+  persona             Persona               @relation(fields: [personaId], references: [id])
+  habilitaciones      Habilitacion[]
+  HabilitacionCartera HabilitacionCartera[]
 }
 
 /// Cada intento, exitoso o no, con su origen. Cinco fallos seguidos bloquean
@@ -148,4 +149,24 @@ enum Rol {
   administrador
   consejo
   consorcista
+}
+
+/// Habilitacion de cartera: el cuarto rol, por encima de los tres del punto 12.
+/// Es quien da de alta consorcios, que no se puede autorizar por par (rol,
+/// consorcio) porque todavia no hay consorcio.
+///
+/// Va en tabla propia y no como `consorcio_id` nulo en `Habilitacion`: un nulo
+/// en la tabla que materializa el Principio I es la clase de agujero que
+/// despues filtra datos.
+model HabilitacionCartera {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuarioId     String    @map("usuario_id") @db.Uuid
+  vigenciaDesde DateTime  @map("vigencia_desde") @db.Date
+  vigenciaHasta DateTime? @map("vigencia_hasta") @db.Date
+  creadoEn      DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime  @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId])
 }

@@ -34,22 +34,12 @@ try {
     process.exit(0)
   }
 
-  // El administrador necesita al menos una habilitacion para poder operar, y
-  // una habilitacion necesita un consorcio: el primero lo crea la semilla.
-  const consorcio =
-    (await prisma.consorcio.findFirst({ orderBy: { creadoEn: 'asc' } })) ??
-    (await prisma.consorcio.create({
-      data: {
-        nombre: process.env.CONSORCIO_SEMILLA_NOMBRE ?? 'Consorcio inicial',
-        direccion: process.env.CONSORCIO_SEMILLA_DIRECCION ?? 'A completar',
-        localidad: process.env.CONSORCIO_SEMILLA_LOCALIDAD ?? 'Rosario',
-        cuit: process.env.CONSORCIO_SEMILLA_CUIT ?? '30-00000000-0',
-      },
-    }))
-
+  // El administrador de arranque es **de cartera**: el cuarto rol, el que da de
+  // alta consorcios. No se le inventa un consorcio de mentira; crea el primero
+  // desde la aplicacion (FR-007b).
   await prisma.$transaction(async (tx) => {
     const persona = await tx.persona.create({
-      data: { nombre: 'Administrador', apellido: 'inicial', correo },
+      data: { nombre: 'Administrador', apellido: 'de cartera', correo },
     })
 
     const usuario = await tx.usuario.create({
@@ -61,17 +51,12 @@ try {
       },
     })
 
-    await tx.habilitacion.create({
-      data: {
-        usuarioId: usuario.id,
-        consorcioId: consorcio.id,
-        rol: 'administrador',
-        vigenciaDesde: new Date(),
-      },
+    await tx.habilitacionCartera.create({
+      data: { usuarioId: usuario.id, vigenciaDesde: new Date() },
     })
   })
 
-  console.log(`Administrador ${correo} creado sobre el consorcio "${consorcio.nombre}".`)
+  console.log(`Administrador de cartera ${correo} creado. Ya puede dar de alta consorcios.`)
   console.log('Rotá la clave de la semilla apenas entres por primera vez.')
 } finally {
   await prisma.$disconnect()

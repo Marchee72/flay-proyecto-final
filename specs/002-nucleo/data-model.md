@@ -59,6 +59,19 @@ levantar el bloqueo poniendo `bloqueado_hasta` en nulo (FR-001c).
 Índice por `(usuario_id, consorcio_id)`. **Una habilitación no vigente equivale a inexistente**
 (FR-004): la vigencia se evalúa contra la fecha, no contra la existencia de la fila.
 
+### `HabilitacionCartera` — el cuarto rol
+
+| Campo | Tipo | Reglas |
+|---|---|---|
+| `id` | UUID | Clave |
+| `usuario_id` | UUID | Obligatorio |
+| `vigencia_desde` | date | Obligatoria |
+| `vigencia_hasta` | date nulo | Nulo = sin vencimiento |
+
+Su existencia vigente **es** el rol: no hace falta un enum de un solo valor. Habilita el alta de
+consorcios (FR-007b), que no se puede autorizar por par (rol, consorcio). Tabla propia y no
+`consorcio_id` nulo en `Habilitacion`: un nulo ahí sería un agujero en el Principio I.
+
 ## 2. Consorcios, unidades y coeficientes
 
 ### `Consorcio`

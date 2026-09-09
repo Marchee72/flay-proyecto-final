@@ -58,7 +58,7 @@ jobs:
         run: |
           url=$(npx --yes vercel@$VERSION_VERCEL deploy --prod --yes \
             --token=${{ secrets.VERCEL_TOKEN }} \
-            --build-env FLAY_VERSION=${{ github.event.workflow_run.head_sha }})
+            --env FLAY_VERSION=${{ github.event.workflow_run.head_sha }})
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       # La ruta de salud informa que migracion esta aplicada: si el despliegue
@@ -113,7 +113,7 @@ jobs:
         run: |
           url=$(npx --yes vercel@$VERSION_VERCEL deploy --prod --yes \
             --token=${{ secrets.VERCEL_TOKEN }} \
-            --build-env FLAY_VERSION=${{ github.ref_name }})
+            --env FLAY_VERSION=${{ github.ref_name }})
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: Comprobar salud

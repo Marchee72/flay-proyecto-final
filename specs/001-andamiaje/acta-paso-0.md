@@ -43,13 +43,13 @@ La estacion de trabajo no puede descargar imagenes de contenedor: la conexion a 
 de Docker se reinicia desde el propio host, fuera de Docker, mientras otras descargas grandes andan
 normalmente. Bloqueo de red del proveedor de internet o de la proteccion local, no configuracion.
 
-Para no detener la etapa, `001-andamiaje` se construyo contra una base **Neon** existente. Dos
-desviaciones respecto de §1, que quedan abiertas:
+Para no detener la etapa, `001-andamiaje` se construyo contra una base **Neon**. Dos desviaciones
+respecto de §1; la de region se corrigio el mismo dia:
 
 | Punto | Ratificado | En uso | Estado |
 |---|---|---|---|
-| Region | `aws-sa-east-1` (San Pablo) | `us-east-2` (Ohio) | A corregir antes de la demostracion: §5.5.4 fija la region por proximidad y por las clausulas de Ley 25.326 |
-| Version del motor | PostgreSQL 17.4 | PostgreSQL 18.6 | A decidir: fijar 17 al crear el proyecto definitivo, o actualizar §14.1 |
+| Region | `aws-sa-east-1` (San Pablo) | `sa-east-1` (San Pablo) | **Cerrado** el 2026-09-09: proyecto recreado en San Pablo, conforme a §5.5.4 |
+| Version del motor | PostgreSQL 17.4 | PostgreSQL 18.6 | **Abierto**: Neon deja elegir la version al crear el proyecto. O se recrea con 17, o §14.1 pasa a 18 |
 
 La base local con `pgvector/pgvector:pg17` sigue siendo el entorno de desarrollo comprometido
 (FR-007); el flujo de verificacion la usa como servicio y no depende de esta base provisoria.

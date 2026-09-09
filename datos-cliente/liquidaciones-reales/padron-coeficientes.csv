@@ -1,0 +1,13 @@
+unidad;coeficiente;tipo_ocupacion;observacion
+1A;12.50000000;propietario;Frente, 3 ambientes
+1B;12.50000000;propietario;Frente, 3 ambientes
+1C;12.50000000;inquilino;Frente, 3 ambientes
+1D;12.50000000;propietario;Frente, 3 ambientes
+2A;7.50000000;propietario;Contrafrente, 2 ambientes
+2B;7.50000000;inquilino;Contrafrente, 2 ambientes
+2C;7.50000000;propietario;Contrafrente, 2 ambientes
+2D;7.50000000;inquilino;Contrafrente, 2 ambientes
+3A;5.00000000;propietario;Cochera fija + baulera
+3B;5.00000000;propietario;Cochera fija + baulera
+3C;5.00000000;propietario;Local planta baja
+3D;5.00000000;inquilino;Local planta baja

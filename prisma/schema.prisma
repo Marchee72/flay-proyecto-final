@@ -1,0 +1,39 @@
+// Esquema inicial de Flay (001-andamiaje).
+// Solo contiene lo transversal: ninguna entidad de negocio nace en esta etapa.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "postgresql"
+  // La aplicacion y las pruebas de integracion se conectan como flay_app (I-02).
+  url               = env("DATABASE_URL")
+  // Las migraciones corren como flay_owner: es el unico rol con DDL.
+  directUrl         = env("DIRECT_DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+/// Asiento de auditoria (RF-26, RN-15, RNF-12).
+/// La escribe unicamente fn_auditar(); flay_app no tiene INSERT/UPDATE/DELETE/TRUNCATE.
+model BitacoraAuditoria {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  momento       DateTime  @default(now()) @db.Timestamptz(6)
+  usuario       String    @db.Text
+  tabla         String    @db.Text
+  clave         String    @db.Text
+  operacion     Operacion
+  anterior      Json?     @db.JsonB
+  posterior     Json?     @db.JsonB
+  creadoEn      DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime  @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  @@index([tabla, clave])
+  @@index([momento])
+}
+
+enum Operacion {
+  INSERTA
+  MODIFICA
+  BORRA
+}

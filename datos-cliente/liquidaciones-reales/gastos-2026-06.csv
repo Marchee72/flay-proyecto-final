@@ -1,0 +1,9 @@
+periodo;fecha;proveedor;cuit;rubro;tipo;importe;factura;observacion
+2026-06;2026-06-05;Consorcio Personal SRL;30-71234567-8;R01;ordinario;485000.00;A-0001-00001234;Sueldo encargado junio + suplencia
+2026-06;2026-06-10;EPE;30-50873849-1;R04;ordinario;96500.00;B-0002-00045678;Medidor general + bomba
+2026-06;2026-06-12;Aguas Santafesinas;30-99923456-7;R05;ordinario;78200.00;C-0003-00098765;Servicio general junio
+2026-06;2026-06-15;Ascensores Ing. López;30-20123456-5;R07;ordinario;120000.00;D-0001-00002345;Abono 2 equipos
+2026-06;2026-06-18;Seguros Rivadavia;30-30567890-1;R08;ordinario;145300.00;E-0004-00011223;Cuota seguro integral
+2026-06;2026-06-20;Grupo Delta Adm.;30-71654321-9;R09;ordinario;95000.00;F-0001-00003456;Honorarios junio
+2026-06;2026-06-25;Limpieza Total SRL;30-70876543-2;R02;ordinario;180000.00;G-0002-00007890;Servicio + insumos
+2026-06;2026-06-28;Constructora Frente SRL;30-70987654-3;R15;extraordinario;300000.00;H-0001-00004567;Certificado 1 frente etapa 1

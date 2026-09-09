@@ -1,0 +1,31 @@
+id;fecha;proveedor;cuit;rubro;importe;formato;calidad;proveedor_tipo;observacion_poc
+C01;2026-05-06;EPE;30-50873849-1;R04;96500.00;PDF digital;alta;servicio_masivo;caso fácil
+C02;2026-05-12;Litoral Gas;30-50234567-3;R06;45230.50;PDF digital;alta;servicio_masivo;caso fácil
+C03;2026-05-15;Ascensores Ing. López;30-20123456-5;R07;120000.00;PDF A4;alta;pyme;caso fácil
+C04;2026-05-20;Ferretería El Tornillo;30-27123456-8;R10;18750.00;ticket térmico;media;comercio;ticket angosto
+C05;2026-05-22;Plomero R. Díaz (monotributo);20-25123456-7;R10;45000.00;factura C foto;media;monotributo;foto con sombra
+C06;2026-06-03;Pinturería Centro;30-30654321-4;R10;67890.00;PDF;alta;comercio;tabla ítems
+C07;2026-06-05;Consorcio Personal SRL;30-71234567-8;R01;485000.00;PDF;alta;rrhh;recibo sueldo, muchos campos
+C08;2026-06-08;EPE;30-50873849-1;R04;88400.50;PDF digital;alta;servicio_masivo;caso fácil
+C09;2026-06-11;Jardinería Verde SRL;30-70998877-1;R11;32000.00;factura B escaneada;media;pyme;scan torcido 5 grados
+C10;2026-06-14;Fumigaciones Santa Fe;30-70776655-2;R12;28000.00;PDF;alta;pyme;caso fácil
+C11;2026-06-18;Seguros Rivadavia;30-30567890-1;R08;145300.00;PDF;alta;aseguradora;póliza con anexos
+C12;2026-06-20;Grupo Delta Adm.;30-71654321-9;R09;95000.00;PDF;alta;administracion;caso fácil
+C13;2026-06-25;Limpieza Total SRL;30-70876543-2;R02;180000.00;PDF + detalle;alta;servicio;2 páginas
+C14;2026-06-28;Constructora Frente SRL;30-70987654-3;R15;300000.00;PDF certificado obra;alta;constructora;certificado con retenciones
+C15;2026-07-02;Electricista M. Sosa;20-30987654-1;R10;62500.00;factura C manuscrito parcial;baja;monotributo;total manuscrito, difícil
+C16;2026-07-06;Aguas Santafesinas;30-99923456-7;R05;79600.00;PDF digital;alta;servicio_masivo;caso fácil
+C17;2026-07-09;Cerrajería 24hs;30-27456789-0;R10;23400.00;ticket;media;comercio;ticket arrugado
+C18;2026-07-13;Vidriería San Martín;30-30345678-9;R10;89000.00;presupuesto+factura;media;pyme;2 documentos
+C19;2026-07-16;Calderas Bax SRL;30-70112233-4;R16;200000.00;PDF anticipo 30 pct;alta;proveedor_obra;anticipo con saldo
+C20;2026-07-20;Telecom Fibra;30-50345678-2;R13;15999.00;PDF digital;alta;servicio_masivo;caso fácil
+C21;2026-07-23;Librería Papelera;30-30112233-5;R13;8750.00;ticket;media;comercio;ticket largo
+C22;2026-07-27;Albañil J. Peralta;20-28456789-3;R10;78000.00;recibo C foto;baja;monotributo;foto borrosa, difícil
+C23;2026-08-01;EPE;30-50873849-1;R04;92000.00;PDF digital;alta;servicio_masivo;caso fácil
+C24;2026-08-04;Matafuegos Rosario;30-70445566-7;R10;45600.00;PDF + tarjeta;alta;pyme;recarga 12 unidades
+C25;2026-08-08;Pinturería Centro;30-30654321-4;R10;112300.00;PDF;alta;comercio;2 facturas mismo día
+C26;2026-08-12;Tableros AEA SRL;30-70334455-6;R17;175000.00;PDF etapa 1;alta;proveedor_obra;computo métrico
+C27;2026-08-15;Seguros Rivadavia;30-30567890-1;R08;145300.00;PDF;alta;aseguradora;caso fácil
+C28;2026-08-18;Desagotes Rápido;30-70667788-9;R10;54000.00;factura B;media;pyme;sello sobre importe
+C29;2026-08-22;Herrero L. Gómez;20-26345678-4;R15;96000.00;factura C;media;monotributo;reja portón
+C30;2026-08-25;Limpieza Total SRL;30-70876543-2;R02;124700.00;PDF + detalle;alta;servicio;caso fácil

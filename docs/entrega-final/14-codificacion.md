@@ -3,8 +3,10 @@
 > **Requisito de la cátedra (Última entrega, punto 14):** *"Codificación. Elección del lenguaje de
 > programación – Justificación. Elección de herramientas para la toma de decisiones. Justificación."*
 
-> ⚠️ **Estado: esqueleto.** Las decisiones de fondo están tomadas en los puntos 4, 5 y 12; aquí se
-> formalizan con la justificación que exige la consigna y se completan al codificar.
+> ⚠️ **Estado: parcial.** El punto 14.1 —elección del lenguaje— está resuelto y justificado. El
+> 14.2 tiene decisión preliminar tomada. Quedan abiertos el 14.3 —proveedor de servicios de
+> procesamiento automático, diferido deliberadamente a la iteración 3—, el 14.4 y el 14.5, que se
+> completan al codificar.
 
 ---
 
@@ -25,35 +27,107 @@ Los criterios provienen de las restricciones establecidas en los puntos anterior
 
 ### Comparación
 
-*A completar con la evaluación final.*
+Se evalúan los tres candidatos anticipados, cada uno representado por su exponente más maduro.
+Escala: **✔** cumple · **~** cumple parcialmente · **✘** no cumple.
 
 | Lenguaje y entorno | C1 | C2 | C3 | C4 | C5 | C6 | Observaciones |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|---|
-| Lenguaje con tipado estático sobre entorno de ejecución de navegador y servidor | | | | | | | Alternativa A del punto 4.2 |
-| Plataforma de servidor con lenguaje compilado | | | | | | | Alternativa B del punto 4.3 |
-| Lenguaje interpretado de propósito general | | | | | | | No evaluado en el punto 4 |
+| **TypeScript** sobre entorno de ejecución de navegador y servidor | ✔ | ~ | ✘ | ✔ | ✔ | ✔ | Alternativa A del punto 4.2 |
+| **C#** sobre plataforma de servidor con lenguaje compilado | ✘ | ✔ | ✔ | ~ | ~ | ✔ | Alternativa B del punto 4.3 |
+| **Python** como lenguaje interpretado de propósito general | ✘ | ✘ | ✔ | ✔ | ~ | ✔ | No evaluado en el punto 4 |
+
+Fundamento de cada celda:
+
+| Criterio | TypeScript | C# | Python |
+|---|---|---|---|
+| **C1** Un solo lenguaje en cliente y servidor | Único candidato que lo cumple de forma completa: el mismo lenguaje, los mismos tipos y las mismas validaciones se comparten entre la vista y la acción de servidor | Exige TypeScript o JavaScript en el cliente de todos modos, salvo adoptando un entorno de ejecución en el navegador que el equipo no conoce | Exige TypeScript o JavaScript en el cliente |
+| **C2** Tipado estático | Estructural y **borrado en tiempo de ejecución**: no protege el límite de entrada. Se compensa con validación de esquemas en ejecución sobre todo dato externo | Nominal y verificado en ejecución. Superior en este criterio | Anotaciones opcionales, sin verificación en ejecución. No cumple el criterio |
+| **C3** Aritmética decimal de precisión fija | **No existe tipo decimal nativo.** El tipo numérico del lenguaje es punto flotante binario IEEE 754. Requiere biblioteca, y cualquier operación que se le escape vuelve silenciosamente a punto flotante | `decimal` nativo de 128 bits en base 10 | `decimal.Decimal` en la biblioteca estándar |
+| **C4** Soporte de primera clase en la plataforma de despliegue | Caso de uso primario de las plataformas gestionadas con capa gratuita | Soportado, pero sin capa gratuita comparable: contradice el fundamento 2 del punto 5.5 | Soportado, con capa gratuita disponible |
+| **C5** Experiencia previa del equipo | **Avanzado** en «desarrollo web con componentes y tipado estático», según el punto 5.2.2 | No declarado en el punto 5.2.2; además arrastra la brecha permanente de administración de infraestructura de la alternativa B | No declarado en el punto 5.2.2 |
+| **C6** Mapeador objeto-relacional con migraciones versionadas | Disponible, con esquema tipado y migraciones versionadas | Disponible y maduro | Disponible y maduro |
 
 ### Decisión y justificación
 
-*A completar.* La decisión debe ser consistente con la alternativa A adoptada en el punto 5.5 y
-sostenerse en los seis criterios anteriores, no en preferencia.
+> **Se adopta TypeScript**, sobre un entorno de renderizado en servidor que aloja interfaz y lógica
+> en un mismo proyecto, conforme a la alternativa A del punto 4.2.
+
+La decisión se apoya en cuatro criterios y reconoce que falla en un quinto:
+
+**1. C5 es decisivo y no es una preferencia.** El punto 5.2.2 registra nivel *avanzado* en desarrollo
+web con componentes y tipado estático, y no registra los otros dos lenguajes. Con 24 horas semanales
+de capacidad conjunta y fechas improrrogables, elegir un lenguaje que el equipo domina menos consume
+del recurso más escaso del proyecto para comprar una ventaja en un solo criterio.
+
+**2. C1 materializa el fundamento 3 del punto 5.5.** Es el único candidato que evita la duplicación
+entre contrato de interfaz, implementación en el servidor y consumo en el cliente. Ninguna de las
+otras dos opciones elimina TypeScript del cliente: lo agregan como segundo lenguaje.
+
+**3. C4 materializa los fundamentos 2 y 5 del punto 5.5.** El costo de infraestructura arranca en
+cero y el prototipo puede permanecer publicado después de la instancia académica.
+
+**4. C6 se cumple sin concesiones**, con esquema tipado y migraciones versionadas conforme al punto
+8.3.5.
+
+**5. C3 no se cumple, y es el criterio más importante de los seis.** Esto se declara en lugar de
+disimularse: el lenguaje adoptado es el único de los tres sin aritmética decimal nativa, y este
+sistema administra dinero de terceros. La decisión se sostiene igualmente porque el defecto es
+*acotable por diseño*, mientras que la brecha de C5 sería permanente. Las medidas de contención se
+detallan a continuación y son verificables.
+
+#### Contención del incumplimiento de C3
+
+| # | Medida | Verificación |
+|---|---|---|
+| 1 | Los importes se almacenan en `NUMERIC` de la base de datos y se transportan como decimal de precisión arbitraria provisto por el mapeador objeto-relacional. **En ninguna capa un importe existe como número de punto flotante** | Revisión del esquema y de los tipos generados |
+| 2 | Ninguna firma pública del dominio acepta ni devuelve el tipo numérico nativo para dinero. El compilador rechaza el intento | Prueba de compilación negativa |
+| 3 | La serialización hacia la interfaz transporta importes como cadena, nunca como número. La interfaz solo los formatea, nunca opera con ellos | Prueba de extremo a extremo sobre un importe con más de quince dígitos significativos |
+| 4 | Regla de análisis estático que prohíbe los operadores aritméticos sobre expresiones de tipo monetario | Verificación automática en cada envío al repositorio |
+| 5 | El desarrollo guiado por pruebas es obligatorio en liquidación, prorrateo, intereses e imputación, conforme al punto 8.3.3, con casos de coeficientes que suman 100 % sobre 96 unidades | Suite de pruebas del dominio, ejecutable sin base de datos gracias al punto 12.1 |
+
+La medida 5 es la que cierra el riesgo: la independencia del dominio respecto de la infraestructura
+—Principio III de la constitución del proyecto— es lo que permite ejercitar exhaustivamente el
+cálculo económico a costo bajo. El punto débil del lenguaje se compensa con la fortaleza del diseño.
 
 ### Bibliotecas y herramientas adoptadas
 
-*A completar al cerrar la iteración 3.*
+*Selección comprometida. Versiones fijadas en el acta del Paso 0 (2026-09-09); FR-023 de
+`001-andamiaje` las verifica contra `package-lock.json`. Runtime: Node.js 22.21.0 LTS + npm 11.12.1
+(`engines` + `.nvmrc`). Generador: `create-next-app@15.3.4`. Correcciones del 2026-09-09 al instalar,
+registradas en el acta del Paso 0: Next 15.5.25 (15.3.4 quedó deprecada por CVE-2025-66478), Auth.js
+5.0.0-beta.32 (la 5.0.0 estable no existe), Playwright 1.63.0 (par exigido por Next y aviso <1.55.1) y
+Vitest 3.2.7 (aviso crítico <=3.2.5). El motor pasa a PostgreSQL 18.6 con `pgvector` 0.8.6: es la
+versión que ofrece la base administrada, y ninguna capacidad exigida aquí cambia entre 17 y 18, de
+modo que desarrollo, verificación y demostración corren la misma. Las transitivas `postcss` 8.5.28 y
+`sharp` 0.35.4 se fuerzan por
+`overrides`, de modo que `npm audit --audit-level=high` cierra en cero.*
 
 | Componente | Herramienta | Versión | Licencia | Justificación |
 |---|---|---|---|---|
-| Entorno de ejecución y renderizado | | | | |
-| Mapeador objeto-relacional | | | | |
-| Validación de esquemas | | | | |
-| Autenticación | | | | |
-| Derivación de contraseñas | | | | |
-| Aritmética decimal | | | | |
-| Generación de documentos descargables | | | | |
-| Gráficos del panel de indicadores | | | | |
-| Pruebas automatizadas | | | | |
-| Análisis estático y formato | | | | |
+| Entorno de ejecución y renderizado | Next.js sobre Node.js | Next 15.5.25 / Node 22.21.0 | MIT | Interfaz y lógica de servidor en un mismo proyecto mediante acciones de servidor y manejadores de ruta, conforme al punto 4.2. Portable a cualquier alojamiento con Node.js, lo que acota la dependencia de una plataforma |
+| Base de datos | PostgreSQL administrado, con extensión `pgvector` | PG 18.6 + pgvector 0.8.6 (`pgvector/pgvector:0.8.6-pg18`) | PostgreSQL License | `NUMERIC` de precisión arbitraria para C3, restricciones de exclusión para RN-09 y RN-10, disparadores para RN-15 e índice vectorial para RF-20, en un único motor |
+| Mapeador objeto-relacional | Prisma | 6.7.0 | Apache-2.0 | Esquema tipado y migraciones versionadas (C6, punto 8.3.5). Su tipo `Decimal` es el vehículo de la medida 1 de contención |
+| Validación de esquemas | Zod | 3.24.2 | MIT | Compensa el borrado de tipos en ejecución (C2): valida todo dato que cruza el límite de confianza |
+| Autenticación | Auth.js | 5.0.0-beta.32 (`next-auth`) | ISC | Sesiones y control de acceso basado en roles, base de RNF-03 |
+| Derivación de contraseñas | Argon2id | 2.0.2 (`@node-rs/argon2`) | MIT | Función resistente a fuerza bruta exigida por RNF-04 |
+| Aritmética decimal | `decimal.js`, a través del tipo `Decimal` del mapeador | 10.4.3 | MIT | Contención del incumplimiento de C3 |
+| Generación de documentos descargables | `@react-pdf/renderer` | 4.1.3 | MIT | Genera en el propio proceso, sin navegador sin interfaz: sostenible dentro de los límites de la capa gratuita para los 96 documentos del proceso diferido de RNF-07 |
+| Gráficos del panel de indicadores | Recharts | 2.15.0 | MIT | Biblioteca de gráficos dentro de la aplicación, conforme a la decisión del punto 14.2: los indicadores heredan la autorización por consorcio |
+| Iconos de interfaz | Lucide (`lucide-react`) | 0.525.0 | ISC | Set abierto de trazo consistente 24px (urgencias, estados, navegación); se verifica contra `package-lock` junto al resto |
+| Pruebas automatizadas | Vitest y Playwright | Vitest 3.2.7 + `@vitest/coverage-v8` 3.2.7 / Playwright 1.63.0 + `@axe-core/playwright` 4.9.0 | MIT y Apache-2.0 | Vitest ejercita el dominio sin base de datos (punto 8.3.3); Playwright cubre extremo a extremo y verifica RNF-01 sobre ventana de teléfono |
+| Análisis estático y formato | ESLint y Prettier | ESLint 9.20.0 + Prettier 3.4.2 + `eslint-config-prettier` 10.0.1 + `@typescript-eslint` 8.20.0 | MIT | Verificación automática en cada envío (punto 8.3.5) y sede de la medida 4 de contención |
+
+Ninguna de las licencias listadas es recíproca fuerte, conforme exige el punto 5.3.4. La verificación
+del inventario completo, incluidas las dependencias transitivas, se realiza antes de cada entrega.
+
+### Condición sobre la capa gratuita
+
+La justificación 5 del punto 5.5 afirma que el prototipo puede permanecer publicado sin costo. Esa
+afirmación se sostiene para el uso académico y demostrativo, pero **las capas gratuitas de las
+plataformas gestionadas suelen excluir el uso comercial**. Si Grupo Delta pasara a operar el sistema
+de manera productiva, correspondería un plan pago, cuyo costo ya está previsto entre los costos
+operativos del punto 6. Se deja asentado para no sostener en la defensa una ventaja que no aplica al
+escenario comercial.
 
 El inventario de dependencias con su licencia se verifica antes de cada entrega, conforme al punto
 5.3.4, para descartar componentes con licencias recíprocas fuertes.
@@ -135,17 +209,18 @@ la del proveedor seleccionado, la determinística para pruebas y la nula para de
 
 ## 14.4 Estándares de codificación
 
-*A completar al cerrar la iteración 1.*
+*Definidos al abrir la iteración 1 (FR-024 de `001-andamiaje`). Rigen desde el primer RF; lo escrito
+después no los reabre.*
 
 | Aspecto | Definición |
 |---|---|
-| Nomenclatura | |
-| Estructura de carpetas por capa | |
-| Manejo de errores | |
-| Tratamiento de importes | Aritmética decimal de precisión fija en todo el sistema, conforme al punto 12.6. **Prohibido el uso de punto flotante para dinero** |
-| Registro de eventos | |
-| Comentarios | |
-| Análisis estático y formato | |
+| Nomenclatura | Español en dominio y código de negocio (`Consorcio`, `liquidarPeriodo`, `coeficiente`); inglés solo para términos técnicos del framework (`route`, `middleware`). Archivos en minúsculas con guiones. Commits `RF-nn` + verbo. |
+| Estructura de carpetas por capa | `src/app` (presentación) → `src/aplicacion` → `src/dominio` (+`contratos`) → `src/infraestructura`; transversal `src/compartido`. Dominio solo importa dominio/contratos/compartido (Principio III, FR-006/FR-012 de 001). |
+| Manejo de errores | Mensajes comprensibles para usuario final (RNF-10): qué pasó, magnitud exacta y qué hacer. Nada de volcados técnicos en interfaz. Códigos de trazabilidad (`RF-`, regla `RN-`) en logs, no en pantalla. |
+| Tratamiento de importes | Aritmética decimal de precisión fija en todo el sistema, conforme al punto 12.6. **Prohibido el uso de punto flotante para dinero**. Dominio: `Prisma.Decimal`, sin `number`; coeficientes 8 decimales = `100.00000000`; redondeo solo al final; serialización a interfaz como cadena. |
+| Registro de eventos | JSON por línea con momento, usuario, consorcio, operación y resultado; sin datos personales fuera de lo necesario (Ley 25.326). Niveles info/aviso/error; el error incluye causa exacta y magnitud (p. ej. diferencia de coeficientes). |
+| Comentarios | Solo el porqué no obvio y la referencia a regla (`RN-07 §7.2`, `RNF-06`). Nada de comentar el qué evidente. |
+| Análisis estático y formato | Prettier + ESLint en cada envío (`verificar`): frontera de capas, sin aritmética monetaria (`flay/sin-aritmetica-monetaria`), sin cliente crudo fuera de infraestructura. `.editorconfig` `end_of_line = lf`. |
 
 ## 14.5 Métricas de la construcción
 

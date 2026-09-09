@@ -157,8 +157,8 @@ corrección: un incidente que se corrige sin conservar la evidencia no puede inv
 | Revisión cruzada obligatoria de todo cambio | 8.3.3 |
 | Programación en pares en autenticación y autorización | 10.5 |
 | Análisis estático automático en cada envío al repositorio | 8.3.5 |
-| Ningún secreto en el repositorio; variables de entorno por ambiente | A definir |
-| Revisión de dependencias con vulnerabilidades conocidas | A definir |
+| Ningún secreto en el repositorio; variables de entorno por ambiente | 8.3.5, FR-021/FR-025 de 001: `.env.example` con nombres y `SHADOW_DATABASE_URL`; `.env` nunca versionado; secretos de demo/producción en secretos del proveedor; `AUTH_SECRET` generado con `auth secret`; `gitleaks detect` sobre historial completo en cada verificación, 0 hallazgos; la cadena administradora que crea los roles nunca está en el entorno de la aplicación, que se conecta siempre como `flay_app` |
+| Revisión de dependencias con vulnerabilidades conocidas | FR-021 de 001: `npm audit --audit-level=high` en cada verificación, 0 altas/críticas; revisión periódica mensual registrada; actualización antes de cada entrega |
 | Inventario de licencias verificado antes de cada entrega | 5.3.4 |
 
 ## 18.8 Resultados de la verificación

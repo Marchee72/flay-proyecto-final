@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flay — Ejemplo de estilo (grafito y lima)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--side:#23272E;--lime:#7CB342;--lime-hi:#9CCC65;--green:#2E7D32;--amber-bd:#8A5F14;--amber-bg:#FDF3D7;--red:#B3261E;--red-bg:#FDECEA;--red-bd:#8F1D16;--bg:#F4F6F4;--card:#fff;--ink:#1A1D21;--muted:#4A5158;--line:#C9CFC9;--r:8px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,-apple-system,"Segoe UI",Roboto,sans-serif}
+h2,h3{font-family:Poppins,Inter,-apple-system,"Segoe UI",sans-serif}
+.top{background:var(--side);color:#E8EAED;padding:12px 20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.top .brand{font-weight:700;font-size:17px}.top .cons{margin-left:auto;font-size:13px;color:#C9CFC9;border:1px solid #4A5158;border-radius:8px;padding:6px 10px}
+.wrap{max-width:1200px;margin:0 auto;padding:20px}
+.layout{display:grid;grid-template-columns:210px 1fr;gap:20px}@media(max-width:760px){.layout{grid-template-columns:1fr}.nav{display:none}}
+.nav{background:var(--side);color:#E8EAED;border-radius:10px;padding:14px;font-size:14px}
+.nav a{display:block;padding:8px;border-radius:6px;color:#E8EAED;text-decoration:none}.nav a.on{font-weight:700;color:var(--lime-hi)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:14px 0}
+.kpi{background:var(--side);border-radius:10px;padding:12px 14px;display:flex;gap:12px;align-items:center}
+.kpi .ic{width:40px;height:40px;border-radius:8px;background:var(--lime-hi);color:var(--side);font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+.kpi h3{margin:0;font-size:10px;letter-spacing:.06em;color:var(--lime-hi);font-weight:600;font-family:Inter,sans-serif}
+.kpi .num{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:#fff;font-family:Inter,sans-serif}
+.kpi .d{font-size:12px;color:#E8EAED}
+.banner{border-radius:8px;padding:10px 14px;font-size:14px;color:var(--ink);margin:10px 0}
+.banner.amber{background:var(--amber-bg);border:1px solid var(--amber-bd);border-left:4px solid var(--amber-bd)}
+.banner.red{background:var(--red-bg);border:1px solid var(--red-bd);border-left:4px solid var(--red)}
+.banner u{color:var(--ink)}
+.btn{display:inline-block;border-radius:99px;padding:11px 20px;font-weight:700;border:1px solid transparent;cursor:pointer;font-size:14px}
+.primary{background:var(--lime);color:var(--side)}.ghost{background:#fff;border:2px solid var(--side);color:var(--side)}.danger{background:#fff;border:2px solid var(--red);color:var(--red)}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th,td{text-align:left;padding:12px;border-bottom:1px solid var(--line);font-size:14px;color:var(--ink)}
+th{background:#ECEFEC;color:var(--muted);font-size:12px}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;border:1px solid var(--muted);background:#ECEFEC;color:var(--ink)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}input{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:14px;color:var(--ink)}
+.help{font-size:12px;color:var(--muted)}.err{font-size:13px;color:var(--red);font-weight:600}
+.empty{border:1px dashed var(--line);border-radius:10px;padding:24px;text-align:center;color:var(--muted);background:#fff}
+small.m{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="top"><span class="brand">FLAY</span><span class="cons">Mitre 456 · administrador</span></div>
+<div class="wrap"><div class="layout">
+<nav class="nav"><a class="on" href="#">● Liquidación</a><a href="#">Gastos</a><a href="#">Pagos</a><a href="#">Reclamos · 2</a><a href="#">Reservas</a><a href="#">Documentos</a><a href="#">Indicadores</a></nav>
+<div>
+<h2 style="margin:4px 0">Liquidación 2026-08 · abierta <small class="m">coeficientes 100,00000000 ✓</small></h2>
+<div class="banner amber"><b>Morosidad 13,2 %</b> — supera el 12 % de referencia (+3,1 pts en 2 meses). <u>Ver nómina (solo admin y consejo)</u></div>
+<div class="grid">
+<div class="kpi"><div class="ic">✓</div><div><h3>MI EXPENSA · 1A</h3><div class="num">$ 165.625,00</div><div class="d">al día · vence 10/09</div></div></div>
+<div class="kpi"><div class="ic">$</div><div><h3>TOTAL · 12 UDS</h3><div class="num">$ 1.325.000,00</div><div class="d">ord. 1.150.000 + extr. 175.000</div></div></div>
+<div class="kpi"><div class="ic">↗</div><div><h3>DESVÍO LIMPIEZA</h3><div class="num">+34 %</div><div class="d">vs. prom. 12 períodos</div></div></div>
+</div>
+<h3>Gastos del período <small class="m">2026-08 · todos los rubros</small></h3>
+<table><tr><th>Fecha</th><th>Proveedor</th><th>Rubro</th><th class="n">Importe</th><th>Estado</th></tr>
+<tr><td>05/08/2026</td><td>Consorcio Personal SRL</td><td>Sueldos</td><td class="n">$ 490.000,00</td><td><span class="tag">rendido</span></td></tr>
+<tr><td>10/08/2026</td><td>EPE</td><td>Luz comunes</td><td class="n">$ 92.000,00</td><td><span class="tag">rendido</span></td></tr>
+<tr><td>28/08/2026</td><td>Tableros AEA SRL</td><td>Tableros (extr.)</td><td class="n">$ 175.000,00</td><td><span class="tag">a cargo propietario</span></td></tr></table>
+<div class="banner red" style="margin-top:14px"><b>Unidad 3B: 3 períodos vencidos.</b> Deuda total $ 225.000,00. <u>Ver estado de cuenta</u></div>
+<div class="card" style="margin-top:14px"><b>Anular liquidación</b><div class="help">Se anula la 2026-08 ($ 1.325.000,00) y se emite una nueva que la referencia. Ambas quedan registradas.</div><p><button class="btn danger">Confirmar anulación</button> <button class="btn ghost">Cancelar</button></p></div>
+<p><small class="m">390 px: sidebar → topbar + hamburguesa, 1 columna, sin scroll horizontal. Cita documental: "…hasta las 02:00 (Art. 3, Reglamento)".</small></p>
+</div>
+</div></div>
+</body>
+</html>

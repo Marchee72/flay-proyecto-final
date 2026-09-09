@@ -23,3 +23,18 @@ coverage/
 .env
 .env.*
 !.env.example
+
+# Sesiones visuales locales
+.superpowers/
+
+# Next.js y despliegue
+/out/
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+*.pem
+npm-debug.log*
+
+# Playwright
+test-results/
+playwright-report/

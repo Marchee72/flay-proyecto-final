@@ -1,0 +1,13 @@
+consorcio;unidad;coeficiente;ocupacion;estado_mora
+C-A;1A;12.50000000;propietario;al día
+C-A;1B;12.50000000;propietario;al día
+C-A;1C;12.50000000;inquilino;mora 2 períodos
+C-A;1D;12.50000000;propietario;al día
+C-A;2A;7.50000000;propietario;al día
+C-A;2B;7.50000000;inquilino;al día
+C-A;2C;7.50000000;propietario;mora 1 período
+C-A;2D;7.50000000;inquilino;al día
+C-A;3A;5.00000000;propietario;al día
+C-A;3B;5.00000000;propietario;mora 3 períodos
+C-A;3C;5.00000000;propietario;al día
+C-A;3D;5.00000000;inquilino;al día

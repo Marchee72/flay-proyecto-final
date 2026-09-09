@@ -1,0 +1,16 @@
+.next
+coverage
+node_modules
+package-lock.json
+playwright-report
+test-results
+next-env.d.ts
+
+# Andamiaje de Spec Kit: lo escriben sus propias herramientas.
+.specify
+
+# La documentacion y los datos del cliente tienen sus propias convenciones
+# (§, tablas y Mermaid que la catedra evalua): Prettier no los reformatea.
+*.md
+docs
+datos-cliente

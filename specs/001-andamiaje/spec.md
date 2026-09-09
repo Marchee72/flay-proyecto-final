@@ -304,8 +304,17 @@ sigue. Se ejecutan desde la raíz del repositorio, en PowerShell sobre Windows.
   if (-not (Test-Path .env.local)) { Set-Content .env.local "DATABASE_URL=postgresql://postgres:flay_local@localhost:5432/flay`nSHADOW_DATABASE_URL=postgresql://postgres:flay_local@localhost:5432/flay_shadow" }
   ```
 
-  Guarda idempotente (M-06): no duplica líneas de `.gitignore` ni sobrescribe `.env.local` con
-  secretos al re-ejecutarse. `SHADOW_DATABASE_URL` queda definido aquí (I-01) con default local.
+  Guarda idempotente (M-06): no duplica líneas de `.gitignore` ni sobrescribe el archivo de valores
+  con secretos al re-ejecutarse. `SHADOW_DATABASE_URL` queda definido aquí (I-01) con default local.
+
+  Dos correcciones al implementarlo:
+
+  - Los valores locales van en `.env`, no en `.env.local`. La CLI de Prisma solo lee `.env`, y
+    `db:deploy` y `db:drift` necesitan la cadena de conexión; Next lee los dos. Un archivo, no dos.
+  - Se agrega `DIRECT_DATABASE_URL`. `DATABASE_URL` es la cadena de `flay_app` —la que usan la
+    aplicación y las pruebas de integración, y la que hace verificable SC-006—, y las migraciones
+    corren como `flay_owner` por `directUrl`. Con una sola variable, o la aplicación tendría DDL o
+    las migraciones no podrían correr (I-02).
 
   El valor de `AUTH_SECRET` se genera con `npx --yes auth secret` y **nunca** se escribe en un
   archivo versionado.

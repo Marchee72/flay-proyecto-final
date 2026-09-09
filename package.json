@@ -10,7 +10,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "test:dominio": "vitest run --project dominio",
+    "test:integracion": "vitest run --project integracion",
+    "test:e2e": "playwright test --project=escritorio --project=telefono",
+    "test:a11y": "playwright test --project=a11y",
+    "medir:p95": "node scripts/medir-p95.mjs",
+    "db:deploy": "prisma migrate deploy",
+    "db:drift": "node scripts/db-drift.mjs",
+    "verificar": "npm run format:check && npm run lint && npm run typecheck && npm run test:dominio && npm run db:deploy && npm run db:drift && npm run test:integracion && npm run build && npm run test:e2e"
   },
   "dependencies": {
     "@node-rs/argon2": "2.0.2",

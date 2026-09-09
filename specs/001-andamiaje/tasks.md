@@ -24,16 +24,16 @@
 
 **Purpose**: Estructura, DB, env, lint, tests y scripts — BLOQUEA todas las historias
 
-- [ ] T005 Crear carpetas por capa `src/app, src/aplicacion, src/dominio, src/dominio/contratos, src/infraestructura, src/compartido, prisma/migrations, pruebas/dominio, pruebas/integracion, pruebas/e2e, pruebas/fixtures-negativas, reglas-eslint` (FR-006)
-- [ ] T006 Levantar DB local idempotente `flay-db` (`pgvector/pgvector:pg17`) con guarda de existencia (FR-007, M-06)
-- [ ] T007 Crear `.gitignore` idempotente + `.env.example` (con `SHADOW_DATABASE_URL`, I-01) + `.env.local` solo si no existe + `npx auth secret` nunca versionado (FR-008, M-06)
-- [ ] T008 Definir `prisma/schema.prisma` + migración `inicial`: `vector`, `btree_gist`, `pgcrypto`, `BitacoraAuditoria` + `fn_auditar()` `SECURITY DEFINER` + `REVOKE ... FROM flay_app` con roles `flay_owner`/`flay_app` (FR-009, FR-010, I-02)
-- [ ] T009 [P] Configurar ESLint: zonas por capa + zona anti-proveedor en dominio + `flay/sin-aritmetica-monetaria` con tipos + `no-restricted-imports` cliente crudo (FR-012, I-04)
-- [ ] T010 [P] Configurar Prettier + `eslint-config-prettier` + `.editorconfig` (`end_of_line = lf`) (FR-013)
-- [ ] T011 [P] Configurar Vitest con proyectos `dominio` (sin DB) e `integracion` (FR-014)
-- [ ] T012 [P] Configurar Playwright (escritorio + teléfono 390×844) + guion `test:a11y` axe 0 A/AA (FR-015, I-09)
-- [ ] T013 Definir guiones `package.json` incluida puerta `verificar` + `medir:p95` (`scripts/medir-p95.mjs`, I-07) + `test:a11y` (FR-016)
-- [ ] T014 Crear extensión `src/infraestructura/cliente-aislado.ts` que inyecta filtro por consorcio y falla sin contexto (FR-011)
+- [x] T005 Crear carpetas por capa `src/app, src/aplicacion, src/dominio, src/dominio/contratos, src/infraestructura, src/compartido, prisma/migrations, pruebas/dominio, pruebas/integracion, pruebas/e2e, pruebas/fixtures-negativas, reglas-eslint` (FR-006)
+- [ ] T006 Levantar DB local idempotente `flay-db` (`pgvector/pgvector:pg17`) con guarda de existencia (FR-007, M-06) — BLOQUEADA: `docker pull pgvector/pgvector:pg17` corta con EOF en las capas grandes (22 intentos)
+- [x] T007 Crear `.gitignore` idempotente + `.env.example` (con `SHADOW_DATABASE_URL`, I-01) + `.env` solo si no existe + `npx auth secret` nunca versionado (FR-008, M-06)
+- [ ] T008 Definir `prisma/schema.prisma` + migración `inicial`: `vector`, `btree_gist`, `pgcrypto`, `BitacoraAuditoria` + `fn_auditar()` `SECURITY DEFINER` + `REVOKE ... FROM flay_app` con roles `flay_owner`/`flay_app` (FR-009, FR-010, I-02) — esquema y migracion escritos; sin aplicar hasta que haya base (T006)
+- [x] T009 [P] Configurar ESLint: zonas por capa + zona anti-proveedor en dominio + `flay/sin-aritmetica-monetaria` con tipos + `no-restricted-imports` cliente crudo (FR-012, I-04)
+- [x] T010 [P] Configurar Prettier + `eslint-config-prettier` + `.editorconfig` (`end_of_line = lf`) (FR-013)
+- [x] T011 [P] Configurar Vitest con proyectos `dominio` (sin DB) e `integracion` (FR-014)
+- [x] T012 [P] Configurar Playwright (escritorio + teléfono 390×844) + guion `test:a11y` axe 0 A/AA (FR-015, I-09)
+- [x] T013 Definir guiones `package.json` incluida puerta `verificar` + `medir:p95` (`scripts/medir-p95.mjs`, I-07) + `test:a11y` (FR-016)
+- [x] T014 Crear extensión `src/infraestructura/cliente-aislado.ts` que inyecta filtro por consorcio y falla sin contexto (FR-011)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
 
@@ -45,8 +45,8 @@
 
 **Independent Test**: FR-003→FR-017 en máquina limpia + `http://localhost:3000/api/salud` 200 + `test:dominio` sin `DATABASE_URL` + 0 secretos en historial (SC-001, SC-002, SC-005)
 
-- [ ] T015 [P] [US1] Crear ruta `src/app/api/salud/route.ts` (`estado`, `version`, `migracion`) según `contracts/salud.md` (FR-017)
-- [ ] T016 [US1] Prueba e2e `/api/salud` 200 en escritorio + teléfono sin scroll horizontal en `pruebas/e2e/salud.spec.ts` (SC-011)
+- [x] T015 [P] [US1] Crear ruta `src/app/api/salud/route.ts` (`estado`, `version`, `migracion`) según `contracts/salud.md` (FR-017)
+- [x] T016 [US1] Prueba e2e `/api/salud` 200 en escritorio + teléfono sin scroll horizontal en `pruebas/e2e/salud.spec.ts` (SC-011) — escrita; sin ejecutar hasta que haya base (T006)
 - [ ] T017 [US1] Validar SC-001/SC-002/SC-005: secuencia documentada, dominio sin DB, `db:deploy` sobre vacía + `db:drift` 0
 
 **Checkpoint**: US1 funcional y testeable — clon corre solo
@@ -59,9 +59,9 @@
 
 **Independent Test**: 4 fixtures en `pruebas/fixtures-negativas/` fallan cada una con su mensaje (SC-003)
 
-- [ ] T018 [P] [US2] Crear fixture 1 capa cruzada + fixture 4 proveedor directo (`@prisma/client` en dominio) en `pruebas/fixtures-negativas/` (FR-022, I-04)
-- [ ] T019 [P] [US2] Crear fixture 2 `number` como dinero + fixture 3 aritmética `Decimal` en `pruebas/fixtures-negativas/` (FR-022)
-- [ ] T020 [US2] Prueba que ejecuta el verificador sobre las 4 fixtures y afirma fallo con mensaje esperado (SC-003)
+- [x] T018 [P] [US2] Crear fixture 1 capa cruzada + fixture 4 proveedor directo (`@prisma/client` en dominio) en `pruebas/fixtures-negativas/` (FR-022, I-04)
+- [x] T019 [P] [US2] Crear fixture 2 `number` como dinero + fixture 3 aritmética `Decimal` en `pruebas/fixtures-negativas/` (FR-022)
+- [x] T020 [US2] Prueba que ejecuta el verificador sobre las 4 fixtures y afirma fallo con mensaje esperado (SC-003)
 - [ ] T021 [US2] Verificar escenarios US-2 1-4: `lint` capa, `typecheck` dinero, `lint` aritmética, CI en rojo bloquea PR
 
 **Checkpoint**: US1+US2 en verde; la constitución es exigible por construcción

@@ -8,17 +8,36 @@ This file provides guidance to Claude Code (claude.ai/code) and, via `AGENTS.md`
 Proyecto Final de Ingeniería en Sistemas de Información (UTN FRRo, cursada 2026), de Lautaro
 Marchetti y Franco Ferrero.
 
-**Hoy el repositorio es solo documentación. No hay código de aplicación todavía.** Existen `docs/`
-(18 documentos que siguen el cronograma de la cátedra) y el andamiaje de Spec Kit (`.specify/`,
-`.claude/skills/speckit-*`). El código se construye en tres iteraciones durante 2026.
+Existen `docs/` (18 documentos que siguen el cronograma de la cátedra), el andamiaje de Spec Kit
+(`.specify/`, `.claude/skills/speckit-*`) y, desde `001-andamiaje`, el proyecto Next.js con la
+estructura por capas. El código se construye en tres iteraciones durante 2026.
 
 El idioma del proyecto es **español**: documentación, nombres de entidades, mensajes de commit y
 comunicación. Mantenerlo.
 
 ## Comandos
 
-No hay build, lint ni tests todavía — se definen al arrancar la iteración 1 y deben registrarse en
-`docs/entrega-final/14-codificacion.md` § 14.4 y aquí mismo.
+`npm run verificar` es la **puerta única**: nada del repositorio invoca otra cosa. Encadena
+`format:check` → `lint` → `typecheck` → `test:dominio` → `db:deploy` → `db:drift` →
+`test:integracion` → `build` → `test:e2e`, en ese orden, para que lo que no necesita base falle en
+el primer minuto.
+
+| Guion | Para qué |
+|---|---|
+| `npm run dev` | Servidor de desarrollo |
+| `npm run lint` / `format:check` / `typecheck` | Análisis estático; `lint` incluye `flay/sin-aritmetica-monetaria` |
+| `npm run test:dominio` | Vitest sin base de datos (SC-002) |
+| `npm run test:integracion` | Vitest contra la base local |
+| `npm run test:e2e` / `test:a11y` | Playwright escritorio + teléfono 390×844 / axe A/AA |
+| `npm run db:deploy` / `db:drift` | Migraciones y detección de deriva |
+| `npm run medir:p95` | Arnés de RNF-06 sobre `/api/salud` |
+
+Base local: `docker run -d --name flay-db -p 5432:5432 -e POSTGRES_PASSWORD=flay_local -e POSTGRES_DB=flay pgvector/pgvector:pg17`.
+Variables en `.env` (nunca versionado); plantilla en `.env.example`. `DATABASE_URL` es la cadena de
+`flay_app` y `DIRECT_DATABASE_URL` la de `flay_owner`: la aplicación no tiene DDL, las migraciones sí.
+
+Las fixtures de `pruebas/fixtures-negativas/` **deben** fallar: quedan fuera de `lint` y `typecheck`,
+y las corre `pruebas/integracion/fixtures-negativas.spec.ts` afirmando el mensaje esperado.
 
 Spec Kit está instalado con scripts PowerShell (`--script ps`). Flujo de trabajo para funcionalidad
 nueva, vía skills: `/speckit-constitution` → `/speckit-specify` → `/speckit-plan` → `/speckit-tasks`

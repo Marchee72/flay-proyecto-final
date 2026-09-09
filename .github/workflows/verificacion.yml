@@ -54,8 +54,23 @@ jobs:
 
       - run: npm ci
 
+      # El navegador se cachea: en un runner lento su descarga tardo 9 de los 10
+      # minutos que FR-018 concede a toda la verificacion.
+      - name: Cache del navegador
+        id: cache-navegador
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Navegador de Playwright
+        if: steps.cache-navegador.outputs.cache-hit != 'true'
+        timeout-minutes: 4
         run: npx playwright install --with-deps chromium
+
+      - name: Dependencias del navegador
+        if: steps.cache-navegador.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       - name: Roles y base sombra
         run: npm run db:preparar

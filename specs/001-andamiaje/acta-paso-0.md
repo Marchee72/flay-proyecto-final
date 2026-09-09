@@ -73,6 +73,14 @@ Queda configurado sobre `main`: sin envio directo, incorporacion por solicitud c
 aprobada** del otro integrante, `verificar` como comprobacion requerida en modo estricto, alcance a
 administradores, sin reescritura ni borrado de la rama.
 
+**Levantada el 2026-09-09, a pedido del equipo.** GitHub no permite que el autor apruebe su propia
+solicitud, de modo que la configuracion dejaba las incorporaciones detenidas hasta la revision del
+otro integrante. Mientras la proteccion este levantada, la condicion 1 de §8.3.4 y FR-020/SC-012
+**no se cumplen por configuracion**: dependen del acuerdo entre los integrantes. Se restablece antes
+del cierre de la iteracion 1; si se quisiera conservar la puerta sin bloquear al autor, la forma es
+mantener la proteccion con cero revisiones requeridas, que sigue exigiendo solicitud y `verificar`
+en verde.
+
 ## 3. Ley 25.326 (§5.5.4)
 
 Datos personales bajo Ley 25.326. Región San Pablo (próxima a Rosario); tratamiento por

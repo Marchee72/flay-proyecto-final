@@ -14,3 +14,7 @@ next-env.d.ts
 *.md
 docs
 datos-cliente
+
+# Lienzo de diseno: los .dc.html llevan el formato que entiende su editor y el
+# archivo publicado es codigo generado de dos megabytes.
+diseno

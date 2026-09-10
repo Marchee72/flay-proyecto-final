@@ -51,6 +51,8 @@ const eslintConfig = [
       'test-results/**',
       // Las fixtures negativas DEBEN fallar: las corre su propia prueba (FR-022).
       'pruebas/fixtures-negativas/**',
+      // Lienzo de diseno: no es codigo de la aplicacion.
+      'diseno/**',
     ],
   },
   ...compat.extends('next/core-web-vitals', 'next/typescript'),

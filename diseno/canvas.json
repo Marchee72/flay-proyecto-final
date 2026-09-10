@@ -1,0 +1,31 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Panel — inicio", "x": 0, "y": 0, "w": 1440, "h": 900 },
+    { "file": "Gastos.dc.html", "title": "Gastos — escritorio", "x": 1560, "y": 0, "w": 1440, "h": 900 },
+    { "file": "Telefono.dc.html", "title": "Gastos — teléfono 390", "x": 3120, "y": 0, "w": 390, "h": 844 }
+  ],
+  "annotations": [
+    {
+      "id": "diagnostico",
+      "x": 0,
+      "y": -240,
+      "w": 620,
+      "text": "Qué cambia y por qué\n\n1. El consorcio activo pasa a la barra. Hoy vive en ?consorcio= y se pierde al saltar de sección.\n2. Aparece un panel de inicio. Hoy al entrar caés en Usuarios, que es lo menos urgente.\n3. Migas de pan arriba en vez de «volver a X» al pie.\n4. Importes $ 1.234.567,89 y fechas 06/09/2026. Hoy salen crudos: 184320.75 y 2026-09-06. importeParaMostrar() ya existe y no se usa en ninguna pantalla."
+    },
+    {
+      "id": "diagnostico-2",
+      "x": 660,
+      "y": -240,
+      "w": 620,
+      "text": "5. Tarjetas hero oscuras con ícono en pastilla lima: la guía §3.4 las pide y no existe ninguna.\n6. Íconos en el lateral, también de §3.4.\n7. Estado vacío con salida («Cargar el primer gasto»), no un párrafo suelto.\n8. La fila entera es clicable y el detalle abre al costado, sin sacarte de la lista.\n9. En teléfono, tarjetas en vez de tabla, y navegación inferior en vez de hamburguesa."
+    },
+    {
+      "id": "nota-tono",
+      "x": 3120,
+      "y": -240,
+      "w": 390,
+      "text": "Pendiente de decidir\n\nLa guía §4 dice «tuteo evitado, trato neutro», pero todos los mensajes que escribí vosean: «Revisá las 12 unidades», «Cargá al menos una unidad». O se corrige la guía o se corrigen los mensajes; hoy se contradicen."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

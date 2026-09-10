@@ -1,0 +1,274 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f4f6f4;
+      color: #1a1d21;
+      font: 15px/1.5 Poppins, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+    a { color: #1a1d21; }
+    a:hover { color: #2e7d32; }
+    .cifra { font-variant-numeric: tabular-nums; }
+    button, select { font: inherit; }
+    button { cursor: pointer; }
+    select {
+      min-height: 44px;
+      padding: 0 12px;
+      border: 1px solid #767e76;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #1a1d21;
+    }
+    label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  </style>
+</helmet>
+
+<div style="display: flex; flex-direction: column; height: 900px; overflow: hidden">
+
+  <div style="display: flex; align-items: center; gap: 16px; background: #23272e; color: #e8eaed; padding: 12px 24px; flex: none">
+    <div style="font-weight: 700; font-size: 17px; letter-spacing: 0.04em">FLAY</div>
+    <div style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; background: #2e333b; border: 1px solid #4a5158; border-radius: 8px; font-size: 13px; font-weight: 600">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ccc65" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path><path d="M19 21V11l-6-4"></path>
+      </svg>
+      Mitre 456
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg>
+    </div>
+    <div style="margin-left: auto; font-size: 13px; color: #c9cfc9">Ada Diaz · administradora</div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 340px; gap: 24px; max-width: 1200px; width: 100%; margin: 0 auto; padding: 24px; flex: 1; min-height: 0">
+
+    <div style="min-width: 0; display: flex; flex-direction: column; gap: 16px; min-height: 0">
+
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4a5158">
+        <span>Mitre 456</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9cfc9" stroke-width="2" stroke-linecap="round"><path d="m9 6 6 6-6 6"></path></svg>
+        <span style="color: #1a1d21; font-weight: 600">Gastos</span>
+      </div>
+
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600">Gastos</h1>
+
+      <div style="display: flex; flex-wrap: wrap; align-items: end; gap: 12px">
+        <div>
+          <label for="periodo">Período</label>
+          <select id="periodo" value="{{ periodo }}" onChange="{{ cambiarPeriodo }}">
+            <sc-for list="{{ periodos }}" as="p" hint-placeholder-count="3">
+              <option value="{{ p.valor }}">{{ p.etiqueta }}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <div>
+          <label for="rubro">Rubro</label>
+          <select id="rubro" value="{{ rubro }}" onChange="{{ cambiarRubro }}">
+            <sc-for list="{{ rubros }}" as="r" hint-placeholder-count="4">
+              <option value="{{ r.valor }}">{{ r.etiqueta }}</option>
+            </sc-for>
+          </select>
+        </div>
+
+        <sc-if value="{{ hayFiltro }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ limpiar }}" style="min-height: 44px; padding: 0 20px; background: #ffffff; border: 2px solid #23272e; border-radius: 999px; font: 700 14px/1 inherit; color: #23272e">
+            Quitar filtros
+          </button>
+        </sc-if>
+
+        <div style="margin-left: auto; align-self: end; color: #4a5158; font-size: 14px">
+          <span class="cifra" style="font-weight: 600; color: #1a1d21">{{ cantidad }}</span> de {{ total }} gastos
+        </div>
+      </div>
+
+      <div style="border: 1px solid #c9cfc9; border-radius: 10px; background: #ffffff; overflow: auto; flex: 1; min-height: 0">
+        <table style="width: 100%; border-collapse: collapse; min-width: 560px">
+          <thead>
+            <tr>
+              <th scope="col" style="position: sticky; top: 0; z-index: 1; text-align: left; padding: 12px 16px; background: #ecefec; color: #4a5158; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em">Fecha</th>
+              <th scope="col" style="position: sticky; top: 0; z-index: 1; text-align: left; padding: 12px 16px; background: #ecefec; color: #4a5158; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em">Rubro y detalle</th>
+              <th scope="col" style="position: sticky; top: 0; z-index: 1; text-align: left; padding: 12px 16px; background: #ecefec; color: #4a5158; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em">Comprobante</th>
+              <th scope="col" style="position: sticky; top: 0; z-index: 1; text-align: right; padding: 12px 16px; background: #ecefec; color: #4a5158; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em">Importe</th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{ filas }}" as="f" hint-placeholder-count="6">
+              <tr onClick="{{ f.abrir }}" style="cursor: pointer; background: {{ f.fondo }}; border-bottom: 1px solid #e2e6ea">
+                <td class="cifra" style="padding: {{ alto }} 16px; font-size: 14px; color: #4a5158; white-space: nowrap">{{ f.fecha }}</td>
+                <td style="padding: {{ alto }} 16px">
+                  <div style="font-weight: 500">{{ f.rubro }}</div>
+                  <div style="font-size: 13px; color: #4a5158">{{ f.detalle }}</div>
+                </td>
+                <td style="padding: {{ alto }} 16px">
+                  <span style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: {{ f.pastillaFondo }}; color: {{ f.pastillaTinta }}; border: 1px solid {{ f.pastillaBorde }}">
+                    {{ f.comprobante }}
+                  </span>
+                </td>
+                <td class="cifra" style="padding: {{ alto }} 16px; text-align: right; font-weight: 600; white-space: nowrap">{{ f.importe }}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" style="padding: 12px 16px; font-weight: 700; border-top: 2px solid #c9cfc9; background: #ecefec">Total del filtro</td>
+              <td class="cifra" style="padding: 12px 16px; text-align: right; font-weight: 700; border-top: 2px solid #c9cfc9; background: #ecefec; white-space: nowrap">{{ suma }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Detalle al costado: elegir una fila no te saca de la lista -->
+    <div style="min-width: 0">
+      <div style="background: #ffffff; border: 1px solid #e2e6ea; border-radius: 10px; padding: 16px; position: sticky; top: 0">
+        <sc-if value="{{ haySeleccion }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #4a5158; font-weight: 700">{{ elegido.clasificacion }}</div>
+            <h2 style="margin: 4px 0 0; font-size: 22px; font-weight: 600">{{ elegido.rubro }}</h2>
+            <div class="cifra" style="font-size: 28px; font-weight: 700; margin: 12px 0">{{ elegido.importe }}</div>
+
+            <div style="display: grid; grid-template-columns: 96px 1fr; gap: 8px 12px; font-size: 14px; padding: 12px 0; border-top: 1px solid #e2e6ea; border-bottom: 1px solid #e2e6ea">
+              <div style="color: #4a5158">Fecha</div><div class="cifra">{{ elegido.fecha }}</div>
+              <div style="color: #4a5158">Período</div><div class="cifra">{{ elegido.periodo }}</div>
+              <div style="color: #4a5158">Proveedor</div><div>{{ elegido.proveedor }}</div>
+              <div style="color: #4a5158">Detalle</div><div>{{ elegido.detalle }}</div>
+            </div>
+
+            <sc-if value="{{ elegido.tieneComprobante }}" hint-placeholder-val="{{ true }}">
+              <div style="margin-top: 12px">
+                <div style="height: 132px; border: 1px solid #c9cfc9; border-radius: 8px; background: #ecefec; display: flex; align-items: center; justify-content: center; color: #4a5158">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h4"></path></svg>
+                </div>
+                <button style="width: 100%; margin-top: 12px; min-height: 44px; background: #ffffff; border: 2px solid #23272e; border-radius: 999px; font: 700 14px/1 inherit; color: #23272e">Abrir comprobante</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ elegido.sinComprobante }}" hint-placeholder-val="{{ true }}">
+              <div style="margin-top: 12px; background: #fdf3d7; border: 1px solid #8a5f14; border-left-width: 4px; border-radius: 8px; padding: 12px 16px; font-size: 14px">
+                Este gasto no tiene comprobante adjunto. El período sigue abierto, así que todavía se puede subir.
+              </div>
+              <button style="width: 100%; margin-top: 12px; min-height: 44px; background: {{ acento }}; border: 2px solid transparent; border-radius: 999px; font: 700 14px/1 inherit; color: #23272e">Adjuntar comprobante</button>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ sinSeleccion }}" hint-placeholder-val="{{ true }}">
+          <div style="text-align: center; padding: 24px 0; color: #4a5158">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#c9cfc9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"></path><path d="M4 9h16"></path><path d="M9 9v10"></path></svg>
+            <div style="margin-top: 8px; font-size: 14px">Elegí una fila para ver el gasto y su comprobante.</div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{
+  "acento": {"editor": "color", "default": "#7cb342", "options": ["#7cb342", "#9ccc65", "#2e7d32", "#8a5f14"], "section": "Marca"},
+  "densidad": {"editor": "enum", "options": ["cómoda", "compacta"], "default": "cómoda", "section": "Tabla"},
+  "$preview": {"width": 1440, "height": 900}
+}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props)
+    this.state = { periodo: 'todos', rubro: 'todos', elegido: 1 }
+  }
+
+  pesos(valor) {
+    const [entero, decimales] = valor.toFixed(2).split('.')
+    return '$ ' + entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + decimales
+  }
+
+  gastos() {
+    return [
+      { id: 1, fecha: '06/09/2026', periodo: '2026-09', rubro: 'Gastos bancarios', clasificacion: 'Ordinario', detalle: 'Comisiones de la cuenta', proveedor: 'Banco Municipal', importe: 74070.67, comprobante: true },
+      { id: 2, fecha: '05/09/2026', periodo: '2026-09', rubro: 'Gas', clasificacion: 'Ordinario', detalle: 'Factura de septiembre', proveedor: 'Litoral Gas', importe: 61725.67, comprobante: true },
+      { id: 3, fecha: '04/09/2026', periodo: '2026-09', rubro: 'Fondo de reserva', clasificacion: 'Extraordinario', detalle: 'Aporte mensual', proveedor: null, importe: 49380.67, comprobante: false },
+      { id: 4, fecha: '03/09/2026', periodo: '2026-09', rubro: 'Energía eléctrica', clasificacion: 'Ordinario', detalle: 'Consumo de espacios comunes', proveedor: 'EPE', importe: 37035.67, comprobante: true },
+      { id: 5, fecha: '02/09/2026', periodo: '2026-09', rubro: 'Cargas sociales', clasificacion: 'Ordinario', detalle: 'Aportes del encargado', proveedor: null, importe: 24690.67, comprobante: false },
+      { id: 6, fecha: '01/09/2026', periodo: '2026-09', rubro: 'Agua', clasificacion: 'Ordinario', detalle: 'Bimestre julio-agosto', proveedor: 'Aguas Santafesinas', importe: 12345.67, comprobante: true },
+      { id: 7, fecha: '28/08/2026', periodo: '2026-08', rubro: 'Energía eléctrica', clasificacion: 'Ordinario', detalle: 'Consumo de espacios comunes', proveedor: 'EPE', importe: 35880.10, comprobante: true },
+      { id: 8, fecha: '22/08/2026', periodo: '2026-08', rubro: 'Obra de fachada', clasificacion: 'Extraordinario', detalle: 'Anticipo del frente', proveedor: 'Construcciones Paraná', importe: 980400.00, comprobante: true },
+    ]
+  }
+
+  renderVals() {
+    const acento = this.props.acento ?? '#7cb342'
+    const alto = (this.props.densidad ?? 'cómoda') === 'compacta' ? '6px' : '12px'
+
+    const todos = this.gastos()
+    const filtrados = todos.filter(
+      (g) =>
+        (this.state.periodo === 'todos' || g.periodo === this.state.periodo) &&
+        (this.state.rubro === 'todos' || g.rubro === this.state.rubro),
+    )
+
+    const suma = filtrados.reduce((acumulado, g) => acumulado + g.importe, 0)
+    const elegido = filtrados.find((g) => g.id === this.state.elegido)
+
+    const rubros = ['todos'].concat(Array.from(new Set(todos.map((g) => g.rubro))).sort())
+
+    return {
+      acento,
+      alto,
+      periodo: this.state.periodo,
+      rubro: this.state.rubro,
+      cambiarPeriodo: (evento) => this.setState({ periodo: evento.target.value }),
+      cambiarRubro: (evento) => this.setState({ rubro: evento.target.value }),
+      limpiar: () => this.setState({ periodo: 'todos', rubro: 'todos' }),
+      hayFiltro: this.state.periodo !== 'todos' || this.state.rubro !== 'todos',
+
+      periodos: [
+        { valor: 'todos', etiqueta: 'Todos los períodos' },
+        { valor: '2026-09', etiqueta: 'Septiembre 2026' },
+        { valor: '2026-08', etiqueta: 'Agosto 2026' },
+      ],
+      rubros: rubros.map((r) => ({ valor: r, etiqueta: r === 'todos' ? 'Todos los rubros' : r })),
+
+      cantidad: filtrados.length,
+      total: todos.length,
+      suma: this.pesos(suma),
+
+      filas: filtrados.map((g) => ({
+        fecha: g.fecha,
+        rubro: g.rubro,
+        detalle: g.detalle,
+        importe: this.pesos(g.importe),
+        comprobante: g.comprobante ? 'Adjunto' : 'Falta',
+        pastillaFondo: g.comprobante ? '#f1f8f1' : '#fdf3d7',
+        pastillaTinta: g.comprobante ? '#2e7d32' : '#8a5f14',
+        pastillaBorde: g.comprobante ? '#7cb342' : '#8a5f14',
+        fondo: g.id === this.state.elegido ? '#f1f8f1' : '#ffffff',
+        abrir: () => this.setState({ elegido: g.id }),
+      })),
+
+      haySeleccion: !!elegido,
+      sinSeleccion: !elegido,
+      elegido: elegido
+        ? {
+            rubro: elegido.rubro,
+            clasificacion: elegido.clasificacion,
+            importe: this.pesos(elegido.importe),
+            fecha: elegido.fecha,
+            periodo: elegido.periodo,
+            proveedor: elegido.proveedor ?? 'Sin proveedor',
+            detalle: elegido.detalle,
+            tieneComprobante: elegido.comprobante,
+            sinComprobante: !elegido.comprobante,
+          }
+        : {},
+    }
+  }
+}
+</script>
+</body>
+</html>

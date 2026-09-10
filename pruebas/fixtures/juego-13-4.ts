@@ -7,10 +7,11 @@ import { Decimal } from 'decimal.js'
  * los coeficientes, para que una medicion de ayer se pueda comparar con una de
  * hoy.
  *
- * Los coeficientes se reparten parejo y el resto se lo lleva la ultima unidad,
- * que es como queda un edificio real: 100 / 96 no da exacto y el reglamento se
- * lo carga a alguien. La suma da `100.00000000` exacto, que es lo que el
- * disparador de la base exige (regla RN-01, SC-001).
+ * Los coeficientes son **los que § 13.4 fija**, no un reparto inventado: doce
+ * unidades de tres tamanos en C-A, y en C-B noventa y cinco iguales con la
+ * ultima llevandose el resto, que es como queda un edificio real. Los dos
+ * suman `100.00000000` exacto, que es lo que el disparador de la base exige
+ * (regla RN-01, SC-001).
  *
  * No usa alias de rutas a proposito: lo importan tanto las pruebas como los
  * guiones de semilla, que corren fuera del empaquetador.
@@ -18,26 +19,39 @@ import { Decimal } from 'decimal.js'
 
 const DECIMALES = 8
 
+/** Designaciones de edificio: piso y letra, `1A` a `12H`. */
+const designacion = (indice: number, porPiso: number) =>
+  `${Math.floor(indice / porPiso) + 1}${'ABCDEFGH'[indice % porPiso]}`
+
 /**
- * Reparto parejo con el resto en la ultima, en decimal de precision fija. Con
- * el tipo numerico nativo, noventa y seis sumas de 1,04166666 no dan 100 y la
- * semilla no cargaria (Principio II).
+ * C-A: doce unidades de tres tamanos, como las escribe § 13.4. Cuatro de cada
+ * uno: 4x12,5 + 4x7,5 + 4x5 = 100 exacto.
  */
-function coeficientes(cantidad: number): string[] {
-  const total = new Decimal(100)
-  const parejo = total.div(cantidad).toDecimalPlaces(DECIMALES, Decimal.ROUND_DOWN)
-  const ultima = total.minus(parejo.times(cantidad - 1))
-
-  return Array.from({ length: cantidad }, (_, i) =>
-    (i === cantidad - 1 ? ultima : parejo).toFixed(DECIMALES),
+const doceUnidades = () =>
+  ['12.50000000', '7.50000000', '5.00000000'].flatMap((coeficiente, tamano) =>
+    Array.from({ length: 4 }, (_, i) => ({
+      designacion: designacion(tamano * 4 + i, 4),
+      coeficiente,
+    })),
   )
-}
 
-const unidades = (cantidad: number, piso: number) =>
-  coeficientes(cantidad).map((coeficiente, i) => ({
-    designacion: `${Math.floor(i / piso) + 1}${'ABCDEFGH'[i % piso]}`,
-    coeficiente,
+/**
+ * C-B: noventa y seis unidades practicamente iguales, y la ultima se lleva el
+ * resto: 95x1,04166667 + 1x1,04166635 = 100 exacto, tal como § 13.4 lo fija.
+ *
+ * La cuenta va en decimal de precision fija: con el tipo numerico nativo,
+ * noventa y cinco sumas de 1,04166667 no dan 98,95833365 y la semilla no
+ * cargaria, porque el disparador de la base la rechazaria (Principio II).
+ */
+const noventaYSeisUnidades = () => {
+  const comun = new Decimal('1.04166667')
+  const ultima = new Decimal(100).minus(comun.times(95))
+
+  return Array.from({ length: 96 }, (_, i) => ({
+    designacion: designacion(i, 8),
+    coeficiente: (i === 95 ? ultima : comun).toFixed(DECIMALES),
   }))
+}
 
 export const JUEGO = {
   administradora: { razonSocial: 'Grupo Delta S.R.L.', cuit: '30-71234567-0' },
@@ -47,14 +61,14 @@ export const JUEGO = {
       direccion: 'Bartolome Mitre 456',
       localidad: 'Rosario',
       cuit: '33-70000012-9',
-      unidades: unidades(12, 4),
+      unidades: doceUnidades(),
     },
     {
-      nombre: 'San Luis 900',
-      direccion: 'San Luis 900',
+      nombre: 'San Martin 7890',
+      direccion: 'San Martin 7890',
       localidad: 'Rosario',
       cuit: '33-70000096-9',
-      unidades: unidades(96, 8),
+      unidades: noventaYSeisUnidades(),
     },
   ],
 } as const

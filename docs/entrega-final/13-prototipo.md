@@ -43,24 +43,37 @@ operativo, no una maqueta.
 
 ## 13.3 Alcance del prototipo entregado
 
-*A completar. Debe coincidir con el alcance comprometido del punto 9.11: 433 puntos de función sin
-ajustar, con las 23 funcionalidades diferidas allí enumeradas.*
+*A completar al cierre de las tres iteraciones. Debe coincidir con el alcance comprometido del
+punto 9.11: 433 puntos de función sin ajustar, con las 23 funcionalidades diferidas allí
+enumeradas.*
+
+**Estado al cierre de la iteración 1** (etapa `002-nucleo`, 2026-09-10):
 
 | Módulo | Requerimientos | Estado | Observaciones |
 |---|---|---|---|
-| Usuarios, roles y habilitaciones | RF-03 | | |
-| Consorcios y unidades | RF-01, RF-02 | | |
-| Gastos y comprobantes | RF-04, RF-05, RF-10 | | |
-| Liquidación de expensas | RF-07, RF-08 | | |
-| Pagos y morosidad | RF-09 | | |
-| Reclamos | RF-11, RF-13 | | |
-| Reservas | RF-15, RF-16 | | |
-| Proveedores | RF-17 | | |
-| Comunicación y documentación | RF-18, RF-19 | | |
-| Notificaciones | RF-14 | | |
-| Indicadores de gestión | RF-21 a RF-25 | | |
-| Funciones asistidas | RF-06, RF-12, RF-20 | | |
-| Auditoría | RF-26 | | |
+| Usuarios, roles y habilitaciones | RF-03 | **Construido** | Identidad, invitación por correo y habilitación en tres niveles (plataforma, administradora, consorcio). Bloqueo por intentos fallidos con mensaje único |
+| Consorcios y unidades | RF-01, RF-02 | **Construido** | Alta, padrón y cambio de coeficiente hacia el futuro. La suma exacta la impone un disparador diferido, no el código |
+| Gastos y comprobantes | RF-04, RF-05, RF-10 | **Construido** | Alta de gasto sobre período abierto, subida directa del comprobante al almacenamiento, listado filtrable. Sin baja de gasto: diferida (§ 9.11) |
+| Liquidación de expensas | RF-07, RF-08 | Iteración 2 | El contrato del estado del período ya está declarado y compartido (M-04) |
+| Pagos y morosidad | RF-09 | Iteración 2 | |
+| Reclamos | RF-11, RF-13 | Iteración 2 | |
+| Reservas | RF-15, RF-16 | Iteración 3 | |
+| Proveedores | RF-17 | **Construido** | Alta y edición. Sin baja: diferida (§ 9.11) |
+| Comunicación y documentación | RF-18, RF-19 | Iteración 3 | |
+| Notificaciones | RF-14 | **Parcial** | El mecanismo de reintento está construido y probado; el único aviso que produce esta etapa es la invitación |
+| Indicadores de gestión | RF-21 a RF-25 | Iteración 3 | |
+| Funciones asistidas | RF-06, RF-12, RF-20 | Iteración 3 | La pantalla de alta de gasto ya admite valores precargados y exige confirmación humana, para que `RF-06` se enchufe sin rediseñarla (FR-020, regla RN-14) |
+| Auditoría | RF-26 | **Construido** | Las cinco tablas económicas de la etapa dejan asiento por disparador; la aplicación no puede escribir la bitácora |
+
+### Lo que la iteración 1 deja verificado
+
+| Criterio | Medición al 2026-09-10 |
+|---|---|
+| Suma de coeficientes exacta en los dos consorcios de § 13.4 (SC-001) | `100.00000000` en ambos, comparado por decimal |
+| Aislamiento por consorcio y por rol (SC-002, SC-002b) | 82 pruebas de integración; el filtro por consorcio aparece en un solo archivo |
+| Invariantes impuestos por la base (SC-004b, SC-005) | Verificados **salteándose la capa de aplicación** |
+| Tiempo de respuesta del listado con 10.800 gastos (SC-006) | p95 de 363 ms contra un límite de 2.000 ms (§ 14.5) |
+| Accesibilidad de las pantallas del consorcista (SC-011) | axe sin infracciones A ni AA |
 
 ## 13.4 Datos de demostración
 
@@ -69,6 +82,10 @@ sobre esta semilla; se registra su hash SHA256 por archivo:*
 
 - Dos consorcios contrastantes: C-A Mitre 456 (12 uds, 12.50000000/7.50000000/5.00000000 =
   100.00000000) y C-B San Martín 7890 (96 uds, 95×1.04166667 + 1×1.04166635 = 100.00000000).
+  **Construido** en `pruebas/fixtures/juego-13-4.ts`, con esos mismos coeficientes, y cargado por
+  `npm run semilla`; el volumen anual de 10.800 gastos lo agrega `npm run semilla:volumen`. La
+  semilla es código y no un juego de archivos con hash bajo `datos-cliente/`: al ser
+  determinística, el hash que M-08 pedía lo da el control de versiones.
 - Doce períodos (C-A 2025-09 a 2026-08, 11 liquidados + 1 abierto; C-B 11 liquidados + 1 abierto).
 - Mora: C-A 3B (3 períodos), 1C (2), 2C (1); resto al día. Reclamos RC-01 a RC-05 en todos los estados.
 - Reglamento indexado: `datos-cliente/reglamento/reglamento-copropiedad.md` + 20 preguntas.

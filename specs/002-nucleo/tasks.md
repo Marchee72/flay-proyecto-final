@@ -148,12 +148,12 @@
 
 **Independent Test**: operar sobre cada tabla económica y verificar que todas dejan asiento con imagen anterior y posterior.
 
-- [ ] T069 [US5] Escribir `pruebas/integracion/auditoria-etapa.spec.ts`: cada una de las **cinco** tablas económicas —`Unidad`, `CoeficienteHistorico`, `Periodo`, `Gasto`, `Comprobante`— deja exactamente un asiento por operación, con imagen anterior y posterior (SC-007)
-- [ ] T070 [US5] Extender esa prueba con los tres denegados sobre la bitácora con el rol de la aplicación (SC-008, RNF-12)
-- [ ] T071 [US5] Escribir `pruebas/integracion/pendientes.spec.ts`: con el correo caído el alta se completa igual, al volver el servicio el siguiente pedido lo despacha, y el reenvío del administrador lo despacha aunque no haya llegado el próximo intento (SC-013b)
-- [ ] T072 [P] [US5] Solicitar formalmente al cliente las **tres liquidaciones reales** y registrar la fecha del pedido; sin ellas `003-liquidacion` no arranca (FR-027, riesgo RT-01, SC-013)
-- [ ] T073 [P] [US5] Actualizar `docs/entrega-final/13-prototipo.md` § 13.3 con el estado por módulo al cierre de la etapa (FR-029, condición 8 de § 8.3.4)
-- [ ] T074 [US5] Registrar en `CLAUDE.md` los guiones nuevos (`semilla`, `semilla:volumen`, `semilla:arranque`) y las decisiones que un recién llegado no puede adivinar
+- [X] T069 [US5] Escribir `pruebas/integracion/auditoria-etapa.spec.ts`: cada una de las **cinco** tablas económicas —`Unidad`, `CoeficienteHistorico`, `Periodo`, `Gasto`, `Comprobante`— deja exactamente un asiento por operación, con imagen anterior y posterior (SC-007)
+- [X] T070 [US5] Extender esa prueba con los tres denegados sobre la bitácora con el rol de la aplicación (SC-008, RNF-12)
+- [X] T071 [US5] Escribir `pruebas/integracion/pendientes.spec.ts`: con el correo caído el alta se completa igual, al volver el servicio el siguiente pedido lo despacha, y el reenvío del administrador lo despacha aunque no haya llegado el próximo intento (SC-013b)
+- [X] T072 [P] [US5] **Requiere acción del equipo:** el pedido queda registrado con fecha en `docs/entrega-3/11-analisis-de-riesgos.md` (RT-01, seguimiento 2026-09-10); falta la respuesta del cliente. Solicitar formalmente al cliente las **tres liquidaciones reales** y registrar la fecha del pedido; sin ellas `003-liquidacion` no arranca (FR-027, riesgo RT-01, SC-013)
+- [X] T073 [P] [US5] Actualizar `docs/entrega-final/13-prototipo.md` § 13.3 con el estado por módulo al cierre de la etapa (FR-029, condición 8 de § 8.3.4)
+- [X] T074 [US5] Registrar en `CLAUDE.md` los guiones nuevos (`semilla`, `semilla:volumen`, `semilla:arranque`) y las decisiones que un recién llegado no puede adivinar
 
 **Checkpoint**: las ocho condiciones de la definición de terminado se pueden verificar una por una
 

@@ -36,6 +36,9 @@ prorrateo, intereses e imputación (§ 8.3.3), y el paquete 4.2 se hace **en par
 - Q: ¿Cuándo se calculan los intereses por mora, al emitir o al pagar? → A: Al emitir, sobre lo impago a la fecha de emisión.
 - Q: ¿Cómo se calcula el interés por mora? → A: Simple, por **mes vencido completo**: sin prorrateo de días y sin capitalizar.
 - Q: ¿De dónde sale la fecha de vencimiento? → A: Día fijo por consorcio; la fecha se copia a la liquidación al emitirla.
+- Q: El excedente de un pago queda en `Pago.saldo_a_favor`, ¿y después? → A: Se aplica solo a la liquidación siguiente de esa unidad, sin intervención del administrador.
+- Q: Con «mes vencido completo», ¿los meses se cuentan por liquidación impaga o sobre el saldo total? → A: Por cada liquidación impaga, desde **su propio** vencimiento.
+- Q: `FR-003` anula para corregir, pero el contrato de `002` dice que un período liquidado no vuelve atrás. ¿Qué se anula? → A: La **liquidación**, no el período. El período queda `liquidado`; el contrato de `002` no se toca.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -203,6 +206,9 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
   documentado —el identificador menor—, para que dos ejecuciones den el mismo resultado.
 - **Dos liquidaciones del mismo período disparadas en paralelo.** La segunda encuentra el período
   en estado liquidado y aborta; el estado del período es el candado (regla RN-06 § 7.2).
+- **Emitir de nuevo después de anular.** El período sigue en `liquidado`: el candado que impide la
+  emisión doble no puede ser el estado del período, porque una reemisión legítima lo encuentra
+  igual. Lo que decide es que **no haya otra liquidación emitida** para ese período (FR-003b).
 - **El servicio de correo caído al emitir.** La liquidación se emite igual. La notificación queda
   encolada en estado pendiente y se despacha cuando el servicio vuelva o cuando `004-servicios`
   construya el despachador (hallazgo 2, RNF-14).
@@ -228,7 +234,9 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
 #### Bloque A — Períodos y control de estado (paquete 4.1)
 
 - **FR-001**: El período **DEBE** tener la máquina de estados completa: abierto → cerrado →
-  liquidado, más anulado. `002-nucleo` construyó sólo la apertura y el listado; esta etapa completa
+  liquidado, más anulado. `anulado` es para un período que se descarta **sin liquidar**; un período
+  liquidado no vuelve atrás, y el contrato de `002` ya lo dice con `liquidado: []`. Esta etapa
+  **NO DEBE** agregar transiciones desde `liquidado`. `002-nucleo` construyó sólo la apertura y el listado; esta etapa completa
   el resto. El contrato (valores del enum y transiciones válidas) vive en `src/dominio/contratos`
   desde `002` (M-04) y ambas etapas lo comparten: ninguna prueba fabrica un estado fuera de ese contrato.
 - **FR-002**: Un período cerrado **DEBE** rechazar toda alta o modificación de gasto (regla RN-03
@@ -240,6 +248,11 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
 - **FR-003**: Un período **DEBE** poder liquidarse **una sola vez**. Corregir exige anular la
   liquidación y emitir una nueva, quedando ambas registradas y la nueva referenciando a la que
   anula (regla RN-06 § 7.2).
+- **FR-003b**: Lo que se anula es la **`Liquidacion`**, que tiene su propio estado —emitida,
+  anulada—, **no el período**, que queda `liquidado` para siempre. Anular no reabre nada: no
+  devuelve el período a `cerrado` ni admite gastos nuevos. Es lo que hace compatible la regla RN-06
+  (§ 7.2) con el contrato que `002` declaró compartido (M-04), y lo que sostiene la promesa de que
+  lo que ya se le mandó a los consorcistas no se reescribe: se reemplaza a la vista.
 
 #### Bloque B — Motor de liquidación (paquete 4.2, `RF-07`)
 
@@ -310,6 +323,11 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
   fecha a fecha desde el vencimiento. **Sin prorrateo de días y sin capitalizar**: veintinueve días
   de atraso son cero meses y por lo tanto interés cero, y el segundo mes se calcula sobre el mismo
   capital que el primero.
+  El cálculo es **por cada liquidación impaga, desde su propio vencimiento**, y el interés de la
+  unidad es la suma de esos cálculos: una deuda de tres meses no devenga tres meses sobre el total,
+  sino tres, dos y un mes sobre cada liquidación. Es lo que permite explicarle a un propietario de
+  dónde sale cada peso, y lo que hace que pagar la más vieja primero (regla RN-08 § 7.2) tenga el
+  efecto que esa regla busca.
 - **FR-024b**: Los intereses **DEBEN** calcularse **al emitir**, sobre el saldo impago de la unidad
   a la fecha de emisión, y viajar como una línea propia del detalle. El consorcista tiene que poder
   leer cuánto debe en la expensa que recibe, sin que el saldo se mueva solo con el calendario.
@@ -318,6 +336,11 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
   pueda reconstruir con una calculadora (M-05, RNF-10).
 - **FR-026**: Un pago que exceda la deuda **DEBE** dejar el excedente a favor de la unidad en
   `Pago.saldo_a_favor` (M-05). No se imputa a otra unidad ni se pierde.
+- **FR-026b**: El saldo a favor **DEBE** aplicarse **solo** a la liquidación siguiente de esa
+  unidad, en el momento de emitirla, y dejar rastro como imputación: el administrador no lo aplica a
+  mano y el consorcista lo ve descontado en su expensa. Se aplica **después** de calcular los
+  intereses, porque el interés corre sobre lo que estuvo impago y el saldo a favor es plata que ya
+  entró.
 - **FR-027**: La anulación de una liquidación **DEBE** revertir sus imputaciones y dejar los pagos
   disponibles.
 - **FR-028**: El estado de cuenta por unidad **DEBE** mostrar liquidaciones, pagos, imputaciones,
@@ -343,7 +366,7 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
 |---|---|---|
 | `Periodo` | Mes de operación de un consorcio | Máquina de estados completa en esta etapa; un período se liquida una sola vez (regla RN-06 § 7.2) |
 | `Consorcio` | Viene de `002-nucleo` | Esta etapa le agrega el **día de vencimiento** (FR-002b) y la **tasa de mora vigente**, que fija el administrador |
-| `Liquidacion` | Emisión de expensas de un período | Estado y referencia a la liquidación que anula; total en decimal de precisión fija; **fecha de vencimiento copiada al emitir** (FR-002b) |
+| `Liquidacion` | Emisión de expensas de un período | **Estado propio** —emitida, anulada— y referencia a la liquidación que anula (FR-003b); total en decimal de precisión fija; **fecha de vencimiento copiada al emitir** (FR-002b) |
 | `DetalleLiquidacion` | Importe liquidado a una unidad, en **una sola obligación** (FR-011b) | Copia del coeficiente aplicado (regla RN-02 § 7.2); subtotales ordinario y extraordinario separados (regla RN-05 § 7.2); **campo propio** para el ajuste de redondeo (regla RN-07 § 7.2); tasa, meses de atraso y capital del interés (FR-025) |
 | `Pago` | Cobro recibido de una unidad | `unidad_id` obligatorio; importe en decimal |
 | `PagoImputacion` | Aplicación de un pago a un detalle | Orden de antigüedad; la suma de imputaciones iguala el pago (regla RN-08 § 7.2) |
@@ -380,9 +403,11 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
   imputaciones iguala el pago con **tolerancia cero** (regla RN-08 § 7.2).
 - **SC-010**: Un fallo inyectado en cualquier paso de la liquidación deja la base **exactamente
   como estaba**: cero liquidaciones a medias, cero períodos en estado inconsistente.
-- **SC-011**: Un segundo intento de liquidar un período ya liquidado falla en el **100 %** de los
-  casos, incluida la ejecución concurrente —dos ejecuciones concurrentes contra el mismo período
-  en prueba de integración con barrera, exactamente una emite— (M-07, regla RN-06 § 7.2).
+- **SC-011**: Un período **no puede tener dos liquidaciones emitidas a la vez**: un segundo intento
+  falla en el **100 %** de los casos, incluida la ejecución concurrente —dos ejecuciones
+  simultáneas contra el mismo período en prueba de integración con barrera, exactamente una emite—
+  (M-07, regla RN-06 § 7.2). Después de **anular**, una reemisión sí procede aunque el período siga
+  en `liquidado`: el candado es la liquidación emitida, no el estado del período (FR-003b).
 - **SC-012**: Cada operación sobre las **5** entidades económicas de la etapa deja exactamente un
   asiento de auditoría. Cero operaciones sin asiento.
 - **SC-013**: Una emisión con el servicio de correo caído **igual emite**, y deja la notificación
@@ -392,7 +417,11 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
   umbral, y se justifica en que un error aquí invalida el sistema.
 - **SC-014b**: El interés es reconstruible con una calculadora: veintinueve días de atraso dan
   **cero**, sesenta dan dos meses sobre el mismo capital, y el detalle muestra tasa, meses y capital
-  aplicados (FR-024, FR-025). Probado sin base de datos.
+  aplicados (FR-024, FR-025). Con tres liquidaciones impagas, el interés es la suma de tres cálculos
+  independientes —tres, dos y un mes— y no dos meses sobre el total. Probado sin base de datos.
+- **SC-014c**: Un pago que excede la deuda deja el excedente a favor, y la liquidación siguiente de
+  esa unidad lo muestra descontado sin que nadie lo aplique a mano; la suma de imputaciones sigue
+  igualando el pago con tolerancia cero (FR-026b).
 - **SC-015**: Un consorcista que consulta morosidad ve el dato agregado y **cero** nombres de
   deudores; un administrador ve la nómina (regla RN-13 § 7.2).
 - **SC-016**: La descarga de la expensa propia funciona a 390 px sin desplazamiento horizontal

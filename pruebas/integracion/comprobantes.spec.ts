@@ -44,6 +44,9 @@ const almacenDoble: AlmacenObjetos = {
     llamadas.push({ clave, tipo: tipoContenido, bytesMaximos })
     return { clave, credencial: 'credencial-de-prueba', vence: new Date('2026-09-09T12:10:00Z') }
   },
+  // El documento de expensa lo produce el servidor (003 FR-016); esta etapa no
+  // lo ejercita, pero el puerto lo exige.
+  async guardar(): Promise<void> {},
   async resolverLecturaAutorizada(clave: string): Promise<string> {
     return `https://almacen.test/${clave}`
   },

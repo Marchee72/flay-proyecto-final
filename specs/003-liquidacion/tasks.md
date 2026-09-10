@@ -20,9 +20,9 @@ cobertura del 100 % de ramas en ese paquete (SC-014). En el resto, la prueba aco
 
 **Purpose**: lo que hace falta antes de tocar el esquema
 
-- [ ] T001 Agregar a `package.json` los guiones `validar:planillas` y `medir:liquidacion`, apuntando a `scripts/validar-planillas.mjs` y `scripts/medir-liquidacion.mjs`, que se completan en T043 y T062
-- [ ] T002 [P] Confirmar que `npm run docs:versiones` pasa con `@react-pdf/renderer` 4.1.3, ya fijado en `docs/entrega-final/14-codificacion.md` § 14.1: esta etapa no agrega dependencias (plan, Technical Context)
-- [ ] T003 [P] Agregar el proyecto `dominio/liquidacion` a la configuración de cobertura de `vitest.config.ts` con umbral de **100 % de ramas** (SC-014); el resto del repositorio queda sin umbral
+- [X] T001 Agregar a `package.json` los guiones `validar:planillas` y `medir:liquidacion`, apuntando a `scripts/validar-planillas.mjs` y `scripts/medir-liquidacion.mjs`, que se completan en T043 y T062
+- [X] T002 [P] Confirmar que `npm run docs:versiones` pasa con `@react-pdf/renderer` 4.1.3, ya fijado en `docs/entrega-final/14-codificacion.md` § 14.1: esta etapa no agrega dependencias (plan, Technical Context)
+- [X] T003 [P] Agregar el proyecto `dominio/liquidacion` a la configuración de cobertura de `vitest.config.ts` con umbral de **100 % de ramas** (SC-014); el resto del repositorio queda sin umbral
 
 ---
 
@@ -32,19 +32,19 @@ cobertura del 100 % de ramas en ese paquete (SC-014). En el resto, la prueba aco
 
 **⚠️ CRÍTICO**: ninguna historia puede empezar hasta que esta fase esté terminada
 
-- [ ] T004 Agregar a `Consorcio` en `prisma/schema.prisma` los campos `dia_vencimiento SMALLINT` —**entre 1 y 28**, con `CHECK`, porque el 30 no existe en febrero— y `tasa_mora_mensual NUMERIC(6,4)` con omisión `0`, que es un consorcio que no cobra mora (`data-model.md`, `FR-002b`)
-- [ ] T005 Definir `Liquidacion` en `prisma/schema.prisma` con `consorcio_id`, `periodo_id`, los tres totales `NUMERIC(14,2)`, `vencimiento DATE`, `emitida_en`, `emitida_por`, `estado` enum `vigente`/`anulada` y `anula_a_id` nulo (`data-model.md`)
-- [ ] T006 Definir `DetalleLiquidacion` en `prisma/schema.prisma` con `coeficiente_aplicado NUMERIC(11,8)`, `importe_ordinario`, `importe_extraordinario`, `deuda_anterior`, `interes_mora`, `saldo_a_favor_aplicado`, `ajuste_redondeo` y `total_unidad` en `NUMERIC(14,2)`, `clave_documento` nulo, y `UNIQUE (liquidacion_id, unidad_id)`
-- [ ] T007 [P] Definir `InteresLiquidado` en `prisma/schema.prisma` con `detalle_id`, `liquidacion_origen_id`, `capital NUMERIC(14,2)`, `tasa_mensual NUMERIC(6,4)`, `meses SMALLINT` e `importe NUMERIC(14,2)` (research R-07)
-- [ ] T008 [P] Definir `Pago` en `prisma/schema.prisma` con `consorcio_id`, `unidad_id`, `fecha_pago DATE`, `importe`, `medio` enum `transferencia`/`efectivo`/`deposito`/`debito`, `referencia` nulo, `saldo_a_favor NUMERIC(14,2)` y `registrado_por` (`FR-026`, M-05)
-- [ ] T009 [P] Definir `PagoImputacion` en `prisma/schema.prisma` con `pago_id`, `detalle_liquidacion_id`, `importe_imputado NUMERIC(14,2)` y `revertida_en` nulo: la reversión **marca**, nunca borra (`FR-027`)
-- [ ] T010 [P] Definir `Notificacion` en `prisma/schema.prisma` con los campos del punto 7 —destinatario, tipo, título, cuerpo, entidad referida, `estado_envio` `pendiente`/`enviada`/`fallida`, marcas de envío y lectura— y **sin despachador** (`FR-015`, research R-08)
-- [ ] T011 Crear la migración con las seis tablas y el **índice único parcial** `CREATE UNIQUE INDEX ON "Liquidacion" (periodo_id) WHERE estado = 'vigente'`, escrito a mano: es el candado de la emisión doble (research R-03, SC-011)
-- [ ] T012 Enganchar `fn_auditar()` a `Liquidacion`, `DetalleLiquidacion`, `InteresLiquidado`, `Pago` y `PagoImputacion` en la misma migración; `Notificacion` queda afuera por no ser económica (regla RN-15 § 7.2, SC-012)
-- [ ] T013 Agregar `documento_expensa` al enum `TipoTrabajo` de `prisma/schema.prisma`, para que la cola de `002` transporte la generación diferida (research R-02)
-- [ ] T014 Extender el puerto `AlmacenObjetos` en `src/dominio/contratos/almacen-objetos.ts` con `guardar(clave, bytes, tipoContenido)`: el comprobante lo sube el navegador, pero el documento lo produce el servidor (research R-01)
-- [ ] T015 Implementar `guardar` en `src/infraestructura/objetos/blob.ts` contra el mismo almacén de los comprobantes
-- [ ] T016 [P] Extender `scripts/semilla.mjs` para que los dos consorcios de § 13.4 queden con `dia_vencimiento` y `tasa_mora_mensual`, y que la semilla siga siendo determinística
+- [X] T004 Agregar a `Consorcio` en `prisma/schema.prisma` los campos `dia_vencimiento SMALLINT` —**entre 1 y 28**, con `CHECK`, porque el 30 no existe en febrero— y `tasa_mora_mensual NUMERIC(6,4)` con omisión `0`, que es un consorcio que no cobra mora (`data-model.md`, `FR-002b`)
+- [X] T005 Definir `Liquidacion` en `prisma/schema.prisma` con `consorcio_id`, `periodo_id`, los tres totales `NUMERIC(14,2)`, `vencimiento DATE`, `emitida_en`, `emitida_por`, `estado` enum `vigente`/`anulada` y `anula_a_id` nulo (`data-model.md`)
+- [X] T006 Definir `DetalleLiquidacion` en `prisma/schema.prisma` con `coeficiente_aplicado NUMERIC(11,8)`, `importe_ordinario`, `importe_extraordinario`, `deuda_anterior`, `interes_mora`, `saldo_a_favor_aplicado`, `ajuste_redondeo` y `total_unidad` en `NUMERIC(14,2)`, `clave_documento` nulo, y `UNIQUE (liquidacion_id, unidad_id)`
+- [X] T007 [P] Definir `InteresLiquidado` en `prisma/schema.prisma` con `detalle_id`, `liquidacion_origen_id`, `capital NUMERIC(14,2)`, `tasa_mensual NUMERIC(6,4)`, `meses SMALLINT` e `importe NUMERIC(14,2)` (research R-07)
+- [X] T008 [P] Definir `Pago` en `prisma/schema.prisma` con `consorcio_id`, `unidad_id`, `fecha_pago DATE`, `importe`, `medio` enum `transferencia`/`efectivo`/`deposito`/`debito`, `referencia` nulo, `saldo_a_favor NUMERIC(14,2)` y `registrado_por` (`FR-026`, M-05)
+- [X] T009 [P] Definir `PagoImputacion` en `prisma/schema.prisma` con `pago_id`, `detalle_liquidacion_id`, `importe_imputado NUMERIC(14,2)` y `revertida_en` nulo: la reversión **marca**, nunca borra (`FR-027`)
+- [X] T010 [P] Definir `Notificacion` en `prisma/schema.prisma` con los campos del punto 7 —destinatario, tipo, título, cuerpo, entidad referida, `estado_envio` `pendiente`/`enviada`/`fallida`, marcas de envío y lectura— y **sin despachador** (`FR-015`, research R-08)
+- [X] T011 Crear la migración con las seis tablas y el **índice único parcial** `CREATE UNIQUE INDEX ON "Liquidacion" (periodo_id) WHERE estado = 'vigente'`, escrito a mano: es el candado de la emisión doble (research R-03, SC-011)
+- [X] T012 Enganchar `fn_auditar()` a `Liquidacion`, `DetalleLiquidacion`, `InteresLiquidado`, `Pago` y `PagoImputacion` en la misma migración; `Notificacion` queda afuera por no ser económica (regla RN-15 § 7.2, SC-012)
+- [X] T013 Agregar `documento_expensa` al enum `TipoTrabajo` de `prisma/schema.prisma`, para que la cola de `002` transporte la generación diferida (research R-02)
+- [X] T014 Extender el puerto `AlmacenObjetos` en `src/dominio/contratos/almacen-objetos.ts` con `guardar(clave, bytes, tipoContenido)`: el comprobante lo sube el navegador, pero el documento lo produce el servidor (research R-01)
+- [X] T015 Implementar `guardar` en `src/infraestructura/objetos/blob.ts` contra el mismo almacén de los comprobantes
+- [X] T016 [P] Extender `scripts/semilla.mjs` para que los dos consorcios de § 13.4 queden con `dia_vencimiento` y `tasa_mora_mensual`, y que la semilla siga siendo determinística
 
 **Checkpoint**: el esquema soporta la etapa entera y la auditoría ya registra
 

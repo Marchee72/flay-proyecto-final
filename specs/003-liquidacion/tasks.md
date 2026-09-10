@@ -63,24 +63,24 @@ sin él. Es el mismo movimiento que `002` hizo con `Periodo`: cambia de historia
 
 ### Tests for User Story 1 ⚠️ SE ESCRIBEN PRIMERO Y DEBEN FALLAR
 
-- [ ] T017 [P] [US1] Escribir `pruebas/dominio/liquidacion/prorrateo.spec.ts`: padrones de 1, 12, 96 y 100 unidades; la suma de importes iguala el total con **tolerancia cero** (SC-001)
-- [ ] T018 [P] [US1] Extender esa prueba: un padrón que suma `99.99999999` **aborta antes de calcular**, nombrando la diferencia exacta y las unidades (`FR-006`, SC-004)
-- [ ] T019 [P] [US1] Extender esa prueba: la diferencia de redondeo va entera a la unidad de mayor coeficiente, en `ajusteRedondeo` y **no** sumada al importe; con coeficientes empatados gana el identificador menor (`FR-009`)
-- [ ] T020 [P] [US1] Extender esa prueba: una diferencia **mayor a un centavo por unidad** aborta y deja incidente (`FR-010`, SC-003)
-- [ ] T021 [P] [US1] Extender esa prueba: gastos ordinarios y extraordinarios producen **dos subtotales por unidad**, y el redondeo ocurre sólo al final de cada importe unitario (`FR-011`, `FR-008`)
-- [ ] T022 [P] [US1] Escribir `pruebas/dominio/liquidacion/interes.spec.ts`: veintinueve días de atraso dan **cero**; sesenta dan dos meses **sobre el mismo capital**; tasa `0` da cero (`FR-024`, SC-014b)
-- [ ] T023 [P] [US1] Extender esa prueba: con tres liquidaciones impagas el interés es la suma de **tres cálculos independientes** —tres, dos y un mes— y no dos meses sobre el total, y el desglose sale con capital, tasa y meses por fila (`FR-024`, `FR-025`)
-- [ ] T024 [P] [US1] Extender esa prueba con el borde del calendario: de un vencimiento el 31 de enero, el 28 de febrero **no** completa el mes y el 1 de marzo sí (research R-05)
-- [ ] T025 [P] [US1] Escribir `pruebas/dominio/liquidacion/imputacion.spec.ts`: un pago que cubre una liquidación y media se imputa **a la más antigua primero** y el remanente a la siguiente (regla RN-08 § 7.2, SC-009)
-- [ ] T026 [P] [US1] Extender esa prueba: `suma(imputaciones) + sobrante = importe` con **tolerancia cero**, y un pago que excede la deuda deja todo el resto en `sobrante` (`FR-023`, `FR-026`)
+- [X] T017 [P] [US1] Escribir `pruebas/dominio/liquidacion/prorrateo.spec.ts`: padrones de 1, 12, 96 y 100 unidades; la suma de importes iguala el total con **tolerancia cero** (SC-001)
+- [X] T018 [P] [US1] Extender esa prueba: un padrón que suma `99.99999999` **aborta antes de calcular**, nombrando la diferencia exacta y las unidades (`FR-006`, SC-004)
+- [X] T019 [P] [US1] Extender esa prueba: la diferencia de redondeo va entera a la unidad de mayor coeficiente, en `ajusteRedondeo` y **no** sumada al importe; con coeficientes empatados gana el identificador menor (`FR-009`)
+- [X] T020 [P] [US1] Extender esa prueba: una diferencia **mayor a un centavo por unidad** aborta y deja incidente (`FR-010`, SC-003)
+- [X] T021 [P] [US1] Extender esa prueba: gastos ordinarios y extraordinarios producen **dos subtotales por unidad**, y el redondeo ocurre sólo al final de cada importe unitario (`FR-011`, `FR-008`)
+- [X] T022 [P] [US1] Escribir `pruebas/dominio/liquidacion/interes.spec.ts`: veintinueve días de atraso dan **cero**; sesenta dan dos meses **sobre el mismo capital**; tasa `0` da cero (`FR-024`, SC-014b)
+- [X] T023 [P] [US1] Extender esa prueba: con tres liquidaciones impagas el interés es la suma de **tres cálculos independientes** —tres, dos y un mes— y no dos meses sobre el total, y el desglose sale con capital, tasa y meses por fila (`FR-024`, `FR-025`)
+- [X] T024 [P] [US1] Extender esa prueba con el borde del calendario: de un vencimiento el 31 de enero, el 28 de febrero **no** completa el mes y el 1 de marzo sí (research R-05)
+- [X] T025 [P] [US1] Escribir `pruebas/dominio/liquidacion/imputacion.spec.ts`: un pago que cubre una liquidación y media se imputa **a la más antigua primero** y el remanente a la siguiente (regla RN-08 § 7.2, SC-009)
+- [X] T026 [P] [US1] Extender esa prueba: `suma(imputaciones) + sobrante = importe` con **tolerancia cero**, y un pago que excede la deuda deja todo el resto en `sobrante` (`FR-023`, `FR-026`)
 
 ### Implementation for User Story 1
 
-- [ ] T027 [US1] Implementar `prorratear` en `src/dominio/liquidacion/prorrateo.ts` según `contracts/motor-liquidacion.md`, con `Importe` de `@/compartido/dinero` y **sin** importar nada de infraestructura (`FR-004`, research R-04)
-- [ ] T028 [US1] Implementar `mesesCompletos` e `interesPorMora` en `src/dominio/liquidacion/interes.ts`, con aritmética de calendario nativa y sin dependencia nueva (research R-05)
-- [ ] T029 [US1] Implementar `imputar` en `src/dominio/liquidacion/imputacion.ts` (research R-06)
-- [ ] T030 [US1] Verificar que `npm run test:dominio` corre con `DATABASE_URL` sin definir y que la cobertura de `src/dominio/liquidacion` llega al **100 % de ramas** (SC-002, SC-014)
-- [ ] T031 [P] [US1] Agregar a `pruebas/fixtures-negativas/` un caso que devuelva `number` desde una firma del motor, para que el verificador de tipos lo rechace y quede probado que lo rechaza (Principio II)
+- [X] T027 [US1] Implementar `prorratear` en `src/dominio/liquidacion/prorrateo.ts` según `contracts/motor-liquidacion.md`, con `Importe` de `@/compartido/dinero` y **sin** importar nada de infraestructura (`FR-004`, research R-04)
+- [X] T028 [US1] Implementar `mesesCompletos` e `interesPorMora` en `src/dominio/liquidacion/interes.ts`, con aritmética de calendario nativa y sin dependencia nueva (research R-05)
+- [X] T029 [US1] Implementar `imputar` en `src/dominio/liquidacion/imputacion.ts` (research R-06)
+- [X] T030 [US1] Verificar que `npm run test:dominio` corre con `DATABASE_URL` sin definir y que la cobertura de `src/dominio/liquidacion` llega al **100 % de ramas** (SC-002, SC-014)
+- [X] T031 [P] [US1] Agregar a `pruebas/fixtures-negativas/` un caso que devuelva `number` desde una firma del motor, para que el verificador de tipos lo rechace y quede probado que lo rechaza (Principio II)
 
 **Checkpoint**: el motor es correcto y se puede ejercitar mil veces sin base de datos
 

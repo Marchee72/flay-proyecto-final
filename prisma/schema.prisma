@@ -82,6 +82,9 @@ model TrabajoPendiente {
   carga          Json          @db.JsonB
   estado         EstadoTrabajo @default(pendiente)
   intentos       Int           @default(0)
+  /// El vencimiento se compara contra `now()` **de la base**, asi que la hora
+  /// la pone la base y no el proceso: `encolar` inserta sin esta columna a
+  /// proposito (FR-006b).
   proximoIntento DateTime      @default(now()) @map("proximo_intento") @db.Timestamptz(6)
   ultimoError    String?       @map("ultimo_error") @db.Text
   creadoEn       DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)

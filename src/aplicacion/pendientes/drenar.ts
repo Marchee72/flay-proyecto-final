@@ -80,10 +80,16 @@ async function reclamar(): Promise<Reclamado[]> {
 /**
  * Reenvio explicito del administrador: adelanta el proximo intento a ahora y
  * revive lo agotado, sin esperar la espera creciente (FR-006b, SC-013b).
+ *
+ * El «ahora» es el de la **base**, como el del vencimiento: con el reloj del
+ * proceso unos milisegundos adelantado —lo normal contra una base
+ * administrada— el reenvio quedaria en el futuro y el drenaje siguiente no lo
+ * veria.
  */
 export async function reintentarAhora(id: string): Promise<void> {
-  await prismaBase.trabajoPendiente.update({
-    where: { id },
-    data: { estado: 'pendiente', proximoIntento: new Date(), intentos: 0 },
-  })
+  await prismaBase.$executeRaw`
+    UPDATE "TrabajoPendiente"
+    SET estado = 'pendiente', proximo_intento = now(), intentos = 0, actualizado_en = now()
+    WHERE id = ${id}::uuid
+  `
 }

@@ -41,6 +41,12 @@ jobs:
       SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flay_shadow
       FLAY_OWNER_PASSWORD: flay_ci
       FLAY_APP_PASSWORD: flay_ci
+      # Auth.js exige un secreto para firmar la sesion, tambien en produccion de
+      # mentira: sin el, `/ingresar` devuelve `MissingSecret` y toda prueba de
+      # extremo a extremo que necesite sesion falla por una razon que no es la
+      # suya. El valor es de la corrida y no abre nada: la base se destruye con
+      # el runner.
+      AUTH_SECRET: verificacion-en-integracion-continua-no-es-un-secreto
 
     steps:
       - uses: actions/checkout@v4

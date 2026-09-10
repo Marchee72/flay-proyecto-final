@@ -176,6 +176,12 @@ Ocho decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
 8. **La vigencia anterior cierra el día *antes*** de que abra la nueva. Cerrarla el mismo día hace
    que ese día cuenten las dos filas y la historia sume doble; lo atrapó el disparador histórico y
    la cuenta la hace el dominio, en un solo lugar.
+9. **La cola de pendientes usa el reloj de la base, no el del proceso.** `proximo_intento` se
+   compara contra `now()` de la base, así que `encolar` inserta en SQL sin esa columna y
+   `reintentarAhora` la escribe con `now()`. Con el reloj del proceso —el cliente de Prisma resuelve
+   `@default(now())` en la aplicación— contra una base administrada hay décimas de segundo de
+   desfase, y un trabajo recién encolado queda vencido en el futuro: el drenaje siguiente no lo ve.
+   En integración continua no se nota, porque la aplicación y la base comparten máquina.
 
 ## Notas
 

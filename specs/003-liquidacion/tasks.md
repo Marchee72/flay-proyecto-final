@@ -104,8 +104,8 @@ comparar importe por importe.
 - [ ] T040 [US2] Escribir `pruebas/integracion/auditoria-liquidacion.spec.ts`: cada operación sobre las **cinco** tablas económicas deja exactamente un asiento (SC-012)
 - [ ] T041 [P] [US2] Construir `src/app/(panel)/periodos/[id]/page.tsx` con el cierre y la liquidación del período, y el rechazo diciendo **qué falta y cuánto** cuando los coeficientes no cierran (RNF-10, SC-004)
 - [ ] T042 [P] [US2] Construir `src/app/(panel)/liquidaciones/[id]/page.tsx` con totales, vencimiento, detalle por unidad y la acción de anular
-- [ ] T043 [US2] Escribir `scripts/validar-planillas.mjs`: carga `datos-cliente/liquidaciones-reales/padron-coeficientes.csv` y los `gastos-2026-NN.csv`, ejecuta la liquidación y compara **al centavo** contra los `planilla-2026-NN.csv`, incluido `ajuste_redondeo` (`FR-031`)
-- [ ] T044 [US2] Correr `npm run validar:planillas` sobre los **tres** meses y explicar por escrito toda discrepancia: una discrepancia sin explicación es un defecto abierto, no una diferencia de criterio (`FR-032`, SC-005)
+- [X] T043 [US2] Escribir `scripts/validar-planillas.mjs`: carga `datos-cliente/liquidaciones-reales/padron-coeficientes.csv` y los `gastos-2026-NN.csv`, ejecuta la liquidación y compara **al centavo** contra los `planilla-2026-NN.csv`, incluido `ajuste_redondeo` (`FR-031`)
+- [X] T044 [US2] Correr `npm run validar:planillas` sobre los **tres** meses y explicar por escrito toda discrepancia: una discrepancia sin explicación es un defecto abierto, no una diferencia de criterio (`FR-032`, SC-005)
 
 **Checkpoint**: el motor coincide con la planilla del cliente, que es la única evidencia que vale
 
@@ -156,7 +156,7 @@ reparto y la suma con tolerancia cero.
 
 - [ ] T062 Escribir `scripts/medir-liquidacion.mjs` y correr `npm run medir:liquidacion` sobre el consorcio de **100 unidades**: cinco corridas, todas bajo **30 segundos**, sin contar documentos (SC-006, RNF-07)
 - [ ] T063 [P] Medir la generación de los 96 documentos: menos de diez minutos, con progreso, reintento y alerta observables, y registrar el resultado (SC-007)
-- [ ] T064 [P] Completar `docs/entrega-final/15-pruebas.md` con los casos `PL-01` a `PL-10` y su resultado real (`FR-033`)
+- [ ] T064 [P] Completar `docs/entrega-final/15-pruebas.md` con los casos `PL-01` a `PL-10` y su resultado real (`FR-033`) — hecho para PL-01 a PL-06, PL-08 y PL-10; faltan PL-07 y PL-09
 - [ ] T065 [P] Actualizar `docs/entrega-final/13-prototipo.md` § 13.3 con el estado por módulo al cierre de la iteración 2, y § 13.5 si cambia el acceso
 - [ ] T066 [P] Actualizar `docs/entrega-final/14-codificacion.md` § 14.5 con el esfuerzo real de la etapa contra las 194 h planificadas, con el mismo criterio declarado en la iteración 1
 - [ ] T067 [P] Registrar en `CLAUDE.md` lo que un recién llegado no puede adivinar de esta etapa: el candado parcial, el desglose del interés y el disparo explícito de los documentos

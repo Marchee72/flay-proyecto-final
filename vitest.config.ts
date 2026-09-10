@@ -33,6 +33,21 @@ export default defineConfig({
         },
       },
       {
+        /**
+         * La validacion contra las tres liquidaciones reales del cliente
+         * (paquete 4.6, SC-005). Proyecto propio y **sin base**: es la condicion
+         * de aceptacion del entregable, no una prueba de integracion mas, y
+         * tiene que poder correrse sola.
+         */
+        resolve: { alias },
+        test: {
+          name: 'planillas',
+          include: ['pruebas/planillas/**/*.spec.ts'],
+          environment: 'node',
+          setupFiles: ['pruebas/dominio/sin-base.ts'],
+        },
+      },
+      {
         resolve: { alias },
         test: {
           name: 'integracion',

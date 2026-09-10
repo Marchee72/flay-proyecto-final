@@ -28,19 +28,39 @@ caso de uso CU-03. Ningún resultado distinto de "supera" es aceptable para cerr
 
 | ID | Caso | Resultado esperado | Estado |
 |---|---|---|---|
-| PL-01 | Consorcio de 12 unidades con coeficientes exactos, sin deuda anterior | La suma de los detalles iguala el total, diferencia $ 0 | |
-| PL-02 | Consorcio de 96 unidades con coeficientes de ocho decimales | Diferencia de redondeo menor o igual a un centavo, asignada a la unidad de mayor coeficiente | |
-| PL-03 | Coeficientes que suman 99,9998 % | Se aborta e informa qué unidades revisar y la diferencia exacta | |
-| PL-04 | Período con gastos ordinarios y extraordinarios | Dos subtotales por unidad, conforme a RN-05 y a la Ley 27.551 | |
-| PL-05 | Unidad con deuda de tres períodos anteriores | Interés calculado sobre días de atraso con la tasa del consorcio | |
-| PL-06 | Intento de liquidar un período ya liquidado | Se rechaza, conforme a RN-06 | |
+| PL-01 | Consorcio de 12 unidades con coeficientes exactos, sin deuda anterior | La suma de los detalles iguala el total, diferencia $ 0 | **Supera** (2026-09-10) |
+| PL-02 | Consorcio de 96 unidades con coeficientes de ocho decimales | Diferencia de redondeo menor o igual a un centavo, asignada a la unidad de mayor coeficiente | **Supera** (2026-09-10), también con 100 unidades |
+| PL-03 | Coeficientes que suman 99,9998 % | Se aborta e informa qué unidades revisar y la diferencia exacta | **Supera** (2026-09-10), probado con `99,99999999` |
+| PL-04 | Período con gastos ordinarios y extraordinarios | Dos subtotales por unidad, conforme a RN-05 y a la Ley 27.551 | **Supera** (2026-09-10) |
+| PL-05 | Unidad con deuda de tres períodos anteriores | Interés por **mes vencido completo** sobre cada liquidación impaga, desde su propio vencimiento | **Supera** (2026-09-10). El criterio cambió de días a meses completos por decisión del 2026-09-10; ver `003-liquidacion/spec.md` § Clarifications |
+| PL-06 | Intento de liquidar un período ya liquidado | Se rechaza mientras haya una liquidación **vigente**; después de anular, la reemisión procede | **Supera** (2026-09-10), incluida la ejecución concurrente |
 | PL-07 | Coeficiente modificado después de emitir una liquidación anterior | La liquidación anterior conserva su coeficiente; la nueva usa el vigente, conforme a RN-02 | |
-| PL-08 | Falla de persistencia a mitad de la operación | La transacción revierte por completo; el período permanece cerrado | |
+| PL-08 | Falla de persistencia a mitad de la operación | La transacción revierte por completo | **Supera** (2026-09-10). La falla se provoca con una segunda emisión, que es la única que rompe después de haber escrito |
 | PL-09 | Gasto en cuotas imputado a varios períodos | Solo la cuota del período se incluye en la liquidación | |
-| PL-10 | **Comparación contra tres liquidaciones reales del cliente** | Coincidencia al centavo en las tres | |
+| PL-10 | **Comparación contra tres liquidaciones reales del cliente** | Coincidencia al centavo en las tres | **Supera** (2026-09-10), con una diferencia de convención explicada abajo |
 
 PL-10 es el caso de mayor valor: es la validación en paralelo del punto 5.1.2 y el criterio de
 aceptación del entregable 3 del punto 6.4.1.
+
+Los casos `PL-07` y `PL-09` quedan abiertos: el primero necesita el cambio de coeficiente entre dos
+emisiones y el segundo, el gasto en cuotas, que ninguna etapa construyó todavía.
+
+#### La única discrepancia de PL-10, y por qué no es un defecto
+
+Al comparar **2026-07** apareció una diferencia en la unidad `1A`: la planilla dice `125000.09` de
+ordinario y el motor calcula `125000.13`. **Los totales coinciden**: `150000.09` en los dos
+documentos, y en las otras once unidades no hay ninguna diferencia.
+
+La causa es de convención, no de cálculo. La planilla del cliente **le resta el ajuste de redondeo a
+la columna «ordinario»** —`125000.13 − 0.04 = 125000.09`— y además lo muestra en su propia columna.
+El sistema deja el importe intacto y el ajuste aparte, porque la regla RN-07 (§ 7.2) y el Principio
+II de la constitución exigen que la diferencia quede **«en un campo propio, no mezclada con el
+importe»**: es lo que permite explicarle a un propietario de dónde salieron sus centavos.
+
+La comparación automática traduce esa columna y deja la explicación escrita en
+`pruebas/planillas/liquidaciones-reales.spec.ts`. Conviene avisarle al cliente que el documento de
+expensa va a mostrar el ajuste como línea separada, que es un cambio visible respecto de su
+planilla.
 
 ### 15.2.2 Autorización — riesgo RT-04
 

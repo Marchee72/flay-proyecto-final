@@ -21,7 +21,7 @@
     "test:a11y": "playwright test --project=a11y",
     "medir:p95": "node scripts/medir-p95.mjs",
     "medir:liquidacion": "node scripts/medir-liquidacion.mjs",
-    "validar:planillas": "node scripts/validar-planillas.mjs",
+    "validar:planillas": "vitest run --project planillas",
     "docs:versiones": "node scripts/verificar-versiones.mjs",
     "db:deploy": "prisma migrate deploy",
     "db:preparar": "node scripts/preparar-bd.mjs",

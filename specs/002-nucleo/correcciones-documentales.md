@@ -1,8 +1,10 @@
 # Correcciones documentales pendientes — 002-nucleo
 
-La redefinición de roles del 2026-09-09 destapó una contradicción **que ya existía** entre
-documentos entregados. Se registra acá para que la corrección se asiente donde corresponde y no
-reescribiendo entregas ya presentadas.
+Registro corrido de lo que la construcción encontró y las entregas 1 a 3 todavía no dicen. Se anota
+acá para que la corrección se asiente donde corresponde y no reescribiendo entregas ya presentadas.
+
+Abrió con la redefinición de roles del 2026-09-09, que destapó una contradicción **que ya existía**
+entre documentos entregados; sigue con lo que salió después del cierre de la iteración 1.
 
 ## La contradicción
 
@@ -44,3 +46,38 @@ Reescribir las entregas 1 a 3 como si siempre hubieran dicho esto. La cátedra e
 trazabilidad, y una entrega que cambia sin dejar rastro es peor que una que se corrige a la vista.
 La corrección va en el acta de la iteración 1, con fecha y motivo, y desde ahí se referencia en los
 documentos afectados.
+
+---
+
+## Lo que agregó la revisión del 2026-09-10
+
+Después de cerrada la iteración 1, al preguntar por las cocheras y por la precisión de los
+coeficientes, salieron cuatro cosas más. Van acá por el mismo criterio: se corrigen a la vista, no
+reescribiendo entregas presentadas.
+
+7. **§ 7, `Unidad`** — el documento dice «unidad funcional: departamento, cochera, local o baulera»,
+   y no dice qué pasa con la **unidad complementaria**: la cochera o baulera que está atada a una
+   unidad funcional y no se vende separada de ella. Esa **no es una fila del padrón**, porque su
+   superficie ya está dentro del porcentual de la unidad a la que accede; si se cargara como unidad
+   propia, o se le inventa un coeficiente que el reglamento no le da, o se le pone cero y deja de
+   distinguirse de un error de carga. Sólo entra al padrón la cochera que es unidad funcional, con
+   su propio porcentual. Está dicho en `src/dominio/unidades/tipo.ts` y falta en el documento.
+8. **§ 7, `Ocupacion` y regla RN-12** — el titular de una cochera **puede no ocupar ninguna otra
+   unidad del edificio** y es consorcista igual: paga expensas por su coeficiente como cualquier
+   unidad funcional. El modelo lo soporta desde el principio, porque la ocupación cuelga de la
+   unidad y no de la persona, pero ningún documento lo dice y es la primera pregunta que hace
+   cualquiera que administre un edificio con cocheras de terceros. Probado en
+   `pruebas/integracion/consorcios.spec.ts`.
+9. **§ 7, `Unidad`** — el documento declara `piso`, `superficie_m2` y `activa`, y la construcción no
+   los necesitó. O se construyen en la iteración 2 con un uso concreto —`superficie_m2` es el dato
+   del que sale el porcentual, así que tiene candidato— o se sacan del documento con su motivo. Lo
+   que no puede quedar es declarado y ausente sin que nadie lo haya decidido. El tipo, que estaba en
+   la misma situación, se construyó el 2026-09-10.
+10. **§ 12.3, «coeficientes con ocho decimales»** — es la **capacidad** de la columna, no una
+    obligación de escribir ocho. La suma tiene que dar exactamente `100.00000000`, y un padrón de
+    dos decimales la da igual: tres unidades iguales son `33.34 / 33.33 / 33.33`. La regla completa,
+    con el límite del 1 % para el sobrante, quedó en § 14.4.
+
+Y un hueco nuevo, **H-11** en `specs/000-plan-construccion/analisis-insumos.md`: el motor de
+liquidación reparte un solo coeficiente sobre todo el padrón, y hay consorcios que reparten ciertos
+rubros sólo entre un grupo de unidades. Es pregunta para el cliente **antes** de escribir el motor.

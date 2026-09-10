@@ -3,6 +3,12 @@
 import { useActionState, useState } from 'react'
 
 import { importe } from '@/compartido/dinero'
+import {
+  ajustePorRedondeo,
+  decimalesDelPadron,
+  filasDesdePegado,
+  padronPorPisos,
+} from '@/compartido/padron'
 
 import { accionCargarPadron } from '../../acciones'
 
@@ -10,9 +16,11 @@ const SIN_ERROR = { mensaje: '' }
 
 const OBJETIVO = '100.00000000'
 
-type Fila = { designacion: string; coeficiente: string }
+type Fila = { designacion: string; coeficiente: string; tipo: string }
 
-const VACIA: Fila = { designacion: '', coeficiente: '' }
+const POR_OMISION = 'departamento'
+
+const VACIA: Fila = { designacion: '', coeficiente: '', tipo: POR_OMISION }
 
 /**
  * Carga del padron con la **suma corriente a la vista** (contrato de
@@ -23,9 +31,17 @@ const VACIA: Fila = { designacion: '', coeficiente: '' }
  * numerico nativo, `0.1 + 0.2` ya no da `0.3`: la pantalla diria que cierra
  * cuando no cierra (Principio II).
  */
-export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
+export function CargadorDePadron({
+  consorcioId,
+  tipos,
+}: {
+  consorcioId: string
+  tipos: readonly { valor: string; etiqueta: string }[]
+}) {
   const [estado, accion, enviando] = useActionState(accionCargarPadron, SIN_ERROR)
   const [filas, setFilas] = useState<Fila[]>([{ ...VACIA }])
+  const [pisos, setPisos] = useState('')
+  const [porPiso, setPorPiso] = useState('')
 
   const cargadas = filas.filter((fila) => fila.designacion.trim() !== '')
   const suma = cargadas.reduce(
@@ -34,13 +50,83 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
   )
   const diferencia = suma.minus(importe(OBJETIVO))
   const cuadra = diferencia.isZero()
+  const decimales = decimalesDelPadron(cargadas.map((fila) => fila.coeficiente))
+  const ajuste = ajustePorRedondeo(filas, importe(OBJETIVO))
 
   const cambiar = (indice: number, campo: keyof Fila, valor: string) =>
     setFilas(filas.map((fila, i) => (i === indice ? { ...fila, [campo]: valor } : fila)))
 
+  /**
+   * Pegar desde una planilla es como llega un padron de verdad: el del
+   * reglamento son noventa y seis renglones, y transcribirlos a mano es donde
+   * se cuelan los errores que despues rechaza el disparador.
+   */
+  const pegar = (indice: number, evento: React.ClipboardEvent) => {
+    const pegadas = filasDesdePegado(
+      evento.clipboardData.getData('text'),
+      tipos.map((tipo) => tipo.valor),
+    )
+    if (pegadas.length < 2) return // una sola celda: es un pegado normal
+
+    evento.preventDefault()
+    const antes = filas.slice(0, indice)
+    const despues = filas.slice(indice + 1).filter((fila) => fila.designacion.trim() !== '')
+    setFilas([...antes, ...pegadas.map(conTipo), ...despues])
+  }
+
+  const aplicarAjuste = () => {
+    if (!ajuste) return
+    cambiar(ajuste.indice, 'coeficiente', ajuste.nuevo)
+  }
+
+  const generar = () => {
+    const generadas = padronPorPisos(Number(pisos), Number(porPiso), importe(OBJETIVO))
+    if (generadas.length > 0) setFilas(generadas.map(conTipo))
+  }
+
   return (
     <form action={accion} noValidate>
       <input type="hidden" name="consorcio" value={consorcioId} />
+
+      <p className="ayuda">
+        Pegá el padrón desde una planilla en la primera casilla —designación y coeficiente— y las
+        filas se completan solas.
+      </p>
+
+      <fieldset className="fila-de-filtros">
+        <legend className="ayuda">O generalo, si el edificio es parejo</legend>
+
+        <div className="campo">
+          <label htmlFor="pisos">Pisos</label>
+          <input
+            id="pisos"
+            className="cifra"
+            inputMode="numeric"
+            value={pisos}
+            onChange={(evento) => setPisos(evento.target.value.replace(/\D/g, ''))}
+          />
+        </div>
+
+        <div className="campo">
+          <label htmlFor="por-piso">Unidades por piso</label>
+          <input
+            id="por-piso"
+            className="cifra"
+            inputMode="numeric"
+            value={porPiso}
+            onChange={(evento) => setPorPiso(evento.target.value.replace(/\D/g, ''))}
+          />
+        </div>
+
+        <button
+          className="boton boton--fantasma"
+          type="button"
+          onClick={generar}
+          disabled={pisos === '' || porPiso === ''}
+        >
+          Generar padrón
+        </button>
+      </fieldset>
 
       <div className="tabla-desplazable">
         <table>
@@ -48,6 +134,7 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
           <thead>
             <tr>
               <th scope="col">Designación</th>
+              <th scope="col">Tipo</th>
               <th scope="col" className="numero">
                 Coeficiente %
               </th>
@@ -65,7 +152,25 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
                     name="designacion"
                     value={fila.designacion}
                     onChange={(evento) => cambiar(indice, 'designacion', evento.target.value)}
+                    onPaste={(evento) => pegar(indice, evento)}
                   />
+                </td>
+                <td>
+                  <label className="oculto" htmlFor={`tipo-${indice}`}>
+                    Tipo de la unidad {indice + 1}
+                  </label>
+                  <select
+                    id={`tipo-${indice}`}
+                    name="tipo"
+                    value={fila.tipo}
+                    onChange={(evento) => cambiar(indice, 'tipo', evento.target.value)}
+                  >
+                    {tipos.map((tipo) => (
+                      <option key={tipo.valor} value={tipo.valor}>
+                        {tipo.etiqueta}
+                      </option>
+                    ))}
+                  </select>
                 </td>
                 <td className="numero">
                   <label className="oculto" htmlFor={`coeficiente-${indice}`}>
@@ -76,7 +181,7 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
                     name="coeficiente"
                     className="cifra"
                     inputMode="decimal"
-                    placeholder="0.00000000"
+                    placeholder="0.00"
                     value={fila.coeficiente}
                     onChange={(evento) => cambiar(indice, 'coeficiente', evento.target.value)}
                   />
@@ -86,8 +191,8 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
           </tbody>
           <tfoot>
             <tr>
-              <td>Suma corriente</td>
-              <td className="numero cifra">{suma.toFixed(8)}</td>
+              <td colSpan={2}>Suma corriente</td>
+              <td className="numero cifra">{suma.toFixed(decimales)}</td>
             </tr>
           </tfoot>
         </table>
@@ -95,9 +200,20 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
 
       <p aria-live="polite" className={cuadra ? 'aviso aviso--atencion' : 'ayuda'}>
         {cuadra
-          ? `Cierra exacto en ${OBJETIVO} %.`
-          : `${diferencia.isNegative() ? 'Falta' : 'Sobra'} ${diferencia.abs().toFixed(8)} % para llegar a 100.`}
+          ? `Cierra exacto en ${importe(OBJETIVO).toFixed(decimales)} %.`
+          : `${diferencia.isNegative() ? 'Falta' : 'Sobra'} ${diferencia.abs().toFixed(decimales)} % para llegar a 100.`}
       </p>
+
+      {ajuste && (
+        <p className="ayuda">
+          <button className="boton boton--fantasma" type="button" onClick={aplicarAjuste}>
+            Asignar la diferencia a {ajuste.designacion}
+          </button>{' '}
+          Es la unidad de mayor coeficiente: pasaría de {ajuste.anterior} a {ajuste.nuevo} %. La
+          diferencia sólo se ofrece cuando cabe en el redondeo; si es mayor, el padrón está mal
+          transcripto y moverlo sería falsear el reglamento.
+        </p>
+      )}
 
       <div className="fila-de-filtros">
         <button
@@ -121,6 +237,14 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
     </form>
   )
 }
+
+/** El vocabulario de tipos lo pone la aplicacion; lo pegado que no coincida
+ *  cae en departamento, que es lo que casi toda unidad es. */
+const conTipo = (fila: { designacion: string; coeficiente: string; tipo?: string }): Fila => ({
+  designacion: fila.designacion,
+  coeficiente: fila.coeficiente,
+  tipo: fila.tipo?.toLowerCase() ?? POR_OMISION,
+})
 
 /** Lo que todavia no es un decimal valido cuenta como cero mientras se tipea. */
 const esDecimal = (valor: string) => /^\d+(\.\d{1,8})?$/.test(valor.trim())

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  coeficienteParaMostrar,
   coeficienteSerializado,
   importeParaMostrar,
   importeSerializado,
@@ -23,5 +24,12 @@ describe('formato del dinero', () => {
   it('serializa coeficientes con ocho decimales', () => {
     expect(coeficienteSerializado('12.5')).toBe('12.50000000')
     expect(coeficienteSerializado('100')).toBe('100.00000000')
+  })
+
+  it('para mostrar, saca los ceros de relleno y nunca baja de dos decimales', () => {
+    expect(coeficienteParaMostrar('8.33')).toBe('8.33')
+    expect(coeficienteParaMostrar('100')).toBe('100.00')
+    expect(coeficienteParaMostrar('1.0416')).toBe('1.0416')
+    expect(coeficienteParaMostrar('8.33333333')).toBe('8.33333333')
   })
 })

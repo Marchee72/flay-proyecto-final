@@ -21,6 +21,22 @@ export function coeficienteSerializado(valor: Decimal | string): string {
   return new Prisma.Decimal(valor).toFixed(DECIMALES_COEFICIENTE)
 }
 
+const DECIMALES_MINIMOS_COEFICIENTE = 2
+
+/**
+ * `8.33` en vez de `8.33000000`, para leer.
+ *
+ * Un padron de dos decimales no gana nada mostrandose con seis ceros de
+ * relleno, y el que de verdad tiene ocho se sigue viendo entero: se sacan los
+ * ceros de la derecha, no los digitos. Nunca menos de dos, para que la columna
+ * quede pareja. La serializacion no cambia: sigue siendo la de ocho decimales.
+ */
+export function coeficienteParaMostrar(valor: Decimal | string): string {
+  const [entero, decimales] = coeficienteSerializado(valor).split('.')
+  const significativos = decimales.replace(/0+$/, '')
+  return `${entero}.${significativos.padEnd(DECIMALES_MINIMOS_COEFICIENTE, '0')}`
+}
+
 /** Entrada de la interfaz hacia el dominio: cadena a Decimal, sin pasar por number. */
 export function decimalDesdeCadena(valor: string): Decimal {
   return new Prisma.Decimal(valor)

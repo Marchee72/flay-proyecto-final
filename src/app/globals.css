@@ -398,6 +398,17 @@ tfoot td {
   width: 100%;
 }
 
+/* Un grupo de campos no es un formulario aparte: agrupa para el lector de
+   pantalla, no dibuja una caja. */
+fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+fieldset > legend {
+  padding: 0;
+}
+
 /* Filtros de una tabla: en linea en escritorio, apilados en telefono. */
 .fila-de-filtros {
   display: flex;

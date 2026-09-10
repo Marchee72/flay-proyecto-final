@@ -17,6 +17,8 @@ import { prisma, prismaBase } from '@/infraestructura/prisma'
 export interface UnidadDelPadron {
   id: string
   designacion: string
+  /** `departamento`, `cochera`, `local` o `baulera` (punto 7). */
+  tipo: string
   coeficiente: string
 }
 
@@ -73,6 +75,7 @@ export async function verConsorcio(
         unidades: unidades.map((unidad) => ({
           id: unidad.id,
           designacion: unidad.designacion,
+          tipo: unidad.tipo,
           coeficiente: coeficienteSerializado(unidad.coeficiente),
         })),
         suma: coeficienteSerializado(suma.total),

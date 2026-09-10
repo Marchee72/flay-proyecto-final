@@ -1,6 +1,7 @@
 import { importe } from '@/compartido/dinero'
 import { exigirSumaExacta, type UnidadConCoeficiente } from '@/dominio/coeficientes/suma'
 import { planificarCambioDeCoeficiente } from '@/dominio/coeficientes/vigencia'
+import { TIPO_UNIDAD_POR_OMISION, type TipoUnidad } from '@/dominio/unidades/tipo'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { ErrorDeAplicacion } from '@/compartido/errores'
@@ -56,7 +57,7 @@ export async function cargarPadron(
   datos: {
     usuarioId: string
     consorcioId: string
-    unidades: readonly { designacion: string; coeficiente: string }[]
+    unidades: readonly { designacion: string; coeficiente: string; tipo?: TipoUnidad }[]
   },
 ): Promise<{ cargadas: number }> {
   return conAutorizacion(
@@ -82,6 +83,7 @@ export async function cargarPadron(
           const creada = await tx.unidad.create({
             data: sinConsorcio({
               designacion: unidad.designacion,
+              tipo: unidad.tipo ?? TIPO_UNIDAD_POR_OMISION,
               coeficiente: unidad.coeficiente,
             }),
           })
@@ -105,6 +107,7 @@ export async function agregarUnidad(
     consorcioId: string
     designacion: string
     coeficiente: string
+    tipo?: TipoUnidad
     ajustes?: readonly Ajuste[]
   },
 ): Promise<{ unidadId: string }> {
@@ -148,7 +151,11 @@ export async function agregarUnidad(
         }
 
         const nueva = await tx.unidad.create({
-          data: sinConsorcio({ designacion: datos.designacion, coeficiente: datos.coeficiente }),
+          data: sinConsorcio({
+            designacion: datos.designacion,
+            tipo: datos.tipo ?? TIPO_UNIDAD_POR_OMISION,
+            coeficiente: datos.coeficiente,
+          }),
         })
 
         await tx.coeficienteHistorico.create({

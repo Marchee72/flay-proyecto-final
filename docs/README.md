@@ -50,8 +50,8 @@ transcripta y el mapeo de cada punto a su documento.
 
 | # | Documento | Estado |
 |---|---|---|
-| 13 | [Prototipo](entrega-final/13-prototipo.md) | Esqueleto — se completa durante la construcción |
-| 14 | [Codificación](entrega-final/14-codificacion.md) | Parcial — § 14.1 lenguaje resuelto; 14.3 a 14.5 abiertos |
+| 13 | [Prototipo](entrega-final/13-prototipo.md) | Parcial — § 13.3 a § 13.5 al día con el cierre de la iteración 1; § 13.6 y § 13.7 abiertos |
+| 14 | [Codificación](entrega-final/14-codificacion.md) | Parcial — § 14.1, § 14.4 y § 14.5 al día con la iteración 1; § 14.3 (proveedor de IA) diferido a la iteración 3 |
 | 15 | [Pruebas](entrega-final/15-pruebas.md) | Esqueleto |
 | 16 | [Manual de usuario](entrega-final/16-manual-usuario.md) | Esqueleto |
 | 17 | [Cronograma de capacitación](entrega-final/17-cronograma-capacitacion.md) | Esqueleto |

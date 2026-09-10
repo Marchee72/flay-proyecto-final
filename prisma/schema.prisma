@@ -52,6 +52,9 @@ model Consorcio {
 
   administradora Administradora @relation(fields: [administradoraId], references: [id])
   unidades       Unidad[]
+  proveedores    Proveedor[]
+  periodos       Periodo[]
+  gastos         Gasto[]
 
   @@index([administradoraId])
 }
@@ -281,4 +284,126 @@ model Ocupacion {
 enum TipoOcupacion {
   propietario
   inquilino
+}
+
+/// Rubro de gasto. Catalogo **global**: no cuelga de consorcio, para que dos
+/// edificios no llamen distinto a la misma cosa y los indicadores de la etapa 4
+/// puedan compararse. Lo carga una semilla acordada con el cliente (FR-014);
+/// el alta y la modificacion estan diferidas (§ 9.11).
+model RubroGasto {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre        String        @unique @db.Text
+  clasificacion Clasificacion
+  creadoEn      DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime      @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  gastos     Gasto[]
+  habituales Proveedor[]
+}
+
+/// Ordinario o extraordinario (regla RN-04). Se **congela en el gasto** al
+/// registrarlo: si el rubro se reclasificara despues, una liquidacion vieja no
+/// puede cambiar de sentido.
+enum Clasificacion {
+  ordinario
+  extraordinario
+}
+
+/// Proveedor del consorcio (RF-05). Raiz del grafo de la etapa: no tiene
+/// dependencias obligatorias y se construye antes que `Gasto`. Sin baja (§ 9.11).
+model Proveedor {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId     String   @map("consorcio_id") @db.Uuid
+  razonSocial     String   @map("razon_social") @db.Text
+  cuit            String   @db.Text
+  rubroHabitualId String?  @map("rubro_habitual_id") @db.Uuid
+  creadoEn        DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn   DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio     Consorcio   @relation(fields: [consorcioId], references: [id])
+  rubroHabitual RubroGasto? @relation(fields: [rubroHabitualId], references: [id])
+  gastos        Gasto[]
+
+  @@unique([consorcioId, cuit])
+  @@index([consorcioId])
+}
+
+/// Mes de un consorcio — **economica**.
+///
+/// El enum declara los cuatro estados porque `src/dominio/periodos/estado.ts`
+/// publica el contrato minimo que comparte `003-liquidacion` (FR-017, M-04),
+/// pero **esta etapa solo produce `abierto`**: cerrar, liquidar y anular son
+/// alcance de la etapa siguiente (FR-024).
+model Periodo {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId   String        @map("consorcio_id") @db.Uuid
+  anio          Int
+  mes           Int
+  estado        EstadoPeriodo @default(abierto)
+  creadoEn      DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime      @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio Consorcio @relation(fields: [consorcioId], references: [id])
+  gastos    Gasto[]
+
+  @@unique([consorcioId, anio, mes])
+  @@index([consorcioId])
+}
+
+enum EstadoPeriodo {
+  abierto
+  cerrado
+  liquidado
+  anulado
+}
+
+/// Gasto imputado a un periodo — **economica**.
+model Gasto {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId   String        @map("consorcio_id") @db.Uuid
+  periodoId     String        @map("periodo_id") @db.Uuid
+  rubroId       String        @map("rubro_id") @db.Uuid
+  proveedorId   String?       @map("proveedor_id") @db.Uuid
+  importe       Decimal       @db.Decimal(14, 2)
+  clasificacion Clasificacion
+  fecha         DateTime      @db.Date
+  descripcion   String        @db.Text
+  cargadoPor    String        @map("cargado_por") @db.Uuid
+  creadoEn      DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime      @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio    Consorcio     @relation(fields: [consorcioId], references: [id])
+  periodo      Periodo       @relation(fields: [periodoId], references: [id])
+  rubro        RubroGasto    @relation(fields: [rubroId], references: [id])
+  proveedor    Proveedor?    @relation(fields: [proveedorId], references: [id])
+  comprobantes Comprobante[]
+
+  @@index([consorcioId, periodoId, rubroId])
+  @@index([consorcioId, fecha])
+}
+
+/// Comprobante digitalizado — **economica**. El archivo **no** esta en la base:
+/// lo que se guarda es su ubicacion en el almacenamiento de objetos.
+///
+/// `pendiente` es el estado mientras la subida directa no confirmo (FR-018b):
+/// el gasto ya existe y el comprobante todavia no.
+model Comprobante {
+  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gastoId       String            @map("gasto_id") @db.Uuid
+  claveObjeto   String            @map("clave_objeto") @db.Text
+  tipoContenido String            @map("tipo_contenido") @db.Text
+  bytes         Int
+  estado        EstadoComprobante @default(pendiente)
+  creadoEn      DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime          @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  gasto Gasto @relation(fields: [gastoId], references: [id])
+
+  @@index([gastoId])
+}
+
+enum EstadoComprobante {
+  pendiente
+  disponible
+  fallido
 }

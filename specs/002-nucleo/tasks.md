@@ -102,22 +102,22 @@
 
 **Independent Test**: cargar 30 gastos con comprobante sobre un período abierto y comprobar que cada uno queda clasificado, imputado y con su archivo recuperable.
 
-- [ ] T045 [US3] Definir `RubroGasto` (catálogo global, **sin** `consorcio_id`), `Proveedor` (`cuit` único por consorcio), `Periodo` (`anio`+`mes` único por consorcio, `estado` con los cuatro valores), `Gasto` (`importe NUMERIC(14,2)`) y `Comprobante` en `prisma/schema.prisma` (data-model § 3)
-- [ ] T046 [US3] Crear la migración con esas cinco tablas, los índices `(consorcio_id, periodo_id, rubro_id)` y `(consorcio_id, fecha)` de `Gasto`, y `fn_auditar()` enganchado a `Periodo`, `Gasto` y `Comprobante` (FR-025, SC-006)
-- [ ] T047 [P] [US3] Cargar la lista semilla de `RubroGasto` acordada con el cliente, con su clasificación ordinario/extraordinario, en `prisma/semilla-rubros.ts` (FR-014, cierra el hueco H-07)
-- [ ] T048 [US3] Declarar en `src/dominio/periodos/estado.ts` el **contrato mínimo del estado**: los cuatro valores y las transiciones válidas que `003-liquidacion` comparte; esta etapa sólo produce `abierto` (FR-017, FR-024, M-04)
-- [ ] T049 [P] [US3] Escribir `pruebas/dominio/estado-periodo.spec.ts` sobre ese contrato, sin base de datos (Principio III)
-- [ ] T050 [US3] Implementar `src/aplicacion/periodos/abrir-periodo.ts` y `listar-periodos.ts`: un solo período por consorcio y mes; **sin** cierre, liquidación ni anulación (FR-024)
-- [ ] T051 [US3] Implementar `src/aplicacion/gastos/registrar-gasto.ts`: rechaza si el período no está `abierto`, congela la clasificación del rubro en el gasto y guarda el importe en decimal de precisión fija (reglas RN-03 y RN-04, FR-016)
-- [ ] T052 [P] [US3] Implementar `src/infraestructura/objetos/blob.ts` sobre el puerto `AlmacenObjetos`: emite permiso de subida y resuelve lectura autorizada; **no** recibe bytes (FR-018b, FR-019, research R-05)
-- [ ] T053 [US3] Implementar `src/app/api/comprobantes/permiso/route.ts`: verifica habilitación, tipo de contenido entre PDF, JPEG, PNG, WebP, HEIC y TIFF, y tamaño de hasta 26.214.400 bytes **antes** de emitir el permiso (FR-018)
-- [ ] T054 [US3] Implementar `src/aplicacion/gastos/confirmar-comprobante.ts`: pasa el comprobante de `pendiente` a `disponible`; si la confirmación no llega, queda como `TrabajoPendiente` de tipo `confirmacion_subida` (FR-006b, data-model § 3)
-- [ ] T055 [P] [US3] Implementar `src/aplicacion/proveedores/alta-proveedor.ts` y `editar-proveedor.ts`; sin baja, que está diferida (FR-015, § 9.11)
-- [ ] T056 [US3] Construir `src/app/(panel)/gastos/nuevo/page.tsx` **admitiendo valores precargados por parámetro**, marcando cada campo precargado y exigiendo confirmación humana explícita, para que `RF-06` se enchufe en `004` sin rediseñar la pantalla (FR-020, regla RN-14, Principio IV)
-- [ ] T057 [P] [US3] Construir `src/app/(panel)/proveedores/page.tsx` y `src/app/(panel)/periodos/page.tsx`
-- [ ] T058 [US3] Escribir `pruebas/integracion/comprobantes.spec.ts`: 25 MB sube y se recupera, 26 MB se rechaza **antes** de transferir un byte, HEIC se recupera por descarga con la razón dicha, y el archivo nunca atraviesa el servidor (SC-006c, FR-018c)
-- [ ] T059 [US3] Escribir `pruebas/integracion/periodo-liquidado.spec.ts`: un período marcado como liquidado rechaza el alta y la modificación de gastos en el 100 % de los intentos (SC-012, regla RN-03)
-- [ ] T060 [US3] Escribir `pruebas/e2e/importe-cadena.spec.ts`: un importe de más de quince dígitos significativos llega a la interfaz **como cadena**, sin pérdida (SC-010)
+- [X] T045 [US3] Definir `RubroGasto` (catálogo global, **sin** `consorcio_id`), `Proveedor` (`cuit` único por consorcio), `Periodo` (`anio`+`mes` único por consorcio, `estado` con los cuatro valores), `Gasto` (`importe NUMERIC(14,2)`) y `Comprobante` en `prisma/schema.prisma` (data-model § 3)
+- [X] T046 [US3] Crear la migración con esas cinco tablas, los índices `(consorcio_id, periodo_id, rubro_id)` y `(consorcio_id, fecha)` de `Gasto`, y `fn_auditar()` enganchado a `Periodo`, `Gasto` y `Comprobante` (FR-025, SC-006)
+- [X] T047 [P] [US3] Cargar la lista semilla de `RubroGasto` acordada con el cliente, con su clasificación ordinario/extraordinario, en `prisma/semilla-rubros.ts` (FR-014, cierra el hueco H-07)
+- [X] T048 [US3] Declarar en `src/dominio/periodos/estado.ts` el **contrato mínimo del estado**: los cuatro valores y las transiciones válidas que `003-liquidacion` comparte; esta etapa sólo produce `abierto` (FR-017, FR-024, M-04)
+- [X] T049 [P] [US3] Escribir `pruebas/dominio/estado-periodo.spec.ts` sobre ese contrato, sin base de datos (Principio III)
+- [X] T050 [US3] Implementar `src/aplicacion/periodos/abrir-periodo.ts` y `listar-periodos.ts`: un solo período por consorcio y mes; **sin** cierre, liquidación ni anulación (FR-024)
+- [X] T051 [US3] Implementar `src/aplicacion/gastos/registrar-gasto.ts`: rechaza si el período no está `abierto`, congela la clasificación del rubro en el gasto y guarda el importe en decimal de precisión fija (reglas RN-03 y RN-04, FR-016)
+- [X] T052 [P] [US3] Implementar `src/infraestructura/objetos/blob.ts` sobre el puerto `AlmacenObjetos`: emite permiso de subida y resuelve lectura autorizada; **no** recibe bytes (FR-018b, FR-019, research R-05)
+- [X] T053 [US3] Implementar `src/app/api/comprobantes/permiso/route.ts`: verifica habilitación, tipo de contenido entre PDF, JPEG, PNG, WebP, HEIC y TIFF, y tamaño de hasta 26.214.400 bytes **antes** de emitir el permiso (FR-018)
+- [X] T054 [US3] Implementar `src/aplicacion/gastos/confirmar-comprobante.ts`: pasa el comprobante de `pendiente` a `disponible`; si la confirmación no llega, queda como `TrabajoPendiente` de tipo `confirmacion_subida` (FR-006b, data-model § 3)
+- [X] T055 [P] [US3] Implementar `src/aplicacion/proveedores/alta-proveedor.ts` y `editar-proveedor.ts`; sin baja, que está diferida (FR-015, § 9.11)
+- [X] T056 [US3] Construir `src/app/(panel)/gastos/nuevo/page.tsx` **admitiendo valores precargados por parámetro**, marcando cada campo precargado y exigiendo confirmación humana explícita, para que `RF-06` se enchufe en `004` sin rediseñar la pantalla (FR-020, regla RN-14, Principio IV)
+- [X] T057 [P] [US3] Construir `src/app/(panel)/proveedores/page.tsx` y `src/app/(panel)/periodos/page.tsx`
+- [X] T058 [US3] Escribir `pruebas/integracion/comprobantes.spec.ts`: 25 MB sube y se recupera, 26 MB se rechaza **antes** de transferir un byte, HEIC se recupera por descarga con la razón dicha, y el archivo nunca atraviesa el servidor (SC-006c, FR-018c)
+- [X] T059 [US3] Escribir `pruebas/integracion/periodo-liquidado.spec.ts`: un período marcado como liquidado rechaza el alta y la modificación de gastos en el 100 % de los intentos (SC-012, regla RN-03)
+- [X] T060 [US3] Escribir `pruebas/e2e/importe-cadena.spec.ts`: un importe de más de quince dígitos significativos llega a la interfaz **como cadena**, sin pérdida (SC-010)
 
 **Checkpoint**: hay datos económicos reales, auditados, con el dinero exacto de punta a punta
 
@@ -198,6 +198,25 @@ La especificación ubica el mínimo de `Periodo` en la historia 5. Aquí va en l
   `editarConsorcio`, que el contrato sí menciona, queda pendiente: ninguna tarea lo pide.
 - **T043**: se agregó `consorcios/nuevo/page.tsx`, una cuarta pantalla. Las tres de la tarea son
   inalcanzables sin ella: no había forma de crear un consorcio desde la interfaz.
+
+### Desvíos de la historia 3, ya construidos
+
+- **T047**: `prisma/semilla-rubros.ts` se corre directo (`npm run semilla:rubros`) apoyándose en el
+  despojado de tipos de Node 22. Para que no avise en cada corrida, `package.json` declara
+  `"type": "module"`; no hay ningún archivo CommonJS en el repositorio.
+- **T052 y T053**: los casos de uso de comprobante **reciben** el puerto `AlmacenObjetos` en vez de
+  importar la implementación. Sin eso, el camino de rechazo no se puede probar: lo que hay que
+  afirmar es que a 26 MB **no se llamó** al almacenamiento, y con el proveedor real eso es
+  inobservable.
+- **T058**: la parte de «25 MB sube y se recupera» se verifica contra un doble, no contra el
+  proveedor. Lo que se prueba es el orden —tipo y tamaño antes de emitir el permiso— y la clave
+  emitida. La subida real necesita `BLOB_READ_WRITE_TOKEN` y mediría la red de quien corre las
+  pruebas, no la regla; queda para el ensayo manual de `quickstart.md` (SC-014).
+- **Pantalla extra**: `gastos/[id]/page.tsx`, con el adjunto del comprobante. Ninguna tarea de esta
+  historia la nombra, pero el permiso de subida necesita un gasto ya creado, así que sin ella
+  `T052`-`T054` no se ejercitan desde la interfaz. `T063` (historia 4) la completa.
+- **Pendiente conocido**: `/gastos` todavía no existe (es `T062`, historia 4), así que los enlaces
+  del menú y de «volver a gastos» no resuelven hasta que esa tarea se construya.
 
 ### Paralelo
 

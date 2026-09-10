@@ -439,3 +439,17 @@ td input.cifra {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Campo precargado por un servicio automatico: se marca y se confirma a mano
+   (regla RN-14, FR-020). */
+.etiqueta-precargado {
+  display: inline-block;
+  font-size: var(--t-ayuda);
+  font-weight: 700;
+  color: var(--ambar);
+  background: var(--ambar-palido);
+  border: 1px solid var(--ambar);
+  border-radius: var(--pastilla);
+  padding: 0 var(--e2);
+  margin-bottom: var(--e1);
+}

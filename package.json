@@ -2,6 +2,7 @@
   "name": "flay",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "engines": {
     "node": ">=22.21.0 <23",
     "npm": ">=10.9.0"
@@ -23,6 +24,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:preparar": "node scripts/preparar-bd.mjs",
     "semilla:arranque": "node scripts/semilla-arranque.mjs",
+    "semilla:rubros": "node prisma/semilla-rubros.ts",
     "db:drift": "node scripts/db-drift.mjs",
     "verificar": "npm run format:check && npm run lint && npm run typecheck && npm run test:dominio && npm run db:deploy && npm run db:drift && npm run test:integracion && npm run build && npm run test:e2e"
   },

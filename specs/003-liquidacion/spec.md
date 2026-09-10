@@ -27,6 +27,16 @@ prorrateo, intereses e imputación (§ 8.3.3), y el paquete 4.2 se hace **en par
 
 ---
 
+## Clarifications
+
+### Session 2026-09-10
+
+- Q: ¿Algún rubro se reparte sólo entre un grupo de unidades, en vez de entre todo el padrón? (H-11) → A: No. Un solo coeficiente sobre el padrón completo; si el cliente reparte por grupo, es una etapa nueva y no un parche.
+- Q: Con una unidad alquilada, ¿las ordinarias del ocupante y las extraordinarias del propietario son dos obligaciones o una expensa con dos subtotales? → A: Una sola expensa por unidad, con los dos subtotales separados a la vista.
+- Q: ¿Cuándo se calculan los intereses por mora, al emitir o al pagar? → A: Al emitir, sobre lo impago a la fecha de emisión.
+- Q: ¿Cómo se calcula el interés por mora? → A: Simple, por **mes vencido completo**: sin prorrateo de días y sin capitalizar.
+- Q: ¿De dónde sale la fecha de vencimiento? → A: Día fijo por consorcio; la fecha se copia a la liquidación al emitirla.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — El dominio calcula una liquidación correcta sin base de datos (Priority: P1)
@@ -199,6 +209,13 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
 - **El consorcio de 96 unidades excede el presupuesto de documentos.** Es el riesgo RT-05 (§ 11.2):
   la generación es diferida por diseño y se mide; si no cierra, se degrada a generación por lotes,
   no a generación sincrónica.
+- **Una unidad alquilada.** La expensa es **una sola** y se emite a la unidad, con lo ordinario y
+  lo extraordinario separados adentro. El sistema no parte la deuda en dos ni persigue a dos
+  personas: quién paga qué parte es un acuerdo entre propietario e inquilino, y el documento se lo
+  dice a los dos.
+- **Un atraso de veintinueve días.** Interés **cero**: el interés corre por mes vencido completo.
+  Es consecuencia deliberada de la fórmula elegida y hay que probarla, porque es la que sorprende:
+  pagar el día 29 no cuesta nada y el día 31 cuesta un mes entero.
 - **Una tasa de interés cambiada a mitad del período.** La tasa aplicada se copia al cálculo y
   queda registrada, igual que el coeficiente: una liquidación pasada debe poder reconstruirse.
 
@@ -216,6 +233,10 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
   desde `002` (M-04) y ambas etapas lo comparten: ninguna prueba fabrica un estado fuera de ese contrato.
 - **FR-002**: Un período cerrado **DEBE** rechazar toda alta o modificación de gasto (regla RN-03
   § 7.2).
+- **FR-002b**: El consorcio **DEBE** tener un **día de vencimiento** propio —el 10, por ejemplo— y
+  la liquidación de un período vence ese día del mes siguiente. La fecha resultante **DEBE**
+  copiarse a la liquidación al emitirla: una liquidación vieja conserva su vencimiento aunque
+  después se cambie el día del consorcio, por el mismo motivo que se copia el coeficiente.
 - **FR-003**: Un período **DEBE** poder liquidarse **una sola vez**. Corregir exige anular la
   liquidación y emitir una nueva, quedando ambas registradas y la nueva referenciando a la que
   anula (regla RN-06 § 7.2).
@@ -230,6 +251,12 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
 - **FR-006**: El motor **DEBE** verificar, antes de calcular nada, que los coeficientes suman
   exactamente `100.00000000` (regla RN-01 § 7.2) y que el período está cerrado. Si alguna falla,
   aborta e informa la causa exacta.
+- **FR-006b**: El prorrateo **DEBE** ser sobre el **padrón completo**: ningún rubro se reparte
+  entre un subconjunto de unidades. Toda unidad funcional tributa por su coeficiente, sea
+  departamento, cochera, local o baulera, y la base del reparto es siempre `100.00000000`. Es la
+  resolución del hueco H-11: si el cliente reparte algún rubro por grupo —el portón entre las
+  cocheras, el ascensor desde el primer piso—, cambia la firma del motor y es alcance de otra
+  etapa, no un agregado a esta.
 - **FR-007**: Todo cálculo **DEBE** hacerse en aritmética decimal de precisión fija. El punto
   flotante está prohibido para dinero en cualquier capa (Principio II, medidas 1 a 4 de § 14.1).
 - **FR-008**: El redondeo a dos decimales **DEBE** ocurrir sólo al final de cada importe unitario,
@@ -241,6 +268,11 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
   registrar un incidente.
 - **FR-011**: El motor **DEBE** producir dos subtotales por unidad —ordinario y extraordinario—
   conforme a la Ley 27.551 (regla RN-05 § 7.2).
+- **FR-011b**: Los dos subtotales son **informativos dentro de una sola obligación por unidad**: se
+  emite un `DetalleLiquidacion` por unidad, con su total, y el cobro, la imputación y la mora son
+  por unidad. El sistema **NO DEBE** emitir dos deudas separadas al ocupante y al propietario. Que
+  lo ordinario sea a cargo del ocupante y lo extraordinario del propietario (Ley 27.551) queda a la
+  vista en el documento; repartir el cobro entre dos personas no es alcance de esta etapa.
 - **FR-012**: El coeficiente aplicado **DEBE** copiarse a cada `DetalleLiquidacion` (regla RN-02
   § 7.2).
 - **FR-013**: Toda la liquidación —cálculo, persistencia, cambio de estado del período y asiento de
@@ -273,9 +305,17 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
 - **FR-023**: La suma de las imputaciones de un pago **DEBE** igualar el importe del pago con
   tolerancia cero.
 - **FR-024**: El cálculo de intereses por mora **DEBE** residir en el dominio, desarrollarse con
-  pruebas primero y probarse sin base de datos (§ 8.3.3).
+  pruebas primero y probarse sin base de datos (§ 8.3.3). La fórmula es **interés simple por mes
+  vencido completo**: `capital impago × tasa mensual × meses completos de atraso`, contados de
+  fecha a fecha desde el vencimiento. **Sin prorrateo de días y sin capitalizar**: veintinueve días
+  de atraso son cero meses y por lo tanto interés cero, y el segundo mes se calcula sobre el mismo
+  capital que el primero.
+- **FR-024b**: Los intereses **DEBEN** calcularse **al emitir**, sobre el saldo impago de la unidad
+  a la fecha de emisión, y viajar como una línea propia del detalle. El consorcista tiene que poder
+  leer cuánto debe en la expensa que recibe, sin que el saldo se mueva solo con el calendario.
 - **FR-025**: La tasa aplicada **DEBE** quedar registrada en `DetalleLiquidacion.tasa_mora_aplicada`,
-  junto al cálculo, para que el importe se pueda reconstruir (M-05).
+  junto con los **meses de atraso** y el capital sobre el que se calculó, para que el importe se
+  pueda reconstruir con una calculadora (M-05, RNF-10).
 - **FR-026**: Un pago que exceda la deuda **DEBE** dejar el excedente a favor de la unidad en
   `Pago.saldo_a_favor` (M-05). No se imputa a otra unidad ni se pierde.
 - **FR-027**: La anulación de una liquidación **DEBE** revertir sus imputaciones y dejar los pagos
@@ -302,8 +342,9 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
 | Entidad | Qué representa | Relaciones y restricciones clave |
 |---|---|---|
 | `Periodo` | Mes de operación de un consorcio | Máquina de estados completa en esta etapa; un período se liquida una sola vez (regla RN-06 § 7.2) |
-| `Liquidacion` | Emisión de expensas de un período | Estado y referencia a la liquidación que anula; total en decimal de precisión fija |
-| `DetalleLiquidacion` | Importe liquidado a una unidad | Copia del coeficiente aplicado (regla RN-02 § 7.2); subtotales ordinario y extraordinario separados (regla RN-05 § 7.2); **campo propio** para el ajuste de redondeo (regla RN-07 § 7.2) |
+| `Consorcio` | Viene de `002-nucleo` | Esta etapa le agrega el **día de vencimiento** (FR-002b) y la **tasa de mora vigente**, que fija el administrador |
+| `Liquidacion` | Emisión de expensas de un período | Estado y referencia a la liquidación que anula; total en decimal de precisión fija; **fecha de vencimiento copiada al emitir** (FR-002b) |
+| `DetalleLiquidacion` | Importe liquidado a una unidad, en **una sola obligación** (FR-011b) | Copia del coeficiente aplicado (regla RN-02 § 7.2); subtotales ordinario y extraordinario separados (regla RN-05 § 7.2); **campo propio** para el ajuste de redondeo (regla RN-07 § 7.2); tasa, meses de atraso y capital del interés (FR-025) |
 | `Pago` | Cobro recibido de una unidad | `unidad_id` obligatorio; importe en decimal |
 | `PagoImputacion` | Aplicación de un pago a un detalle | Orden de antigüedad; la suma de imputaciones iguala el pago (regla RN-08 § 7.2) |
 | `Notificacion` | Aviso pendiente de despacho | **Se crea en esta etapa, sin despachador.** Resuelve el hallazgo 2: ningún aviso de liquidación se pierde aunque el correo se conecte en `004-servicios` |
@@ -349,6 +390,9 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
 - **SC-014**: La cobertura de pruebas del paquete de dominio de liquidación, prorrateo, intereses e
   imputación es del **100 % de las ramas de decisión**. Es el único paquete del sistema con ese
   umbral, y se justifica en que un error aquí invalida el sistema.
+- **SC-014b**: El interés es reconstruible con una calculadora: veintinueve días de atraso dan
+  **cero**, sesenta dan dos meses sobre el mismo capital, y el detalle muestra tasa, meses y capital
+  aplicados (FR-024, FR-025). Probado sin base de datos.
 - **SC-015**: Un consorcista que consulta morosidad ve el dato agregado y **cero** nombres de
   deudores; un administrador ve la nómina (regla RN-13 § 7.2).
 - **SC-016**: La descarga de la expensa propia funciona a 390 px sin desplazamiento horizontal
@@ -382,8 +426,11 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
 - `Notificacion` se crea aquí sin despachador. Es la resolución del hallazgo 2: la liquidación de
   esta etapa no puede emitir avisos porque el despachador es de `004-servicios`, y encolar sin
   despachar evita perderlos.
-- La tasa de interés por mora la fija el administrador por consorcio; el sistema no la deduce ni la
-  actualiza solo.
+- La tasa de interés por mora y el día de vencimiento los fija el administrador por consorcio; el
+  sistema no los deduce ni los actualiza solo.
+- **El prorrateo es sobre el padrón completo** (FR-006b). Si las tres liquidaciones reales del
+  cliente muestran algún rubro repartido entre un grupo de unidades, esta suposición cae y la etapa
+  se replantea antes de escribir el motor: es lo que el hueco H-11 vino a evitar.
 - El presupuesto es de **194 h**, sin cambios respecto del punto 10: esta etapa no absorbió nada de
   `001-andamiaje`.
 - El desempate de «unidad de mayor coeficiente» por identificador menor es una decisión de esta

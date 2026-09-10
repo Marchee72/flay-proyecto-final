@@ -70,10 +70,39 @@ enumeradas.*
 | Criterio | Medición al 2026-09-10 |
 |---|---|
 | Suma de coeficientes exacta en los dos consorcios de § 13.4 (SC-001) | `100.00000000` en ambos, comparado por decimal |
-| Aislamiento por consorcio y por rol (SC-002, SC-002b) | 82 pruebas de integración; el filtro por consorcio aparece en un solo archivo |
+| Aislamiento por consorcio y por rol (SC-002, SC-002b) | 92 pruebas de integración; el filtro por consorcio no se escribe a mano en ninguna consulta de datos económicos, y una prueba de dominio lo verifica (SC-003) |
 | Invariantes impuestos por la base (SC-004b, SC-005) | Verificados **salteándose la capa de aplicación** |
 | Tiempo de respuesta del listado con 10.800 gastos (SC-006) | p95 de 363 ms contra un límite de 2.000 ms (§ 14.5) |
 | Accesibilidad de las pantallas del consorcista (SC-011) | axe sin infracciones A ni AA |
+
+### Ensayo del recorrido sobre el entorno desplegado (SC-014)
+
+Recorrido de `specs/002-nucleo/quickstart.md` § Recorrido manual, hecho el **2026-09-10** sobre
+<https://flay-bamba-team.vercel.app> con la versión `1a36120`, íntegramente desde el navegador.
+
+| Paso | Resultado |
+|---|---|
+| 1. Sesión de administrador e invitación de un consorcista | **Hecho.** La persona queda en estado `invitado` y la fila muestra «Correo en cola.» con el botón de reenvío: la degradación de RNF-14 a la vista, porque la demostración no tiene proveedor de correo |
+| 2. Consorcio de 12 unidades cerrando en `99.99999999` | **Hecho.** Rechazo: «Los coeficientes suman 99.99999999 %: falta 0.00000001 % para llegar a 100. Revisá las 12 unidades cargadas.» Corregida la última unidad, el padrón cierra en `100.00000000` (SC-004) |
+| 3. Período del mes, gasto con comprobante | **Hecho salvo la bitácora.** Período 09/2026 abierto, gasto de `125000.50` —a la vista como cadena, no como número— y comprobante subido **directo** al almacenamiento, sin pasar por el servidor |
+| 4. Consorcista desde un teléfono | **Parcial.** El listado y el detalle se recorrieron a 390 px sin desplazamiento horizontal, pero con la sesión del administrador |
+| 5. Gasto de otro consorcio por identificador directo en la dirección | **Hecho.** El mismo identificador, con el otro consorcio activo, responde «No encontramos lo que buscabas.», nunca «prohibido» |
+
+Lo que el ensayo encontró, y que ninguna prueba automática podía encontrar:
+
+1. **El entorno desplegado estaba incompleto.** No tenía secreto de sesión —ingresar devolvía 500—
+   ni almacén de objetos, así que no había forma de subir un comprobante. Nadie lo había notado
+   porque hasta `001-andamiaje` no existía pantalla con sesión y la ruta de salud no la necesita.
+   Ambas cosas quedaron configuradas el 2026-09-10; el flujo de verificación arrastraba el mismo
+   hueco (§ 14.5).
+2. **La bitácora no tiene pantalla.** La auditoría se impone por disparador y se verifica por prueba
+   de integración contra la base (SC-007, SC-008), pero ninguna funcionalidad de la etapa la expone:
+   el paso 3 del guion supone una vista que no existe. Se construye en la iteración 2 o el guion se
+   reescribe; no es un defecto de lo construido, es un hueco del guion.
+3. **El paso 4 depende del correo.** El enlace para fijar la contraseña sólo viaja por correo, así
+   que sin proveedor configurado no hay forma de entrar como la persona invitada. Es coherente con
+   FR-005 —no hay contraseña inicial fuera del enlace— y con RNF-14, pero deja el paso a medias
+   hasta que la demostración tenga un servicio de correo.
 
 ## 13.4 Datos de demostración
 
@@ -105,16 +134,16 @@ conforme al punto 5.3.2.
 
 ## 13.5 Acceso al prototipo
 
-*A completar.*
+*Se completa en cada cierre de iteración. Estado al cierre de la iteración 1.*
 
 | Dato | Valor |
 |---|---|
-| Dirección del sistema | |
-| Usuario administrador | |
-| Usuario operador | |
-| Usuario consorcista | |
-| Repositorio de código | |
-| Versión entregada | |
+| Dirección del sistema | <https://flay-bamba-team.vercel.app> — sigue al último despliegue verde de `main`; `/api/salud` dice qué versión y qué migración sirve |
+| Usuario administrador | `admin@flay.test`, creado por `npm run semilla:arranque` con la clave en variable de entorno. **La clave no se versiona** y se rota en el primer ingreso (FR-005) |
+| Usuario operador | No existe en la iteración 1: los roles construidos son administrador, consejo y consorcista (RF-03) |
+| Usuario consorcista | Se crea por invitación desde la pantalla de usuarios. Queda en estado `invitado` hasta que salga el correo con el enlace, y la demostración todavía no tiene proveedor de correo configurado |
+| Repositorio de código | <https://github.com/Marchee72/flay-proyecto-final> |
+| Versión entregada | `v0.2.0` — cierre de la iteración 1, commit `1a36120` |
 
 ## 13.6 Guion de demostración
 

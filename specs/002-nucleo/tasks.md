@@ -164,9 +164,9 @@
 - [X] T075 Verificar `SC-003` con una búsqueda del filtro por consorcio en todo el repositorio: **cero coincidencias** fuera de `src/infraestructura/cliente-aislado.ts` (Principio I, riesgo RT-04)
 - [X] T076 [P] Revisar que ninguna firma pública del dominio acepte ni devuelva el tipo numérico nativo para dinero o coeficientes, y que `npm run lint` no reporte la regla `flay/sin-aritmetica-monetaria` (SC-009)
 - [X] T077 Correr `npm run verificar` completo, local y remoto, y confirmar que sigue bajo los 10 minutos con las pruebas nuevas (FR-018 de `001`)
-- [ ] T078 [P] Ensayar el recorrido de `quickstart.md` § Recorrido manual sobre el entorno desplegado, sin ningún paso desde una máquina de desarrollo (SC-014)
+- [X] T078 [P] Ensayar el recorrido de `quickstart.md` § Recorrido manual sobre el entorno desplegado, sin ningún paso desde una máquina de desarrollo (SC-014)
 - [X] T079 [P] Actualizar `docs/entrega-final/14-codificacion.md` § 14.5 con el esfuerzo real de la etapa contra las 187 h planificadas
-- [ ] T080 Etiquetar el cierre de la iteración 1 con versión semántica, conforme a § 8.3.5
+- [X] T080 Etiquetar el cierre de la iteración 1 con versión semántica, conforme a § 8.3.5
 
 ### Lo que la fase 8 encontró
 
@@ -182,9 +182,14 @@
   el proceso, no la base: en integración continua el desfase entre relojes es cero porque comparten
   máquina, contra una base administrada son décimas de segundo y el trabajo recién encolado no
   vencía nunca a tiempo (SC-013b). Ambos corregidos.
-- **T078 y T080 quedan abiertos**: el despliegue a demostración sale de `main` con la verificación
-  en verde, así que el recorrido sobre el entorno desplegado y la etiqueta de cierre esperan a que
-  la rama se integre por pull request con la revisión del otro integrante (§ 8.3).
+- **T078**: el recorrido se hizo el 2026-09-10 sobre el entorno desplegado, entero desde el
+  navegador, y está registrado en `docs/entrega-final/13-prototipo.md` § 13.3. Cinco pasos: tres
+  completos, dos a medias, y ninguno de los dos por un defecto de lo construido. El paso 3 pide ver
+  el asiento en la bitácora y **ninguna pantalla la expone**: la auditoría se verifica contra la
+  base, no por interfaz. El paso 4 pide entrar como la persona invitada, y el enlace para fijar la
+  contraseña sólo viaja por correo, que la demostración todavía no tiene. El ensayo además encontró
+  que el entorno desplegado no tenía secreto de sesión ni almacén de objetos: ingresar devolvía 500
+  y no había dónde subir un comprobante. Las dos cosas quedaron configuradas.
 
 ---
 

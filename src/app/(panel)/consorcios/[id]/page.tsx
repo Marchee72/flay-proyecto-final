@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { coeficienteParaMostrar } from '@/compartido/formato'
 import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
@@ -38,7 +39,7 @@ export default async function ConsorcioPage({ params }: { params: Promise<{ id: 
         <h2>Padrón</h2>
         <p>
           {consorcio.unidades.length} unidades · suma de coeficientes{' '}
-          <strong className="cifra">{consorcio.suma}</strong> %
+          <strong className="cifra">{coeficienteParaMostrar(consorcio.suma)}</strong> %
         </p>
 
         {consorcio.unidades.length === 0 ? (
@@ -50,7 +51,7 @@ export default async function ConsorcioPage({ params }: { params: Promise<{ id: 
           !consorcio.cuadra && (
             <p className="aviso aviso--problema" role="alert">
               Los coeficientes no cierran: la diferencia es{' '}
-              <span className="cifra">{consorcio.diferencia}</span> %.
+              <span className="cifra">{coeficienteParaMostrar(consorcio.diferencia)}</span> %.
             </p>
           )
         )}

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { coeficienteParaMostrar } from '@/compartido/formato'
 import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
@@ -57,14 +58,14 @@ export default async function UnidadesPage({ params }: { params: Promise<{ id: s
               {consorcio.unidades.map((unidad) => (
                 <tr key={unidad.id}>
                   <td>{unidad.designacion}</td>
-                  <td className="numero cifra">{unidad.coeficiente}</td>
+                  <td className="numero cifra">{coeficienteParaMostrar(unidad.coeficiente)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr>
                 <td>Total</td>
-                <td className="numero cifra">{consorcio.suma}</td>
+                <td className="numero cifra">{coeficienteParaMostrar(consorcio.suma)}</td>
               </tr>
             </tfoot>
           </table>

@@ -3,7 +3,12 @@
 import { useActionState, useState } from 'react'
 
 import { importe } from '@/compartido/dinero'
-import { ajustePorRedondeo, filasDesdePegado } from '@/compartido/padron'
+import {
+  ajustePorRedondeo,
+  decimalesDelPadron,
+  filasDesdePegado,
+  padronPorPisos,
+} from '@/compartido/padron'
 
 import { accionCargarPadron } from '../../acciones'
 
@@ -27,6 +32,8 @@ const VACIA: Fila = { designacion: '', coeficiente: '' }
 export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
   const [estado, accion, enviando] = useActionState(accionCargarPadron, SIN_ERROR)
   const [filas, setFilas] = useState<Fila[]>([{ ...VACIA }])
+  const [pisos, setPisos] = useState('')
+  const [porPiso, setPorPiso] = useState('')
 
   const cargadas = filas.filter((fila) => fila.designacion.trim() !== '')
   const suma = cargadas.reduce(
@@ -35,6 +42,7 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
   )
   const diferencia = suma.minus(importe(OBJETIVO))
   const cuadra = diferencia.isZero()
+  const decimales = decimalesDelPadron(cargadas.map((fila) => fila.coeficiente))
   const ajuste = ajustePorRedondeo(filas, importe(OBJETIVO))
 
   const cambiar = (indice: number, campo: keyof Fila, valor: string) =>
@@ -60,6 +68,11 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
     cambiar(ajuste.indice, 'coeficiente', ajuste.nuevo)
   }
 
+  const generar = () => {
+    const generadas = padronPorPisos(Number(pisos), Number(porPiso), importe(OBJETIVO))
+    if (generadas.length > 0) setFilas(generadas)
+  }
+
   return (
     <form action={accion} noValidate>
       <input type="hidden" name="consorcio" value={consorcioId} />
@@ -68,6 +81,41 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
         Pegá el padrón desde una planilla en la primera casilla —designación y coeficiente— y las
         filas se completan solas.
       </p>
+
+      <fieldset className="fila-de-filtros">
+        <legend className="ayuda">O generalo, si el edificio es parejo</legend>
+
+        <div className="campo">
+          <label htmlFor="pisos">Pisos</label>
+          <input
+            id="pisos"
+            className="cifra"
+            inputMode="numeric"
+            value={pisos}
+            onChange={(evento) => setPisos(evento.target.value.replace(/\D/g, ''))}
+          />
+        </div>
+
+        <div className="campo">
+          <label htmlFor="por-piso">Unidades por piso</label>
+          <input
+            id="por-piso"
+            className="cifra"
+            inputMode="numeric"
+            value={porPiso}
+            onChange={(evento) => setPorPiso(evento.target.value.replace(/\D/g, ''))}
+          />
+        </div>
+
+        <button
+          className="boton boton--fantasma"
+          type="button"
+          onClick={generar}
+          disabled={pisos === '' || porPiso === ''}
+        >
+          Generar padrón
+        </button>
+      </fieldset>
 
       <div className="tabla-desplazable">
         <table>
@@ -104,7 +152,7 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
                     name="coeficiente"
                     className="cifra"
                     inputMode="decimal"
-                    placeholder="0.00000000"
+                    placeholder="0.00"
                     value={fila.coeficiente}
                     onChange={(evento) => cambiar(indice, 'coeficiente', evento.target.value)}
                   />
@@ -115,7 +163,7 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
           <tfoot>
             <tr>
               <td>Suma corriente</td>
-              <td className="numero cifra">{suma.toFixed(8)}</td>
+              <td className="numero cifra">{suma.toFixed(decimales)}</td>
             </tr>
           </tfoot>
         </table>
@@ -123,8 +171,8 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
 
       <p aria-live="polite" className={cuadra ? 'aviso aviso--atencion' : 'ayuda'}>
         {cuadra
-          ? `Cierra exacto en ${OBJETIVO} %.`
-          : `${diferencia.isNegative() ? 'Falta' : 'Sobra'} ${diferencia.abs().toFixed(8)} % para llegar a 100.`}
+          ? `Cierra exacto en ${importe(OBJETIVO).toFixed(decimales)} %.`
+          : `${diferencia.isNegative() ? 'Falta' : 'Sobra'} ${diferencia.abs().toFixed(decimales)} % para llegar a 100.`}
       </p>
 
       {ajuste && (

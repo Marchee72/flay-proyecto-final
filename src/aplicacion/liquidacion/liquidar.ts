@@ -185,6 +185,9 @@ export async function liquidarPeriodo(
 
         await tx.periodo.update({ where: { id: periodo.id }, data: { estado: 'liquidado' } })
 
+        await encolarDocumentos(tx, liquidacion.id)
+        await avisarALosHabilitados(tx, liquidacion.id, periodo)
+
         return liquidacion
       })
 
@@ -196,6 +199,60 @@ export async function liquidarPeriodo(
       }
     },
   )
+}
+
+type Transaccion = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
+
+/**
+ * Un trabajo por unidad para generar su documento (`FR-016`, research R-02).
+ *
+ * Va en SQL por lo mismo que `encolar`: `proximo_intento` lo tiene que poner la
+ * base, porque el vencimiento se compara contra su reloj (decisión 9 de
+ * `CLAUDE.md`).
+ */
+async function encolarDocumentos(tx: Transaccion, liquidacionId: string): Promise<void> {
+  await tx.$executeRaw`
+    INSERT INTO "TrabajoPendiente" (tipo, carga)
+    SELECT 'documento_expensa'::"TipoTrabajo",
+           jsonb_build_object('detalleId', d.id, 'liquidacionId', d.liquidacion_id)
+    FROM "DetalleLiquidacion" d
+    WHERE d.liquidacion_id = ${liquidacionId}::uuid
+  `
+}
+
+/**
+ * El aviso queda **encolado, no despachado**: el despachador es de
+ * `004-servicios` (`FR-015`, hallazgo 2). Lo que esta etapa garantiza es que
+ * ningun aviso se pierda por no existir todavia quien lo mande.
+ *
+ * Destinatarios: quienes tienen habilitacion vigente sobre el consorcio. Son
+ * los que pueden ver la liquidacion, asi que son los que corresponde avisar.
+ */
+async function avisarALosHabilitados(
+  tx: Transaccion,
+  liquidacionId: string,
+  periodo: { anio: number; mes: number },
+): Promise<void> {
+  const habilitados = await tx.habilitacion.findMany({
+    where: { vigenciaHasta: null },
+    select: { usuarioId: true },
+    distinct: ['usuarioId'],
+  })
+
+  if (habilitados.length === 0) return
+
+  const mes = String(periodo.mes).padStart(2, '0')
+
+  await tx.notificacion.createMany({
+    data: habilitados.map((habilitacion) => ({
+      usuarioId: habilitacion.usuarioId,
+      tipo: 'liquidacion_publicada' as const,
+      titulo: `Expensas de ${mes}/${periodo.anio}`,
+      cuerpo: `Ya está publicada la liquidación de ${mes}/${periodo.anio}.`,
+      entidadTipo: 'Liquidacion',
+      entidadId: liquidacionId,
+    })),
+  })
 }
 
 /**

@@ -96,14 +96,14 @@ comparar importe por importe.
 - [X] T032 [US2] Implementar `cerrarPeriodo` en `src/aplicacion/liquidacion/periodos.ts`: `abierto → cerrado`, sólo `administrador`, y desde ahí ningún gasto se agrega ni se modifica (`FR-002`, regla RN-03 § 7.2)
 - [X] T033 [US2] Implementar `liquidarPeriodo` en `src/aplicacion/liquidacion/liquidar.ts` en **una sola transacción**, según `contracts/liquidacion-y-pagos.md`: verifica estado y coeficientes, llama al dominio, persiste por lote, pasa el período a `liquidado` (`FR-013`)
 - [X] T034 [US2] Aplicar en `liquidarPeriodo` el saldo a favor de la unidad **después** del interés, dejando rastro en `saldo_a_favor_aplicado` (`FR-026b`)
-- [ ] T035 [US2] Encolar en `liquidarPeriodo` un `TrabajoPendiente` de tipo `documento_expensa` por unidad y crear las `Notificacion` en estado `pendiente`, sin despacharlas (`FR-015`)
+- [X] T035 [US2] Encolar en `liquidarPeriodo` un `TrabajoPendiente` de tipo `documento_expensa` por unidad y crear las `Notificacion` en estado `pendiente`, sin despacharlas (`FR-015`)
 - [X] T036 [US2] Implementar `anularLiquidacion` en `src/aplicacion/liquidacion/anular.ts`: marca la liquidación, **no toca el período**, y revierte las imputaciones marcando `revertida_en` (`FR-003b`, `FR-027`)
 - [X] T037 [US2] Escribir `pruebas/integracion/liquidacion.spec.ts`: una falla inyectada en cualquier paso deja la base **exactamente como estaba** —cero liquidaciones a medias, cero períodos inconsistentes— (SC-010)
 - [X] T038 [US2] Extender esa prueba con la concurrencia de M-07: **dos ejecuciones en paralelo con barrera** contra el mismo período, exactamente una emite, y el rechazo lo produce el índice parcial y no el código (SC-011)
 - [X] T039 [US2] Extender esa prueba: después de anular, una reemisión **procede** aunque el período siga en `liquidado`, y las dos liquidaciones quedan registradas y vinculadas (`FR-003b`, regla RN-06 § 7.2)
-- [ ] T040 [US2] Escribir `pruebas/integracion/auditoria-liquidacion.spec.ts`: cada operación sobre las **cinco** tablas económicas deja exactamente un asiento (SC-012)
-- [ ] T041 [P] [US2] Construir `src/app/(panel)/periodos/[id]/page.tsx` con el cierre y la liquidación del período, y el rechazo diciendo **qué falta y cuánto** cuando los coeficientes no cierran (RNF-10, SC-004)
-- [ ] T042 [P] [US2] Construir `src/app/(panel)/liquidaciones/[id]/page.tsx` con totales, vencimiento, detalle por unidad y la acción de anular
+- [X] T040 [US2] Escribir `pruebas/integracion/auditoria-liquidacion.spec.ts`: cada operación sobre las **cinco** tablas económicas deja exactamente un asiento (SC-012)
+- [X] T041 [P] [US2] Construir `src/app/(panel)/periodos/[id]/page.tsx` con el cierre y la liquidación del período, y el rechazo diciendo **qué falta y cuánto** cuando los coeficientes no cierran (RNF-10, SC-004)
+- [X] T042 [P] [US2] Construir `src/app/(panel)/liquidaciones/[id]/page.tsx` con totales, vencimiento, detalle por unidad y la acción de anular
 - [X] T043 [US2] Escribir `scripts/validar-planillas.mjs`: carga `datos-cliente/liquidaciones-reales/padron-coeficientes.csv` y los `gastos-2026-NN.csv`, ejecuta la liquidación y compara **al centavo** contra los `planilla-2026-NN.csv`, incluido `ajuste_redondeo` (`FR-031`)
 - [X] T044 [US2] Correr `npm run validar:planillas` sobre los **tres** meses y explicar por escrito toda discrepancia: una discrepancia sin explicación es un defecto abierto, no una diferencia de criterio (`FR-032`, SC-005)
 
@@ -118,8 +118,8 @@ comparar importe por importe.
 **Independent Test**: emitir sobre 96 unidades y verificar que aparecen 96 documentos, cada uno
 alcanzable únicamente por los ocupantes de su unidad.
 
-- [ ] T045 [US3] Definir el puerto `GeneradorDeDocumentos` en `src/dominio/contratos/documentos.ts`, con los datos del detalle como entrada y bytes como salida: el dominio no conoce el formato ni la biblioteca (Principio III)
-- [ ] T046 [US3] Implementar `src/infraestructura/documentos/expensa.tsx` con `@react-pdf/renderer`, mostrando coeficiente aplicado, subtotal ordinario, subtotal extraordinario, **el desglose del interés**, ajuste de redondeo si lo hubo y total (`FR-017`)
+- [X] T045 [US3] Definir el puerto `GeneradorDeDocumentos` en `src/dominio/contratos/documentos.ts`, con los datos del detalle como entrada y bytes como salida: el dominio no conoce el formato ni la biblioteca (Principio III)
+- [X] T046 [US3] Implementar `src/infraestructura/documentos/expensa.tsx` con `@react-pdf/renderer`, mostrando coeficiente aplicado, subtotal ordinario, subtotal extraordinario, **el desglose del interés**, ajuste de redondeo si lo hubo y total (`FR-017`)
 - [ ] T047 [US3] Implementar el manejador del trabajo `documento_expensa` en `src/aplicacion/liquidacion/documentos.ts`: rendea, guarda con clave `expensas/<consorcio>/<liquidacion>/<unidad>.pdf` y escribe `clave_documento` (`FR-016`, research R-01)
 - [ ] T048 [US3] Implementar `generarDocumentos` en el mismo archivo: disparo explícito acotado por tiempo, con progreso a la vista; una falla se reintenta y **no** invalida la liquidación emitida (`FR-019`, research R-02)
 - [ ] T049 [US3] Implementar `verExpensa` en `src/aplicacion/liquidacion/ver-expensa.ts`: una unidad ajena responde **«no encontrado»**, nunca «prohibido» (`FR-018`, SC-008)

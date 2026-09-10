@@ -1,4 +1,5 @@
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { importeSerializado } from '@/compartido/formato'
 import type { EstadoPeriodo } from '@/dominio/periodos/estado'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
@@ -22,6 +23,8 @@ export interface PeriodoDelConsorcio {
   mes: number
   estado: EstadoPeriodo
   gastos: number
+  /** La liquidacion **vigente**, si la hay: la anulada no cuenta (FR-003b). */
+  liquidacion: { id: string; totalGeneral: string; vencimiento: string } | null
 }
 
 export class PeriodoRepetido extends ErrorDeAplicacion {
@@ -87,16 +90,35 @@ export async function listarPeriodos(
     async () => {
       const periodos = await prisma.periodo.findMany({
         orderBy: [{ anio: 'desc' }, { mes: 'desc' }],
-        include: { _count: { select: { gastos: true } } },
+        include: {
+          _count: { select: { gastos: true } },
+          liquidaciones: {
+            where: { estado: 'vigente' },
+            select: { id: true, totalGeneral: true, vencimiento: true },
+          },
+        },
       })
 
-      return periodos.map((periodo) => ({
-        id: periodo.id,
-        anio: periodo.anio,
-        mes: periodo.mes,
-        estado: periodo.estado,
-        gastos: periodo._count.gastos,
-      }))
+      return periodos.map((periodo) => {
+        const [vigente] = periodo.liquidaciones
+
+        return {
+          id: periodo.id,
+          anio: periodo.anio,
+          mes: periodo.mes,
+          estado: periodo.estado,
+          gastos: periodo._count.gastos,
+          liquidacion: vigente
+            ? {
+                id: vigente.id,
+                // Como cadena, siempre: el importe no cruza como numero
+                // (medida 3 de § 14.1).
+                totalGeneral: importeSerializado(vigente.totalGeneral),
+                vencimiento: vigente.vencimiento.toISOString().slice(0, 10),
+              }
+            : null,
+        }
+      })
     },
   )
 }

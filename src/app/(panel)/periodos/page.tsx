@@ -85,7 +85,11 @@ export default async function PeriodosPage({
                     <td className="numero cifra">
                       {periodo.liquidacion ? (
                         <>
-                          {importeParaMostrar(periodo.liquidacion.totalGeneral)}
+                          <Link
+                            href={`/liquidaciones/${periodo.liquidacion.id}?consorcio=${activo.id}`}
+                          >
+                            {importeParaMostrar(periodo.liquidacion.totalGeneral)}
+                          </Link>
                           <span className="ayuda"> vence {periodo.liquidacion.vencimiento}</span>
                         </>
                       ) : (

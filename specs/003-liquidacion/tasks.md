@@ -120,13 +120,13 @@ alcanzable únicamente por los ocupantes de su unidad.
 
 - [X] T045 [US3] Definir el puerto `GeneradorDeDocumentos` en `src/dominio/contratos/documentos.ts`, con los datos del detalle como entrada y bytes como salida: el dominio no conoce el formato ni la biblioteca (Principio III)
 - [X] T046 [US3] Implementar `src/infraestructura/documentos/expensa.tsx` con `@react-pdf/renderer`, mostrando coeficiente aplicado, subtotal ordinario, subtotal extraordinario, **el desglose del interés**, ajuste de redondeo si lo hubo y total (`FR-017`)
-- [ ] T047 [US3] Implementar el manejador del trabajo `documento_expensa` en `src/aplicacion/liquidacion/documentos.ts`: rendea, guarda con clave `expensas/<consorcio>/<liquidacion>/<unidad>.pdf` y escribe `clave_documento` (`FR-016`, research R-01)
-- [ ] T048 [US3] Implementar `generarDocumentos` en el mismo archivo: disparo explícito acotado por tiempo, con progreso a la vista; una falla se reintenta y **no** invalida la liquidación emitida (`FR-019`, research R-02)
-- [ ] T049 [US3] Implementar `verExpensa` en `src/aplicacion/liquidacion/ver-expensa.ts`: una unidad ajena responde **«no encontrado»**, nunca «prohibido» (`FR-018`, SC-008)
-- [ ] T050 [P] [US3] Construir `src/app/(panel)/expensas/page.tsx` y `[unidad]/page.tsx` con la descarga, formateando los importes **a partir de las cadenas** que recibe y sin operar con ellos (`FR-020`)
-- [ ] T051 [US3] Escribir `pruebas/integracion/documentos.spec.ts`: sobre 96 unidades aparecen **96** documentos y no falta ninguno; una falla inyectada en uno deja los otros 95 intactos y la liquidación válida (SC-007)
-- [ ] T052 [P] [US3] Escribir `pruebas/e2e/expensa.spec.ts`: la descarga propia funciona a 390 px sin desplazamiento horizontal, y el identificador de otra unidad en la dirección devuelve «no encontrado» (SC-008, SC-016)
-- [ ] T053 [P] [US3] Escribir `pruebas/e2e/expensa.a11y.spec.ts`: la pantalla de descarga sin infracciones de nivel A ni AA (SC-016, RNF-11)
+- [X] T047 [US3] Implementar el manejador del trabajo `documento_expensa` en `src/aplicacion/liquidacion/documentos.ts`: rendea, guarda con clave `expensas/<consorcio>/<liquidacion>/<unidad>.pdf` y escribe `clave_documento` (`FR-016`, research R-01)
+- [X] T048 [US3] Implementar `generarDocumentos` en el mismo archivo: disparo explícito acotado por tiempo, con progreso a la vista; una falla se reintenta y **no** invalida la liquidación emitida (`FR-019`, research R-02)
+- [X] T049 [US3] Implementar `verExpensa` en `src/aplicacion/liquidacion/ver-expensa.ts`: una unidad ajena responde **«no encontrado»**, nunca «prohibido» (`FR-018`, SC-008)
+- [X] T050 [P] [US3] Construir `src/app/(panel)/expensas/page.tsx` y `[unidad]/page.tsx` con la descarga, formateando los importes **a partir de las cadenas** que recibe y sin operar con ellos (`FR-020`)
+- [X] T051 [US3] Escribir `pruebas/integracion/documentos.spec.ts`: sobre 96 unidades aparecen **96** documentos y no falta ninguno; una falla inyectada en uno deja los otros 95 intactos y la liquidación válida (SC-007)
+- [X] T052 [P] [US3] Escribir `pruebas/e2e/expensa.spec.ts`: la descarga propia funciona a 390 px sin desplazamiento horizontal, y el identificador de otra unidad en la dirección devuelve «no encontrado» (SC-008, SC-016)
+- [X] T053 [P] [US3] Escribir `pruebas/e2e/expensa.a11y.spec.ts`: la pantalla de descarga sin infracciones de nivel A ni AA (SC-016, RNF-11)
 
 **Checkpoint**: el consorcista tiene su expensa y no puede ver la del vecino
 

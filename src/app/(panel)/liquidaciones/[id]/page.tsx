@@ -8,6 +8,9 @@ import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { verLiquidacion } from '@/aplicacion/liquidacion/ver-liquidacion'
+import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
+
+import { BotonGenerarDocumentos } from '../../periodos/acciones-de-estado'
 
 export const metadata: Metadata = { title: 'Liquidación — Flay' }
 
@@ -40,6 +43,8 @@ export default async function LiquidacionPage({
       consorcioId: activo.id,
       liquidacionId: id,
     })
+    const generados = liquidacion.detalles.filter((d) => d.tieneDocumento).length
+    const roles = await rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id)
 
     return (
       <>
@@ -65,6 +70,18 @@ export default async function LiquidacionPage({
             <strong className="cifra">{importeParaMostrar(liquidacion.totalGeneral)}</strong>
           </p>
         </div>
+
+        {liquidacion.estado === 'vigente' && (
+          <div className="tarjeta">
+            <p>
+              Documentos: <strong>{generados}</strong> de {liquidacion.detalles.length}
+              {generados === liquidacion.detalles.length && ' · todos generados'}
+            </p>
+            {roles.includes('administrador') && generados < liquidacion.detalles.length && (
+              <BotonGenerarDocumentos consorcioId={activo.id} liquidacionId={liquidacion.id} />
+            )}
+          </div>
+        )}
 
         <div className="tabla-desplazable">
           <table>

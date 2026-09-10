@@ -136,7 +136,10 @@ export async function liquidarPeriodo(
           }),
         })
 
-        for (const detalle of reparto.detalles) {
+        // Todo el calculo por unidad ocurre en memoria; despues **dos**
+        // sentencias escriben las dos tablas. Cien detalles de a uno contra una
+        // base remota no entran en el tope de la transaccion (research R-09).
+        const detalles = reparto.detalles.map((detalle) => {
           const deudas = deudaPorUnidad.get(detalle.unidadId) ?? []
           const interes = interesPorMora(deudas, tasa, hoy)
 
@@ -154,33 +157,39 @@ export async function liquidarPeriodo(
           const disponible = saldosPorUnidad.get(detalle.unidadId) ?? new Decimal(0)
           const aplicado = Decimal.min(disponible, antesDelSaldo)
 
-          const creado = await tx.detalleLiquidacion.create({
-            data: {
-              liquidacionId: liquidacion.id,
-              unidadId: detalle.unidadId,
-              coeficienteAplicado: detalle.coeficienteAplicado,
-              importeOrdinario: detalle.importeOrdinario,
-              importeExtraordinario: detalle.importeExtraordinario,
-              deudaAnterior,
-              interesMora: interes.total,
-              saldoAFavorAplicado: aplicado.toFixed(DECIMALES_IMPORTE),
-              ajusteRedondeo: detalle.ajusteRedondeo,
-              totalUnidad: antesDelSaldo.minus(aplicado).toFixed(DECIMALES_IMPORTE),
-            },
-          })
-
-          if (interes.desglose.length > 0) {
-            await tx.interesLiquidado.createMany({
-              data: interes.desglose.map((linea) => ({
-                detalleId: creado.id,
-                liquidacionOrigenId: linea.liquidacionId,
-                capital: linea.capital,
-                tasaMensual: linea.tasaMensual,
-                meses: linea.meses,
-                importe: linea.importe,
-              })),
-            })
+          return {
+            id: crypto.randomUUID(),
+            liquidacionId: liquidacion.id,
+            unidadId: detalle.unidadId,
+            coeficienteAplicado: detalle.coeficienteAplicado,
+            importeOrdinario: detalle.importeOrdinario,
+            importeExtraordinario: detalle.importeExtraordinario,
+            deudaAnterior,
+            interesMora: interes.total,
+            saldoAFavorAplicado: aplicado.toFixed(DECIMALES_IMPORTE),
+            ajusteRedondeo: detalle.ajusteRedondeo,
+            totalUnidad: antesDelSaldo.minus(aplicado).toFixed(DECIMALES_IMPORTE),
+            desglose: interes.desglose,
           }
+        })
+
+        await tx.detalleLiquidacion.createMany({
+          data: detalles.map(({ desglose, ...fila }) => (void desglose, fila)),
+        })
+
+        const lineasDeInteres = detalles.flatMap((detalle) =>
+          detalle.desglose.map((linea) => ({
+            detalleId: detalle.id,
+            liquidacionOrigenId: linea.liquidacionId,
+            capital: linea.capital,
+            tasaMensual: linea.tasaMensual,
+            meses: linea.meses,
+            importe: linea.importe,
+          })),
+        )
+
+        if (lineasDeInteres.length > 0) {
+          await tx.interesLiquidado.createMany({ data: lineasDeInteres })
         }
 
         await tx.periodo.update({ where: { id: periodo.id }, data: { estado: 'liquidado' } })

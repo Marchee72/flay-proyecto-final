@@ -8,6 +8,9 @@ export const SECCIONES = [
   { href: '/consorcios', titulo: 'Consorcios' },
   { href: '/gastos', titulo: 'Gastos' },
   { href: '/periodos', titulo: 'Períodos' },
+  { href: '/expensas', titulo: 'Expensas' },
+  { href: '/pagos', titulo: 'Pagos' },
+  { href: '/morosidad', titulo: 'Morosidad' },
   { href: '/proveedores', titulo: 'Proveedores' },
   { href: '/usuarios', titulo: 'Usuarios' },
 ] as const

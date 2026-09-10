@@ -5,6 +5,7 @@ import { useActionState } from 'react'
 import {
   accionAnularLiquidacion,
   accionCerrarPeriodo,
+  accionGenerarDocumentos,
   accionLiquidarPeriodo,
   type Resultado,
 } from './acciones'
@@ -18,7 +19,13 @@ const SIN_ERROR: Resultado = { mensaje: '' }
  * fila que falló** y no arriba de todo, que con doce períodos en pantalla es la
  * diferencia entre entender qué pasó y adivinarlo (RNF-10).
  */
-export function BotonCerrar({ consorcioId, periodoId }: { consorcioId: string; periodoId: string }) {
+export function BotonCerrar({
+  consorcioId,
+  periodoId,
+}: {
+  consorcioId: string
+  periodoId: string
+}) {
   return (
     <Boton
       accion={accionCerrarPeriodo}
@@ -66,6 +73,26 @@ export function BotonAnular({
       valor={liquidacionId}
       etiqueta="Anular"
       trabajando="Anulando…"
+    />
+  )
+}
+
+export function BotonGenerarDocumentos({
+  consorcioId,
+  liquidacionId,
+}: {
+  consorcioId: string
+  liquidacionId: string
+}) {
+  return (
+    <Boton
+      accion={accionGenerarDocumentos}
+      consorcioId={consorcioId}
+      campo="liquidacion"
+      valor={liquidacionId}
+      etiqueta="Generar los documentos"
+      trabajando="Generando…"
+      primario
     />
   )
 }

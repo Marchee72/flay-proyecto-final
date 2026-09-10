@@ -78,20 +78,27 @@ export async function cargarPadron(
 
       const hoy = reloj.hoy()
 
-      await prisma.$transaction(async (tx) => {
-        for (const unidad of datos.unidades) {
-          const creada = await tx.unidad.create({
-            data: sinConsorcio({
-              designacion: unidad.designacion,
-              tipo: unidad.tipo ?? TIPO_UNIDAD_POR_OMISION,
-              coeficiente: unidad.coeficiente,
-            }),
-          })
+      // Los identificadores se generan aca para escribir las dos tablas con dos
+      // sentencias y no con doscientas: noventa y seis idas y vueltas contra una
+      // base remota no entran en el tope de una transaccion interactiva. Es lo
+      // mismo que hace la semilla, y lo que R-09 de `003` fija para la emision.
+      const filas = datos.unidades.map((unidad) => ({
+        id: crypto.randomUUID(),
+        designacion: unidad.designacion,
+        tipo: unidad.tipo ?? TIPO_UNIDAD_POR_OMISION,
+        coeficiente: unidad.coeficiente,
+      }))
 
-          await tx.coeficienteHistorico.create({
-            data: { unidadId: creada.id, coeficiente: unidad.coeficiente, vigenciaDesde: hoy },
-          })
-        }
+      await prisma.$transaction(async (tx) => {
+        await tx.unidad.createMany({ data: filas.map((fila) => sinConsorcio(fila)) })
+
+        await tx.coeficienteHistorico.createMany({
+          data: filas.map((fila) => ({
+            unidadId: fila.id,
+            coeficiente: fila.coeficiente,
+            vigenciaDesde: hoy,
+          })),
+        })
       })
 
       return { cargadas: datos.unidades.length }

@@ -1,4 +1,5 @@
 import { argon2id } from '@/infraestructura/contrasenas/argon2'
+import { generadorPdf } from '@/infraestructura/documentos/expensa'
 import { almacenBlob } from '@/infraestructura/objetos/blob'
 import { relojDelSistema } from '@/infraestructura/reloj'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
@@ -16,3 +17,4 @@ export const HABILITACIONES = repositorioHabilitaciones
 export const RELOJ = relojDelSistema
 export const DERIVADOR = argon2id
 export const ALMACEN = almacenBlob
+export const GENERADOR_DOCUMENTOS = generadorPdf

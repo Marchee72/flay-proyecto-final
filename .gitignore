@@ -38,6 +38,8 @@ npm-debug.log*
 # Playwright
 test-results/
 playwright-report/
+# Instantaneas del navegador conducido por el agente, no son del proyecto
+.playwright-mcp/
 
 # Lienzo de diseno: los .dc.html y canvas.json se versionan; el archivo
 # publicado se regenera con la semilla y pesa dos megabytes.

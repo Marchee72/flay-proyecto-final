@@ -143,7 +143,7 @@ conforme al punto 5.3.2.
 | Usuario operador | No existe en la iteración 1: los roles construidos son administrador, consejo y consorcista (RF-03) |
 | Usuario consorcista | Se crea por invitación desde la pantalla de usuarios. Queda en estado `invitado` hasta que salga el correo con el enlace, y la demostración todavía no tiene proveedor de correo configurado |
 | Repositorio de código | <https://github.com/Marchee72/flay-proyecto-final> |
-| Versión entregada | `v0.2.0` — cierre de la iteración 1, commit `1a36120` |
+| Versión entregada | `v0.2.0` — etiqueta de cierre de la iteración 1 sobre `main` (§ 8.3.5) |
 
 ## 13.6 Guion de demostración
 

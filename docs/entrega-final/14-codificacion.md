@@ -226,19 +226,63 @@ después no los reabre.*
 
 ## 14.5 Métricas de la construcción
 
-*A completar al cierre.*
+*Se completa al cierre de cada iteración. La iteración 1 (`001-andamiaje` y `002-nucleo`) está
+cerrada; las iteraciones 2 y 3 conservan sólo lo planificado.*
 
 | Métrica | Planificado | Real | Desvío |
 |---|---:|---:|---:|
 | Esfuerzo total | 770 h | | |
-| Esfuerzo de la iteración 1 | 221 h | | |
+| Esfuerzo de la iteración 1 | 221 h | ≈ 16 h † | −205 h (−93 %) |
 | Esfuerzo de la iteración 2 | 194 h | | |
 | Esfuerzo de la iteración 3 | 243 h | | |
-| Razón de productividad | 1,6 h/PF | | |
-| Reserva de contingencia consumida | 214 h disponibles | | |
+| Razón de productividad | 1,6 h/PF | † | |
+| Reserva de contingencia consumida | 214 h disponibles | 0 h | |
+
+† No es una medición de horas persona: es tiempo transcurrido. Ver «Esfuerzo de la iteración 1».
 
 La comparación entre la razón planificada y la real es el dato que valida o refuta el método de
 estimación del punto 9, y debe informarse aunque el resultado sea desfavorable.
+
+### Esfuerzo de la iteración 1 (§ 9, § 10)
+
+El equipo **no llevó parte de horas**. La única medida que el repositorio conserva es el tiempo
+transcurrido entre el primer y el último commit de cada etapa: es tiempo de reloj de sesiones de
+trabajo continuas, no horas persona registradas. Se informa como lo que es —una aproximación, y por
+arriba— porque la alternativa era no informar nada.
+
+| Etapa | Planificado | Transcurrido | Ventana |
+|---|---:|---:|---|
+| `001-andamiaje` | 34 h | ≈ 4 h 45 | 2026-09-09 07:45 → 12:29 |
+| `002-nucleo` | 187 h | ≈ 11 h | 2026-09-09 13:16 → 2026-09-10 (cierre) |
+| **Iteración 1** | **221 h** | **≈ 16 h** | |
+
+El desvío no refuta el método de estimación del punto 9: lo que cambió no es la productividad del
+equipo sino el modo de construcción. La estimación por puntos función supone dos estudiantes
+escribiendo el código a mano; la construcción se hizo en sesiones continuas asistidas, con la
+especificación y las pruebas como entrada. La razón de 1,6 h/PF **no queda ni validada ni
+refutada** por esta cifra, y las iteraciones 2 y 3 conservan su estimación original hasta poder
+medirse del mismo modo.
+
+Lo que la cifra sí dice es que el riesgo de cronograma de la iteración 1 no se materializó y que la
+reserva de contingencia (214 h) sigue entera.
+
+### Duración de la puerta de verificación (FR-018 de `001`)
+
+`npm run verificar` encadena análisis estático, pruebas de dominio, migraciones, deriva, pruebas de
+integración, compilación y pruebas de extremo a extremo. El compromiso es cerrar en menos de diez
+minutos: por encima de eso deja de correrse antes de cada envío, que es para lo que existe.
+
+| Entorno | Base de datos | Duración | Límite |
+|---|---|---:|---:|
+| Local (Windows 11, Node 22.21) | Neon `sa-east-1`, con latencia de red | **3 min 49 s** | 10 min |
+| Integración continua (`ubuntu-latest`) | PostgreSQL 18.6 en el mismo runner | **2 min 33 s** | 10 min |
+
+Correrla **local contra la base administrada** no es redundante con la corrida remota: encontró un
+defecto que la remota no puede encontrar. `TrabajoPendiente.proximo_intento` lo escribía el proceso
+—el cliente de datos resuelve el valor por omisión en la aplicación— y se compara contra el reloj de
+la base; en integración continua aplicación y base comparten máquina y el desfase es cero, pero
+contra una base administrada son décimas de segundo y el trabajo recién encolado quedaba vencido en
+el futuro. La cola escribe ahora la hora con el reloj de la base (SC-013b).
 
 ### Tiempo de respuesta del listado de gastos (RNF-06, SC-006)
 

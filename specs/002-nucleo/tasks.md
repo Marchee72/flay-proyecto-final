@@ -161,12 +161,30 @@
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T075 Verificar `SC-003` con una búsqueda del filtro por consorcio en todo el repositorio: **cero coincidencias** fuera de `src/infraestructura/cliente-aislado.ts` (Principio I, riesgo RT-04)
-- [ ] T076 [P] Revisar que ninguna firma pública del dominio acepte ni devuelva el tipo numérico nativo para dinero o coeficientes, y que `npm run lint` no reporte la regla `flay/sin-aritmetica-monetaria` (SC-009)
-- [ ] T077 Correr `npm run verificar` completo, local y remoto, y confirmar que sigue bajo los 10 minutos con las pruebas nuevas (FR-018 de `001`)
+- [X] T075 Verificar `SC-003` con una búsqueda del filtro por consorcio en todo el repositorio: **cero coincidencias** fuera de `src/infraestructura/cliente-aislado.ts` (Principio I, riesgo RT-04)
+- [X] T076 [P] Revisar que ninguna firma pública del dominio acepte ni devuelva el tipo numérico nativo para dinero o coeficientes, y que `npm run lint` no reporte la regla `flay/sin-aritmetica-monetaria` (SC-009)
+- [X] T077 Correr `npm run verificar` completo, local y remoto, y confirmar que sigue bajo los 10 minutos con las pruebas nuevas (FR-018 de `001`)
 - [ ] T078 [P] Ensayar el recorrido de `quickstart.md` § Recorrido manual sobre el entorno desplegado, sin ningún paso desde una máquina de desarrollo (SC-014)
-- [ ] T079 [P] Actualizar `docs/entrega-final/14-codificacion.md` § 14.5 con el esfuerzo real de la etapa contra las 187 h planificadas
+- [X] T079 [P] Actualizar `docs/entrega-final/14-codificacion.md` § 14.5 con el esfuerzo real de la etapa contra las 187 h planificadas
 - [ ] T080 Etiquetar el cierre de la iteración 1 con versión semántica, conforme a § 8.3.5
+
+### Lo que la fase 8 encontró
+
+- **T075**: la búsqueda no da cero coincidencias, y no puede darlas: da **seis archivos**, ninguno de
+  datos económicos. `cliente-aislado.ts` inyecta el filtro; la cabecera del consorcio se direcciona
+  por su propio identificador; el alta lo crea por encima del aislamiento, cuando todavía no hay
+  contexto; los otros tres otorgan habilitaciones, que son lo que **decide** el aislamiento. La
+  verificación quedó como prueba de dominio (`pruebas/dominio/filtro-unico.spec.ts`) con esa lista y
+  el motivo de cada excepción, de modo que un séptimo archivo rompe la corrida.
+- **T077**: la corrida local contra la base administrada encontró dos defectos que la remota no
+  puede encontrar. Sin `AUTH_SECRET`, el flujo de verificación dejaba trece pruebas de extremo a
+  extremo en rojo por una razón que no era la suya. Y `TrabajoPendiente.proximo_intento` lo escribía
+  el proceso, no la base: en integración continua el desfase entre relojes es cero porque comparten
+  máquina, contra una base administrada son décimas de segundo y el trabajo recién encolado no
+  vencía nunca a tiempo (SC-013b). Ambos corregidos.
+- **T078 y T080 quedan abiertos**: el despliegue a demostración sale de `main` con la verificación
+  en verde, así que el recorrido sobre el entorno desplegado y la etiqueta de cierre esperan a que
+  la rama se integre por pull request con la revisión del otro integrante (§ 8.3).
 
 ---
 

@@ -57,15 +57,15 @@
 - [X] T020 [US1] Crear la migración con esas cuatro tablas más el índice `(usuario_id, consorcio_id)` de `Habilitacion` y el índice `(correo_probado, momento)` de `IntentoInicioSesion` (FR-026)
 - [X] T021 [P] [US1] Implementar `src/infraestructura/contrasenas/argon2.ts` sobre el puerto `DerivadorDeContrasenas`, con Argon2id a 19 MiB, dos iteraciones y paralelismo 1 (FR-001, research R-07)
 - [X] T022 [P] [US1] Implementar `src/infraestructura/correo/resend.ts` sobre el puerto `Notificador`; el dominio no lo nombra (FR-019, research R-09)
-- [ ] T023 [US1] Configurar Auth.js en `src/app/api/auth/[...nextauth]/route.ts` y `src/aplicacion/identidad/sesion.ts`: la sesión transporta **sólo la identidad**; el rol y el consorcio se leen de la base en cada operación (FR-002, research R-01)
+- [X] T023 [US1] Configurar Auth.js en `src/app/api/auth/[...nextauth]/route.ts` y `src/aplicacion/identidad/sesion.ts`: la sesión transporta **sólo la identidad**; el rol y el consorcio se leen de la base en cada operación (FR-002, research R-01)
 - [X] T024 [US1] Implementar `src/aplicacion/identidad/iniciar-sesion.ts` con el bloqueo de FR-001b: cinco fallos consecutivos bloquean quince minutos, cada intento se registra con momento y origen, y el mensaje es idéntico exista o no la cuenta y esté o no bloqueada (FR-001c)
 - [X] T025 [US1] Implementar `src/aplicacion/identidad/invitar-persona.ts`: crea `Persona`, `Usuario` en `invitado` y `Habilitacion`, y encola el correo como `TrabajoPendiente`; la falla del correo **no** hace fallar el alta (FR-006)
 - [X] T026 [P] [US1] Implementar `src/aplicacion/identidad/fijar-contrasena.ts`: valida la credencial de invitación, la marca usada y pasa el usuario a `activo`; el administrador nunca conoce la contraseña (FR-006)
 - [X] T027 [P] [US1] Implementar `src/aplicacion/identidad/otorgar-habilitacion.ts`, `revocar-habilitacion.ts` y `desbloquear-usuario.ts`, todas restringidas a rol administrador (FR-007, FR-001c)
 - [X] T028 [US1] Crear `scripts/semilla-arranque.mjs` y su guion: crea un único administrador con la contraseña tomada de variable de entorno, nunca versionada, e idempotente (FR-005, cierra el hueco H-08)
 - [X] T028b [US1] Modelar los tres niveles de rol (FR-007, FR-007b, FR-007c): `Administradora`, `Consorcio.administradora_id`, `HabilitacionPlataforma`, `HabilitacionAdministradora`, clave única `(usuario, consorcio, rol)`, resolución del rol efectivo en `accesoVigente`, altas de administradora y de consorcio, con `pruebas/integracion/plataforma.spec.ts` y `autorizacion.spec.ts` (SC-002c, SC-002d, SC-002e)
-- [ ] T029 [P] [US1] Construir las pantallas `src/app/(sesion)/ingresar/page.tsx` e `invitacion/[credencial]/page.tsx` con etiqueta visible, ayuda y error debajo (§ 3.4 de la guía de estilos)
-- [ ] T030 [P] [US1] Construir `src/app/(panel)/usuarios/page.tsx` y `usuarios/invitar/page.tsx` con la acción de reenviar invitación y el estado del pendiente a la vista (FR-006b)
+- [X] T029 [P] [US1] Construir las pantallas `src/app/(sesion)/ingresar/page.tsx` e `invitacion/[credencial]/page.tsx` con etiqueta visible, ayuda y error debajo (§ 3.4 de la guía de estilos)
+- [X] T030 [P] [US1] Construir `src/app/(panel)/usuarios/page.tsx` y `usuarios/invitar/page.tsx` con la acción de reenviar invitación y el estado del pendiente a la vista (FR-006b)
 - [X] T031 [US1] Escribir `pruebas/integracion/identidad.spec.ts`: el sexto intento falla **aunque la contraseña sea correcta** y vuelve a funcionar a los quince minutos o al desbloquear (SC-006d); el mensaje es idéntico en los tres casos (FR-001c)
 - [X] T032 [US1] Escribir `pruebas/integracion/aislamiento-rol.spec.ts`: un consorcista es denegado en el 100 % de las escrituras de la etapa, y una habilitación vencida ayer da cero filas (SC-002b, FR-004)
 
@@ -79,18 +79,18 @@
 
 **Independent Test**: cargar el consorcio de 96 unidades de § 13.4 y comprobar que la suma da exacto y que una suma distinta es rechazada con el detalle de la diferencia.
 
-- [ ] T033 [US2] **Prueba primero** (TDD obligatorio, núcleo económico): escribir `pruebas/dominio/coeficientes.spec.ts` con la suma exacta, la diferencia de `0.00000001`, el consorcio de una sola unidad al `100.00000000` y el de 96 unidades de § 13.4 (regla RN-01, SC-001, SC-004)
-- [ ] T034 [US2] Implementar `src/dominio/coeficientes/suma.ts` hasta que T033 pase: opera con `Prisma.Decimal`, jamás con el tipo numérico nativo, y devuelve la diferencia y las unidades involucradas (FR-011, FR-013)
-- [ ] T035 [US2] **Prueba primero**: escribir `pruebas/dominio/vigencia-coeficiente.spec.ts` con el reloj fijo: una vigencia retroactiva se rechaza y una futura cierra la anterior (regla RN-02, FR-012)
-- [ ] T036 [US2] Implementar `src/dominio/coeficientes/vigencia.ts` hasta que T035 pase
-- [ ] T037 [US2] Definir `Unidad` (`coeficiente NUMERIC(11,8)`, `designacion` única por consorcio), `CoeficienteHistorico` y `Ocupacion` con la vigencia como **rango de fechas** en `prisma/schema.prisma`; la columna de rango va como tipo no soportado por el mapeador (data-model § 2, research R-04)
-- [ ] T038 [US2] Escribir a mano en la migración el disparador de restricción `DEFERRABLE INITIALLY DEFERRED` que verifica, al confirmar la transacción, que la suma de coeficientes vigentes de cada consorcio tocado dé exactamente `100.00000000`, **sin evaluar consorcios sin unidades** (FR-011b, FR-011c, research R-03)
-- [ ] T039 [US2] Escribir a mano en la misma migración la restricción `EXCLUDE USING gist (unidad_id WITH =, tipo WITH =, vigencia WITH &&)` de `Ocupacion` sobre `btree_gist` (regla RN-09, FR-008)
-- [ ] T040 [US2] Enganchar `fn_auditar()` a `Unidad` y `CoeficienteHistorico` en la misma migración (FR-025, condición 7 de § 8.3.4)
-- [ ] T041 [US2] Implementar `src/aplicacion/consorcios/alta-consorcio.ts`, `agregar-unidad.ts` y `cambiar-coeficiente.ts`, cada uno en **una sola transacción**, según `contracts/consorcios.md`
-- [ ] T042 [P] [US2] Implementar `src/aplicacion/consorcios/registrar-ocupacion.ts`, con el repositorio de `Ocupacion` en `src/infraestructura/repositorios/ocupaciones.ts` usando consulta cruda para la columna de rango (research R-04)
-- [ ] T043 [P] [US2] Construir `src/app/(panel)/consorcios/page.tsx`, `[id]/page.tsx` y `[id]/unidades/page.tsx`, con la suma corriente a la vista mientras se cargan las unidades y el rechazo nombrando la diferencia exacta (RNF-10, `contracts/consorcios.md`)
-- [ ] T044 [US2] Escribir `pruebas/integracion/invariantes-base.spec.ts`: dos transacciones simultáneas no pueden dejar la suma fuera de `100.00000000` y una segunda ocupación superpuesta es rechazada, **ambas salteándose la capa de aplicación** (SC-004b, SC-005)
+- [X] T033 [US2] **Prueba primero** (TDD obligatorio, núcleo económico): escribir `pruebas/dominio/coeficientes.spec.ts` con la suma exacta, la diferencia de `0.00000001`, el consorcio de una sola unidad al `100.00000000` y el de 96 unidades de § 13.4 (regla RN-01, SC-001, SC-004)
+- [X] T034 [US2] Implementar `src/dominio/coeficientes/suma.ts` hasta que T033 pase: opera con `Prisma.Decimal`, jamás con el tipo numérico nativo, y devuelve la diferencia y las unidades involucradas (FR-011, FR-013)
+- [X] T035 [US2] **Prueba primero**: escribir `pruebas/dominio/vigencia-coeficiente.spec.ts` con el reloj fijo: una vigencia retroactiva se rechaza y una futura cierra la anterior (regla RN-02, FR-012)
+- [X] T036 [US2] Implementar `src/dominio/coeficientes/vigencia.ts` hasta que T035 pase
+- [X] T037 [US2] Definir `Unidad` (`coeficiente NUMERIC(11,8)`, `designacion` única por consorcio), `CoeficienteHistorico` y `Ocupacion` con la vigencia como **rango de fechas** en `prisma/schema.prisma`; la columna de rango va como tipo no soportado por el mapeador (data-model § 2, research R-04)
+- [X] T038 [US2] Escribir a mano en la migración el disparador de restricción `DEFERRABLE INITIALLY DEFERRED` que verifica, al confirmar la transacción, que la suma de coeficientes vigentes de cada consorcio tocado dé exactamente `100.00000000`, **sin evaluar consorcios sin unidades** (FR-011b, FR-011c, research R-03)
+- [X] T039 [US2] Escribir a mano en la misma migración la restricción `EXCLUDE USING gist (unidad_id WITH =, tipo WITH =, vigencia WITH &&)` de `Ocupacion` sobre `btree_gist` (regla RN-09, FR-008)
+- [X] T040 [US2] Enganchar `fn_auditar()` a `Unidad` y `CoeficienteHistorico` en la misma migración (FR-025, condición 7 de § 8.3.4)
+- [X] T041 [US2] Implementar `src/aplicacion/consorcios/alta-consorcio.ts`, `agregar-unidad.ts` y `cambiar-coeficiente.ts`, cada uno en **una sola transacción**, según `contracts/consorcios.md`
+- [X] T042 [P] [US2] Implementar `src/aplicacion/consorcios/registrar-ocupacion.ts`, con el repositorio de `Ocupacion` en `src/infraestructura/repositorios/ocupaciones.ts` usando consulta cruda para la columna de rango (research R-04)
+- [X] T043 [P] [US2] Construir `src/app/(panel)/consorcios/page.tsx`, `[id]/page.tsx` y `[id]/unidades/page.tsx`, con la suma corriente a la vista mientras se cargan las unidades y el rechazo nombrando la diferencia exacta (RNF-10, `contracts/consorcios.md`)
+- [X] T044 [US2] Escribir `pruebas/integracion/invariantes-base.spec.ts`: dos transacciones simultáneas no pueden dejar la suma fuera de `100.00000000` y una segunda ocupación superpuesta es rechazada, **ambas salteándose la capa de aplicación** (SC-004b, SC-005)
 
 **Checkpoint**: la precondición aritmética de la etapa 3 queda cerrada y probada
 
@@ -181,6 +181,23 @@
 ### Desvío deliberado respecto de la especificación
 
 La especificación ubica el mínimo de `Periodo` en la historia 5. Aquí va en la historia 3 (T048, T050): un gasto **no puede existir** sin período al cual imputarse, así que dejarlo en la historia 5 haría que la 3 no fuera independientemente probable. Es el mismo movimiento que el hallazgo 1 del análisis de insumos ya justificaba; sólo cambia de historia, no de alcance.
+
+### Desvíos de la historia 2, ya construidos
+
+- **T039**: la restricción de exclusión quedó como `EXCLUDE USING gist (unidad_id WITH =, vigencia
+  WITH &&) WHERE (tipo = 'inquilino')`, y no con `tipo WITH =`. La tarea es anterior al commit que
+  acotó la regla RN-09 a inquilinos: varios propietarios vigentes son el condominio, que es lo
+  normal en propiedad horizontal (FR-008, `data-model.md` § 2).
+- **T038**: el disparador sobre `CoeficienteHistorico` no repite la verificación de `Unidad` —ahí
+  sería una comprobación que no puede fallar—: verifica la suma **en cada fecha** que la historia
+  declara. Es lo que atrapa un cambio con vigencia futura que dejaría un conjunto sin cuadrar
+  esperando a entrar en vigor. Una fecha en la que no todas las unidades tienen coeficiente vigente
+  no se evalúa, por el mismo criterio de FR-011c.
+- **T041**: se agregó `cargarPadron`, que la tarea no nombra. Sin él la pantalla de unidades no
+  puede existir: unidad por unidad la suma nunca da 100 y cada alta sería un rechazo (FR-011c).
+  `editarConsorcio`, que el contrato sí menciona, queda pendiente: ninguna tarea lo pide.
+- **T043**: se agregó `consorcios/nuevo/page.tsx`, una cuarta pantalla. Las tres de la tarea son
+  inalcanzables sin ella: no había forma de crear un consorcio desde la interfaz.
 
 ### Paralelo
 

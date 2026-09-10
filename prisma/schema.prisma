@@ -51,6 +51,7 @@ model Consorcio {
   actualizadoEn    DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
   administradora Administradora @relation(fields: [administradoraId], references: [id])
+  unidades       Unidad[]
 
   @@index([administradoraId])
 }
@@ -108,7 +109,8 @@ model Persona {
   creadoEn      DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  usuario Usuario?
+  usuario     Usuario?
+  ocupaciones Ocupacion[]
 }
 
 /// Credencial de acceso de una persona.
@@ -208,4 +210,75 @@ model HabilitacionAdministradora {
   administradora Administradora @relation(fields: [administradoraId], references: [id])
 
   @@unique([usuarioId, administradoraId])
+}
+
+/// Unidad funcional con su coeficiente vigente (RF-02) — **economica**.
+///
+/// Invariante: por cada consorcio con al menos una unidad, la suma de los
+/// coeficientes es exactamente 100.00000000. Lo impone un disparador de
+/// restriccion diferido escrito a mano en la migracion, no el codigo
+/// (regla RN-01, FR-011b, FR-011c).
+model Unidad {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId   String   @map("consorcio_id") @db.Uuid
+  designacion   String   @db.Text
+  coeficiente   Decimal  @db.Decimal(11, 8)
+  creadoEn      DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio   Consorcio              @relation(fields: [consorcioId], references: [id])
+  historico   CoeficienteHistorico[]
+  ocupaciones Ocupacion[]
+
+  @@unique([consorcioId, designacion])
+  @@index([consorcioId])
+}
+
+/// Coeficiente de una unidad con su rango de vigencia (regla RN-02) —
+/// **economica**. Permite reconstruir una liquidacion pasada: sin el, cambiar
+/// un coeficiente reescribiria la historia.
+///
+/// No lleva `consorcio_id`: cuelga de `Unidad`, que si lo lleva, y se alcanza
+/// siempre a traves de ella.
+model CoeficienteHistorico {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  unidadId      String    @map("unidad_id") @db.Uuid
+  coeficiente   Decimal   @db.Decimal(11, 8)
+  vigenciaDesde DateTime  @map("vigencia_desde") @db.Date
+  vigenciaHasta DateTime? @map("vigencia_hasta") @db.Date
+  creadoEn      DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime  @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  unidad Unidad @relation(fields: [unidadId], references: [id])
+
+  @@index([unidadId, vigenciaDesde])
+}
+
+/// Vinculo entre una persona y una unidad (FR-008). El tipo no es un rol: es la
+/// naturaleza del vinculo, y decide a quien se le cobra la expensa.
+///
+/// La vigencia va como **rango de fechas** de la base, no como dos columnas: es
+/// lo que permite la restriccion de exclusion que impide dos inquilinos
+/// vigentes sobre la misma unidad (regla RN-09). El mapeador no modela el tipo
+/// de rango, asi que la columna se declara no soportada y el repositorio la lee
+/// y la escribe con consulta cruda (research R-04).
+model Ocupacion {
+  id            String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  unidadId      String                   @map("unidad_id") @db.Uuid
+  personaId     String                   @map("persona_id") @db.Uuid
+  tipo          TipoOcupacion
+  vigencia      Unsupported("daterange")
+  creadoEn      DateTime                 @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime                 @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  unidad  Unidad  @relation(fields: [unidadId], references: [id])
+  persona Persona @relation(fields: [personaId], references: [id])
+
+  @@index([unidadId])
+  @@index([personaId])
+}
+
+enum TipoOcupacion {
+  propietario
+  inquilino
 }

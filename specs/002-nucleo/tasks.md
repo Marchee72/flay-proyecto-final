@@ -21,6 +21,8 @@
 - [X] T002 [P] Agregar las dependencias nuevas a la tabla de `docs/entrega-final/14-codificacion.md` § 14.1 con licencia y justificación; `npm run docs:versiones` debe pasar (FR-023 de `001`)
 - [X] T003 [P] Agregar `BLOB_READ_WRITE_TOKEN`, `RESEND_API_KEY`, `ADMIN_SEMILLA_CORREO` y `ADMIN_SEMILLA_CLAVE` a `.env.example` con nombres y sin valores (FR-005, FR-008 de `001`)
 - [ ] T004 **Requiere acción del equipo.** Cargar los secretos de correo y almacenamiento en el proveedor de despliegue y en los secretos del repositorio; ninguno versionado (§ 18.7)
+  - Hecho el 2026-09-10, al ensayar T078: almacén de objetos creado y enlazado al proyecto, y secreto de sesión cargado en el despliegue y en el flujo de verificación. Sin eso la demostración devolvía 500 al ingresar.
+  - **Falta el correo**: no hay cuenta de proveedor todavía, así que la invitación queda encolada —la degradación que SC-013b promete— y el paso 4 del recorrido de la demostración no se puede completar.
 - [X] T005 [P] Crear `scripts/semilla.mjs` y `scripts/semilla-volumen.mjs` con sus guiones en `package.json` (FR-028, SC-006) — se hace junto con T017, cuando existan las tablas que la semilla llena: un guion vacío que dice cargar datos y no carga nada es peor que no tenerlo
 
 ---

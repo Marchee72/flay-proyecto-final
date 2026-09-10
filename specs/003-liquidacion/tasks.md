@@ -93,14 +93,14 @@ sin él. Es el mismo movimiento que `002` hizo con `Periodo`: cambia de historia
 **Independent Test**: cargar el padrón y los gastos de una de las tres planillas reales, ejecutar y
 comparar importe por importe.
 
-- [ ] T032 [US2] Implementar `cerrarPeriodo` en `src/aplicacion/liquidacion/periodos.ts`: `abierto → cerrado`, sólo `administrador`, y desde ahí ningún gasto se agrega ni se modifica (`FR-002`, regla RN-03 § 7.2)
-- [ ] T033 [US2] Implementar `liquidarPeriodo` en `src/aplicacion/liquidacion/liquidar.ts` en **una sola transacción**, según `contracts/liquidacion-y-pagos.md`: verifica estado y coeficientes, llama al dominio, persiste por lote, pasa el período a `liquidado` (`FR-013`)
-- [ ] T034 [US2] Aplicar en `liquidarPeriodo` el saldo a favor de la unidad **después** del interés, dejando rastro en `saldo_a_favor_aplicado` (`FR-026b`)
+- [X] T032 [US2] Implementar `cerrarPeriodo` en `src/aplicacion/liquidacion/periodos.ts`: `abierto → cerrado`, sólo `administrador`, y desde ahí ningún gasto se agrega ni se modifica (`FR-002`, regla RN-03 § 7.2)
+- [X] T033 [US2] Implementar `liquidarPeriodo` en `src/aplicacion/liquidacion/liquidar.ts` en **una sola transacción**, según `contracts/liquidacion-y-pagos.md`: verifica estado y coeficientes, llama al dominio, persiste por lote, pasa el período a `liquidado` (`FR-013`)
+- [X] T034 [US2] Aplicar en `liquidarPeriodo` el saldo a favor de la unidad **después** del interés, dejando rastro en `saldo_a_favor_aplicado` (`FR-026b`)
 - [ ] T035 [US2] Encolar en `liquidarPeriodo` un `TrabajoPendiente` de tipo `documento_expensa` por unidad y crear las `Notificacion` en estado `pendiente`, sin despacharlas (`FR-015`)
-- [ ] T036 [US2] Implementar `anularLiquidacion` en `src/aplicacion/liquidacion/anular.ts`: marca la liquidación, **no toca el período**, y revierte las imputaciones marcando `revertida_en` (`FR-003b`, `FR-027`)
-- [ ] T037 [US2] Escribir `pruebas/integracion/liquidacion.spec.ts`: una falla inyectada en cualquier paso deja la base **exactamente como estaba** —cero liquidaciones a medias, cero períodos inconsistentes— (SC-010)
-- [ ] T038 [US2] Extender esa prueba con la concurrencia de M-07: **dos ejecuciones en paralelo con barrera** contra el mismo período, exactamente una emite, y el rechazo lo produce el índice parcial y no el código (SC-011)
-- [ ] T039 [US2] Extender esa prueba: después de anular, una reemisión **procede** aunque el período siga en `liquidado`, y las dos liquidaciones quedan registradas y vinculadas (`FR-003b`, regla RN-06 § 7.2)
+- [X] T036 [US2] Implementar `anularLiquidacion` en `src/aplicacion/liquidacion/anular.ts`: marca la liquidación, **no toca el período**, y revierte las imputaciones marcando `revertida_en` (`FR-003b`, `FR-027`)
+- [X] T037 [US2] Escribir `pruebas/integracion/liquidacion.spec.ts`: una falla inyectada en cualquier paso deja la base **exactamente como estaba** —cero liquidaciones a medias, cero períodos inconsistentes— (SC-010)
+- [X] T038 [US2] Extender esa prueba con la concurrencia de M-07: **dos ejecuciones en paralelo con barrera** contra el mismo período, exactamente una emite, y el rechazo lo produce el índice parcial y no el código (SC-011)
+- [X] T039 [US2] Extender esa prueba: después de anular, una reemisión **procede** aunque el período siga en `liquidado`, y las dos liquidaciones quedan registradas y vinculadas (`FR-003b`, regla RN-06 § 7.2)
 - [ ] T040 [US2] Escribir `pruebas/integracion/auditoria-liquidacion.spec.ts`: cada operación sobre las **cinco** tablas económicas deja exactamente un asiento (SC-012)
 - [ ] T041 [P] [US2] Construir `src/app/(panel)/periodos/[id]/page.tsx` con el cierre y la liquidación del período, y el rechazo diciendo **qué falta y cuánto** cuando los coeficientes no cierran (RNF-10, SC-004)
 - [ ] T042 [P] [US2] Construir `src/app/(panel)/liquidaciones/[id]/page.tsx` con totales, vencimiento, detalle por unidad y la acción de anular

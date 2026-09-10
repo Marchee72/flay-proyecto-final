@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react'
 
 import { importe } from '@/compartido/dinero'
+import { ajustePorRedondeo, filasDesdePegado } from '@/compartido/padron'
 
 import { accionCargarPadron } from '../../acciones'
 
@@ -34,13 +35,39 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
   )
   const diferencia = suma.minus(importe(OBJETIVO))
   const cuadra = diferencia.isZero()
+  const ajuste = ajustePorRedondeo(filas, importe(OBJETIVO))
 
   const cambiar = (indice: number, campo: keyof Fila, valor: string) =>
     setFilas(filas.map((fila, i) => (i === indice ? { ...fila, [campo]: valor } : fila)))
 
+  /**
+   * Pegar desde una planilla es como llega un padron de verdad: el del
+   * reglamento son noventa y seis renglones, y transcribirlos a mano es donde
+   * se cuelan los errores que despues rechaza el disparador.
+   */
+  const pegar = (indice: number, evento: React.ClipboardEvent) => {
+    const pegadas = filasDesdePegado(evento.clipboardData.getData('text'))
+    if (pegadas.length < 2) return // una sola celda: es un pegado normal
+
+    evento.preventDefault()
+    const antes = filas.slice(0, indice)
+    const despues = filas.slice(indice + 1).filter((fila) => fila.designacion.trim() !== '')
+    setFilas([...antes, ...pegadas, ...despues])
+  }
+
+  const aplicarAjuste = () => {
+    if (!ajuste) return
+    cambiar(ajuste.indice, 'coeficiente', ajuste.nuevo)
+  }
+
   return (
     <form action={accion} noValidate>
       <input type="hidden" name="consorcio" value={consorcioId} />
+
+      <p className="ayuda">
+        Pegá el padrón desde una planilla en la primera casilla —designación y coeficiente— y las
+        filas se completan solas.
+      </p>
 
       <div className="tabla-desplazable">
         <table>
@@ -65,6 +92,7 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
                     name="designacion"
                     value={fila.designacion}
                     onChange={(evento) => cambiar(indice, 'designacion', evento.target.value)}
+                    onPaste={(evento) => pegar(indice, evento)}
                   />
                 </td>
                 <td className="numero">
@@ -98,6 +126,17 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
           ? `Cierra exacto en ${OBJETIVO} %.`
           : `${diferencia.isNegative() ? 'Falta' : 'Sobra'} ${diferencia.abs().toFixed(8)} % para llegar a 100.`}
       </p>
+
+      {ajuste && (
+        <p className="ayuda">
+          <button className="boton boton--fantasma" type="button" onClick={aplicarAjuste}>
+            Asignar la diferencia a {ajuste.designacion}
+          </button>{' '}
+          Es la unidad de mayor coeficiente: pasaría de {ajuste.anterior} a {ajuste.nuevo} %. La
+          diferencia sólo se ofrece cuando cabe en el redondeo; si es mayor, el padrón está mal
+          transcripto y moverlo sería falsear el reglamento.
+        </p>
+      )}
 
       <div className="fila-de-filtros">
         <button

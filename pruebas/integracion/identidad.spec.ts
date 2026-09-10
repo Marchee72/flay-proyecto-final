@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { RolInsuficiente } from '@/compartido/errores'
 import {
   CredencialesInvalidas,
   desbloquearUsuario,
@@ -8,9 +9,10 @@ import {
 import { fijarContrasena, invitarPersona } from '@/aplicacion/identidad/invitar-persona'
 import { argon2id } from '@/infraestructura/contrasenas/argon2'
 import { prismaBase } from '@/infraestructura/prisma'
+import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
 
 import { relojFijo } from '../dominio/reloj-fijo'
-import { crearAdministradora, crearConsorcio, limpiar } from './ayudas'
+import { crearAdministradora, crearConsorcio, habilitarEnConsorcio, limpiar } from './ayudas'
 
 /**
  * FR-001b y FR-001c: Argon2id protege la base robada; el bloqueo protege el
@@ -112,8 +114,10 @@ describe('inicio de sesion', () => {
 describe('invitacion', () => {
   it('crea persona, usuario invitado y habilitacion, y encola el correo sin enviarlo', async () => {
     const consorcio = await crearConsorcio((await crearAdministradora()).id, 'Mitre 456')
+    await habilitarEnConsorcio(usuarioId, consorcio.id, 'administrador')
 
-    const { usuarioId: invitado } = await invitarPersona(RELOJ, {
+    const { usuarioId: invitado } = await invitarPersona(repositorioHabilitaciones, RELOJ, {
+      invitadorId: usuarioId,
       nombre: 'Franco',
       apellido: 'Ferrero',
       correo: `franco-${crypto.randomUUID()}@ejemplo.test`,
@@ -137,10 +141,34 @@ describe('invitacion', () => {
     await prismaBase.trabajoPendiente.deleteMany({})
   })
 
+  it('un consorcista no puede invitar: la autorizacion vive en el caso de uso (SC-002b)', async () => {
+    const consorcio = await crearConsorcio((await crearAdministradora()).id, 'Rioja 100')
+    await habilitarEnConsorcio(usuarioId, consorcio.id, 'consorcista')
+
+    await expect(
+      invitarPersona(repositorioHabilitaciones, RELOJ, {
+        invitadorId: usuarioId,
+        nombre: 'Quien',
+        apellido: 'Sea',
+        correo: `quien-${crypto.randomUUID()}@ejemplo.test`,
+        rol: 'consorcista',
+        consorcioId: consorcio.id,
+        consorcioNombre: 'Rioja 100',
+        vigenciaDesde: new Date('2026-09-09'),
+        urlBase: 'https://flay.test',
+      }),
+    ).rejects.toBeInstanceOf(RolInsuficiente)
+
+    // Ni usuario ni correo encolado: el rechazo es antes de cualquier escritura.
+    expect(await prismaBase.trabajoPendiente.count()).toBe(0)
+  })
+
   it('la credencial no se guarda en claro: en la base queda solo su resumen', async () => {
     const consorcio = await crearConsorcio((await crearAdministradora()).id, 'San Luis 900')
+    await habilitarEnConsorcio(usuarioId, consorcio.id, 'administrador')
 
-    const { usuarioId: invitado } = await invitarPersona(RELOJ, {
+    const { usuarioId: invitado } = await invitarPersona(repositorioHabilitaciones, RELOJ, {
+      invitadorId: usuarioId,
       nombre: 'Lucia',
       apellido: 'Gomez',
       correo: `lucia-${crypto.randomUUID()}@ejemplo.test`,

@@ -3,8 +3,10 @@ import { createHash, randomBytes } from 'node:crypto'
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import type { DerivadorDeContrasenas } from '@/dominio/contratos/derivador-contrasenas'
 import type { Reloj } from '@/dominio/contratos/reloj'
+import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Rol } from '@/dominio/identidad/rol'
 import { prismaBase } from '@/infraestructura/prisma'
+import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { encolar } from '@/aplicacion/pendientes/encolar'
 
 /**
@@ -15,6 +17,10 @@ import { encolar } from '@/aplicacion/pendientes/encolar'
  * el alta del usuario (RNF-14), y encolar siempre —tambien en el camino feliz—
  * hace que el reintento se ejercite en cada invitacion y no solo cuando el
  * proveedor falla.
+ *
+ * Solo un administrador del consorcio invita (FR-007), y quien lo verifica es
+ * este caso de uso: si la verificacion viviera en la pantalla, cada pantalla
+ * nueva volveria a poder olvidarla.
  */
 
 export const HORAS_DE_VIGENCIA_DE_LA_INVITACION = 72
@@ -29,6 +35,35 @@ export class CorreoYaRegistrado extends ErrorDeAplicacion {
 const resumen = (credencial: string) => createHash('sha256').update(credencial).digest('hex')
 
 export async function invitarPersona(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: {
+    invitadorId: string
+    nombre: string
+    apellido: string
+    correo: string
+    rol: Rol
+    consorcioId: string
+    consorcioNombre: string
+    vigenciaDesde: Date
+    urlBase: string
+  },
+): Promise<{ usuarioId: string }> {
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    {
+      usuarioId: datos.invitadorId,
+      consorcioId: datos.consorcioId,
+      rolesPermitidos: ['administrador'],
+      accion: 'invitar personas',
+    },
+    () => altaDelInvitado(reloj, datos),
+  )
+}
+
+/** El alta en si, ya autorizada. */
+async function altaDelInvitado(
   reloj: Reloj,
   datos: {
     nombre: string

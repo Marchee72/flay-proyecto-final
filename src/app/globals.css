@@ -267,7 +267,8 @@ a {
   font-weight: 600;
   margin-bottom: var(--e1);
 }
-.campo input {
+.campo input,
+.campo select {
   width: 100%;
   min-height: var(--toque);
   padding: 0 var(--e3);
@@ -275,6 +276,9 @@ a {
   border-radius: var(--radio-chico);
   font: var(--t-cuerpo) inherit;
   color: var(--tinta);
+}
+.campo select {
+  background: var(--superficie);
 }
 .campo input[aria-invalid='true'] {
   border-color: var(--rojo);
@@ -368,4 +372,70 @@ tfoot td {
   h1 {
     font-size: var(--t-titulo2);
   }
+}
+
+/* Acceso: las pantallas sin panel —ingresar, invitacion— ------------------ */
+.acceso {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--e4);
+}
+.acceso > div {
+  width: 100%;
+  max-width: 400px;
+}
+.acceso .marca {
+  color: var(--tinta);
+  display: block;
+  margin-bottom: var(--e4);
+}
+.acceso .campo {
+  max-width: none;
+}
+.acceso .boton {
+  margin-top: var(--e4);
+  width: 100%;
+}
+
+/* Filtros de una tabla: en linea en escritorio, apilados en telefono. */
+.fila-de-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--e3);
+  margin: var(--e4) 0;
+}
+.fila-de-filtros .campo {
+  margin-top: 0;
+}
+
+/* La salida cierra la barra por derecha, como el selector de consorcio. */
+.salida {
+  margin-left: auto;
+}
+
+/* Campos dentro de una tabla: el mismo control, sin repetir la envoltura. */
+td input {
+  width: 100%;
+  min-height: var(--toque);
+  padding: 0 var(--e3);
+  border: 1px solid var(--linea-control);
+  border-radius: var(--radio-chico);
+  font: var(--t-cuerpo) inherit;
+  color: var(--tinta);
+  background: var(--superficie);
+}
+td input.cifra {
+  text-align: right;
+}
+
+/* Etiqueta que solo lee el lector de pantalla: la columna ya dice que es. */
+.oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

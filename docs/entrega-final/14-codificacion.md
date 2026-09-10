@@ -240,6 +240,28 @@ después no los reabre.*
 La comparación entre la razón planificada y la real es el dato que valida o refuta el método de
 estimación del punto 9, y debe informarse aunque el resultado sea desfavorable.
 
+### Tiempo de respuesta del listado de gastos (RNF-06, SC-006)
+
+Medido con `npm run medir:p95 /gastos` sobre el volumen anual completo —**10.800 gastos** cargados
+por `npm run semilla:volumen`, repartidos en doce períodos de los dos consorcios de § 13.4—, contra
+la base administrada en San Pablo. El arnés entra por el formulario de ingreso, como una persona:
+sin sesión mediría la redirección, que es rápida y no dice nada.
+
+| Medición | Muestras | p50 | p95 | Límite |
+|---|---:|---:|---:|---:|
+| `/gastos` **en caliente** | 50 | 287 ms | **363 ms** | 2.000 ms |
+| `/gastos?pagina=5` en caliente | 50 | 287 ms | 353 ms | 2.000 ms |
+| `/gastos` **en frío** (primer pedido tras el arranque) | 5 | 473 ms | 862 ms | informativo |
+| `/api/salud` | 50 | 43 ms | 50 ms | 2.000 ms |
+
+El objetivo de RNF-06 se cumple con margen: el percentil 95 en caliente está **cinco veces y media
+por debajo** del límite. El arranque en frío se informa por separado, como exige SC-006b, y también
+queda debajo del límite, aunque no es la cifra que RNF-06 compromete.
+
+Que el listado paginado cueste lo mismo en la página 5 que en la primera es efecto del índice
+`(consorcio_id, periodo_id, rubro_id)`: el filtro por consorcio que impone el aislamiento entra por
+la cabecera del índice y no obliga a recorrer la tabla.
+
 ---
 
 ## Referencias

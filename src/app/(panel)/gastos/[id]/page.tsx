@@ -4,8 +4,8 @@ import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
-import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
-import { verGasto } from '@/aplicacion/gastos/ver-gasto'
+import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
+import { verGasto, type ComprobanteDelGasto } from '@/aplicacion/gastos/ver-gasto'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 
 import { AdjuntarComprobante } from './adjuntar'
@@ -33,7 +33,7 @@ export default async function GastoPage({
 
   let gasto
   try {
-    gasto = await verGasto(HABILITACIONES, RELOJ, {
+    gasto = await verGasto(ALMACEN, HABILITACIONES, RELOJ, {
       usuarioId,
       consorcioId: activo.id,
       gastoId: id,
@@ -75,20 +75,9 @@ export default async function GastoPage({
       {gasto.comprobantes.length === 0 ? (
         <p className="vacio">Todavía no hay comprobantes adjuntos.</p>
       ) : (
-        <ul>
-          {gasto.comprobantes.map((comprobante) => (
-            <li key={comprobante.id}>
-              {comprobante.tipoContenido} · {(comprobante.bytes / MB).toFixed(1)} MB ·{' '}
-              {comprobante.estado}
-              {comprobante.soloDescarga && (
-                <span className="ayuda">
-                  {' '}
-                  — este formato no se muestra en el navegador; se descarga.
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
+        gasto.comprobantes.map((comprobante) => (
+          <Comprobante key={comprobante.id} comprobante={comprobante} />
+        ))
       )}
 
       {gasto.periodoAbierto && (
@@ -101,5 +90,55 @@ export default async function GastoPage({
         <Link href={`/gastos?consorcio=${activo.id}`}>Volver a gastos</Link>
       </p>
     </>
+  )
+}
+
+/**
+ * Un comprobante. HEIC y TIFF **no los muestra ningun navegador**: para esos se
+ * ofrece la descarga y se dice por que, en vez de un recuadro vacio (FR-018c).
+ * Convertirlos a una vista previa queda para `004-servicios`.
+ */
+function Comprobante({ comprobante }: { comprobante: ComprobanteDelGasto }) {
+  if (comprobante.estado !== 'disponible') {
+    return (
+      <p className="aviso aviso--atencion" role="status">
+        La subida de este comprobante todavía no se confirmó. Se reintenta sola; si no aparece,
+        volvé a subirlo.
+      </p>
+    )
+  }
+
+  const peso = `${comprobante.tipoContenido} · ${(comprobante.bytes / MB).toFixed(1)} MB`
+
+  if (comprobante.soloDescarga) {
+    return (
+      <div className="tarjeta">
+        <p>{peso}</p>
+        <p className="ayuda">
+          Los archivos {comprobante.tipoContenido === 'image/heic' ? 'HEIC' : 'TIFF'} no se ven
+          dentro del navegador. Descargalo para abrirlo.
+        </p>
+        <a className="boton boton--fantasma" href={comprobante.direccion} download>
+          Descargar comprobante
+        </a>
+      </div>
+    )
+  }
+
+  return (
+    <div className="tarjeta">
+      <p>{peso}</p>
+      {comprobante.tipoContenido === 'application/pdf' ? (
+        <iframe className="visor" src={comprobante.direccion} title="Comprobante en PDF" />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="visor" src={comprobante.direccion} alt="Comprobante digitalizado" />
+      )}
+      <p>
+        <a href={comprobante.direccion} download>
+          Descargar el original
+        </a>
+      </p>
+    </div>
   )
 }

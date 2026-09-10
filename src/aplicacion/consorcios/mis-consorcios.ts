@@ -25,3 +25,19 @@ export async function misConsorcios(
     orderBy: { nombre: 'asc' },
   })
 }
+
+/**
+ * Los roles que el usuario tiene sobre un consorcio, para que la pantalla no
+ * ofrezca lo que el rol no puede hacer (RNF-03). **No autoriza nada**: la
+ * autorizacion sigue estando en el caso de uso, contra la base, en cada
+ * operacion. Esto solo decide que se dibuja.
+ */
+export async function rolesEn(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  usuarioId: string,
+  consorcioId: string,
+): Promise<string[]> {
+  const acceso = await repositorio.accesoVigente(usuarioId, consorcioId, reloj.hoy())
+  return acceso?.roles ?? []
+}

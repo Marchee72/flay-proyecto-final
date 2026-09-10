@@ -23,6 +23,8 @@
     "docs:versiones": "node scripts/verificar-versiones.mjs",
     "db:deploy": "prisma migrate deploy",
     "db:preparar": "node scripts/preparar-bd.mjs",
+    "semilla": "node scripts/semilla.mjs",
+    "semilla:volumen": "node scripts/semilla-volumen.mjs",
     "semilla:arranque": "node scripts/semilla-arranque.mjs",
     "semilla:rubros": "node prisma/semilla-rubros.ts",
     "db:drift": "node scripts/db-drift.mjs",

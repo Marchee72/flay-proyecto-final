@@ -21,7 +21,7 @@
 - [X] T002 [P] Agregar las dependencias nuevas a la tabla de `docs/entrega-final/14-codificacion.md` § 14.1 con licencia y justificación; `npm run docs:versiones` debe pasar (FR-023 de `001`)
 - [X] T003 [P] Agregar `BLOB_READ_WRITE_TOKEN`, `RESEND_API_KEY`, `ADMIN_SEMILLA_CORREO` y `ADMIN_SEMILLA_CLAVE` a `.env.example` con nombres y sin valores (FR-005, FR-008 de `001`)
 - [ ] T004 **Requiere acción del equipo.** Cargar los secretos de correo y almacenamiento en el proveedor de despliegue y en los secretos del repositorio; ninguno versionado (§ 18.7)
-- [ ] T005 [P] Crear `scripts/semilla.mjs` y `scripts/semilla-volumen.mjs` con sus guiones en `package.json` (FR-028, SC-006) — se hace junto con T017, cuando existan las tablas que la semilla llena: un guion vacío que dice cargar datos y no carga nada es peor que no tenerlo
+- [X] T005 [P] Crear `scripts/semilla.mjs` y `scripts/semilla-volumen.mjs` con sus guiones en `package.json` (FR-028, SC-006) — se hace junto con T017, cuando existan las tablas que la semilla llena: un guion vacío que dice cargar datos y no carga nada es peor que no tenerlo
 
 ---
 
@@ -40,7 +40,7 @@
 - [X] T014 [P] Crear el armazón de interfaz en `src/app/(panel)/layout.tsx` y `src/app/globals.css` con los tokens de `docs/guia-estilos-ejemplo.html`: barra, lateral, menú de teléfono, foco visible y objetivos táctiles de 44 px (§ 3 de `docs/guia-estilos.md`)
 - [X] T015 [P] Crear `src/compartido/formato.ts`: importe a cadena con dos decimales y coeficiente con ocho, ambos desde `Prisma.Decimal`; ninguna función acepta el tipo numérico nativo (FR-013, SC-010)
 - [X] T016 [P] Crear `src/compartido/errores.ts` con los errores de aplicación y su mensaje para el usuario final, sin detalle técnico (RNF-10, § 14.4)
-- [ ] T017 [P] **Bloqueada por US1 y US2** (necesita `Unidad`, `Persona` y `Habilitacion`). Crear `pruebas/fixtures/juego-13-4.ts` con la semilla determinística de los dos consorcios de § 13.4 (12 y 96 unidades) reutilizable por integración y extremo a extremo (FR-028)
+- [X] T017 [P] **Bloqueada por US1 y US2** (necesita `Unidad`, `Persona` y `Habilitacion`). Crear `pruebas/fixtures/juego-13-4.ts` con la semilla determinística de los dos consorcios de § 13.4 (12 y 96 unidades) reutilizable por integración y extremo a extremo (FR-028)
 - [X] T018 **Bloqueada por T020** (necesita la tabla `Habilitacion`). Escribir la prueba de integración `pruebas/integracion/autorizacion.spec.ts` que fija el contrato de T011: sin habilitación vigente, cero filas; con habilitación de otro consorcio, cero filas (SC-002)
 
 **Checkpoint**: la autorización y el aislamiento funcionan antes de que exista una sola pantalla de negocio
@@ -129,14 +129,14 @@
 
 **Independent Test**: con el juego de § 13.4 cargado, filtrar por período y rubro desde un teléfono y medir el tiempo de respuesta.
 
-- [ ] T061 [US4] Implementar `src/aplicacion/gastos/listar-gastos.ts` con filtro por consorcio, período y rubro, y paginado; el filtro por consorcio **no** se escribe: lo pone la extensión (FR-021, FR-003)
-- [ ] T062 [US4] Construir `src/app/(panel)/gastos/page.tsx`: filtros arriba, importes tabulares a la derecha, fila de totales, y la tabla desplazándose dentro de su propio contenedor, nunca la página (§ 3.4 de la guía de estilos, RNF-01)
-- [ ] T063 [P] [US4] Construir `src/app/(panel)/gastos/[id]/page.tsx` con la vista del comprobante, y descarga en lugar de vista incrustada para HEIC y TIFF, diciendo por qué (FR-018c)
-- [ ] T064 [US4] Implementar `src/aplicacion/gastos/ver-comprobante.ts`: un comprobante de otro consorcio devuelve «no encontrado», **nunca** «prohibido», para no revelar la existencia del recurso (SC-002, `contracts/gastos.md`)
-- [ ] T065 [P] [US4] Completar `scripts/semilla-volumen.mjs` para generar los 10.800 gastos del volumen anual con la misma semilla determinística (SC-006, research R-10)
-- [ ] T066 [US4] Medir con `npm run medir:p95 /gastos` **en caliente** contra el objetivo de 2 s y registrar el resultado; medir el arranque en frío y anotarlo por separado en § 14.5 (SC-006, SC-006b)
-- [ ] T067 [P] [US4] Escribir `pruebas/e2e/consorcista.spec.ts`: listado y detalle a 390 px sin desplazamiento horizontal, en los proyectos de escritorio y de teléfono (SC-011, RNF-01)
-- [ ] T068 [P] [US4] Escribir `pruebas/e2e/consorcista.a11y.spec.ts`: las **tres** pantallas del consorcista sin infracciones de nivel A ni AA (SC-011, RNF-11)
+- [X] T061 [US4] Implementar `src/aplicacion/gastos/listar-gastos.ts` con filtro por consorcio, período y rubro, y paginado; el filtro por consorcio **no** se escribe: lo pone la extensión (FR-021, FR-003)
+- [X] T062 [US4] Construir `src/app/(panel)/gastos/page.tsx`: filtros arriba, importes tabulares a la derecha, fila de totales, y la tabla desplazándose dentro de su propio contenedor, nunca la página (§ 3.4 de la guía de estilos, RNF-01)
+- [X] T063 [P] [US4] Construir `src/app/(panel)/gastos/[id]/page.tsx` con la vista del comprobante, y descarga en lugar de vista incrustada para HEIC y TIFF, diciendo por qué (FR-018c)
+- [X] T064 [US4] Implementar `src/aplicacion/gastos/ver-comprobante.ts`: un comprobante de otro consorcio devuelve «no encontrado», **nunca** «prohibido», para no revelar la existencia del recurso (SC-002, `contracts/gastos.md`)
+- [X] T065 [P] [US4] Completar `scripts/semilla-volumen.mjs` para generar los 10.800 gastos del volumen anual con la misma semilla determinística (SC-006, research R-10)
+- [X] T066 [US4] Medir con `npm run medir:p95 /gastos` **en caliente** contra el objetivo de 2 s y registrar el resultado; medir el arranque en frío y anotarlo por separado en § 14.5 (SC-006, SC-006b)
+- [X] T067 [P] [US4] Escribir `pruebas/e2e/consorcista.spec.ts`: listado y detalle a 390 px sin desplazamiento horizontal, en los proyectos de escritorio y de teléfono (SC-011, RNF-01)
+- [X] T068 [P] [US4] Escribir `pruebas/e2e/consorcista.a11y.spec.ts`: las **tres** pantallas del consorcista sin infracciones de nivel A ni AA (SC-011, RNF-11)
 
 **Checkpoint**: la iteración es demostrable ante el cliente desde un teléfono
 
@@ -217,6 +217,24 @@ La especificación ubica el mínimo de `Periodo` en la historia 5. Aquí va en l
   `T052`-`T054` no se ejercitan desde la interfaz. `T063` (historia 4) la completa.
 - **Pendiente conocido**: `/gastos` todavía no existe (es `T062`, historia 4), así que los enlaces
   del menú y de «volver a gastos» no resuelven hasta que esa tarea se construya.
+
+### Desvíos de la historia 4, ya construidos
+
+- **T066**: el arnés `medir:p95` no podía medir una pantalla del panel —sin sesión mide la
+  redirección a `/ingresar`, que es rapidísima y no dice nada—. Ahora entra por el mismo formulario
+  que una persona: pide la marca contra falsificación, manda las credenciales y guarda la galleta.
+  Si la ruta responde con una redirección, falla en vez de informar un número falso.
+- **Corrección de RNF-03 fuera de tarea**: `/periodos` y `/proveedores` le mostraban a un
+  consorcista formularios que su rol no puede usar. Se agregó `rolesEn(...)`, que **no autoriza
+  nada** —eso sigue en el caso de uso, contra la base— y sólo decide qué se dibuja. La prueba de
+  extremo a extremo lo fija.
+- **T005 y T017**, que estaban diferidas hasta que existieran las tablas: `pruebas/fixtures/juego-13-4.ts`
+  con los dos consorcios de 12 y 96 unidades, `scripts/semilla.mjs` y `scripts/semilla-volumen.mjs`.
+  Los coeficientes se reparten en decimal de precisión fija: con el tipo numérico nativo, noventa y
+  seis sumas de 1,04166666 no dan 100 y la semilla no cargaría.
+- **`limpiar()` de las pruebas** ahora vacía también las tablas de negocio. En una base compartida
+  no hay forma de distinguir lo sembrado de lo que dejó una corrida anterior, así que el orden de
+  `quickstart.md` es sembrar y medir, nunca al revés.
 
 ### Paralelo
 

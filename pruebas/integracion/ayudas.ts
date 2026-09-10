@@ -47,8 +47,22 @@ export const habilitarEnConsorcio = (
   rol: 'administrador' | 'consejo' | 'consorcista',
 ) => prismaBase.habilitacion.create({ data: { usuarioId, consorcioId, rol, vigenciaDesde: DESDE } })
 
-/** Orden inverso al de las claves foraneas. */
+/**
+ * Orden inverso al de las claves foraneas.
+ *
+ * Borra **todo**, incluida la semilla de § 13.4 y el volumen de medicion: en
+ * una base compartida no hay forma de distinguir lo sembrado de lo dejado por
+ * una corrida anterior, y una prueba que arranca con residuos no prueba nada.
+ * Por eso el orden de `quickstart.md` es sembrar y medir, no al reves.
+ */
 export async function limpiar() {
+  await prismaBase.comprobante.deleteMany({})
+  await prismaBase.gasto.deleteMany({})
+  await prismaBase.periodo.deleteMany({})
+  await prismaBase.proveedor.deleteMany({})
+  await prismaBase.$executeRaw`DELETE FROM "Ocupacion"`
+  await prismaBase.coeficienteHistorico.deleteMany({})
+  await prismaBase.unidad.deleteMany({})
   await prismaBase.habilitacion.deleteMany({})
   await prismaBase.habilitacionAdministradora.deleteMany({})
   await prismaBase.habilitacionPlataforma.deleteMany({})

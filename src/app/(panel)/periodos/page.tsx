@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
+import { misConsorcios, rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarPeriodos } from '@/aplicacion/periodos/periodos'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
@@ -29,24 +29,28 @@ export default async function PeriodosPage({
   const hoy = RELOJ.hoy()
 
   try {
-    const periodos = await listarPeriodos(HABILITACIONES, RELOJ, {
-      usuarioId,
-      consorcioId: activo.id,
-    })
+    const [periodos, roles] = await Promise.all([
+      listarPeriodos(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
+      rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id),
+    ])
+
+    const administra = roles.includes('administrador')
 
     return (
       <>
         <h1>Períodos</h1>
         <p className="apagado">De {activo.nombre}. Un período por mes.</p>
 
-        <div className="tarjeta">
-          <h2>Abrir un mes</h2>
-          <FormularioPeriodo
-            consorcioId={activo.id}
-            anio={hoy.getUTCFullYear()}
-            mes={hoy.getUTCMonth() + 1}
-          />
-        </div>
+        {administra && (
+          <div className="tarjeta">
+            <h2>Abrir un mes</h2>
+            <FormularioPeriodo
+              consorcioId={activo.id}
+              anio={hoy.getUTCFullYear()}
+              mes={hoy.getUTCMonth() + 1}
+            />
+          </div>
+        )}
 
         {periodos.length === 0 ? (
           <p className="vacio">Todavía no hay períodos abiertos.</p>
@@ -78,9 +82,11 @@ export default async function PeriodosPage({
           </div>
         )}
 
-        <p>
-          <Link href={`/gastos/nuevo?consorcio=${activo.id}`}>Cargar un gasto</Link>
-        </p>
+        {administra && (
+          <p>
+            <Link href={`/gastos/nuevo?consorcio=${activo.id}`}>Cargar un gasto</Link>
+          </p>
+        )}
       </>
     )
   } catch (error) {

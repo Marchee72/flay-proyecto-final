@@ -26,6 +26,11 @@ arranca en el 4. Cada paso dice qué criterio prueba.
 | 5 | `npm run test:a11y` | Las tres pantallas del consorcista, cero infracciones A y AA (SC-011) |
 | 6 | `npm run semilla:volumen && npm run medir:p95 /gastos` | 10.800 gastos y el listado bajo 2 s en caliente (SC-006); el arranque en frío se informa aparte (SC-006b) |
 
+El orden importa: `npm run test:integracion` **vacía** las tablas de negocio, semilla incluida. Se
+siembra y se mide, no al revés. El arnés de medición entra por el formulario con
+`ADMIN_SEMILLA_CORREO` y `ADMIN_SEMILLA_CLAVE` (o `MEDIR_CORREO` y `MEDIR_CLAVE`); sin sesión
+mediría la redirección a `/ingresar`.
+
 ## Comprobaciones que no pasan por la capa de aplicación
 
 Son las que prueban que el invariante lo impone la **base** y no el código. Van con conexión

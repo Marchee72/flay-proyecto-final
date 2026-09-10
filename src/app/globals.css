@@ -453,3 +453,14 @@ td input.cifra {
   padding: 0 var(--e2);
   margin-bottom: var(--e1);
 }
+
+/* Visor de comprobante: alto fijo para que la pagina no salte al cargar. */
+.visor {
+  width: 100%;
+  height: 60vh;
+  min-height: 320px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-chico);
+  background: var(--gris-palido);
+  object-fit: contain;
+}

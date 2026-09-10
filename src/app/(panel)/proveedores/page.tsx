@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
+import { misConsorcios, rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarProveedores, listarRubros } from '@/aplicacion/proveedores/proveedores'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
@@ -26,9 +26,10 @@ export default async function ProveedoresPage({
   if (!activo) redirect('/consorcios')
 
   try {
-    const [proveedores, rubros] = await Promise.all([
+    const [proveedores, rubros, roles] = await Promise.all([
       listarProveedores(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
       listarRubros(),
+      rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id),
     ])
 
     return (
@@ -36,13 +37,15 @@ export default async function ProveedoresPage({
         <h1>Proveedores</h1>
         <p className="apagado">De {activo.nombre}.</p>
 
-        <div className="tarjeta">
-          <h2>Nuevo proveedor</h2>
-          <FormularioProveedor
-            consorcioId={activo.id}
-            rubros={rubros.map((rubro) => ({ id: rubro.id, etiqueta: rubro.nombre }))}
-          />
-        </div>
+        {roles.includes('administrador') && (
+          <div className="tarjeta">
+            <h2>Nuevo proveedor</h2>
+            <FormularioProveedor
+              consorcioId={activo.id}
+              rubros={rubros.map((rubro) => ({ id: rubro.id, etiqueta: rubro.nombre }))}
+            />
+          </div>
+        )}
 
         {proveedores.length === 0 ? (
           <p className="vacio">Todavía no hay proveedores cargados.</p>

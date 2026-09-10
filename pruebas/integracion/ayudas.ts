@@ -72,4 +72,8 @@ export async function limpiar() {
   await prismaBase.persona.deleteMany({})
   await prismaBase.consorcio.deleteMany({})
   await prismaBase.administradora.deleteMany({})
+  // El catalogo de rubros es global y no lleva consorcio, asi que nada de lo
+  // anterior lo alcanza: el rubro que fabrican las pruebas sobrevive y aparece
+  // en la lista del entorno de demostracion. Se borra por nombre.
+  await prismaBase.rubroGasto.deleteMany({ where: { nombre: 'Rubro de prueba' } })
 }

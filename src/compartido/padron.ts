@@ -14,6 +14,8 @@ import { Decimal, importe, type Importe } from './dinero'
 export interface FilaDePadron {
   designacion: string
   coeficiente: string
+  /** Sólo si el pegado lo traía: el vocabulario lo pone quien llama. */
+  tipo?: string
 }
 
 const DECIMAL = /^\d+([.,]\d{1,8})?$/
@@ -86,8 +88,13 @@ function sobranteTolerable(objetivo: Importe, total: number, decimales: number):
  * como designacion: asi entra tal cual el padron del reglamento, que suele
  * traer columnas de mas (`consorcio;unidad;coeficiente;ocupacion;...`). Una
  * linea sin numero —el encabezado— se ignora en vez de romper el pegado.
+ *
+ * Si en la linea hay un campo que coincide con alguno de los `tipos` que se le
+ * pasan, se toma como tipo de la unidad; asi un padron que ya distingue las
+ * cocheras entra completo. Que valores son validos lo decide quien llama: este
+ * archivo no conoce el vocabulario.
  */
-export function filasDesdePegado(texto: string): FilaDePadron[] {
+export function filasDesdePegado(texto: string, tipos: readonly string[] = []): FilaDePadron[] {
   const filas: FilaDePadron[] = []
 
   for (const linea of texto.split(/\r?\n/)) {
@@ -103,8 +110,19 @@ export function filasDesdePegado(texto: string): FilaDePadron[] {
     })
     if (indice < 0) continue
 
-    const designacion = indice > 0 ? campos[indice - 1] : (campos[1] ?? '')
-    filas.push({ designacion, coeficiente: campos[indice].replace(',', '.') })
+    const tipo = campos.find((campo) => tipos.includes(campo.toLowerCase()))
+
+    // La designacion es el ultimo campo antes del numero que no sea el tipo:
+    // en `1A;cochera;2.00`, el campo pegado al coeficiente es el tipo y no la
+    // unidad.
+    const previos = campos.slice(0, indice).filter((campo) => campo !== '' && campo !== tipo)
+    const designacion = previos[previos.length - 1] ?? campos[indice + 1] ?? ''
+
+    filas.push({
+      designacion,
+      coeficiente: campos[indice].replace(',', '.'),
+      ...(tipo && { tipo }),
+    })
   }
 
   return filas

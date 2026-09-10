@@ -199,6 +199,48 @@ describe('ocupaciones (FR-008b, FR-008c)', () => {
     expect(habilitacion).not.toBeNull()
   })
 
+  /**
+   * La cochera de un tercero: quien la posee **no tiene departamento** en el
+   * edificio y aun asi es consorcista, porque paga expensas por su coeficiente
+   * como cualquier otra unidad funcional (punto 7 § Unidad).
+   */
+  it('una cochera puede tener dueño propio, sin departamento en el edificio', async () => {
+    await cargarPadron(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidades: [
+        { designacion: '1A', coeficiente: '60.00000000', tipo: 'departamento' },
+        { designacion: '1B', coeficiente: '38.00000000', tipo: 'departamento' },
+        { designacion: 'Cochera 1', coeficiente: '2.00000000', tipo: 'cochera' },
+      ],
+    })
+
+    const { unidades } = await verConsorcio(repo, RELOJ, { usuarioId: administrador, consorcioId })
+    const cochera = unidades.find((unidad) => unidad.designacion === 'Cochera 1')
+    expect(cochera?.tipo).toBe('cochera')
+
+    const duenioDeLaCochera = await crearUsuario('Nadia')
+
+    await registrarOcupacion(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidadId: cochera!.id,
+      personaId: duenioDeLaCochera.personaId,
+      tipo: 'propietario',
+      desde: fecha('2026-01-01'),
+    })
+
+    // Es consorcista del edificio sin ocupar ninguna otra unidad.
+    const habilitacion = await prismaBase.habilitacion.findFirst({
+      where: { usuarioId: duenioDeLaCochera.id, consorcioId, rol: 'consorcista' },
+    })
+    expect(habilitacion).not.toBeNull()
+
+    const suyas = await prismaBase.$queryRaw<{ unidad_id: string }[]>`
+      SELECT unidad_id FROM "Ocupacion" WHERE persona_id = ${duenioDeLaCochera.personaId}::uuid`
+    expect(suyas).toEqual([{ unidad_id: cochera!.id }])
+  })
+
   it('un consorcista que no es propietario de la unidad no la encuentra (FR-008b)', async () => {
     await padron(MITADES)
     const { unidades } = await verConsorcio(repo, RELOJ, { usuarioId: administrador, consorcioId })

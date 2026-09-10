@@ -52,7 +52,7 @@ enumeradas.*
 | Módulo | Requerimientos | Estado | Observaciones |
 |---|---|---|---|
 | Usuarios, roles y habilitaciones | RF-03 | **Construido** | Identidad, invitación por correo y habilitación en tres niveles (plataforma, administradora, consorcio). Bloqueo por intentos fallidos con mensaje único |
-| Consorcios y unidades | RF-01, RF-02 | **Construido** | Alta, padrón y cambio de coeficiente hacia el futuro. La suma exacta la impone un disparador diferido, no el código |
+| Consorcios y unidades | RF-01, RF-02 | **Construido** | Alta, padrón y cambio de coeficiente hacia el futuro. La suma exacta la impone un disparador diferido, no el código. La unidad lleva su tipo —departamento, cochera, local o baulera (punto 7)—, y una cochera puede tener dueño propio, sin departamento en el edificio. Faltan `piso`, `superficie_m2` y `activa`, que el punto 7 declara y esta etapa no necesitó |
 | Gastos y comprobantes | RF-04, RF-05, RF-10 | **Construido** | Alta de gasto sobre período abierto, subida directa del comprobante al almacenamiento, listado filtrable. Sin baja de gasto: diferida (§ 9.11) |
 | Liquidación de expensas | RF-07, RF-08 | Iteración 2 | El contrato del estado del período ya está declarado y compartido (M-04) |
 | Pagos y morosidad | RF-09 | Iteración 2 | |

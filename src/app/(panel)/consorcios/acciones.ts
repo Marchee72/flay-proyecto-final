@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { altaConsorcio } from '@/aplicacion/consorcios/alta-consorcio'
+import { tipoDeUnidadDesdeFormulario } from '@/aplicacion/consorcios/tipos-de-unidad'
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
@@ -40,8 +41,8 @@ export async function accionAltaConsorcio(_previo: Resultado, datos: FormData): 
 }
 
 /**
- * Carga del padron entero. Las unidades llegan como pares paralelos de
- * designacion y coeficiente, en el orden en que se cargaron.
+ * Carga del padron entero. Las unidades llegan como listas paralelas de
+ * designacion, tipo y coeficiente, en el orden en que se cargaron.
  */
 export async function accionCargarPadron(_previo: Resultado, datos: FormData): Promise<Resultado> {
   const usuarioId = await quienOpera()
@@ -49,14 +50,19 @@ export async function accionCargarPadron(_previo: Resultado, datos: FormData): P
 
   const designaciones = datos.getAll('designacion').map(String)
   const coeficientes = datos.getAll('coeficiente').map(String)
-
-  const unidades = designaciones
-    .map((designacion, i) => ({ designacion: designacion.trim(), coeficiente: coeficientes[i] }))
-    .filter((unidad) => unidad.designacion !== '')
-
-  if (unidades.length === 0) return { mensaje: 'Cargá al menos una unidad.' }
+  const tipos = datos.getAll('tipo').map(String)
 
   try {
+    const unidades = designaciones
+      .map((designacion, i) => ({
+        designacion: designacion.trim(),
+        coeficiente: coeficientes[i],
+        tipo: tipoDeUnidadDesdeFormulario(tipos[i]),
+      }))
+      .filter((unidad) => unidad.designacion !== '')
+
+    if (unidades.length === 0) return { mensaje: 'Cargá al menos una unidad.' }
+
     await cargarPadron(HABILITACIONES, RELOJ, { usuarioId, consorcioId, unidades })
   } catch (error) {
     if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }

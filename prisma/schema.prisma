@@ -225,12 +225,16 @@ model HabilitacionAdministradora {
 /// restriccion diferido escrito a mano en la migracion, no el codigo
 /// (regla RN-01, FR-011b, FR-011c).
 model Unidad {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  consorcioId   String   @map("consorcio_id") @db.Uuid
-  designacion   String   @db.Text
-  coeficiente   Decimal  @db.Decimal(11, 8)
-  creadoEn      DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
-  actualizadoEn DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId   String     @map("consorcio_id") @db.Uuid
+  designacion   String     @db.Text
+  /// Punto 7: una unidad funcional es un departamento, una cochera, un local o
+  /// una baulera. No cambia el prorrateo —todas tributan por su coeficiente—,
+  /// pero sin el tipo una cochera solo se distingue si alguien la nombro asi.
+  tipo          TipoUnidad @default(departamento)
+  coeficiente   Decimal    @db.Decimal(11, 8)
+  creadoEn      DateTime   @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime   @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
   consorcio   Consorcio              @relation(fields: [consorcioId], references: [id])
   historico   CoeficienteHistorico[]
@@ -238,6 +242,13 @@ model Unidad {
 
   @@unique([consorcioId, designacion])
   @@index([consorcioId])
+}
+
+enum TipoUnidad {
+  departamento
+  cochera
+  local
+  baulera
 }
 
 /// Coeficiente de una unidad con su rango de vigencia (regla RN-02) —

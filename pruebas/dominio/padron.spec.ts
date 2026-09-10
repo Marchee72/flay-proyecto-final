@@ -117,6 +117,24 @@ describe('pegado del padron', () => {
     ])
   })
 
+  it('toma el tipo si la linea lo trae y el vocabulario lo reconoce', () => {
+    const pegado = ['1A;departamento;8.33', 'Cochera 1;cochera;2.00', '1B;lo que sea;5.00'].join(
+      '\n',
+    )
+
+    expect(filasDesdePegado(pegado, ['departamento', 'cochera'])).toEqual([
+      { designacion: '1A', coeficiente: '8.33', tipo: 'departamento' },
+      { designacion: 'Cochera 1', coeficiente: '2.00', tipo: 'cochera' },
+      { designacion: 'lo que sea', coeficiente: '5.00' },
+    ])
+  })
+
+  it('sin vocabulario, el tipo no se adivina', () => {
+    expect(filasDesdePegado('Cochera 1;cochera;2.00')).toEqual([
+      { designacion: 'cochera', coeficiente: '2.00' },
+    ])
+  })
+
   it('ignora las lineas sin numero en vez de romperse', () => {
     expect(filasDesdePegado('Padron del edificio\n\n1A,12.5')).toEqual([
       { designacion: '1A', coeficiente: '12.5' },

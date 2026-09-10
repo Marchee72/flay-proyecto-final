@@ -16,9 +16,11 @@ const SIN_ERROR = { mensaje: '' }
 
 const OBJETIVO = '100.00000000'
 
-type Fila = { designacion: string; coeficiente: string }
+type Fila = { designacion: string; coeficiente: string; tipo: string }
 
-const VACIA: Fila = { designacion: '', coeficiente: '' }
+const POR_OMISION = 'departamento'
+
+const VACIA: Fila = { designacion: '', coeficiente: '', tipo: POR_OMISION }
 
 /**
  * Carga del padron con la **suma corriente a la vista** (contrato de
@@ -29,7 +31,13 @@ const VACIA: Fila = { designacion: '', coeficiente: '' }
  * numerico nativo, `0.1 + 0.2` ya no da `0.3`: la pantalla diria que cierra
  * cuando no cierra (Principio II).
  */
-export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
+export function CargadorDePadron({
+  consorcioId,
+  tipos,
+}: {
+  consorcioId: string
+  tipos: readonly { valor: string; etiqueta: string }[]
+}) {
   const [estado, accion, enviando] = useActionState(accionCargarPadron, SIN_ERROR)
   const [filas, setFilas] = useState<Fila[]>([{ ...VACIA }])
   const [pisos, setPisos] = useState('')
@@ -54,13 +62,16 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
    * se cuelan los errores que despues rechaza el disparador.
    */
   const pegar = (indice: number, evento: React.ClipboardEvent) => {
-    const pegadas = filasDesdePegado(evento.clipboardData.getData('text'))
+    const pegadas = filasDesdePegado(
+      evento.clipboardData.getData('text'),
+      tipos.map((tipo) => tipo.valor),
+    )
     if (pegadas.length < 2) return // una sola celda: es un pegado normal
 
     evento.preventDefault()
     const antes = filas.slice(0, indice)
     const despues = filas.slice(indice + 1).filter((fila) => fila.designacion.trim() !== '')
-    setFilas([...antes, ...pegadas, ...despues])
+    setFilas([...antes, ...pegadas.map(conTipo), ...despues])
   }
 
   const aplicarAjuste = () => {
@@ -70,7 +81,7 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
 
   const generar = () => {
     const generadas = padronPorPisos(Number(pisos), Number(porPiso), importe(OBJETIVO))
-    if (generadas.length > 0) setFilas(generadas)
+    if (generadas.length > 0) setFilas(generadas.map(conTipo))
   }
 
   return (
@@ -123,6 +134,7 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
           <thead>
             <tr>
               <th scope="col">Designación</th>
+              <th scope="col">Tipo</th>
               <th scope="col" className="numero">
                 Coeficiente %
               </th>
@@ -143,6 +155,23 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
                     onPaste={(evento) => pegar(indice, evento)}
                   />
                 </td>
+                <td>
+                  <label className="oculto" htmlFor={`tipo-${indice}`}>
+                    Tipo de la unidad {indice + 1}
+                  </label>
+                  <select
+                    id={`tipo-${indice}`}
+                    name="tipo"
+                    value={fila.tipo}
+                    onChange={(evento) => cambiar(indice, 'tipo', evento.target.value)}
+                  >
+                    {tipos.map((tipo) => (
+                      <option key={tipo.valor} value={tipo.valor}>
+                        {tipo.etiqueta}
+                      </option>
+                    ))}
+                  </select>
+                </td>
                 <td className="numero">
                   <label className="oculto" htmlFor={`coeficiente-${indice}`}>
                     Coeficiente de la unidad {indice + 1}
@@ -162,7 +191,7 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
           </tbody>
           <tfoot>
             <tr>
-              <td>Suma corriente</td>
+              <td colSpan={2}>Suma corriente</td>
               <td className="numero cifra">{suma.toFixed(decimales)}</td>
             </tr>
           </tfoot>
@@ -208,6 +237,14 @@ export function CargadorDePadron({ consorcioId }: { consorcioId: string }) {
     </form>
   )
 }
+
+/** El vocabulario de tipos lo pone la aplicacion; lo pegado que no coincida
+ *  cae en departamento, que es lo que casi toda unidad es. */
+const conTipo = (fila: { designacion: string; coeficiente: string; tipo?: string }): Fila => ({
+  designacion: fila.designacion,
+  coeficiente: fila.coeficiente,
+  tipo: fila.tipo?.toLowerCase() ?? POR_OMISION,
+})
 
 /** Lo que todavia no es un decimal valido cuenta como cero mientras se tipea. */
 const esDecimal = (valor: string) => /^\d+(\.\d{1,8})?$/.test(valor.trim())

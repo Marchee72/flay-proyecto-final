@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { coeficienteParaMostrar } from '@/compartido/formato'
+import { TIPOS_DE_UNIDAD_ASIGNABLES } from '@/aplicacion/consorcios/tipos-de-unidad'
 import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
@@ -40,7 +41,7 @@ export default async function UnidadesPage({ params }: { params: Promise<{ id: s
             El padrón se carga entero de una vez: unidad por unidad la suma nunca daría 100 y cada
             alta sería un rechazo.
           </p>
-          <CargadorDePadron consorcioId={consorcio.id} />
+          <CargadorDePadron consorcioId={consorcio.id} tipos={TIPOS_DE_UNIDAD_ASIGNABLES} />
         </>
       ) : (
         <div className="tabla-desplazable">
@@ -49,6 +50,7 @@ export default async function UnidadesPage({ params }: { params: Promise<{ id: s
             <thead>
               <tr>
                 <th scope="col">Designación</th>
+                <th scope="col">Tipo</th>
                 <th scope="col" className="numero">
                   Coeficiente %
                 </th>
@@ -58,13 +60,14 @@ export default async function UnidadesPage({ params }: { params: Promise<{ id: s
               {consorcio.unidades.map((unidad) => (
                 <tr key={unidad.id}>
                   <td>{unidad.designacion}</td>
+                  <td>{etiquetaDeTipo(unidad.tipo)}</td>
                   <td className="numero cifra">{coeficienteParaMostrar(unidad.coeficiente)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr>
-                <td>Total</td>
+                <td colSpan={2}>Total</td>
                 <td className="numero cifra">{coeficienteParaMostrar(consorcio.suma)}</td>
               </tr>
             </tfoot>
@@ -78,3 +81,7 @@ export default async function UnidadesPage({ params }: { params: Promise<{ id: s
     </>
   )
 }
+
+/** El enumerado se guarda en minúsculas; en pantalla va con mayúscula inicial. */
+const etiquetaDeTipo = (tipo: string) =>
+  TIPOS_DE_UNIDAD_ASIGNABLES.find((candidato) => candidato.valor === tipo)?.etiqueta ?? tipo

@@ -29,6 +29,11 @@ export default defineConfig({
           environment: 'node',
           setupFiles: ['pruebas/integracion/entorno.ts'],
           testTimeout: 30_000,
+          // Comparten una sola base: en paralelo, la limpieza de un archivo
+          // borra las filas que otro esta usando. `fileParallelism` es de raiz,
+          // asi que la serializacion por proyecto va por el pool.
+          pool: 'forks',
+          poolOptions: { forks: { singleFork: true } },
         },
       },
     ],

@@ -113,6 +113,8 @@ modo que desarrollo, verificación y demostración corren la misma. Las transiti
 | Aritmética decimal | `decimal.js`, a través del tipo `Decimal` del mapeador | 10.4.3 | MIT | Contención del incumplimiento de C3 |
 | Generación de documentos descargables | `@react-pdf/renderer` | 4.1.3 | MIT | Genera en el propio proceso, sin navegador sin interfaz: sostenible dentro de los límites de la capa gratuita para los 96 documentos del proceso diferido de RNF-07 |
 | Gráficos del panel de indicadores | Recharts | 2.15.0 | MIT | Biblioteca de gráficos dentro de la aplicación, conforme a la decisión del punto 14.2: los indicadores heredan la autorización por consorcio |
+| Almacenamiento de objetos | Vercel Blob (`@vercel/blob`) | 2.8.0 | Apache-2.0 | Comprobantes digitalizados de hasta 25 MB con subida directa del navegador al almacenamiento: la función de despliegue limita el cuerpo de un pedido muy por debajo de ese tamaño. Se consume tras una interfaz del dominio (punto 12.1.3), de modo que el acoplamiento con la plataforma queda en un solo archivo |
+| Correo transaccional | Resend | 6.26.0 | MIT | Invitación de usuario de la iteración 1 y, más adelante, el despachador de RF-14. Se consume tras la interfaz `Notificador` del dominio |
 | Iconos de interfaz | Lucide (`lucide-react`) | 0.525.0 | ISC | Set abierto de trazo consistente 24px (urgencias, estados, navegación); se verifica contra `package-lock` junto al resto |
 | Pruebas automatizadas | Vitest y Playwright | Vitest 3.2.7 + `@vitest/coverage-v8` 3.2.7 / Playwright 1.63.0 + `@axe-core/playwright` 4.9.0 | MIT y Apache-2.0 | Vitest ejercita el dominio sin base de datos (punto 8.3.3); Playwright cubre extremo a extremo y verifica RNF-01 sobre ventana de teléfono |
 | Análisis estático y formato | ESLint y Prettier | ESLint 9.20.0 + Prettier 3.4.2 + `eslint-config-prettier` 10.0.1 + `@typescript-eslint` 8.20.0 | MIT | Verificación automática en cada envío (punto 8.3.5) y sede de la medida 4 de contención |
@@ -224,19 +226,85 @@ después no los reabre.*
 
 ## 14.5 Métricas de la construcción
 
-*A completar al cierre.*
+*Se completa al cierre de cada iteración. La iteración 1 (`001-andamiaje` y `002-nucleo`) está
+cerrada; las iteraciones 2 y 3 conservan sólo lo planificado.*
 
 | Métrica | Planificado | Real | Desvío |
 |---|---:|---:|---:|
 | Esfuerzo total | 770 h | | |
-| Esfuerzo de la iteración 1 | 221 h | | |
+| Esfuerzo de la iteración 1 | 221 h | ≈ 16 h † | −205 h (−93 %) |
 | Esfuerzo de la iteración 2 | 194 h | | |
 | Esfuerzo de la iteración 3 | 243 h | | |
-| Razón de productividad | 1,6 h/PF | | |
-| Reserva de contingencia consumida | 214 h disponibles | | |
+| Razón de productividad | 1,6 h/PF | † | |
+| Reserva de contingencia consumida | 214 h disponibles | 0 h | |
+
+† No es una medición de horas persona: es tiempo transcurrido. Ver «Esfuerzo de la iteración 1».
 
 La comparación entre la razón planificada y la real es el dato que valida o refuta el método de
 estimación del punto 9, y debe informarse aunque el resultado sea desfavorable.
+
+### Esfuerzo de la iteración 1 (§ 9, § 10)
+
+El equipo **no llevó parte de horas**. La única medida que el repositorio conserva es el tiempo
+transcurrido entre el primer y el último commit de cada etapa: es tiempo de reloj de sesiones de
+trabajo continuas, no horas persona registradas. Se informa como lo que es —una aproximación, y por
+arriba— porque la alternativa era no informar nada.
+
+| Etapa | Planificado | Transcurrido | Ventana |
+|---|---:|---:|---|
+| `001-andamiaje` | 34 h | ≈ 4 h 45 | 2026-09-09 07:45 → 12:29 |
+| `002-nucleo` | 187 h | ≈ 11 h | 2026-09-09 13:16 → 2026-09-10 (cierre) |
+| **Iteración 1** | **221 h** | **≈ 16 h** | |
+
+El desvío no refuta el método de estimación del punto 9: lo que cambió no es la productividad del
+equipo sino el modo de construcción. La estimación por puntos función supone dos estudiantes
+escribiendo el código a mano; la construcción se hizo en sesiones continuas asistidas, con la
+especificación y las pruebas como entrada. La razón de 1,6 h/PF **no queda ni validada ni
+refutada** por esta cifra, y las iteraciones 2 y 3 conservan su estimación original hasta poder
+medirse del mismo modo.
+
+Lo que la cifra sí dice es que el riesgo de cronograma de la iteración 1 no se materializó y que la
+reserva de contingencia (214 h) sigue entera.
+
+### Duración de la puerta de verificación (FR-018 de `001`)
+
+`npm run verificar` encadena análisis estático, pruebas de dominio, migraciones, deriva, pruebas de
+integración, compilación y pruebas de extremo a extremo. El compromiso es cerrar en menos de diez
+minutos: por encima de eso deja de correrse antes de cada envío, que es para lo que existe.
+
+| Entorno | Base de datos | Duración | Límite |
+|---|---|---:|---:|
+| Local (Windows 11, Node 22.21) | Neon `sa-east-1`, con latencia de red | **3 min 49 s** | 10 min |
+| Integración continua (`ubuntu-latest`) | PostgreSQL 18.6 en el mismo runner | **2 min 33 s** | 10 min |
+
+Correrla **local contra la base administrada** no es redundante con la corrida remota: encontró un
+defecto que la remota no puede encontrar. `TrabajoPendiente.proximo_intento` lo escribía el proceso
+—el cliente de datos resuelve el valor por omisión en la aplicación— y se compara contra el reloj de
+la base; en integración continua aplicación y base comparten máquina y el desfase es cero, pero
+contra una base administrada son décimas de segundo y el trabajo recién encolado quedaba vencido en
+el futuro. La cola escribe ahora la hora con el reloj de la base (SC-013b).
+
+### Tiempo de respuesta del listado de gastos (RNF-06, SC-006)
+
+Medido con `npm run medir:p95 /gastos` sobre el volumen anual completo —**10.800 gastos** cargados
+por `npm run semilla:volumen`, repartidos en doce períodos de los dos consorcios de § 13.4—, contra
+la base administrada en San Pablo. El arnés entra por el formulario de ingreso, como una persona:
+sin sesión mediría la redirección, que es rápida y no dice nada.
+
+| Medición | Muestras | p50 | p95 | Límite |
+|---|---:|---:|---:|---:|
+| `/gastos` **en caliente** | 50 | 287 ms | **363 ms** | 2.000 ms |
+| `/gastos?pagina=5` en caliente | 50 | 287 ms | 353 ms | 2.000 ms |
+| `/gastos` **en frío** (primer pedido tras el arranque) | 5 | 473 ms | 862 ms | informativo |
+| `/api/salud` | 50 | 43 ms | 50 ms | 2.000 ms |
+
+El objetivo de RNF-06 se cumple con margen: el percentil 95 en caliente está **cinco veces y media
+por debajo** del límite. El arranque en frío se informa por separado, como exige SC-006b, y también
+queda debajo del límite, aunque no es la cifra que RNF-06 compromete.
+
+Que el listado paginado cueste lo mismo en la página 5 que en la primera es efecto del índice
+`(consorcio_id, periodo_id, rubro_id)`: el filtro por consorcio que impone el aislamiento entra por
+la cabecera del índice y no obliga a recorrer la tabla.
 
 ---
 

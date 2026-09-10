@@ -16,6 +16,8 @@ const COMPROMETIDAS = [
   '@react-pdf/renderer',
   'recharts',
   'lucide-react',
+  '@vercel/blob',
+  'resend',
   'vitest',
   '@vitest/coverage-v8',
   '@playwright/test',

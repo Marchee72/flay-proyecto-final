@@ -1,0 +1,408 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f4f6f4;
+      color: #1a1d21;
+      font: 15px/1.5 Poppins, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+    a { color: #1a1d21; }
+    a:hover { color: #2e7d32; }
+    .cifra { font-variant-numeric: tabular-nums; }
+    button { font: inherit; cursor: pointer; }
+  </style>
+</helmet>
+
+<div style="display: flex; flex-direction: column; height: 900px; overflow: hidden">
+
+  <!-- Barra: el consorcio activo vive aca, no en la direccion -->
+  <div style="display: flex; align-items: center; gap: 16px; background: #23272e; color: #e8eaed; padding: 12px 24px; flex: none">
+    <div style="font-weight: 700; font-size: 17px; letter-spacing: 0.04em">FLAY</div>
+
+    <div style="position: relative">
+      <button onClick="{{ alternarSelector }}" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; background: #2e333b; color: #e8eaed; border: 1px solid #4a5158; border-radius: 8px; font-size: 13px; font-weight: 600">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ccc65" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path><path d="M19 21V11l-6-4"></path>
+          <path d="M9 9v.01"></path><path d="M9 12v.01"></path><path d="M9 15v.01"></path>
+        </svg>
+        {{ activo.nombre }}
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m6 9 6 6 6-6"></path>
+        </svg>
+      </button>
+
+      <sc-if value="{{ selectorAbierto }}" hint-placeholder-val="{{ true }}">
+        <div style="position: absolute; top: 52px; left: 0; z-index: 5; min-width: 280px; background: #ffffff; border: 1px solid #c9cfc9; border-radius: 10px; padding: 8px; box-shadow: 0 12px 32px rgba(26,29,33,0.18)">
+          <div style="font-size: 12px; color: #4a5158; padding: 8px 12px 4px; text-transform: uppercase; letter-spacing: 0.04em">Tus consorcios</div>
+          <sc-for list="{{ consorcios }}" as="c" hint-placeholder-count="3">
+            <button onClick="{{ c.elegir }}" style="display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 0 12px; background: {{ c.fondo }}; color: #1a1d21; border: 0; border-radius: 8px; text-align: left">
+              <span style="font-weight: {{ c.peso }}">{{ c.nombre }}</span>
+              <span class="cifra" style="font-size: 13px; color: #4a5158">{{ c.unidades }} un.</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+      <span style="font-size: 13px; color: #c9cfc9">Ada Diaz · administradora</span>
+      <button style="min-height: 44px; padding: 0 24px; background: #ffffff; color: #23272e; border: 2px solid transparent; border-radius: 999px; font: 700 14px/1 inherit">Salir</button>
+    </div>
+  </div>
+
+  <div style="display: flex; flex: 1; min-height: 0">
+
+    <!-- Riel de altura completa, pegado al borde y al pie de la barra: es
+         estructura, no una tarjeta suelta flotando sobre el fondo.
+         Agrupado, con senales de donde hay trabajo, y plegable. Las secciones
+         de la etapa 2 se ven pero no mienten: van apagadas. -->
+    <div style="width: {{ anchoLateral }}; flex: none; background: #23272e; padding: 12px 8px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto">
+
+      <sc-for list="{{ grupos }}" as="g" hint-placeholder-count="3">
+        <div style="display: flex; flex-direction: column; gap: 2px; padding-bottom: 8px">
+          <sc-if value="{{ abierto }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #767e76; font-weight: 700; padding: 8px 12px 4px">{{ g.titulo }}</div>
+          </sc-if>
+
+          <sc-for list="{{ g.items }}" as="s" hint-placeholder-count="3">
+            <button onClick="{{ s.elegir }}" disabled="{{ s.apagada }}" title="{{ s.titulo }}" style="display: flex; width: 100%; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px 0 {{ s.sangria }}; border: 0; border-left: 3px solid {{ s.marca }}; border-radius: 8px; background: {{ s.fondo }}; color: {{ s.color }}; opacity: {{ s.opacidad }}; cursor: {{ s.cursor }}; font: {{ s.peso }} 14px/1 inherit; text-align: left">
+          <span style="display: flex" data-icono="{{ s.id }}">
+            <sc-if value="{{ s.esInicio }}" hint-placeholder-val="{{ true }}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path></svg>
+            </sc-if>
+            <sc-if value="{{ s.esGastos }}" hint-placeholder-val="{{ true }}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"></path><path d="M4 10h16"></path><path d="M10 10v10"></path></svg>
+            </sc-if>
+            <sc-if value="{{ s.esPeriodos }}" hint-placeholder-val="{{ true }}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14v14H5z"></path><path d="M5 9h14"></path><path d="M9 3v4"></path><path d="M15 3v4"></path></svg>
+            </sc-if>
+            <sc-if value="{{ s.esProveedores }}" hint-placeholder-val="{{ true }}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h18l-1.5 11H4.5z"></path><path d="M8.5 8V6a3.5 3.5 0 0 1 7 0v2"></path></svg>
+            </sc-if>
+            <sc-if value="{{ s.esUsuarios }}" hint-placeholder-val="{{ true }}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7"></path><path d="M18 14.5c1.8.9 3 2.7 3 5.5"></path></svg>
+            </sc-if>
+            <sc-if value="{{ s.esPadron }}" hint-placeholder-val="{{ true }}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path><path d="M19 21V11l-6-4"></path><path d="M9 9v.01"></path><path d="M9 13v.01"></path><path d="M9 17v.01"></path></svg>
+            </sc-if>
+            <sc-if value="{{ s.esLiquidacion }}" hint-placeholder-val="{{ true }}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18H6z"></path><path d="M9 7h6"></path><path d="M9 11h.01"></path><path d="M12 11h.01"></path><path d="M15 11h.01"></path><path d="M9 15h.01"></path><path d="M12 15h.01"></path><path d="M15 15v2.5"></path></svg>
+            </sc-if>
+            <sc-if value="{{ s.esPagos }}" hint-placeholder-val="{{ true }}">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18v12H3z"></path><path d="M3 10h18"></path><path d="M7 14h4"></path></svg>
+            </sc-if>
+          </span>
+
+          <sc-if value="{{ abierto }}" hint-placeholder-val="{{ true }}">
+            <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{ s.titulo }}</span>
+          </sc-if>
+
+          <!-- La senal dice donde hay trabajo sin obligar a entrar a mirar -->
+          <sc-if value="{{ s.tieneSenal }}" hint-placeholder-val="{{ true }}">
+            <sc-if value="{{ abierto }}" hint-placeholder-val="{{ true }}">
+              <span class="cifra" style="flex: none; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; background: {{ s.senalFondo }}; color: {{ s.senalTinta }}">{{ s.senal }}</span>
+            </sc-if>
+            <sc-if value="{{ plegado }}" hint-placeholder-val="{{ true }}">
+              <span style="position: absolute; margin-left: 22px; margin-top: -18px; width: 8px; height: 8px; border-radius: 999px; background: {{ s.senalFondo }}"></span>
+            </sc-if>
+          </sc-if>
+        </button>
+          </sc-for>
+        </div>
+      </sc-for>
+
+      <button onClick="{{ alternarLateral }}" style="display: flex; width: 100%; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; margin-top: auto; border: 0; border-top: 1px solid #4a5158; border-radius: 0; background: none; color: #c9cfc9; font: 500 13px/1 inherit; text-align: left">
+        <span style="display: flex; transform: rotate({{ giro }})">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"></path><path d="M4 5v14"></path></svg>
+        </span>
+        <sc-if value="{{ abierto }}" hint-placeholder-val="{{ true }}">
+          <span>Plegar el menú</span>
+        </sc-if>
+      </button>
+    </div>
+
+    <div style="flex: 1; min-width: 0; overflow-y: auto; padding: 24px">
+     <div style="max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px">
+
+      <!-- Migas: dicen donde estas, en vez de un "volver" al pie -->
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4a5158">
+        <span>{{ activo.nombre }}</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9cfc9" stroke-width="2" stroke-linecap="round"><path d="m9 6 6 6-6 6"></path></svg>
+        <span style="color: #1a1d21; font-weight: 600">{{ seccionActual }}</span>
+      </div>
+
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap">
+        <div>
+          <h1 style="margin: 0; font-size: 28px; font-weight: 600">{{ seccionActual }}</h1>
+          <div style="color: #4a5158; margin-top: 4px">{{ activo.direccion }} · período {{ activo.periodo }}</div>
+        </div>
+        <button style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 24px; background: {{ acento }}; color: #23272e; border: 2px solid transparent; border-radius: 999px; font: 700 14px/1 inherit">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+          Cargar gasto
+        </button>
+      </div>
+
+      <!-- Tarjetas hero oscuras: §3.4 las pide y hoy no existe ninguna -->
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+        <div style="background: #23272e; border-radius: 10px; padding: 16px; display: flex; gap: 12px; align-items: flex-start">
+          <span style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 999px; background: #9ccc65; color: #23272e; flex: none">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17V7l6 4 3-5 3 5 6-4v10z"></path></svg>
+          </span>
+          <div style="min-width: 0">
+            <div style="font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #9ccc65; font-weight: 700">Gastos del período</div>
+            <div class="cifra" style="color: #ffffff; font-size: 24px; font-weight: 700; margin-top: 2px">{{ activo.totalMes }}</div>
+            <div style="color: #e8eaed; font-size: 13px">{{ activo.cantidad }} gastos cargados</div>
+          </div>
+        </div>
+
+        <div style="background: #23272e; border-radius: 10px; padding: 16px; display: flex; gap: 12px; align-items: flex-start">
+          <span style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 999px; background: #9ccc65; color: #23272e; flex: none">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V8l8-5 8 5v13z"></path><path d="M9 21v-6h6v6"></path></svg>
+          </span>
+          <div style="min-width: 0">
+            <div style="font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #9ccc65; font-weight: 700">Padrón</div>
+            <div class="cifra" style="color: #ffffff; font-size: 24px; font-weight: 700; margin-top: 2px">{{ activo.unidades }} unidades</div>
+            <div class="cifra" style="color: #e8eaed; font-size: 13px">coeficientes al 100,00000000 %</div>
+          </div>
+        </div>
+
+        <div style="background: #23272e; border-radius: 10px; padding: 16px; display: flex; gap: 12px; align-items: flex-start">
+          <span style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 999px; background: #9ccc65; color: #23272e; flex: none">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h4"></path></svg>
+          </span>
+          <div style="min-width: 0">
+            <div style="font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #9ccc65; font-weight: 700">Comprobantes</div>
+            <div class="cifra" style="color: #ffffff; font-size: 24px; font-weight: 700; margin-top: 2px">{{ activo.conComprobante }} de {{ activo.cantidad }}</div>
+            <div style="color: #e8eaed; font-size: 13px">{{ activo.faltantes }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: #ffffff; border: 1px solid #e2e6ea; border-radius: 10px; overflow: hidden">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px; border-bottom: 1px solid #e2e6ea">
+          <h2 style="margin: 0; font-size: 18px; font-weight: 600">Últimos gastos</h2>
+          <a href="#" style="font-size: 14px; font-weight: 600">Ver todos</a>
+        </div>
+
+        <sc-if value="{{ hayGastos }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <sc-for list="{{ activo.gastos }}" as="g" hint-placeholder-count="4">
+              <div style="display: grid; grid-template-columns: 92px 1fr 160px; gap: 16px; align-items: center; padding: 12px 16px; border-bottom: 1px solid #e2e6ea; min-height: 44px">
+                <div class="cifra" style="font-size: 14px; color: #4a5158">{{ g.fecha }}</div>
+                <div style="min-width: 0">
+                  <div style="font-weight: 500">{{ g.rubro }}</div>
+                  <div style="font-size: 13px; color: #4a5158">{{ g.detalle }}</div>
+                </div>
+                <div class="cifra" style="text-align: right; font-weight: 600">{{ g.importe }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- Estado vacio con salida, no un parrafo suelto (§3.4) -->
+        <sc-if value="{{ vacio }}" hint-placeholder-val="{{ true }}">
+          <div style="padding: 32px; text-align: center">
+            <svg width="72" height="56" viewBox="0 0 72 56" fill="none" stroke="#c9cfc9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 12px">
+              <path d="M12 14h30l6 7h12v29H12z"></path>
+              <path d="M12 28h48"></path>
+              <path d="M26 40h20"></path>
+            </svg>
+            <div style="font-weight: 600; margin-bottom: 4px">Sin gastos en {{ activo.periodo }}</div>
+            <div style="color: #4a5158; font-size: 14px; margin-bottom: 16px">El período está abierto y listo para recibir el primero.</div>
+            <button style="min-height: 44px; padding: 0 24px; background: {{ acento }}; color: #23272e; border: 2px solid transparent; border-radius: 999px; font: 700 14px/1 inherit">Cargar el primer gasto</button>
+          </div>
+        </sc-if>
+      </div>
+
+     </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{
+  "acento": {"editor": "color", "default": "#7cb342", "options": ["#7cb342", "#9ccc65", "#2e7d32", "#8a5f14"], "section": "Marca"},
+  "$preview": {"width": 1440, "height": 900}
+}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props)
+    this.state = { consorcio: 'mitre', seccion: 'inicio', selectorAbierto: false, lateral: true }
+  }
+
+  pesos(valor) {
+    const [entero, decimales] = valor.toFixed(2).split('.')
+    return '$ ' + entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + decimales
+  }
+
+  datos() {
+    return [
+      {
+        id: 'mitre',
+        nombre: 'Mitre 456',
+        direccion: 'Bartolomé Mitre 456, Rosario',
+        unidades: 12,
+        periodo: '2026-09',
+        conComprobante: 2,
+        gastos: [
+          { fecha: '06/09/2026', rubro: 'Gastos bancarios', detalle: 'Comisiones de la cuenta', importe: 74070.67 },
+          { fecha: '05/09/2026', rubro: 'Gas', detalle: 'Factura de septiembre', importe: 61725.67 },
+          { fecha: '04/09/2026', rubro: 'Fondo de reserva', detalle: 'Aporte mensual', importe: 49380.67 },
+          { fecha: '03/09/2026', rubro: 'Energía eléctrica', detalle: 'Consumo de espacios comunes', importe: 37035.67 },
+        ],
+      },
+      {
+        id: 'sanluis',
+        nombre: 'San Luis 900',
+        direccion: 'San Luis 900, Rosario',
+        unidades: 96,
+        periodo: '2026-09',
+        conComprobante: 1,
+        gastos: [
+          { fecha: '06/09/2026', rubro: 'Sueldo del encargado', detalle: 'Haberes de septiembre', importe: 1284500.00 },
+          { fecha: '05/09/2026', rubro: 'Mantenimiento de ascensores', detalle: 'Abono mensual, dos equipos', importe: 184320.75 },
+          { fecha: '02/09/2026', rubro: 'Limpieza', detalle: 'Servicio semanal', importe: 96400.00 },
+        ],
+      },
+      {
+        id: 'corrientes',
+        nombre: 'Corrientes 1200',
+        direccion: 'Corrientes 1200, Rosario',
+        unidades: 2,
+        periodo: '2026-09',
+        conComprobante: 0,
+        gastos: [],
+      },
+    ]
+  }
+
+  renderVals() {
+    const acento = this.props.acento ?? '#7cb342'
+    const elegido = this.state.consorcio
+    const crudo = this.datos().find((c) => c.id === elegido)
+
+    const total = crudo.gastos.reduce((suma, g) => suma + g.importe, 0)
+    const faltan = crudo.gastos.length - crudo.conComprobante
+
+    const abierto = this.state.lateral
+
+    // Los grupos son los del punto 12: lo que se mira todos los dias arriba,
+    // lo que se configura una vez abajo, y lo que llega en la etapa 2 apagado
+    // pero a la vista, para que el mapa del producto no sea una sorpresa.
+    const grupos = [
+      {
+        titulo: 'Día a día',
+        items: [
+          { id: 'inicio', titulo: 'Inicio' },
+          { id: 'gastos', titulo: 'Gastos', senal: faltan > 0 ? String(faltan) : null, tono: 'atencion' },
+          { id: 'periodos', titulo: 'Períodos', senal: 'abierto', tono: 'bien' },
+        ],
+      },
+      {
+        titulo: 'Configuración',
+        items: [
+          { id: 'padron', titulo: 'Padrón' },
+          { id: 'proveedores', titulo: 'Proveedores' },
+          { id: 'usuarios', titulo: 'Usuarios' },
+        ],
+      },
+      {
+        titulo: 'Etapa 2',
+        items: [
+          { id: 'liquidacion', titulo: 'Liquidación', apagada: true },
+          { id: 'pagos', titulo: 'Pagos', apagada: true },
+        ],
+      },
+    ]
+
+    const tonos = {
+      atencion: { senalFondo: '#fdf3d7', senalTinta: '#8a5f14' },
+      bien: { senalFondo: '#9ccc65', senalTinta: '#23272e' },
+      neutro: { senalFondo: '#4a5158', senalTinta: '#e8eaed' },
+    }
+
+    const dibujar = (s) => {
+      const activa = s.id === this.state.seccion && !s.apagada
+      return {
+        id: s.id,
+        titulo: s.titulo,
+        esInicio: s.id === 'inicio',
+        esGastos: s.id === 'gastos',
+        esPeriodos: s.id === 'periodos',
+        esProveedores: s.id === 'proveedores',
+        esUsuarios: s.id === 'usuarios',
+        esPadron: s.id === 'padron',
+        esLiquidacion: s.id === 'liquidacion',
+        esPagos: s.id === 'pagos',
+        // La barra lima marca la seccion sin depender solo del color del texto.
+        marca: activa ? '#9ccc65' : 'transparent',
+        sangria: activa ? '9px' : '12px',
+        fondo: activa ? '#2e333b' : 'transparent',
+        color: activa ? '#9ccc65' : '#e8eaed',
+        peso: activa ? 700 : 400,
+        opacidad: s.apagada ? 0.45 : 1,
+        cursor: s.apagada ? 'not-allowed' : 'pointer',
+        apagada: !!s.apagada,
+        tieneSenal: !!s.senal,
+        senal: s.senal,
+        senalFondo: (tonos[s.tono] ?? tonos.neutro).senalFondo,
+        senalTinta: (tonos[s.tono] ?? tonos.neutro).senalTinta,
+        elegir: s.apagada ? () => {} : () => this.setState({ seccion: s.id }),
+      }
+    }
+
+    const secciones = grupos.flatMap((g) => g.items)
+
+    return {
+      acento,
+      selectorAbierto: this.state.selectorAbierto,
+      alternarSelector: () => this.setState({ selectorAbierto: !this.state.selectorAbierto }),
+
+      consorcios: this.datos().map((c) => ({
+        nombre: c.nombre,
+        unidades: c.unidades,
+        fondo: c.id === elegido ? '#f1f8f1' : '#ffffff',
+        peso: c.id === elegido ? 700 : 500,
+        elegir: () => this.setState({ consorcio: c.id, selectorAbierto: false }),
+      })),
+
+      abierto,
+      plegado: !abierto,
+      anchoLateral: abierto ? '232px' : '68px',
+      giro: abierto ? '0deg' : '180deg',
+      alternarLateral: () => this.setState({ lateral: !abierto }),
+
+      grupos: grupos.map((g) => ({ titulo: g.titulo, items: g.items.map(dibujar) })),
+
+      seccionActual: (secciones.find((s) => s.id === this.state.seccion) ?? secciones[0]).titulo,
+
+      activo: {
+        nombre: crudo.nombre,
+        direccion: crudo.direccion,
+        unidades: crudo.unidades,
+        periodo: crudo.periodo,
+        cantidad: crudo.gastos.length,
+        conComprobante: crudo.conComprobante,
+        totalMes: this.pesos(total),
+        faltantes: faltan > 0 ? faltan + ' sin comprobante' : 'todos con comprobante',
+        gastos: crudo.gastos.map((g) => ({ ...g, importe: this.pesos(g.importe) })),
+      },
+
+      hayGastos: crudo.gastos.length > 0,
+      vacio: crudo.gastos.length === 0,
+    }
+  }
+}
+</script>
+</body>
+</html>

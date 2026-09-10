@@ -1,0 +1,260 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f4f6f4;
+      color: #1a1d21;
+      font: 15px/1.5 Poppins, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+    a { color: #1a1d21; }
+    a:hover { color: #2e7d32; }
+    .cifra { font-variant-numeric: tabular-nums; }
+    button { font: inherit; cursor: pointer; }
+  </style>
+</helmet>
+
+<div style="display: flex; flex-direction: column; width: 390px; height: 844px; overflow: hidden; background: #f4f6f4">
+
+  <div style="display: flex; align-items: center; gap: 8px; background: #23272e; color: #e8eaed; padding: 10px 16px; flex: none">
+    <div style="font-weight: 700; font-size: 15px; letter-spacing: 0.04em">FLAY</div>
+    <button style="margin-left: auto; display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; background: #2e333b; color: #e8eaed; border: 1px solid #4a5158; border-radius: 8px; font-size: 13px; font-weight: 600">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ccc65" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path><path d="M19 21V11l-6-4"></path>
+      </svg>
+      Mitre 456
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"></path></svg>
+    </button>
+  </div>
+
+  <div style="flex: 1; min-height: 0; overflow: auto; padding: 16px">
+
+    <sc-if value="{{ enInicio }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <h1 style="margin: 0; font-size: 22px; font-weight: 600">Septiembre 2026</h1>
+
+        <div style="background: #23272e; border-radius: 10px; padding: 16px; display: flex; gap: 12px; align-items: flex-start">
+          <span style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 999px; background: #9ccc65; color: #23272e; flex: none">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17V7l6 4 3-5 3 5 6-4v10z"></path></svg>
+          </span>
+          <div style="min-width: 0">
+            <div style="font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #9ccc65; font-weight: 700">Gastos del período</div>
+            <div class="cifra" style="color: #ffffff; font-size: 24px; font-weight: 700; margin-top: 2px">{{ totalMes }}</div>
+            <div style="color: #e8eaed; font-size: 13px">6 gastos · 4 con comprobante</div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px">
+            <h2 style="margin: 0; font-size: 18px; font-weight: 600">Últimos gastos</h2>
+            <button onClick="{{ irAGastos }}" style="background: none; border: 0; padding: 0; color: #1a1d21; font-size: 14px; font-weight: 600; text-decoration: underline">Ver todos</button>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <sc-for list="{{ primeros }}" as="g" hint-placeholder-count="2">
+              <div style="background: #ffffff; border: 1px solid #e2e6ea; border-radius: 10px; padding: 12px 16px">
+                <div style="display: flex; justify-content: space-between; gap: 12px; align-items: baseline">
+                  <div style="font-weight: 500; min-width: 0">{{ g.rubro }}</div>
+                  <div class="cifra" style="font-weight: 700; white-space: nowrap">{{ g.importe }}</div>
+                </div>
+                <div class="cifra" style="font-size: 13px; color: #4a5158">{{ g.fecha }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ enGastos }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <h1 style="margin: 0; font-size: 22px; font-weight: 600">Gastos</h1>
+
+        <!-- Filtro como pastillas: un desplegable a 390 px cuesta dos toques mas -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap">
+          <sc-for list="{{ chips }}" as="c" hint-placeholder-count="3">
+            <button onClick="{{ c.elegir }}" style="min-height: 44px; padding: 0 16px; border-radius: 999px; border: {{ c.borde }}; background: {{ c.fondo }}; color: {{ c.tinta }}; font: {{ c.peso }} 14px/1 inherit">
+              {{ c.etiqueta }}
+            </button>
+          </sc-for>
+        </div>
+
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #c9cfc9">
+          <div style="font-size: 14px; color: #4a5158">{{ cantidad }} gastos</div>
+          <div class="cifra" style="font-weight: 700">{{ suma }}</div>
+        </div>
+
+        <!-- Tarjetas, no una tabla apretada: a 390 px la tabla obliga a
+             desplazarse a lo ancho para leer el importe -->
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <sc-for list="{{ filas }}" as="f" hint-placeholder-count="5">
+            <div style="background: #ffffff; border: 1px solid #e2e6ea; border-radius: 10px; padding: 12px 16px; min-height: 44px">
+              <div style="display: flex; justify-content: space-between; gap: 12px; align-items: baseline">
+                <div style="font-weight: 500; min-width: 0">{{ f.rubro }}</div>
+                <div class="cifra" style="font-weight: 700; white-space: nowrap">{{ f.importe }}</div>
+              </div>
+              <div style="font-size: 13px; color: #4a5158">{{ f.detalle }}</div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px">
+                <span class="cifra" style="font-size: 13px; color: #4a5158">{{ f.fecha }}</span>
+                <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: {{ f.pastillaFondo }}; color: {{ f.pastillaTinta }}; border: 1px solid {{ f.pastillaBorde }}">
+                  {{ f.comprobante }}
+                </span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ enPeriodos }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <h1 style="margin: 0; font-size: 22px; font-weight: 600">Períodos</h1>
+        <sc-for list="{{ meses }}" as="m" hint-placeholder-count="3">
+          <div style="background: #ffffff; border: 1px solid #e2e6ea; border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px">
+            <div>
+              <div style="font-weight: 500">{{ m.nombre }}</div>
+              <div style="font-size: 13px; color: #4a5158">{{ m.gastos }} gastos</div>
+            </div>
+            <span style="padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: {{ m.fondo }}; color: {{ m.tinta }}; border: 1px solid {{ m.borde }}">{{ m.estado }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+  </div>
+
+  <!-- Barra inferior: la navegacion queda a la vista y a un toque -->
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: #23272e; flex: none; border-top: 1px solid #4a5158">
+    <sc-for list="{{ pestanas }}" as="t" hint-placeholder-count="4">
+      <button onClick="{{ t.elegir }}" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 60px; padding: 8px 4px; background: none; border: 0; color: {{ t.color }}; font: {{ t.peso }} 11px/1 inherit">
+        <sc-if value="{{ t.esInicio }}" hint-placeholder-val="{{ true }}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path></svg>
+        </sc-if>
+        <sc-if value="{{ t.esGastos }}" hint-placeholder-val="{{ true }}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"></path><path d="M4 10h16"></path><path d="M10 10v10"></path></svg>
+        </sc-if>
+        <sc-if value="{{ t.esPeriodos }}" hint-placeholder-val="{{ true }}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14v14H5z"></path><path d="M5 9h14"></path><path d="M9 3v4"></path><path d="M15 3v4"></path></svg>
+        </sc-if>
+        <sc-if value="{{ t.esMas }}" hint-placeholder-val="{{ true }}">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h16"></path></svg>
+        </sc-if>
+        {{ t.titulo }}
+      </button>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{
+  "$preview": {"width": 390, "height": 844}
+}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props)
+    this.state = { pestana: 'gastos', periodo: 'todos' }
+  }
+
+  pesos(valor) {
+    const [entero, decimales] = valor.toFixed(2).split('.')
+    return '$ ' + entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + decimales
+  }
+
+  gastos() {
+    return [
+      { fecha: '06/09/2026', periodo: '2026-09', rubro: 'Gastos bancarios', detalle: 'Comisiones de la cuenta', importe: 74070.67, comprobante: true },
+      { fecha: '05/09/2026', periodo: '2026-09', rubro: 'Gas', detalle: 'Factura de septiembre', importe: 61725.67, comprobante: true },
+      { fecha: '04/09/2026', periodo: '2026-09', rubro: 'Fondo de reserva', detalle: 'Aporte mensual', importe: 49380.67, comprobante: false },
+      { fecha: '03/09/2026', periodo: '2026-09', rubro: 'Energía eléctrica', detalle: 'Consumo de espacios comunes', importe: 37035.67, comprobante: true },
+      { fecha: '28/08/2026', periodo: '2026-08', rubro: 'Energía eléctrica', detalle: 'Consumo de espacios comunes', importe: 35880.10, comprobante: true },
+      { fecha: '22/08/2026', periodo: '2026-08', rubro: 'Obra de fachada', detalle: 'Anticipo del frente', importe: 980400.00, comprobante: true },
+    ]
+  }
+
+  renderVals() {
+    const filtrados = this.gastos().filter(
+      (g) => this.state.periodo === 'todos' || g.periodo === this.state.periodo,
+    )
+    const suma = filtrados.reduce((acumulado, g) => acumulado + g.importe, 0)
+
+    const chips = [
+      { valor: 'todos', etiqueta: 'Todos' },
+      { valor: '2026-09', etiqueta: 'Septiembre' },
+      { valor: '2026-08', etiqueta: 'Agosto' },
+    ]
+
+    const pestanas = [
+      { id: 'inicio', titulo: 'Inicio' },
+      { id: 'gastos', titulo: 'Gastos' },
+      { id: 'periodos', titulo: 'Períodos' },
+      { id: 'mas', titulo: 'Más' },
+    ]
+
+    const pastilla = (tiene) => ({
+      comprobante: tiene ? 'Adjunto' : 'Falta',
+      pastillaFondo: tiene ? '#f1f8f1' : '#fdf3d7',
+      pastillaTinta: tiene ? '#2e7d32' : '#8a5f14',
+      pastillaBorde: tiene ? '#7cb342' : '#8a5f14',
+    })
+
+    return {
+      enInicio: this.state.pestana === 'inicio',
+      enGastos: this.state.pestana === 'gastos',
+      enPeriodos: this.state.pestana === 'periodos',
+      irAGastos: () => this.setState({ pestana: 'gastos' }),
+
+      totalMes: this.pesos(
+        this.gastos().filter((g) => g.periodo === '2026-09').reduce((a, g) => a + g.importe, 0),
+      ),
+      primeros: this.gastos()
+        .slice(0, 2)
+        .map((g) => ({ rubro: g.rubro, fecha: g.fecha, importe: this.pesos(g.importe) })),
+
+      chips: chips.map((c) => ({
+        etiqueta: c.etiqueta,
+        elegir: () => this.setState({ periodo: c.valor }),
+        fondo: c.valor === this.state.periodo ? '#23272e' : '#ffffff',
+        tinta: c.valor === this.state.periodo ? '#ffffff' : '#1a1d21',
+        borde: c.valor === this.state.periodo ? '2px solid #23272e' : '1px solid #c9cfc9',
+        peso: c.valor === this.state.periodo ? 700 : 500,
+      })),
+
+      cantidad: filtrados.length,
+      suma: this.pesos(suma),
+      filas: filtrados.map((g) => ({
+        rubro: g.rubro,
+        detalle: g.detalle,
+        fecha: g.fecha,
+        importe: this.pesos(g.importe),
+        ...pastilla(g.comprobante),
+      })),
+
+      meses: [
+        { nombre: 'Septiembre 2026', gastos: 4, estado: 'abierto', fondo: '#f1f8f1', tinta: '#2e7d32', borde: '#7cb342' },
+        { nombre: 'Agosto 2026', gastos: 2, estado: 'abierto', fondo: '#f1f8f1', tinta: '#2e7d32', borde: '#7cb342' },
+        { nombre: 'Julio 2026', gastos: 0, estado: 'abierto', fondo: '#ecefec', tinta: '#4a5158', borde: '#c9cfc9' },
+      ],
+
+      pestanas: pestanas.map((t) => ({
+        titulo: t.titulo,
+        esInicio: t.id === 'inicio',
+        esGastos: t.id === 'gastos',
+        esPeriodos: t.id === 'periodos',
+        esMas: t.id === 'mas',
+        color: t.id === this.state.pestana ? '#9ccc65' : '#e8eaed',
+        peso: t.id === this.state.pestana ? 700 : 400,
+        elegir: () => this.setState({ pestana: t.id }),
+      })),
+    }
+  }
+}
+</script>
+</body>
+</html>

@@ -1,42 +1,466 @@
+/*
+ * Tokens y base de la interfaz. Unica fuente de valores: ninguna pantalla
+ * escribe un color ni un espacio a mano. Corresponden a docs/guia-estilos.md §3
+ * y al ejemplo verificado en docs/guia-estilos-ejemplo.html.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* Superficies */
+  --grafito: #23272e;
+  --fondo: #f4f6f4;
+  --superficie: #ffffff;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+  /* Texto */
+  --tinta: #1a1d21;
+  --tinta-apagada: #4a5158;
+  --tinta-clara: #e8eaed;
 
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
+  /* Semaforo */
+  --verde: #2e7d32;
+  --lima: #7cb342;
+  --lima-alto: #9ccc65;
+  --ambar: #8a5f14;
+  --rojo: #b3261e;
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Fondos palidos */
+  --verde-palido: #f1f8f1;
+  --ambar-palido: #fdf3d7;
+  --rojo-palido: #fdecea;
+  --gris-palido: #ecefec;
+
+  /* Bordes: el de control cumple 3:1 sobre blanco (WCAG 1.4.11) */
+  --linea: #c9cfc9;
+  --linea-suave: #e2e6ea;
+  --linea-control: #767e76;
+
+  /* Espaciado, base 4 */
+  --e1: 4px;
+  --e2: 8px;
+  --e3: 12px;
+  --e4: 16px;
+  --e5: 24px;
+  --e6: 32px;
+
+  /* Tipografia */
+  --t-ayuda: 12px;
+  --t-menor: 13px;
+  --t-cuerpo: 15px;
+  --t-titulo3: 18px;
+  --t-titulo2: 22px;
+  --t-titulo1: 28px;
+
+  --radio: 10px;
+  --radio-chico: 8px;
+  --pastilla: 999px;
+  --toque: 44px;
 }
 
 * {
   box-sizing: border-box;
-  padding: 0;
+}
+
+body {
   margin: 0;
+  background: var(--fondo);
+  color: var(--tinta);
+  font:
+    var(--t-cuerpo) / 1.5 var(--tipografia),
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  margin: 0;
+}
+h1 {
+  font-size: var(--t-titulo1);
+}
+h2 {
+  font-size: var(--t-titulo2);
+}
+h3 {
+  font-size: var(--t-titulo3);
+}
+
+/* Las cifras alinean coma con coma (§3.1). */
+.cifra {
+  font-variant-numeric: tabular-nums;
+}
+
+.apagado {
+  color: var(--tinta-apagada);
+}
+.ayuda {
+  font-size: var(--t-ayuda);
+  color: var(--tinta-apagada);
 }
 
 a {
-  color: inherit;
-  text-decoration: none;
+  color: var(--tinta);
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+/* Foco visible en todo lo operable; se define una vez y no se quita (§5). */
+:focus-visible {
+  outline: 3px solid var(--verde);
+  outline-offset: 2px;
+  border-radius: var(--radio-chico);
+}
+.barra :focus-visible,
+.lateral :focus-visible {
+  outline-color: var(--lima-alto);
+}
+
+.icono {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+/* Estructura ------------------------------------------------------------- */
+.barra {
+  background: var(--grafito);
+  color: var(--tinta-clara);
+  padding: var(--e3) var(--e5);
+  display: flex;
+  gap: var(--e3);
+  align-items: center;
+}
+.marca {
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  color: var(--tinta-clara);
+  text-decoration: none;
+}
+.consorcio {
+  margin-left: auto;
+  font-size: var(--t-menor);
+  border: 1px solid var(--tinta-apagada);
+  border-radius: var(--radio-chico);
+  padding: var(--e2) var(--e3);
+  min-height: var(--toque);
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  background: transparent;
+  color: var(--tinta-clara);
+  font-family: inherit;
+}
+
+.envoltorio {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--e5);
+}
+.disposicion {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: var(--e5);
+  align-items: start;
+}
+/* Sin esto, una tabla ancha estira la columna y desborda la pagina. */
+.disposicion > * {
+  min-width: 0;
+}
+
+.lateral {
+  background: var(--grafito);
+  border-radius: var(--radio);
+  padding: var(--e3);
+  font-size: 14px;
+}
+.lateral a {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  min-height: var(--toque);
+  padding: 0 var(--e3);
+  border-radius: var(--radio-chico);
+  color: var(--tinta-clara);
+  text-decoration: none;
+}
+.lateral a:hover {
+  background: #2e333b;
+}
+.lateral a[aria-current='page'] {
+  font-weight: 700;
+  color: var(--lima-alto);
+  background: #2e333b;
+}
+
+/* Menu de telefono: apertura nativa, sin guion. */
+.menu {
+  display: none;
+}
+.menu > summary {
+  list-style: none;
+  min-height: var(--toque);
+  min-width: var(--toque);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--tinta-apagada);
+  border-radius: var(--radio-chico);
+  cursor: pointer;
+}
+.menu > summary::-webkit-details-marker {
+  display: none;
+}
+.menu[open] .lateral {
+  display: block;
+  position: absolute;
+  left: var(--e4);
+  right: var(--e4);
+  z-index: 2;
+}
+
+/* Componentes ------------------------------------------------------------ */
+.tarjeta {
+  background: var(--superficie);
+  border: 1px solid var(--linea-suave);
+  border-radius: var(--radio);
+  padding: var(--e4);
+}
+
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e2);
+  min-height: var(--toque);
+  padding: 0 var(--e5);
+  border-radius: var(--pastilla);
+  font: 700 14px/1 inherit;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+.boton--primario {
+  background: var(--lima);
+  color: var(--grafito);
+}
+.boton--fantasma {
+  background: var(--superficie);
+  border-color: var(--grafito);
+  color: var(--grafito);
+}
+.boton--peligro {
+  background: var(--superficie);
+  border-color: var(--rojo);
+  color: var(--rojo);
+}
+.boton[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.campo {
+  margin-top: var(--e3);
+  max-width: 320px;
+}
+.campo label {
+  display: block;
+  font-size: var(--t-menor);
+  font-weight: 600;
+  margin-bottom: var(--e1);
+}
+.campo input,
+.campo select {
+  width: 100%;
+  min-height: var(--toque);
+  padding: 0 var(--e3);
+  border: 1px solid var(--linea-control);
+  border-radius: var(--radio-chico);
+  font: var(--t-cuerpo) inherit;
+  color: var(--tinta);
+}
+.campo select {
+  background: var(--superficie);
+}
+.campo input[aria-invalid='true'] {
+  border-color: var(--rojo);
+  border-width: 2px;
+}
+.error {
+  font-size: var(--t-menor);
+  color: var(--rojo);
+  font-weight: 600;
+  margin-top: var(--e1);
+}
+
+.aviso {
+  border-radius: var(--radio-chico);
+  padding: var(--e3) var(--e4);
+  font-size: 14px;
+  margin: var(--e3) 0;
+}
+.aviso--atencion {
+  background: var(--ambar-palido);
+  border: 1px solid var(--ambar);
+  border-left-width: 4px;
+}
+.aviso--problema {
+  background: var(--rojo-palido);
+  border: 1px solid #8f1d16;
+  border-left: 4px solid var(--rojo);
+}
+
+/* La tabla se desplaza dentro de su contenedor; la pagina nunca (RNF-01). */
+.tabla-desplazable {
+  overflow-x: auto;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  background: var(--superficie);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px;
+}
+th,
+td {
+  text-align: left;
+  padding: var(--e3) var(--e4);
+  border-bottom: 1px solid var(--linea-suave);
+  font-size: 14px;
+  height: var(--toque);
+}
+thead th {
+  background: var(--gris-palido);
+  color: var(--tinta-apagada);
+  font-size: var(--t-ayuda);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+td.numero,
+th.numero {
+  text-align: right;
+}
+tfoot td {
+  font-weight: 700;
+  border-top: 2px solid var(--linea);
+  background: var(--gris-palido);
+}
+
+.vacio {
+  border: 1px dashed var(--linea);
+  border-radius: var(--radio);
+  padding: var(--e6);
+  text-align: center;
+  background: var(--superficie);
+}
+
+@media (max-width: 760px) {
+  .envoltorio {
+    padding: var(--e4);
   }
+  .disposicion {
+    grid-template-columns: 1fr;
+  }
+  .disposicion > .lateral {
+    display: none;
+  }
+  .menu {
+    display: block;
+  }
+  .barra {
+    flex-wrap: wrap;
+  }
+  h1 {
+    font-size: var(--t-titulo2);
+  }
+}
+
+/* Acceso: las pantallas sin panel —ingresar, invitacion— ------------------ */
+.acceso {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--e4);
+}
+.acceso > div {
+  width: 100%;
+  max-width: 400px;
+}
+.acceso .marca {
+  color: var(--tinta);
+  display: block;
+  margin-bottom: var(--e4);
+}
+.acceso .campo {
+  max-width: none;
+}
+.acceso .boton {
+  margin-top: var(--e4);
+  width: 100%;
+}
+
+/* Filtros de una tabla: en linea en escritorio, apilados en telefono. */
+.fila-de-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--e3);
+  margin: var(--e4) 0;
+}
+.fila-de-filtros .campo {
+  margin-top: 0;
+}
+
+/* La salida cierra la barra por derecha, como el selector de consorcio. */
+.salida {
+  margin-left: auto;
+}
+
+/* Campos dentro de una tabla: el mismo control, sin repetir la envoltura. */
+td input {
+  width: 100%;
+  min-height: var(--toque);
+  padding: 0 var(--e3);
+  border: 1px solid var(--linea-control);
+  border-radius: var(--radio-chico);
+  font: var(--t-cuerpo) inherit;
+  color: var(--tinta);
+  background: var(--superficie);
+}
+td input.cifra {
+  text-align: right;
+}
+
+/* Etiqueta que solo lee el lector de pantalla: la columna ya dice que es. */
+.oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Campo precargado por un servicio automatico: se marca y se confirma a mano
+   (regla RN-14, FR-020). */
+.etiqueta-precargado {
+  display: inline-block;
+  font-size: var(--t-ayuda);
+  font-weight: 700;
+  color: var(--ambar);
+  background: var(--ambar-palido);
+  border: 1px solid var(--ambar);
+  border-radius: var(--pastilla);
+  padding: 0 var(--e2);
+  margin-bottom: var(--e1);
+}
+
+/* Visor de comprobante: alto fijo para que la pagina no salte al cargar. */
+.visor {
+  width: 100%;
+  height: 60vh;
+  min-height: 320px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-chico);
+  background: var(--gris-palido);
+  object-fit: contain;
 }

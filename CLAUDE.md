@@ -30,7 +30,10 @@ el primer minuto.
 | `npm run test:integracion` | Vitest contra la base local |
 | `npm run test:e2e` / `test:a11y` | Playwright escritorio + teléfono 390×844 / axe A/AA |
 | `npm run db:deploy` / `db:drift` | Migraciones y detección de deriva |
-| `npm run medir:p95` | Arnés de RNF-06 sobre `/api/salud` |
+| `npm run semilla:arranque` | Único administrador inicial, con la clave en variable de entorno |
+| `npm run semilla` | Rubros y el juego de § 13.4: dos consorcios de 12 y 96 unidades |
+| `npm run semilla:volumen` | 10.800 gastos anuales para medir con datos de verdad |
+| `npm run medir:p95 [ruta]` | Arnés de RNF-06; entra por el formulario si la ruta es del panel |
 
 Base local: `docker run -d --name flay-db -p 5432:5432 -e POSTGRES_PASSWORD=flay_local -e POSTGRES_DB=flay pgvector/pgvector:0.8.6-pg18`.
 Variables en `.env` (nunca versionado); plantilla en `.env.example`. `DATABASE_URL` es la cadena de
@@ -143,6 +146,42 @@ Definido en `docs/entrega-3/08-metodologia-desarrollo.md`: iterativo e increment
 La **definición de terminado** (§ 8.3.4) tiene ocho condiciones. Las que se olvidan más seguido:
 autorización por rol y consorcio verificada, funciona en teléfono (RNF-01), mensajes de error
 comprensibles (RNF-10), auditoría registrada si toca datos económicos, documentación actualizada.
+
+## Lo que no se adivina leyendo el código
+
+Ocho decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
+
+1. **El orden de las semillas y las pruebas.** `npm run test:integracion` **vacía** las tablas de
+   negocio, semilla incluida: en una base compartida no hay forma de distinguir lo sembrado de lo
+   que dejó una corrida anterior. Se siembra y se mide, nunca al revés.
+2. **La bitácora no se limpia.** `flay_app` no tiene `DELETE` sobre `BitacoraAuditoria`, así que una
+   prueba que intente vaciarla falla —y eso es exactamente lo que SC-008 promete—. Cada prueba de
+   auditoría se acota a las filas de su propia corrida.
+3. **`fn_auditar()` guarda los `NUMERIC` como número JSON**, no como cadena. En la base los dígitos
+   quedan enteros, pero leídos desde JavaScript pasan por punto flotante. Para los rangos de esta
+   etapa no se pierde nada; si alguna vez la bitácora se lee para reconstruir dinero, hay que
+   castear a texto en el disparador.
+4. **`sinConsorcio(...)`** existe porque la extensión de aislamiento inyecta `consorcio_id` en
+   tiempo de ejecución pero el tipo generado igual lo exige. Es el único lugar donde esa diferencia
+   está dicha; no se replica con un `as` en cada alta.
+5. **`src/aplicacion/dependencias.ts` es el punto de composición.** Presentación no puede importar
+   infraestructura (§ 12.1.2) y los casos de uso reciben reloj, derivador, repositorio y almacén por
+   parámetro para poder probarse con dobles. Un caso de uso que importa su implementación deja de
+   ser probable: pasó con los comprobantes y hubo que revertirlo.
+6. **`trustHost: true` en Auth.js** no es un descuido: el despliegue termina en un único proxy
+   conocido y no hay proveedor externo con URL de retorno. Sin eso, `npm run start` local falla con
+   `UntrustedHost` mientras que en Vercel funciona, que es la peor forma de romperse.
+7. **El padrón se carga entero de una vez.** Unidad por unidad la suma nunca daría 100 y cada alta
+   sería un rechazo (FR-011c). Por eso existe `cargarPadron` y no un alta simple.
+8. **La vigencia anterior cierra el día *antes*** de que abra la nueva. Cerrarla el mismo día hace
+   que ese día cuenten las dos filas y la historia sume doble; lo atrapó el disparador histórico y
+   la cuenta la hace el dominio, en un solo lugar.
+9. **La cola de pendientes usa el reloj de la base, no el del proceso.** `proximo_intento` se
+   compara contra `now()` de la base, así que `encolar` inserta en SQL sin esa columna y
+   `reintentarAhora` la escribe con `now()`. Con el reloj del proceso —el cliente de Prisma resuelve
+   `@default(now())` en la aplicación— contra una base administrada hay décimas de segundo de
+   desfase, y un trabajo recién encolado queda vencido en el futuro: el drenaje siguiente no lo ve.
+   En integración continua no se nota, porque la aplicación y la base comparten máquina.
 
 ## Notas
 

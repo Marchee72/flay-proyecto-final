@@ -27,6 +27,16 @@ export function consorcioActivo(): string | undefined {
   return contexto.getStore()?.consorcioId
 }
 
+/**
+ * El consorcio activo lo inyecta la extension, asi que una escritura sobre un
+ * modelo aislado **no lo declara**. El tipo generado igual lo exige: esta
+ * funcion es donde esa diferencia queda dicha, una vez y con nombre, en vez de
+ * repartida en un `as` por cada alta.
+ */
+export function sinConsorcio<T extends object>(datos: T): T & { consorcioId: string } {
+  return datos as T & { consorcioId: string }
+}
+
 const CAMPO = 'consorcioId'
 
 /** Modelos alcanzados: los que declaran `consorcioId`. En esta etapa, ninguno. */

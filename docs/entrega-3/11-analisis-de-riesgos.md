@@ -127,6 +127,7 @@ bajos, sin acción.
 | **Plan de contingencia** | Operación en paralelo durante dos períodos completos, según el punto 5.1.2. Si a la fecha del hito del 30/10/2026 la diferencia persiste, se congela el resto del desarrollo hasta resolverla: es la única funcionalidad sin la cual el sistema no tiene sentido |
 | **Reserva asignada** | 40 h de las 214 de contingencia |
 | **Responsable** | Ambos integrantes |
+| **Seguimiento** | **2026-09-10** — al cerrar la iteración 1 se solicitan formalmente a Grupo Delta las **tres liquidaciones reales** de consorcios de distinto tamaño que la acción preventiva exige. Son la entrada de los casos de prueba del paquete 4.2 y **la iteración 2 no arranca sin ellas** (FR-027 de `002-nucleo`): sin planilla contra la cual comparar, el detonante del riesgo no se puede observar. Pendiente de respuesta del cliente |
 
 ### RG-01 — Capacidad semanal no sostenida · Exposición 16 · Crítico
 

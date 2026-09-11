@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
+import { Building2, Siren, TriangleAlert } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { importeParaMostrar } from '@/compartido/formato'
+import { coeficienteParaMostrar, importeParaMostrar } from '@/compartido/formato'
 import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
@@ -11,6 +12,9 @@ import { verLiquidacion } from '@/aplicacion/liquidacion/ver-liquidacion'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 
 import { BotonGenerarDocumentos } from '../../periodos/acciones-de-estado'
+import { EncabezadoDeConsorcio } from '../../encabezado-consorcio'
+import { AvisoConsorcioNoElegido } from '../../selector-consorcio'
+import { NOMBRE_GALLETA_CONSORCIO, resolverConsorcioActivo } from '../../consorcio-activo'
 
 export const metadata: Metadata = { title: 'Liquidación — Flay' }
 
@@ -33,9 +37,42 @@ export default async function LiquidacionPage({
   const { id } = await params
   const parametros = await searchParams
   const consorcios = await misConsorcios(HABILITACIONES, RELOJ, usuarioId)
-  const activo = consorcios.find((c) => c.id === parametros.consorcio) ?? consorcios[0]
 
-  if (!activo) redirect('/consorcios')
+  if (consorcios.length === 0) {
+    return (
+      <>
+        <h1>Liquidación</h1>
+        <div className="vacio">
+          <Building2 aria-hidden="true" />
+          <p>
+            Todavía no hay ningún consorcio al alcance. El paso siguiente es pedir acceso a la
+            administración.
+          </p>
+        </div>
+      </>
+    )
+  }
+
+  const galletas = await cookies()
+  const { activo, pedidoDesconocido } = resolverConsorcioActivo(
+    parametros,
+    consorcios,
+    galletas.get(NOMBRE_GALLETA_CONSORCIO)?.value,
+  )
+
+  if (!activo) {
+    return (
+      <>
+        <h1>Liquidación</h1>
+        <AvisoConsorcioNoElegido
+          consorcios={consorcios}
+          base={`/liquidaciones/${id}`}
+          parametros={parametros}
+          pedidoDesconocido={pedidoDesconocido}
+        />
+      </>
+    )
+  }
 
   try {
     const liquidacion = await verLiquidacion(HABILITACIONES, RELOJ, {
@@ -48,27 +85,48 @@ export default async function LiquidacionPage({
 
     return (
       <>
+        <EncabezadoDeConsorcio
+          nombre={activo.nombre}
+          volverHref={`/periodos?consorcio=${activo.id}`}
+          volverTexto="Volver a períodos"
+        />
         <h1>Liquidación {liquidacion.periodo}</h1>
         <p className="apagado">
-          {activo.nombre} · {liquidacion.estado} · vence {liquidacion.vencimiento}
+          <EstadoDeLaLiquidacion estado={liquidacion.estado} /> · vence{' '}
+          {formatearVencimiento(liquidacion.vencimiento)}
         </p>
 
         {liquidacion.estado === 'anulada' && (
           <p className="aviso aviso--atencion" role="status">
-            Esta liquidación fue anulada. Lo que se le emitió a los consorcistas no se reescribe: se
-            reemplaza con una nueva, y las dos quedan registradas.
+            <TriangleAlert className="icono" aria-hidden="true" />
+            <span>
+              Esta liquidación fue anulada. Lo que se le emitió a los consorcistas no se reescribe:
+              se reemplaza con una nueva, y las dos quedan registradas.
+            </span>
           </p>
         )}
 
         <div className="tarjeta">
-          <p>
-            Ordinario{' '}
-            <strong className="cifra">{importeParaMostrar(liquidacion.totalOrdinario)}</strong> ·
-            extraordinario{' '}
-            <strong className="cifra">{importeParaMostrar(liquidacion.totalExtraordinario)}</strong>{' '}
-            · total{' '}
-            <strong className="cifra">{importeParaMostrar(liquidacion.totalGeneral)}</strong>
-          </p>
+          <div className="resumen" role="list" aria-label="Totales de la liquidación">
+            <div className="resumen__item" role="listitem">
+              <span className="resumen__rotulo">Ordinario</span>
+              <span className="resumen__valor cifra">
+                {importeParaMostrar(liquidacion.totalOrdinario)}
+              </span>
+            </div>
+            <div className="resumen__item" role="listitem">
+              <span className="resumen__rotulo">Extraordinario</span>
+              <span className="resumen__valor cifra">
+                {importeParaMostrar(liquidacion.totalExtraordinario)}
+              </span>
+            </div>
+            <div className="resumen__item" role="listitem">
+              <span className="resumen__rotulo">Total</span>
+              <span className="resumen__valor cifra">
+                {importeParaMostrar(liquidacion.totalGeneral)}
+              </span>
+            </div>
+          </div>
         </div>
 
         {liquidacion.estado === 'vigente' && (
@@ -116,7 +174,7 @@ export default async function LiquidacionPage({
               {liquidacion.detalles.map((detalle) => (
                 <tr key={detalle.id}>
                   <td>{detalle.designacion}</td>
-                  <td className="numero cifra">{detalle.coeficienteAplicado}</td>
+                  <td className="numero cifra">{coeficienteParaMostrar(detalle.coeficienteAplicado)}</td>
                   <td className="numero cifra">{importeParaMostrar(detalle.importeOrdinario)}</td>
                   <td className="numero cifra">
                     {importeParaMostrar(detalle.importeExtraordinario)}
@@ -143,18 +201,39 @@ export default async function LiquidacionPage({
             </tbody>
           </table>
         </div>
-
-        <p>
-          <Link href={`/periodos?consorcio=${activo.id}`}>Volver a períodos</Link>
-        </p>
       </>
     )
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
     return (
       <p className="aviso aviso--problema" role="alert">
-        {error.mensajeParaUsuario}
+        <Siren className="icono" aria-hidden="true" />
+        <span>{error.mensajeParaUsuario}</span>
       </p>
     )
   }
+}
+
+/** `2026-09-10` → `10/09/2026`: solo reordena la cadena (§4, presentación). */
+function formatearVencimiento(iso: string): string {
+  const [anio, mes, dia] = iso.split('-')
+  return `${dia}/${mes}/${anio}`
+}
+
+/**
+ * La base guarda `vigente`/`anulada` en minúsculas; en pantalla van con
+ * mayúscula inicial y `.etiqueta` (guía §3.4). Solo presentación.
+ */
+const ETIQUETA_ESTADO_LIQUIDACION: Record<string, { texto: string; clase: string }> = {
+  vigente: { texto: 'Vigente', clase: 'etiqueta--rendido' },
+  anulada: { texto: 'Anulada', clase: 'etiqueta--vencido' },
+}
+
+function EstadoDeLaLiquidacion({ estado }: { estado: string }) {
+  const etiqueta = ETIQUETA_ESTADO_LIQUIDACION[estado] ?? {
+    texto: estado,
+    clase: 'etiqueta--pendiente',
+  }
+
+  return <span className={`etiqueta ${etiqueta.clase}`}>{etiqueta.texto}</span>
 }

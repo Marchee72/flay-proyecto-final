@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flay — Prototipo revisión UI (después)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ------------------------------------------------------------------ *
+ * Prototipo revision-ui — estado DESPUÉS.
+ * Tokens copiados de src/app/globals.css (+ docs/guia-estilos-ejemplo.html).
+ * Clases .kpi / .urgencia / .etiqueta / .esqueleto: NO existen en el
+ * globals.css actual (faltantes de Fase 2); aquí se proponen definidas
+ * SOLO con var(--...). Ninguna regla fuera de :root escribe un color,
+ * espaciado, tipografía o radio a mano.
+ * ------------------------------------------------------------------ */
+:root {
+  --grafito: #23272E;
+  --fondo: #F4F6F4;
+  --superficie: #FFFFFF;
+  --tinta: #1A1D21;
+  --tinta-apagada: #4A5158;
+  --tinta-clara: #E8EAED;
+  --verde: #2E7D32;
+  --lima: #7CB342;
+  --lima-alto: #9CCC65;
+  --ambar: #8A5F14;
+  --rojo: #B3261E;
+  --rojo-borde: #8F1D16; /* propuesto: hoy va a mano en .aviso--problema */
+  --verde-palido: #F1F8F1;
+  --ambar-palido: #FDF3D7;
+  --rojo-palido: #FDECEA;
+  --gris-palido: #ECEFEC;
+  --linea: #C9CFC9;
+  --linea-suave: #E2E6EA;
+  --linea-control: #767E76;
+  --e1: 4px;
+  --e2: 8px;
+  --e3: 12px;
+  --e4: 16px;
+  --e5: 24px;
+  --e6: 32px;
+  --t-ayuda: 12px;
+  --t-menor: 13px;
+  --t-cuerpo: 15px;
+  --t-titulo3: 18px;
+  --t-titulo2: 22px;
+  --t-titulo1: 28px;
+  --radio: 10px;
+  --radio-chico: 8px;
+  --pastilla: 999px;
+  --toque: 44px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--tinta);
+  font: var(--t-cuerpo)/1.5 Poppins, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+h1, h2, h3 { font-weight: 600; margin: 0; }
+h1 { font-size: var(--t-titulo1); }
+h2 { font-size: var(--t-titulo2); }
+h3 { font-size: var(--t-titulo3); }
+
+/* §3.1: las cifras van en Inter tabular, coma con coma. */
+.cifra {
+  font-family: Inter, Poppins, -apple-system, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.apagado { color: var(--tinta-apagada); }
+.ayuda { font-size: var(--t-ayuda); color: var(--tinta-apagada); }
+a { color: var(--tinta); }
+a:hover { color: var(--verde); }
+
+:focus-visible {
+  outline: 3px solid var(--verde);
+  outline-offset: 2px;
+  border-radius: var(--radio-chico);
+}
+.barra :focus-visible,
+.lateral :focus-visible { outline-color: var(--lima-alto); }
+
+.icono { width: 20px; height: 20px; flex: none; }
+
+/* Estructura ------------------------------------------------------ */
+.barra {
+  background: var(--grafito);
+  color: var(--tinta-clara);
+  padding: var(--e3) var(--e5);
+  display: flex;
+  gap: var(--e3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.marca {
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: .04em;
+  color: var(--tinta-clara);
+  text-decoration: none;
+}
+/* Patrón usuarios/page.tsx: formulario GET con select + botón, sin guion. */
+.selector-consorcio {
+  margin-left: auto;
+  display: flex;
+  align-items: end;
+  gap: var(--e2);
+}
+.selector-consorcio .campo { margin-top: 0; flex: 1 1 auto; }
+.selector-consorcio label { color: var(--tinta-clara); }
+.selector-consorcio select {
+  width: 100%;
+  min-height: var(--toque);
+  padding: 0 var(--e3);
+  border: 1px solid var(--linea-control);
+  border-radius: var(--radio-chico);
+  font: var(--t-cuerpo) inherit;
+  color: var(--tinta);
+  background: var(--superficie);
+}
+.selector-consorcio .boton { min-height: var(--toque); }
+
+.envoltorio { max-width: 1200px; margin: 0 auto; padding: var(--e5); }
+.disposicion {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: var(--e5);
+  align-items: start;
+}
+.disposicion > * { min-width: 0; }
+
+.lateral {
+  background: var(--grafito);
+  border-radius: var(--radio);
+  padding: var(--e3);
+  font-size: 14px;
+}
+.lateral a {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  min-height: var(--toque);
+  padding: 0 var(--e3);
+  border-radius: var(--radio-chico);
+  color: var(--tinta-clara);
+  text-decoration: none;
+}
+.lateral a:hover { text-decoration: underline; }
+.lateral a[aria-current="page"] {
+  font-weight: 700;
+  color: var(--lima-alto);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.menu { display: none; }
+.menu > summary {
+  list-style: none;
+  min-height: var(--toque);
+  min-width: var(--toque);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--tinta-apagada);
+  border-radius: var(--radio-chico);
+  cursor: pointer;
+  color: var(--tinta-clara);
+}
+.menu > summary::-webkit-details-marker { display: none; }
+.menu[open] .lateral {
+  display: block;
+  position: absolute;
+  left: var(--e4);
+  right: var(--e4);
+  z-index: 2;
+}
+
+/* Pestañas del prototipo (solo revisión, con tokens) ---------------- */
+.pestanas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+  margin: var(--e4) 0 var(--e5);
+  padding: 0;
+  list-style: none;
+}
+.pestanas a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque);
+  padding: 0 var(--e4);
+  border-radius: var(--pastilla);
+  border: 1px solid var(--linea-control);
+  background: var(--superficie);
+  color: var(--tinta);
+  text-decoration: none;
+  font-size: var(--t-menor);
+  font-weight: 600;
+}
+.pestanas a[aria-current="true"] {
+  background: var(--grafito);
+  border-color: var(--grafito);
+  color: var(--lima-alto);
+}
+
+.seccion { margin-top: var(--e6); scroll-margin-top: var(--e4); }
+.seccion + .seccion {
+  border-top: 1px solid var(--linea);
+  padding-top: var(--e5);
+}
+.titulo-seccion { display: flex; flex-wrap: wrap; gap: var(--e3); align-items: baseline; margin-bottom: var(--e3); }
+.corrige {
+  display: inline-block;
+  font-size: var(--t-ayuda);
+  font-weight: 600;
+  padding: var(--e1) var(--e3);
+  border-radius: var(--pastilla);
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.corrige--fase2 { color: var(--verde); background: var(--verde-palido); }
+.corrige--fase3 { color: var(--ambar); background: var(--ambar-palido); }
+
+/* KPI (faltante en globals.css, propuesto con tokens) ---------------- */
+.rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--e3); }
+.kpi {
+  background: var(--grafito);
+  border-radius: var(--radio);
+  padding: var(--e3) var(--e4);
+  display: flex;
+  gap: var(--e3);
+  align-items: center;
+}
+.kpi__icono {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radio-chico);
+  background: var(--lima-alto);
+  color: var(--grafito);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.kpi__rotulo {
+  font-size: 10px;
+  letter-spacing: .06em;
+  color: var(--lima-alto);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.kpi__cifra { font-size: var(--t-titulo2); font-weight: 700; color: var(--superficie); }
+.kpi__detalle { font-size: var(--t-ayuda); color: var(--tinta-clara); }
+
+/* Avisos ------------------------------------------------------------ */
+.aviso {
+  border-radius: var(--radio-chico);
+  padding: var(--e3) var(--e4);
+  font-size: 14px;
+  margin: var(--e3) 0;
+  display: flex;
+  gap: var(--e3);
+  align-items: flex-start;
+}
+.aviso--atencion { background: var(--ambar-palido); border: 1px solid var(--ambar); border-left-width: 4px; }
+.aviso--problema { background: var(--rojo-palido); border: 1px solid var(--rojo-borde); border-left: 4px solid var(--rojo); }
+.aviso svg { margin-top: 2px; }
+
+/* Botones ----------------------------------------------------------- */
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e2);
+  min-height: var(--toque);
+  padding: 0 var(--e5);
+  border-radius: var(--pastilla);
+  font: 700 14px/1 Poppins, sans-serif;
+  border: 2px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+}
+.boton--primario { background: var(--lima); color: var(--grafito); }
+.boton--fantasma { background: var(--superficie); border-color: var(--grafito); color: var(--grafito); }
+.boton--peligro { background: var(--superficie); border-color: var(--rojo); color: var(--rojo); }
+.boton[disabled] { opacity: .5; cursor: not-allowed; }
+.fila-acciones { display: flex; flex-wrap: wrap; gap: var(--e2); margin-top: var(--e4); }
+
+/* Tablas ------------------------------------------------------------ */
+.tabla-desplazable {
+  overflow-x: auto;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  background: var(--superficie);
+}
+table { width: 100%; border-collapse: collapse; min-width: 560px; }
+caption { text-align: left; padding: var(--e3) var(--e4); font-size: var(--t-ayuda); color: var(--tinta-apagada); }
+th, td {
+  text-align: left;
+  padding: var(--e3) var(--e4);
+  border-bottom: 1px solid var(--linea-suave);
+  font-size: 14px;
+  min-height: var(--toque);
+}
+thead th {
+  background: var(--gris-palido);
+  color: var(--tinta-apagada);
+  font-size: var(--t-ayuda);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+td.numero, th.numero { text-align: right; }
+tfoot td { font-weight: 700; border-top: 2px solid var(--linea); background: var(--gris-palido); }
+
+/* Etiquetas (faltante en globals.css, propuesto con tokens) ---------- */
+.etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e1);
+  font-size: var(--t-ayuda);
+  font-weight: 600;
+  padding: var(--e1) var(--e3);
+  border-radius: var(--pastilla);
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.etiqueta--aldia { color: var(--verde); background: var(--verde-palido); }
+.etiqueta--atencion { color: var(--ambar); background: var(--ambar-palido); }
+.etiqueta--peligro { color: var(--rojo); background: var(--rojo-palido); }
+.etiqueta--neutra { color: var(--tinta-apagada); background: var(--gris-palido); }
+
+/* Tarjetas, formularios, vacíos ------------------------------------- */
+.tarjeta {
+  background: var(--superficie);
+  border: 1px solid var(--linea-suave);
+  border-radius: var(--radio);
+  padding: var(--e4);
+  margin-top: var(--e4);
+}
+.campo { margin-top: var(--e3); max-width: 320px; }
+.campo label { display: block; font-size: var(--t-menor); font-weight: 600; margin-bottom: var(--e1); }
+.campo input {
+  width: 100%;
+  min-height: var(--toque);
+  padding: 0 var(--e3);
+  border: 1px solid var(--linea-control);
+  border-radius: var(--radio-chico);
+  font: var(--t-cuerpo) inherit;
+  color: var(--tinta);
+  background: var(--superficie);
+}
+.campo input[aria-invalid="true"] { border-color: var(--rojo); border-width: 2px; }
+.error { font-size: var(--t-menor); color: var(--rojo); font-weight: 600; margin-top: var(--e1); }
+.vacio {
+  border: 1px dashed var(--linea);
+  border-radius: var(--radio);
+  padding: var(--e6);
+  text-align: center;
+  background: var(--superficie);
+  margin-top: var(--e4);
+}
+.vacio svg { width: 32px; height: 32px; color: var(--tinta-apagada); }
+
+/* Esqueleto (faltante en globals.css, propuesto con tokens) ---------- */
+.esqueleto {
+  height: 14px;
+  border-radius: var(--radio-chico);
+  background: var(--linea-suave);
+  animation: latir 1.6s ease-in-out infinite;
+}
+.esqueleto + .esqueleto { margin-top: var(--e2); }
+@keyframes latir { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto { animation: none; }
+  * { transition: none; }
+}
+
+/* Urgencias (faltante en globals.css, propuesto con tokens) ---------- */
+.urgencia { display: inline-flex; align-items: center; gap: var(--e2); font-weight: 600; font-size: var(--t-menor); }
+.urgencia--urgente { color: var(--rojo); }
+.urgencia--alta { color: var(--ambar); }
+.urgencia--ordinaria { color: var(--tinta-apagada); }
+.urgencia--aldia { color: var(--verde); }
+
+/* Confirmación en dos pasos ------------------------------------------ */
+.confirmacion {
+  border: 1px solid var(--linea-control);
+  border-left: 4px solid var(--rojo);
+  border-radius: var(--radio-chico);
+  background: var(--superficie);
+  padding: var(--e4);
+  margin-top: var(--e3);
+}
+.confirmacion--liquidar { border-left-color: var(--verde); }
+.resumen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--e3);
+  margin: var(--e3) 0;
+}
+.resumen__item {
+  background: var(--gris-palido);
+  border-radius: var(--radio-chico);
+  padding: var(--e3) var(--e4);
+}
+.resumen__rotulo { font-size: var(--t-ayuda); color: var(--tinta-apagada); font-weight: 600; }
+.resumen__valor { font-size: var(--t-titulo3); font-weight: 700; }
+
+/* Landing mínima ------------------------------------------------------ */
+.acceso {
+  min-height: 60vh;
+  display: grid;
+  place-items: center;
+  padding: var(--e4);
+  background: var(--superficie);
+  border: 1px solid var(--linea-suave);
+  border-radius: var(--radio);
+}
+.acceso > div { width: 100%; max-width: 400px; text-align: center; }
+.acceso .marca { color: var(--tinta); display: block; margin-bottom: var(--e3); font-size: var(--t-titulo2); }
+.acceso .boton { margin-top: var(--e4); width: 100%; }
+
+/* Escala tipográfica de muestra --------------------------------------- */
+.muestra-tipo { border-bottom: 1px solid var(--linea-suave); padding: var(--e2) 0; }
+.muestra-tipo:last-child { border-bottom: 0; }
+
+@media (max-width: 760px) {
+  .envoltorio { padding: var(--e4); }
+  .disposicion { grid-template-columns: 1fr; }
+  .disposicion > .lateral { display: none; }
+  .menu { display: block; }
+  .menu .lateral { margin-top: var(--e2); }
+  .selector-consorcio { margin-left: 0; width: 100%; }
+  .selector-consorcio .campo { flex: 1; }
+  .barra { flex-wrap: wrap; }
+  h1 { font-size: var(--t-titulo2); }
+}
+</style>
+</head>
+<body>
+
+<header class="barra">
+  <a class="marca" href="#arriba">FLAY</a>
+
+  <details class="menu">
+    <summary aria-label="Abrir menú de navegación">
+      <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 12h16"/><path d="M4 18h16"/><path d="M4 6h16"/></svg>
+    </summary>
+    <nav class="lateral" aria-label="Secciones">
+      <a href="#seccion-3"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>Períodos</a>
+      <a href="#seccion-4"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/></svg>Gastos</a>
+      <a href="#seccion-5"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>Morosidad</a>
+    </nav>
+  </details>
+
+  <!-- Corrección 2: selector de consorcio activo visible, patrón usuarios/page.tsx -->
+  <form class="selector-consorcio" method="get" action="#seccion-2">
+    <div class="campo">
+      <label for="consorcio">Consorcio</label>
+      <select id="consorcio" name="consorcio">
+        <option value="mitre-456" selected>Mitre 456</option>
+        <option value="san-martin-123">San Martín 123</option>
+        <option value="belgrano-789">Belgrano 789</option>
+      </select>
+    </div>
+    <button class="boton boton--fantasma" type="submit" style="border-color: var(--tinta-clara); color: var(--tinta-clara); background: transparent;">Cambiar</button>
+  </form>
+</header>
+
+<div class="envoltorio" id="arriba">
+<div class="disposicion">
+
+  <!-- Corrección 2: navegación lateral con iconos Lucide y aria-current -->
+  <nav class="lateral" aria-label="Secciones">
+    <a href="#seccion-1"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>Sistema visual</a>
+    <a href="#seccion-2" aria-current="page"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/></svg>Panel y navegación</a>
+    <a href="#seccion-3"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>Períodos</a>
+    <a href="#seccion-4"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/></svg>Gastos</a>
+    <a href="#seccion-5"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>Morosidad y padrón</a>
+  </nav>
+
+  <main>
+    <h1>Revisión UI — prototipo después</h1>
+    <p class="apagado">Las 5 correcciones de Fase 2 y Fase 3 aplicadas sobre el sistema de <code>globals.css</code>. Datos ficticios del consorcio Mitre 456.</p>
+
+    <nav aria-label="Correcciones del prototipo">
+      <ul class="pestanas">
+        <li><a href="#seccion-1">1 · Sistema visual</a></li>
+        <li><a href="#seccion-2">2 · Panel y navegación</a></li>
+        <li><a href="#seccion-3">3 · Períodos</a></li>
+        <li><a href="#seccion-4">4 · Landing y gastos</a></li>
+        <li><a href="#seccion-5">5 · Iconos + texto</a></li>
+        <li><a href="variantes.html">6 · Variantes de navegación</a></li>
+      </ul>
+    </nav>
+
+    <!-- 1 · Sistema visual coherente ----------------------------------- -->
+    <section class="seccion" id="seccion-1" aria-labelledby="titulo-1">
+      <div class="titulo-seccion">
+        <h2 id="titulo-1">1 · Sistema visual coherente</h2>
+        <span class="corrige corrige--fase2">Fase 2 · bloqueantes de globals.css</span>
+      </div>
+      <p class="apagado">Tipografía Poppins con cifras en Inter tabular y escala fija. Todo lo de abajo usa <code>var(--...)</code>; nada lleva valores a mano.</p>
+
+      <div class="tarjeta">
+        <h3>Escala tipográfica</h3>
+        <p class="muestra-tipo" style="font-size: var(--t-titulo1);">Título 1 · 28 · Liquidación del período</p>
+        <p class="muestra-tipo" style="font-size: var(--t-titulo2);">Título 2 · 22 · Gastos del período</p>
+        <p class="muestra-tipo" style="font-size: var(--t-titulo3);">Título 3 · 18 · Anular liquidación</p>
+        <p class="muestra-tipo">Cuerpo · 15 · Se registró el gasto de limpieza por <span class="cifra">$ 88.400,00</span>.</p>
+        <p class="muestra-tipo" style="font-size: var(--t-menor);">Menor · 13 · 12 unidades · vence el 10/09/2026</p>
+        <p class="muestra-tipo ayuda">Ayuda · 12 · El importe se reparte por coeficiente al liquidar.</p>
+      </div>
+
+      <h3 style="margin-top: var(--e5);">Bloques .kpi</h3>
+      <div class="rejilla" style="margin-top: var(--e3);">
+        <div class="kpi">
+          <div class="kpi__icono"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg></div>
+          <div>
+            <div class="kpi__rotulo">Mi expensa · 1A</div>
+            <div class="kpi__cifra cifra">$ 165.625,00</div>
+            <div class="kpi__detalle">al día · vence 10/09/2026</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi__icono"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/></svg></div>
+          <div>
+            <div class="kpi__rotulo">Total · 12 unidades</div>
+            <div class="kpi__cifra cifra">$ 1.325.000,00</div>
+            <div class="kpi__detalle">ordinarias más extraordinarias</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi__icono"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/></svg></div>
+          <div>
+            <div class="kpi__rotulo">Desvío limpieza</div>
+            <div class="kpi__cifra cifra">+34 %</div>
+            <div class="kpi__detalle">contra el promedio de 12 períodos</div>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="margin-top: var(--e5);">Escala .urgencia con icono + palabra</h3>
+      <div class="tarjeta">
+        <p><span class="urgencia urgencia--urgente"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z"/><path d="M21 12h1"/><path d="M18.5 4.5 18 5"/><path d="M2 12h1"/><path d="M12 2v1"/><path d="m4.929 4.929.707.707"/><path d="M12 12v6"/></svg>URGENTE · 72 h</span></p>
+        <p><span class="urgencia urgencia--alta"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>ALTA · 7 días</span></p>
+        <p><span class="urgencia urgencia--ordinaria"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/></svg>ORDINARIA · 15 días</span></p>
+        <p style="margin-bottom: 0;"><span class="urgencia urgencia--aldia"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></svg>AL DÍA</span></p>
+      </div>
+
+      <h3 style="margin-top: var(--e5);">Etiquetas .etiqueta y carga .esqueleto</h3>
+      <div class="tarjeta">
+        <p>
+          <span class="etiqueta etiqueta--aldia">rendido</span>
+          <span class="etiqueta etiqueta--atencion">a cargo del propietario</span>
+          <span class="etiqueta etiqueta--neutra">pendiente de rendir</span>
+          <span class="etiqueta etiqueta--peligro">vencido</span>
+        </p>
+        <p class="ayuda">El ámbar ya no está huérfano: <code>--ambar</code> y <code>--ambar-palido</code> se usan en etiqueta, urgencia ALTA y aviso de atención.</p>
+        <h3 style="margin-top: var(--e4); font-size: var(--t-cuerpo);">Cargando gastos…</h3>
+        <p role="status">Cargando gastos del período 2026-08.</p>
+        <div aria-hidden="true">
+          <div class="esqueleto" style="width: 40%;"></div>
+          <div class="esqueleto" style="width: 85%;"></div>
+          <div class="esqueleto" style="width: 70%;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 · Barra del panel + navegación --------------------------------- -->
+    <section class="seccion" id="seccion-2" aria-labelledby="titulo-2">
+      <div class="titulo-seccion">
+        <h2 id="titulo-2">2 · Barra del panel y navegación</h2>
+        <span class="corrige corrige--fase3">Fase 3 · navegación</span>
+      </div>
+      <p class="apagado">La barra de esta página ya es la corrección: el consorcio activo siempre visible con el patrón de <code>usuarios/page.tsx</code> (formulario <code>GET</code> con <code>select</code> + botón, sin guion) y el lateral con iconos Lucide y <code>aria-current="page"</code> en «Panel y navegación».</p>
+      <div class="aviso aviso--atencion">
+        <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span><b>Cómo probarlo:</b> cambie el selector a «San Martín 123» y pulse Cambiar; achique a 390 px y el lateral pasa al menú <code>details/summary</code> de la barra, operable por teclado.</span>
+      </div>
+    </section>
+
+    <!-- 3 · Períodos ------------------------------------------------------ -->
+    <section class="seccion" id="seccion-3" aria-labelledby="titulo-3">
+      <div class="titulo-seccion">
+        <h2 id="titulo-3">3 · Períodos: anular y liquidar</h2>
+        <span class="corrige corrige--fase3">Fase 3 · dinero con confirmación</span>
+      </div>
+      <p class="apagado">Anular usa <code>.boton--peligro</code>. Liquidar pide confirmación en dos pasos con el resumen del total y las unidades antes del clic final.</p>
+
+      <div class="tabla-desplazable" tabindex="0" role="region" aria-label="Períodos del consorcio Mitre 456">
+        <table>
+          <caption>Importes en pesos. Períodos 2026-06 a 2026-08.</caption>
+          <thead>
+            <tr>
+              <th scope="col">Período</th>
+              <th scope="col">Estado</th>
+              <th scope="col" class="numero">Total</th>
+              <th scope="col" class="numero">Unidades</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="cifra">2026-08</td>
+              <td><span class="urgencia urgencia--ordinaria"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/></svg>Abierto</span></td>
+              <td class="numero cifra">$ 1.325.000,00</td>
+              <td class="numero cifra">12</td>
+              <td>
+                <button class="boton boton--primario" type="button" data-confirmar="confirmar-liquidar" aria-expanded="false" aria-controls="confirmar-liquidar">Liquidar</button>
+              </td>
+            </tr>
+            <tr>
+              <td class="cifra">2026-07</td>
+              <td><span class="urgencia urgencia--aldia"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></svg>Liquidado</span></td>
+              <td class="numero cifra">$ 1.198.450,50</td>
+              <td class="numero cifra">12</td>
+              <td>
+                <button class="boton boton--peligro" type="button" data-confirmar="confirmar-anular" aria-expanded="false" aria-controls="confirmar-anular">Anular</button>
+              </td>
+            </tr>
+            <tr>
+              <td class="cifra">2026-06</td>
+              <td><span class="urgencia urgencia--aldia"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></svg>Liquidado</span></td>
+              <td class="numero cifra">$ 1.150.200,00</td>
+              <td class="numero cifra">12</td>
+              <td><span class="apagado">Sin acciones</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paso 2 de Liquidar -->
+      <div class="confirmacion confirmacion--liquidar" id="confirmar-liquidar" hidden tabindex="-1" aria-labelledby="titulo-liquidar">
+        <h3 id="titulo-liquidar">Confirmar liquidación del período 2026-08</h3>
+        <p class="apagado">Revise el resumen: al confirmar se generan las 12 expensas y ya no se pueden cargar más gastos en este período.</p>
+        <div class="resumen">
+          <div class="resumen__item"><div class="resumen__rotulo">Total a liquidar</div><div class="resumen__valor cifra">$ 1.325.000,00</div></div>
+          <div class="resumen__item"><div class="resumen__rotulo">Unidades</div><div class="resumen__valor cifra">12</div></div>
+          <div class="resumen__item"><div class="resumen__rotulo">Vencimiento</div><div class="resumen__valor cifra">10/09/2026</div></div>
+        </div>
+        <div class="fila-acciones">
+          <button class="boton boton--primario" type="button" data-exito="Se liquidó el período 2026-08. Las 12 expensas quedaron disponibles.">Confirmar liquidación</button>
+          <button class="boton boton--fantasma" type="button" data-cancelar>CANCELAR</button>
+        </div>
+      </div>
+
+      <!-- Paso 2 de Anular -->
+      <div class="confirmacion" id="confirmar-anular" hidden tabindex="-1" aria-labelledby="titulo-anular">
+        <h3 id="titulo-anular">Confirmar anulación del período 2026-07</h3>
+        <p>Se anula la liquidación de <span class="cifra">$ 1.198.450,50</span> (12 unidades) y se emite una nueva que la referencia. Ambas quedan registradas en la auditoría.</p>
+        <div class="campo">
+          <label for="motivo">Motivo de la anulación</label>
+          <input id="motivo" name="motivo" type="text" aria-describedby="motivo-ayuda" placeholder="Por ejemplo: gasto duplicado de EPE">
+          <p class="ayuda" id="motivo-ayuda">Queda asentado en la auditoría, por eso no puede estar vacío.</p>
+        </div>
+        <div class="fila-acciones">
+          <button class="boton boton--peligro" type="button" data-exito="Se anuló el período 2026-07. La nueva liquidación quedó en borrador.">Confirmar anulación</button>
+          <button class="boton boton--fantasma" type="button" data-cancelar>Cancelar</button>
+        </div>
+      </div>
+
+      <p class="aviso aviso--atencion" id="mensaje-periodo" role="status" hidden></p>
+    </section>
+
+    <!-- 4 · Landing mínima + gastos ---------------------------------------- -->
+    <section class="seccion" id="seccion-4" aria-labelledby="titulo-4">
+      <div class="titulo-seccion">
+        <h2 id="titulo-4">4 · Landing mínima y gastos</h2>
+        <span class="corrige corrige--fase3">Fase 3 · primer contacto</span>
+      </div>
+
+      <h3>Portada mínima: una sola acción primaria</h3>
+      <div class="acceso" style="margin-top: var(--e3);">
+        <div>
+          <span class="marca">FLAY</span>
+          <p class="apagado">Tu consorcio online: expensas claras, gastos auditables y avisos a tiempo.</p>
+          <a class="boton boton--primario" href="#seccion-4-gastos"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/></svg>Ingresar</a>
+          <p class="ayuda">Si todavía no tiene cuenta, el administrador le envía la invitación por correo.</p>
+        </div>
+      </div>
+
+      <h3 id="seccion-4-gastos" style="margin-top: var(--e5); scroll-margin-top: var(--e4);">Gastos con CTA primario «Nuevo gasto»</h3>
+      <p style="margin-top: var(--e3);"><a class="boton boton--primario" href="#seccion-4-gastos"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Nuevo gasto</a></p>
+      <div class="tabla-desplazable" tabindex="0" role="region" aria-label="Gastos del período 2026-08">
+        <table>
+          <caption>Importes en pesos. Período 2026-08, Mitre 456.</caption>
+          <thead>
+            <tr>
+              <th scope="col">Fecha</th>
+              <th scope="col">Proveedor</th>
+              <th scope="col">Rubro</th>
+              <th scope="col" class="numero">Importe</th>
+              <th scope="col">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="cifra">05/08/2026</td>
+              <td>Limpieza Total SRL</td>
+              <td>Limpieza</td>
+              <td class="numero cifra">$ 88.400,00</td>
+              <td><span class="etiqueta etiqueta--aldia">rendido</span></td>
+            </tr>
+            <tr>
+              <td class="cifra">10/08/2026</td>
+              <td>EPE</td>
+              <td>Luz de espacios comunes</td>
+              <td class="numero cifra">$ 92.000,00</td>
+              <td><span class="etiqueta etiqueta--aldia">rendido</span></td>
+            </tr>
+            <tr>
+              <td class="cifra">22/08/2026</td>
+              <td>Ascensores Rosario SA</td>
+              <td>Mantenimiento</td>
+              <td class="numero cifra">$ 568.000,00</td>
+              <td><span class="etiqueta etiqueta--neutra">pendiente de rendir</span></td>
+            </tr>
+            <tr>
+              <td class="cifra">28/08/2026</td>
+              <td>Tableros AEA SRL</td>
+              <td>Tableros (extraordinario)</td>
+              <td class="numero cifra">$ 175.000,00</td>
+              <td><span class="etiqueta etiqueta--atencion">a cargo del propietario</span></td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3">Total del período</td>
+              <td class="numero cifra">$ 923.400,00</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+
+    <!-- 5 · Iconos + texto -------------------------------------------------- -->
+    <section class="seccion" id="seccion-5" aria-labelledby="titulo-5">
+      <div class="titulo-seccion">
+        <h2 id="titulo-5">5 · Iconos Lucide, nunca color solo</h2>
+        <span class="corrige corrige--fase3">Fase 3 · accesibilidad</span>
+      </div>
+      <p class="apagado">Cada estado combina texto + icono Lucide. Los iconos decorativos llevan <code>aria-hidden="true"</code>.</p>
+
+      <h3>Estado de período</h3>
+      <div class="tarjeta">
+        <p><span class="urgencia urgencia--ordinaria"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/></svg>Período 2026-08 · abierto, acepta gastos</span></p>
+        <p><span class="urgencia urgencia--aldia"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></svg>Período 2026-07 · liquidado el 05/08/2026</span></p>
+        <p style="margin-bottom: 0;"><span class="urgencia urgencia--urgente"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z"/><path d="M21 12h1"/><path d="M18.5 4.5 18 5"/><path d="M2 12h1"/><path d="M12 2v1"/><path d="m4.929 4.929.707.707"/><path d="M12 12v6"/></svg>Período 2026-05 · anulado, ver liquidación que lo reemplaza</span></p>
+      </div>
+
+      <h3 style="margin-top: var(--e5);">Nómina de morosidad</h3>
+      <div class="tabla-desplazable" tabindex="0" role="region" aria-label="Nómina de morosidad, Mitre 456">
+        <table>
+          <caption>Solo visible para el administrador y el consejo. Deuda al 10/09/2026.</caption>
+          <thead>
+            <tr>
+              <th scope="col">Unidad</th>
+              <th scope="col">Estado</th>
+              <th scope="col" class="numero">Deuda</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>3B</td>
+              <td><span class="urgencia urgencia--urgente"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z"/><path d="M21 12h1"/><path d="M18.5 4.5 18 5"/><path d="M2 12h1"/><path d="M12 2v1"/><path d="m4.929 4.929.707.707"/><path d="M12 12v6"/></svg>3 períodos vencidos</span></td>
+              <td class="numero cifra">$ 225.000,00</td>
+            </tr>
+            <tr>
+              <td>2A</td>
+              <td><span class="urgencia urgencia--alta"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>1 período vencido</span></td>
+              <td class="numero cifra">$ 75.000,00</td>
+            </tr>
+            <tr>
+              <td>1A</td>
+              <td><span class="urgencia urgencia--aldia"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></svg>Al día</span></td>
+              <td class="numero cifra">$ 0,00</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top: var(--e5);">Avisos de padrón</h3>
+      <div class="aviso aviso--atencion">
+        <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+        <span><b>Padrón desactualizado:</b> 2 unidades sin propietario registrado. <a href="#seccion-5">Completar padrón</a> antes de liquidar.</span>
+      </div>
+      <div class="aviso aviso--problema">
+        <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="M12 12h.01"/></svg>
+        <span><b>Comprobante ilegible:</b> el archivo de EPE de agosto no se puede leer. <a href="#seccion-5">Volver a subirlo</a>; el gasto queda pendiente hasta entonces.</span>
+      </div>
+    </section>
+
+    <p class="ayuda seccion">Prototipo fuera de <code>src/app</code>: solo migra al panel tras aprobación explícita. A 390 px todo pasa a una columna y solo las tablas se desplazan en horizontal, nunca la página. El lateral flotante se compara en <a href="variantes.html">6 · Variantes de navegación</a>.</p>
+  </main>
+
+</div>
+</div>
+
+<script>
+// Confirmación en dos pasos: muestra el panel, mueve el foco, anuncia el resultado.
+(function () {
+  function cerrarTodos(excepto) {
+    document.querySelectorAll('.confirmacion').forEach(function (panel) {
+      if (panel !== excepto) {
+        panel.hidden = true;
+        var boton = document.querySelector('[data-confirmar="' + panel.id + '"]');
+        if (boton) boton.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+  document.querySelectorAll('[data-confirmar]').forEach(function (boton) {
+    boton.addEventListener('click', function () {
+      var panel = document.getElementById(boton.getAttribute('data-confirmar'));
+      var abierto = panel.hidden;
+      cerrarTodos(panel);
+      panel.hidden = !abierto;
+      boton.setAttribute('aria-expanded', String(abierto));
+      if (abierto) panel.focus();
+    });
+  });
+  document.querySelectorAll('[data-cancelar]').forEach(function (boton) {
+    boton.addEventListener('click', function () {
+      var panel = boton.closest('.confirmacion');
+      panel.hidden = true;
+      var origen = document.querySelector('[data-confirmar="' + panel.id + '"]');
+      if (origen) {
+        origen.setAttribute('aria-expanded', 'false');
+        origen.focus();
+      }
+    });
+  });
+  document.querySelectorAll('[data-exito]').forEach(function (boton) {
+    boton.addEventListener('click', function () {
+      if (boton.textContent.indexOf('anulación') !== -1) {
+        var motivo = document.getElementById('motivo');
+        if (motivo && !motivo.value.trim()) {
+          motivo.setAttribute('aria-invalid', 'true');
+          motivo.focus();
+          return;
+        }
+        if (motivo) motivo.removeAttribute('aria-invalid');
+      }
+      var mensaje = document.getElementById('mensaje-periodo');
+      mensaje.textContent = boton.getAttribute('data-exito');
+      mensaje.hidden = false;
+      mensaje.scrollIntoView({ block: 'nearest' });
+    });
+  });
+  // Marca la pestaña del prototipo según la sección visible.
+  var enlaces = Array.prototype.slice.call(document.querySelectorAll('.pestanas a'));
+  function marcar() {
+    var actual = enlaces[0];
+    enlaces.forEach(function (enlace) {
+      var destino = document.querySelector(enlace.getAttribute('href'));
+      if (destino && destino.getBoundingClientRect().top < 160) actual = enlace;
+    });
+    enlaces.forEach(function (enlace) {
+      if (enlace === actual) enlace.setAttribute('aria-current', 'true');
+      else enlace.removeAttribute('aria-current');
+    });
+  }
+  document.addEventListener('scroll', marcar, { passive: true });
+  marcar();
+})();
+</script>
+
+</body>
+</html>

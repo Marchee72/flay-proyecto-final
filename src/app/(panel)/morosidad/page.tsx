@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
+import { Building2, Siren, TriangleAlert } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { importeParaMostrar } from '@/compartido/formato'
@@ -7,6 +9,10 @@ import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { verMorosidad } from '@/aplicacion/pagos/estado-de-cuenta'
+
+import { AvisoConsorcioNoElegido } from '../selector-consorcio'
+import { NOMBRE_GALLETA_CONSORCIO, resolverConsorcioActivo } from '../consorcio-activo'
+import { EncabezadoDeConsorcio } from '../encabezado-consorcio'
 
 export const metadata: Metadata = { title: 'Morosidad — Flay' }
 
@@ -24,8 +30,42 @@ export default async function MorosidadPage({
 
   const parametros = await searchParams
   const consorcios = await misConsorcios(HABILITACIONES, RELOJ, usuarioId)
-  const activo = consorcios.find((c) => c.id === parametros.consorcio) ?? consorcios[0]
-  if (!activo) redirect('/consorcios')
+
+  if (consorcios.length === 0) {
+    return (
+      <>
+        <h1>Morosidad</h1>
+        <div className="vacio">
+          <Building2 aria-hidden="true" />
+          <p>
+            Todavía no hay ningún consorcio al alcance. El paso siguiente es pedir acceso a la
+            administración.
+          </p>
+        </div>
+      </>
+    )
+  }
+
+  const galletas = await cookies()
+  const { activo, pedidoDesconocido } = resolverConsorcioActivo(
+    parametros,
+    consorcios,
+    galletas.get(NOMBRE_GALLETA_CONSORCIO)?.value,
+  )
+
+  if (!activo) {
+    return (
+      <>
+        <h1>Morosidad</h1>
+        <AvisoConsorcioNoElegido
+          consorcios={consorcios}
+          base="/morosidad"
+          parametros={parametros}
+          pedidoDesconocido={pedidoDesconocido}
+        />
+      </>
+    )
+  }
 
   try {
     const morosidad = await verMorosidad(HABILITACIONES, RELOJ, {
@@ -35,15 +75,27 @@ export default async function MorosidadPage({
 
     return (
       <>
+        <EncabezadoDeConsorcio
+          nombre={activo.nombre}
+          volverHref="/consorcios"
+          volverTexto="Volver a consorcios"
+        />
         <h1>Morosidad</h1>
-        <p className="apagado">De {activo.nombre}.</p>
 
-        <div className="tarjeta">
-          <p>
-            <strong>{morosidad.agregado.unidadesEnMora}</strong> de{' '}
-            {morosidad.agregado.unidadesTotales} unidades con deuda vencida · total{' '}
-            <strong className="cifra">{importeParaMostrar(morosidad.agregado.deudaTotal)}</strong>
-          </p>
+        <div className="kpi">
+          <span className="kpi__icono">
+            <TriangleAlert className="icono" aria-hidden="true" />
+          </span>
+          <div>
+            <div className="kpi__rotulo">Unidades con deuda vencida</div>
+            <div className="kpi__cifra cifra">
+              {morosidad.agregado.unidadesEnMora} de {morosidad.agregado.unidadesTotales}
+            </div>
+            <div className="kpi__detalle">
+              Deuda total{' '}
+              <span className="cifra">{importeParaMostrar(morosidad.agregado.deudaTotal)}</span>
+            </div>
+          </div>
         </div>
 
         {morosidad.nominada ? (
@@ -83,7 +135,8 @@ export default async function MorosidadPage({
     if (!(error instanceof ErrorDeAplicacion)) throw error
     return (
       <p className="aviso aviso--problema" role="alert">
-        {error.mensajeParaUsuario}
+        <Siren className="icono" aria-hidden="true" />
+        <span>{error.mensajeParaUsuario}</span>
       </p>
     )
   }

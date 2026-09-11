@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { BadgeCheck } from 'lucide-react'
 
 import { FormularioIngreso } from '../formularios'
 
@@ -20,7 +21,8 @@ export default async function IngresarPage({
 
         {listo && (
           <p className="aviso aviso--atencion" role="status">
-            Tu contraseña quedó guardada. Ya podés entrar.
+            <BadgeCheck className="icono" aria-hidden="true" />
+            <span>La contraseña quedó guardada. Ya se puede entrar.</span>
           </p>
         )}
 

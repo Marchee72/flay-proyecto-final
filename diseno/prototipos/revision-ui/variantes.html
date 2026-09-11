@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flay — Variantes de navegación (prototipo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ------------------------------------------------------------------ *
+ * Variantes de navegación — prototipo de comparación.
+ * Reutiliza tokens y clases de revision-ui/index.html (copiados tal cual).
+ * Ninguna regla fuera de :root escribe un color, espaciado, tipografía
+ * o radio a mano. Todo texto en español, datos ficticios de Mitre 456.
+ * ------------------------------------------------------------------ */
+:root {
+  --grafito: #23272E;
+  --fondo: #F4F6F4;
+  --superficie: #FFFFFF;
+  --tinta: #1A1D21;
+  --tinta-apagada: #4A5158;
+  --tinta-clara: #E8EAED;
+  --verde: #2E7D32;
+  --lima: #7CB342;
+  --lima-alto: #9CCC65;
+  --ambar: #8A5F14;
+  --rojo: #B3261E;
+  --rojo-borde: #8F1D16;
+  --verde-palido: #F1F8F1;
+  --ambar-palido: #FDF3D7;
+  --rojo-palido: #FDECEA;
+  --gris-palido: #ECEFEC;
+  --linea: #C9CFC9;
+  --linea-suave: #E2E6EA;
+  --linea-control: #767E76;
+  --e1: 4px;
+  --e2: 8px;
+  --e3: 12px;
+  --e4: 16px;
+  --e5: 24px;
+  --e6: 32px;
+  --t-ayuda: 12px;
+  --t-menor: 13px;
+  --t-cuerpo: 15px;
+  --t-titulo3: 18px;
+  --t-titulo2: 22px;
+  --t-titulo1: 28px;
+  --radio: 10px;
+  --radio-chico: 8px;
+  --pastilla: 999px;
+  --toque: 44px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--tinta);
+  font: var(--t-cuerpo)/1.5 Poppins, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+h1, h2, h3 { font-weight: 600; margin: 0; }
+h1 { font-size: var(--t-titulo1); }
+h2 { font-size: var(--t-titulo2); }
+h3 { font-size: var(--t-titulo3); }
+
+.cifra {
+  font-family: Inter, Poppins, -apple-system, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.apagado { color: var(--tinta-apagada); }
+.ayuda { font-size: var(--t-ayuda); color: var(--tinta-apagada); }
+a { color: var(--tinta); }
+a:hover { color: var(--verde); }
+
+:focus-visible {
+  outline: 3px solid var(--verde);
+  outline-offset: 2px;
+  border-radius: var(--radio-chico);
+}
+.barra :focus-visible,
+.v-barra :focus-visible,
+.v-lat :focus-visible,
+.vc-inferior :focus-visible { outline-color: var(--lima-alto); }
+
+.icono { width: 20px; height: 20px; flex: none; }
+
+/* Página ------------------------------------------------------------ */
+.barra {
+  background: var(--grafito);
+  color: var(--tinta-clara);
+  padding: var(--e3) var(--e5);
+  display: flex;
+  gap: var(--e3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.marca {
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: .04em;
+  color: var(--tinta-clara);
+  text-decoration: none;
+}
+.volver {
+  margin-left: auto;
+  color: var(--tinta-clara);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  min-height: var(--toque);
+}
+.envoltorio { max-width: 1200px; margin: 0 auto; padding: var(--e5); }
+.seccion { margin-top: var(--e6); scroll-margin-top: var(--e4); }
+.seccion + .seccion {
+  border-top: 1px solid var(--linea);
+  padding-top: var(--e5);
+}
+
+.pestanas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+  margin: var(--e4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.pestanas a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque);
+  padding: 0 var(--e4);
+  border-radius: var(--pastilla);
+  border: 1px solid var(--linea-control);
+  background: var(--superficie);
+  color: var(--tinta);
+  text-decoration: none;
+  font-size: var(--t-menor);
+  font-weight: 600;
+}
+
+.tarjeta {
+  background: var(--superficie);
+  border: 1px solid var(--linea-suave);
+  border-radius: var(--radio);
+  padding: var(--e4);
+  margin-top: var(--e4);
+}
+.tabla-desplazable {
+  overflow-x: auto;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  margin-top: var(--e3);
+}
+table { width: 100%; border-collapse: collapse; min-width: 560px; }
+caption { text-align: left; padding: var(--e3) var(--e4); font-size: var(--t-ayuda); color: var(--tinta-apagada); }
+th, td {
+  text-align: left;
+  padding: var(--e3) var(--e4);
+  border-bottom: 1px solid var(--linea-suave);
+  font-size: 14px;
+}
+thead th {
+  background: var(--gris-palido);
+  color: var(--tinta-apagada);
+  font-size: var(--t-ayuda);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+td.numero, th.numero { text-align: right; }
+tfoot td { font-weight: 700; border-top: 2px solid var(--linea); background: var(--gris-palido); }
+
+.etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e1);
+  font-size: var(--t-ayuda);
+  font-weight: 600;
+  padding: var(--e1) var(--e3);
+  border-radius: var(--pastilla);
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.etiqueta--aldia { color: var(--verde); background: var(--verde-palido); }
+.etiqueta--atencion { color: var(--ambar); background: var(--ambar-palido); }
+.etiqueta--neutra { color: var(--tinta-apagada); background: var(--gris-palido); }
+
+.aviso {
+  border-radius: var(--radio-chico);
+  padding: var(--e3) var(--e4);
+  font-size: 14px;
+  margin: var(--e3) 0;
+  display: flex;
+  gap: var(--e3);
+  align-items: flex-start;
+}
+.aviso--atencion { background: var(--ambar-palido); border: 1px solid var(--ambar); border-left-width: 4px; }
+.aviso svg { margin-top: 2px; }
+
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e2);
+  min-height: var(--toque);
+  padding: 0 var(--e5);
+  border-radius: var(--pastilla);
+  font: 700 14px/1 Poppins, sans-serif;
+  border: 2px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+}
+.boton--primario { background: var(--lima); color: var(--grafito); }
+.boton--fantasma { background: var(--superficie); border-color: var(--grafito); color: var(--grafito); }
+
+/* Marcos de demostración -------------------------------------------- */
+.v-marco {
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  overflow: hidden;
+  background: var(--superficie);
+  margin-top: var(--e3);
+}
+.v-rotulo {
+  padding: var(--e2) var(--e4);
+  font-size: var(--t-ayuda);
+  color: var(--tinta-apagada);
+  border-bottom: 1px solid var(--linea-suave);
+  background: var(--gris-palido);
+  font-weight: 600;
+}
+.v-barra {
+  background: var(--grafito);
+  color: var(--tinta-clara);
+  padding: var(--e2) var(--e3);
+  display: flex;
+  gap: var(--e2);
+  align-items: center;
+}
+.v-barra .marca { font-size: var(--t-cuerpo); }
+.v-barra .consorcio {
+  margin-left: auto;
+  font-size: var(--t-menor);
+  color: var(--lima-alto);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.v-lat {
+  background: var(--grafito);
+  padding: var(--e2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.v-lat a, .v-lat button.v-expansor {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  min-height: var(--toque);
+  padding: 0 var(--e3);
+  border-radius: var(--radio-chico);
+  color: var(--tinta-clara);
+  text-decoration: none;
+  font-size: 14px;
+  background: transparent;
+  border: 0;
+  font: 400 14px/1.5 Poppins, sans-serif;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+.v-lat a:hover { text-decoration: underline; }
+.v-lat a[aria-current="page"] {
+  font-weight: 700;
+  color: var(--lima-alto);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+.v-contenido { padding: var(--e4); min-width: 0; }
+.v-contenido h3 { font-size: var(--t-cuerpo); }
+
+/* Variante 0: fix mínimo ---------------------------------------------
+ * Era: .disposicion { align-items: start } → el lateral medía solo su
+ * contenido y quedaba flotando. Es: stretch + lateral pegado (sticky)
+ * de alto completo. Mismo componente, solo disposición. El lateral y la
+ * barra comparten var(--grafito) sin aire blanco: se leen como una sola
+ * pieza continua; la junta se suaviza con el radio superior del lateral
+ * donde abraza la barra (remate interior, NO tarjeta separada). */
+.v0-cuerpo {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  align-items: stretch;
+}
+.v0-cuerpo .v-lat {
+  position: sticky;
+  top: 0;
+  align-self: stretch;
+  border-radius: 0;
+  border-top-right-radius: var(--radio);
+}
+/* Opción 2: curva del lado EXTERIOR (unión barra–menú, borde izquierdo).
+ * Misma pieza continua grafito; la curva se ve contra el fondo de página. */
+.v0-cuerpo--ext .v-lat {
+  border-top-right-radius: 0;
+  border-top-left-radius: var(--radio);
+}
+/* Opción 3: el contenido como cuadrado redondeado encajado en la L de
+ * grafito. La curva va hacia adentro (hacia la derecha): la esquina
+ * superior izquierda del contenido se redondea y deja ver el grafito
+ * de la barra + lateral por detrás. Solo tokens, sin valores a mano. */
+.v0-cuerpo--redondo { background: var(--grafito); }
+.v0-cuerpo--redondo .v-lat { border-radius: 0; }
+.v0-cuerpo--redondo .v-contenido {
+  background: var(--fondo);
+  border-top-left-radius: var(--radio);
+}
+
+/* Variante A: pestañas superiores ------------------------------------ */
+.va-pestanas {
+  display: flex;
+  gap: var(--e2);
+  overflow-x: auto;
+  padding: var(--e3);
+  margin: 0;
+  list-style: none;
+  background: var(--superficie);
+  border-bottom: 1px solid var(--linea);
+  scrollbar-width: thin;
+}
+.va-pestanas a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  min-height: var(--toque);
+  padding: 0 var(--e4);
+  border-radius: var(--pastilla);
+  border: 1px solid var(--linea-control);
+  background: var(--superficie);
+  color: var(--tinta);
+  text-decoration: none;
+  font-size: var(--t-menor);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.va-pestanas a[aria-current="page"] {
+  background: var(--grafito);
+  border-color: var(--grafito);
+  color: var(--lima-alto);
+}
+
+/* Variante B: riel de iconos ------------------------------------------ */
+.vb-cuerpo {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+}
+.vb-cuerpo .v-lat { padding: var(--e2) var(--e1); }
+.vb-cuerpo .v-lat a, .vb-cuerpo .v-lat button.v-expansor {
+  justify-content: center;
+  padding: 0;
+}
+.vb-cuerpo .v-lat a .v-texto { display: none; }
+.vb-cuerpo.expandido { grid-template-columns: 200px 1fr; }
+.vb-cuerpo.expandido .v-lat { padding: var(--e2); }
+.vb-cuerpo.expandido .v-lat a, .vb-cuerpo.expandido .v-lat button.v-expansor {
+  justify-content: flex-start;
+  padding: 0 var(--e3);
+}
+.vb-cuerpo.expandido .v-lat a .v-texto {
+  display: inline;
+  animation: aparecer 180ms ease-out;
+}
+@keyframes aparecer { from { opacity: 0; } to { opacity: 1; } }
+.v-expansor {
+  border-top: 1px solid var(--tinta-apagada);
+  border-radius: 0;
+  margin-top: var(--e1);
+  color: var(--lima-alto);
+  font-weight: 600;
+}
+
+/* Variante C: lateral en escritorio + barra inferior en móvil ---------
+ * Remate lateral–barra: el lateral arranca separado de la barra con
+ * gap + padding de var(--e2) y cierra arriba con var(--radio). */
+.vc-cuerpo {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  align-items: stretch;
+  gap: var(--e2);
+  padding: var(--e2);
+  background: var(--superficie);
+}
+.vc-cuerpo > * { min-width: 0; }
+.vc-cuerpo .v-lat {
+  border-radius: var(--radio);
+}
+.vc-movil {
+  max-width: 390px;
+  margin: var(--e4) auto 0;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  overflow: hidden;
+  background: var(--superficie);
+}
+.vc-inferior {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: var(--grafito);
+  border-top: 1px solid var(--tinta-apagada);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.vc-inferior a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  min-width: var(--toque);
+  padding: var(--e1) 2px;
+  color: var(--tinta-clara);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+.vc-inferior a[aria-current="page"] {
+  color: var(--lima-alto);
+  box-shadow: inset 0 3px 0 var(--lima-alto);
+}
+
+/* Ficha por variante --------------------------------------------------- */
+.ficha {
+  background: var(--superficie);
+  border: 1px solid var(--linea-suave);
+  border-radius: var(--radio);
+  padding: var(--e4);
+  margin-top: var(--e3);
+}
+.ficha h3 { font-size: var(--t-cuerpo); margin-bottom: var(--e2); }
+.ficha ul { margin: var(--e2) 0; padding-left: var(--e4); font-size: 14px; }
+.ficha li { margin-bottom: var(--e1); }
+.ficha li::marker { color: var(--tinta-apagada); }
+.ficha .veredicto {
+  display: flex;
+  gap: var(--e2);
+  align-items: flex-start;
+  margin-top: var(--e3);
+  font-size: 14px;
+}
+.ficha .veredicto svg { margin-top: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none; transition: none; }
+}
+
+@media (max-width: 760px) {
+  .envoltorio { padding: var(--e4); }
+  h1 { font-size: var(--t-titulo2); }
+  .v0-cuerpo, .vc-cuerpo { grid-template-columns: 160px 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header class="barra">
+  <a class="marca" href="index.html">FLAY</a>
+  <span class="apagado" style="color: var(--tinta-clara);">Prototipo · Variantes de navegación</span>
+  <a class="volver" href="index.html"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>Volver a la revisión UI</a>
+</header>
+
+<div class="envoltorio">
+<main>
+  <h1>Variantes de navegación</h1>
+  <p class="apagado">El color del menú está aprobado; lo que se compara acá es solo la disposición. Causa del problema actual: <code>.disposicion</code> usa <code>align-items: start</code> y el <code>.lateral</code> mide solo lo que mide su contenido, entonces queda flotando en el medio. Las 4 variantes vivas usan el mismo panel de ejemplo (barra + navegación + tabla de gastos del período 2026-08, Mitre 456) con los mismos tokens <code>var(--...)</code>, iconos Lucide + texto, <code>aria-current="page"</code> y foco visible.</p>
+
+  <nav aria-label="Variantes de navegación">
+    <ul class="pestanas">
+      <li><a href="#variante-0">0 · Fix mínimo</a></li>
+      <li><a href="#variante-a">A · Pestañas superiores</a></li>
+      <li><a href="#variante-b">B · Riel de iconos</a></li>
+      <li><a href="#variante-c">C · Barra inferior en móvil</a></li>
+      <li><a href="#recomendacion">Recomendación</a></li>
+    </ul>
+  </nav>
+
+  <!-- Variante 0 ------------------------------------------------------ -->
+  <section class="seccion" id="variante-0" aria-labelledby="titulo-0">
+    <h2 id="titulo-0">Variante 0 · Fix mínimo (lateral pegado, alto completo)</h2>
+    <p class="apagado">El mismo componente lateral de hoy. Cambia solo la disposición: <code>align-items: stretch</code> en vez de <code>start</code>, y el lateral queda pegado bajo la barra con <code>position: sticky</code>. Nada flotante, nada que reaprender.</p>
+
+    <div class="v-marco">
+      <p class="v-rotulo">Opción 1 · Curva del lado del contenido (interior, actual)</p>
+      <div class="v-barra">
+        <span class="marca">FLAY</span>
+        <span class="consorcio">Mitre 456</span>
+      </div>
+      <div class="v0-cuerpo">
+        <nav class="v-lat" aria-label="Secciones (variante 0)">
+          <a href="#variante-0"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>Períodos</a>
+          <a href="#variante-0" aria-current="page"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/></svg>Gastos</a>
+          <a href="#variante-0"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/></svg>Expensas</a>
+          <a href="#variante-0"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-4"/></svg>Pagos</a>
+          <a href="#variante-0"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>Morosidad</a>
+        </nav>
+        <div class="v-contenido">
+          <h3>Gastos del período 2026-08</h3>
+          <p class="ayuda">Sección activa: Gastos (iconos + texto, <code>aria-current="page"</code>).</p>
+          <div class="tabla-desplazable" tabindex="0" role="region" aria-label="Gastos de ejemplo, variante 0">
+            <table>
+              <caption>Importes en pesos. Período 2026-08, Mitre 456.</caption>
+              <thead>
+                <tr><th scope="col">Fecha</th><th scope="col">Proveedor</th><th scope="col" class="numero">Importe</th><th scope="col">Estado</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="cifra">05/08/2026</td><td>Limpieza Total SRL</td><td class="numero cifra">$ 88.400,00</td><td><span class="etiqueta etiqueta--aldia">rendido</span></td></tr>
+                <tr><td class="cifra">10/08/2026</td><td>EPE</td><td class="numero cifra">$ 92.000,00</td><td><span class="etiqueta etiqueta--aldia">rendido</span></td></tr>
+                <tr><td class="cifra">22/08/2026</td><td>Ascensores Rosario SA</td><td class="numero cifra">$ 568.000,00</td><td><span class="etiqueta etiqueta--neutra">pendiente de rendir</span></td></tr>
+                <tr><td class="cifra">28/08/2026</td><td>Tableros AEA SRL</td><td class="numero cifra">$ 175.000,00</td><td><span class="etiqueta etiqueta--atencion">a cargo del propietario</span></td></tr>
+              </tbody>
+              <tfoot><tr><td colspan="2">Total del período</td><td class="numero cifra">$ 923.400,00</td><td></td></tr></tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="v-marco">
+      <p class="v-rotulo">Opción 2 · Curva del lado de la unión barra–menú (exterior)</p>
+      <div class="v-barra">
+        <span class="marca">FLAY</span>
+        <span class="consorcio">Mitre 456</span>
+      </div>
+      <div class="v0-cuerpo v0-cuerpo--ext">
+        <nav class="v-lat" aria-label="Secciones (variante 0, curva exterior)">
+          <a href="#variante-0">Períodos</a>
+          <a href="#variante-0" aria-current="page">Gastos</a>
+          <a href="#variante-0">Expensas</a>
+          <a href="#variante-0">Pagos</a>
+          <a href="#variante-0">Morosidad</a>
+        </nav>
+        <div class="v-contenido">
+          <h3>Gastos del período 2026-08</h3>
+          <p class="ayuda">Misma pieza continua grafito; la curva se recorta contra el fondo de página, en la junta con la barra.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="v-marco">
+      <p class="v-rotulo">Opción 3 · El contenido como cuadrado redondeado (curva hacia adentro)</p>
+      <div class="v-barra">
+        <span class="marca">FLAY</span>
+        <span class="consorcio">Mitre 456</span>
+      </div>
+      <div class="v0-cuerpo v0-cuerpo--redondo">
+        <nav class="v-lat" aria-label="Secciones (variante 0, contenido redondeado)">
+          <a href="#variante-0">Períodos</a>
+          <a href="#variante-0" aria-current="page">Gastos</a>
+          <a href="#variante-0">Expensas</a>
+          <a href="#variante-0">Pagos</a>
+          <a href="#variante-0">Morosidad</a>
+        </nav>
+        <div class="v-contenido">
+          <h3>Gastos del período 2026-08</h3>
+          <p class="ayuda">La L de grafito abraza el contenido y la esquina superior izquierda del contenido se curva hacia adentro.</p>
+          <div class="tabla-desplazable" tabindex="0" role="region" aria-label="Gastos de ejemplo, opción 3">
+            <table>
+              <caption>Importes en pesos. Período 2026-08, Mitre 456.</caption>
+              <thead>
+                <tr><th scope="col">Fecha</th><th scope="col">Proveedor</th><th scope="col" class="numero">Importe</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="cifra">05/08/2026</td><td>Limpieza Total SRL</td><td class="numero cifra">$ 88.400,00</td></tr>
+                <tr><td class="cifra">10/08/2026</td><td>EPE</td><td class="numero cifra">$ 92.000,00</td></tr>
+              </tbody>
+              <tfoot><tr><td colspan="2">Total del período</td><td class="numero cifra">$ 180.400,00</td></tr></tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ficha">
+      <h3>Ficha · Variante 0</h3>
+      <ul>
+        <li><b>A favor:</b> cambio de 2 líneas (disposición + sticky); conserva la estructura actual de <code>layout.tsx</code> y la memoria muscular; móvil intacto con <code>details/summary</code>; sin riesgo de accesibilidad.</li>
+        <li><b>En contra:</b> no gana espacio de contenido; en pantallas cortas el lateral con 8 secciones reales exige scroll de página (igual que hoy).</li>
+        <li><b>Remate lateral–barra (tres opciones en vivo):</b> opción 1 con <code>border-top-right-radius: var(--radio)</code> (curva contra el contenido), opción 2 con <code>border-top-left-radius: var(--radio)</code> (curva contra el fondo) y opción 3 con el contenido como cuadrado redondeado (<code>border-top-left-radius: var(--radio)</code> en el contenido sobre fondo grafito: la L abraza el contenido y la curva va hacia adentro). Todas mantienen el lateral pegado y de alto completo. Para portar la elegida al panel real: ver sección de la opción correspondiente.</li>
+      </ul>
+      <p class="veredicto"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></svg><span><b>Costo:</b> mínimo. <b>Riesgo:</b> casi nulo. La que elimina el flotado sin discutir nada más.</span></p>
+    </div>
+  </section>
+
+  <!-- Variante A ------------------------------------------------------ -->
+  <section class="seccion" id="variante-a" aria-labelledby="titulo-a">
+    <h2 id="titulo-a">Variante A · Pestañas superiores</h2>
+    <p class="apagado">Sin columna lateral: las secciones son una fila de pestañas bajo la barra y el contenido va a ancho completo. En móvil la fila tiene scroll horizontal interno (la página nunca se desplaza en horizontal).</p>
+
+    <div class="v-marco">
+      <p class="v-rotulo">En vivo · la fila de pestañas desplaza por dentro, el contenido ocupa todo el ancho</p>
+      <div class="v-barra">
+        <span class="marca">FLAY</span>
+        <span class="consorcio">Mitre 456</span>
+      </div>
+      <nav aria-label="Secciones (variante A)">
+        <ul class="va-pestanas">
+          <li><a href="#variante-a"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>Períodos</a></li>
+          <li><a href="#variante-a" aria-current="page"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/></svg>Gastos</a></li>
+          <li><a href="#variante-a"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/></svg>Expensas</a></li>
+          <li><a href="#variante-a"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-4"/></svg>Pagos</a></li>
+          <li><a href="#variante-a"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>Morosidad</a></li>
+        </ul>
+      </nav>
+      <div class="v-contenido">
+        <h3>Gastos del período 2026-08</h3>
+        <p class="ayuda">Sin columna lateral: la tabla respira a ancho completo.</p>
+        <div class="tabla-desplazable" tabindex="0" role="region" aria-label="Gastos de ejemplo, variante A">
+          <table>
+            <caption>Importes en pesos. Período 2026-08, Mitre 456.</caption>
+            <thead>
+              <tr><th scope="col">Fecha</th><th scope="col">Proveedor</th><th scope="col" class="numero">Importe</th><th scope="col">Estado</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="cifra">05/08/2026</td><td>Limpieza Total SRL</td><td class="numero cifra">$ 88.400,00</td><td><span class="etiqueta etiqueta--aldia">rendido</span></td></tr>
+              <tr><td class="cifra">10/08/2026</td><td>EPE</td><td class="numero cifra">$ 92.000,00</td><td><span class="etiqueta etiqueta--aldia">rendido</span></td></tr>
+              <tr><td class="cifra">22/08/2026</td><td>Ascensores Rosario SA</td><td class="numero cifra">$ 568.000,00</td><td><span class="etiqueta etiqueta--neutra">pendiente de rendir</span></td></tr>
+              <tr><td class="cifra">28/08/2026</td><td>Tableros AEA SRL</td><td class="numero cifra">$ 175.000,00</td><td><span class="etiqueta etiqueta--atencion">a cargo del propietario</span></td></tr>
+            </tbody>
+            <tfoot><tr><td colspan="2">Total del período</td><td class="numero cifra">$ 923.400,00</td><td></td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="ficha">
+      <h3>Ficha · Variante A</h3>
+      <ul>
+        <li><b>A favor:</b> contenido a ancho completo (ideal para tablas de gastos y liquidaciones); navegación siempre visible sin ocupar columna; patrón conocido de pestañas; funciona igual en móvil y escritorio.</li>
+        <li><b>En contra:</b> con las 8 secciones reales la fila queda larga y obliga a desplazarla; pierde el golpe de vista vertical de todo el panel; cambia el <code>layout.tsx</code> actual (la navegación sale de <code>.disposicion</code>).</li>
+      </ul>
+      <p class="veredicto"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><span><b>Costo:</b> medio (reestructura el armazón). <b>Ojo:</b> si se elige, agrupar las 8 secciones o la fila se vuelve un carrusel.</span></p>
+    </div>
+  </section>
+
+  <!-- Variante B ------------------------------------------------------ -->
+  <section class="seccion" id="variante-b" aria-labelledby="titulo-b">
+    <h2 id="titulo-b">Variante B · Riel de iconos expandible</h2>
+    <p class="apagado">Lateral angosto de ~60 px con solo iconos; el botón «Expandir menú» (operable por teclado, con <code>aria-expanded</code>) muestra el texto. Pulse el botón del ejemplo para ver ambos estados.</p>
+
+    <div class="v-marco">
+      <p class="v-rotulo">En vivo · pulse «Expandir menú» para alternar riel y lateral completo</p>
+      <div class="v-barra">
+        <span class="marca">FLAY</span>
+        <span class="consorcio">Mitre 456</span>
+      </div>
+      <div class="vb-cuerpo" id="demo-riel">
+        <nav class="v-lat" aria-label="Secciones (variante B)" id="riel-b">
+          <a href="#variante-b" aria-label="Períodos"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg><span class="v-texto">Períodos</span></a>
+          <a href="#variante-b" aria-current="page" aria-label="Gastos, sección actual"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/></svg><span class="v-texto">Gastos</span></a>
+          <a href="#variante-b" aria-label="Expensas"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/></svg><span class="v-texto">Expensas</span></a>
+          <a href="#variante-b" aria-label="Pagos"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-4"/></svg><span class="v-texto">Pagos</span></a>
+          <a href="#variante-b" aria-label="Morosidad"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><span class="v-texto">Morosidad</span></a>
+          <button class="v-expansor" type="button" aria-expanded="false" aria-controls="riel-b" data-riel="demo-riel"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg><span class="v-texto">Expandir menú</span></button>
+        </nav>
+        <div class="v-contenido">
+          <h3>Gastos del período 2026-08</h3>
+          <p class="ayuda">El riel libera ~140 px de ancho para el contenido.</p>
+          <div class="tabla-desplazable" tabindex="0" role="region" aria-label="Gastos de ejemplo, variante B">
+            <table>
+              <caption>Importes en pesos. Período 2026-08, Mitre 456.</caption>
+              <thead>
+                <tr><th scope="col">Fecha</th><th scope="col">Proveedor</th><th scope="col" class="numero">Importe</th><th scope="col">Estado</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="cifra">05/08/2026</td><td>Limpieza Total SRL</td><td class="numero cifra">$ 88.400,00</td><td><span class="etiqueta etiqueta--aldia">rendido</span></td></tr>
+                <tr><td class="cifra">10/08/2026</td><td>EPE</td><td class="numero cifra">$ 92.000,00</td><td><span class="etiqueta etiqueta--aldia">rendido</span></td></tr>
+                <tr><td class="cifra">22/08/2026</td><td>Ascensores Rosario SA</td><td class="numero cifra">$ 568.000,00</td><td><span class="etiqueta etiqueta--neutra">pendiente de rendir</span></td></tr>
+                <tr><td class="cifra">28/08/2026</td><td>Tableros AEA SRL</td><td class="numero cifra">$ 175.000,00</td><td><span class="etiqueta etiqueta--atencion">a cargo del propietario</span></td></tr>
+              </tbody>
+              <tfoot><tr><td colspan="2">Total del período</td><td class="numero cifra">$ 923.400,00</td><td></td></tr></tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ficha">
+      <h3>Ficha · Variante B</h3>
+      <ul>
+        <li><b>A favor:</b> más ancho útil sin perder la columna; el estado expandido conserva texto completo; el botón con <code>aria-expanded</code> es operable por teclado y lector (los iconos solos llevan <code>aria-label</code>).</li>
+        <li><b>En contra:</b> exige recordar qué icono es cada sección cuando está colapsado; suma un control y un estado a mantener (colapsado/expandido por usuario); más JavaScript que las demás.</li>
+      </ul>
+      <p class="veredicto"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><span><b>Costo:</b> medio-alto. <b>Ojo:</b> solo rinde si el riel colapsado es el estado por defecto y cada icono es inequívoco con su etiqueta.</span></p>
+    </div>
+  </section>
+
+  <!-- Variante C ------------------------------------------------------ -->
+  <section class="seccion" id="variante-c" aria-labelledby="titulo-c">
+    <h2 id="titulo-c">Variante C · Lateral en escritorio, barra inferior en móvil</h2>
+    <p class="apagado">En escritorio, lateral normal no flotante (alto completo como la variante 0). En ≤760 px, las 5 secciones principales viven en una barra inferior fija estilo app: icono + etiqueta corta, cada destino con ≥44 px táctiles.</p>
+
+    <div class="v-marco">
+      <p class="v-rotulo">En vivo · escritorio con lateral no flotante</p>
+      <div class="v-barra">
+        <span class="marca">FLAY</span>
+        <span class="consorcio">Mitre 456</span>
+      </div>
+      <div class="vc-cuerpo">
+        <nav class="v-lat" aria-label="Secciones en escritorio (variante C)">
+          <a href="#variante-c"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>Períodos</a>
+          <a href="#variante-c" aria-current="page"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/></svg>Gastos</a>
+          <a href="#variante-c"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/></svg>Expensas</a>
+          <a href="#variante-c"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-4"/></svg>Pagos</a>
+          <a href="#variante-c"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>Morosidad</a>
+        </nav>
+        <div class="v-contenido">
+          <h3>Gastos del período 2026-08</h3>
+          <p class="ayuda">Mismo lateral fijo de la variante 0, sin flotar.</p>
+          <div class="tabla-desplazable" tabindex="0" role="region" aria-label="Gastos de ejemplo, variante C escritorio">
+            <table>
+              <caption>Importes en pesos. Período 2026-08, Mitre 456.</caption>
+              <thead>
+                <tr><th scope="col">Fecha</th><th scope="col">Proveedor</th><th scope="col" class="numero">Importe</th><th scope="col">Estado</th></tr>
+              </thead>
+              <tbody>
+                <tr><td class="cifra">05/08/2026</td><td>Limpieza Total SRL</td><td class="numero cifra">$ 88.400,00</td><td><span class="etiqueta etiqueta--aldia">rendido</span></td></tr>
+                <tr><td class="cifra">10/08/2026</td><td>EPE</td><td class="numero cifra">$ 92.000,00</td><td><span class="etiqueta etiqueta--aldia">rendido</span></td></tr>
+                <tr><td class="cifra">22/08/2026</td><td>Ascensores Rosario SA</td><td class="numero cifra">$ 568.000,00</td><td><span class="etiqueta etiqueta--neutra">pendiente de rendir</span></td></tr>
+                <tr><td class="cifra">28/08/2026</td><td>Tableros AEA SRL</td><td class="numero cifra">$ 175.000,00</td><td><span class="etiqueta etiqueta--atencion">a cargo del propietario</span></td></tr>
+              </tbody>
+              <tfoot><tr><td colspan="2">Total del período</td><td class="numero cifra">$ 923.400,00</td><td></td></tr></tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vc-movil">
+      <p class="v-rotulo">En vivo · simulación a 390 px con barra inferior fija</p>
+      <div class="v-barra">
+        <span class="marca">FLAY</span>
+        <span class="consorcio">Mitre 456</span>
+      </div>
+      <div class="v-contenido">
+        <h3>Gastos · 2026-08</h3>
+        <p class="ayuda">La barra inferior queda siempre a mano; la tabla se desplaza por dentro.</p>
+        <div class="tabla-desplazable" tabindex="0" role="region" aria-label="Gastos de ejemplo, variante C móvil">
+          <table>
+            <caption>Importes en pesos. Período 2026-08, Mitre 456.</caption>
+            <thead>
+              <tr><th scope="col">Fecha</th><th scope="col">Proveedor</th><th scope="col" class="numero">Importe</th><th scope="col">Estado</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="cifra">05/08/2026</td><td>Limpieza Total SRL</td><td class="numero cifra">$ 88.400,00</td><td><span class="etiqueta etiqueta--aldia">rendido</span></td></tr>
+              <tr><td class="cifra">10/08/2026</td><td>EPE</td><td class="numero cifra">$ 92.000,00</td><td><span class="etiqueta etiqueta--aldia">rendido</span></td></tr>
+              <tr><td class="cifra">22/08/2026</td><td>Ascensores Rosario SA</td><td class="numero cifra">$ 568.000,00</td><td><span class="etiqueta etiqueta--neutra">pendiente de rendir</span></td></tr>
+              <tr><td class="cifra">28/08/2026</td><td>Tableros AEA SRL</td><td class="numero cifra">$ 175.000,00</td><td><span class="etiqueta etiqueta--atencion">a cargo del propietario</span></td></tr>
+            </tbody>
+            <tfoot><tr><td colspan="2">Total del período</td><td class="numero cifra">$ 923.400,00</td><td></td></tr></tfoot>
+          </table>
+        </div>
+        <p class="ayuda">Deuda total de la nómina al 10/09/2026: <span class="cifra">$ 300.000,00</span>.</p>
+      </div>
+      <nav aria-label="Secciones principales en móvil (variante C)">
+        <ul class="vc-inferior">
+          <li><a href="#variante-c"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>Períodos</a></li>
+          <li><a href="#variante-c" aria-current="page"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/></svg>Gastos</a></li>
+          <li><a href="#variante-c"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/></svg>Expensas</a></li>
+          <li><a href="#variante-c"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-4"/></svg>Pagos</a></li>
+          <li><a href="#variante-c"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>Morosidad</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <div class="ficha">
+      <h3>Ficha · Variante C</h3>
+      <ul>
+        <li><b>A favor:</b> en el teléfono (RNF-01, 390 px) las secciones quedan al alcance del pulgar, siempre visibles y con objetivos de 56 px; en escritorio no cambia nada respecto del fix mínimo.</li>
+        <li><b>En contra:</b> dos navegaciones a mantener (lateral + inferior); las 8 secciones reales no entran abajo: hay que elegir 5 principales y resolver dónde viven las otras 3; la barra fija tapa contenido si falta el relleno inferior.</li>
+        <li><b>Remate lateral–barra:</b> el lateral arranca separado de la barra con <code>gap: var(--e2)</code> + <code>padding: var(--e2)</code> sobre <code>.vc-cuerpo</code> y <code>border-radius: var(--radio)</code> en el lateral; para portarlo al panel real, mantener la separación en la disposición de <code>src/app/(panel)/layout.tsx</code> y el <code>border-radius: var(--radio)</code> del lateral en <code>globals.css</code>.</li>
+      </ul>
+      <p class="veredicto"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><span><b>Costo:</b> medio. <b>Ojo:</b> la decisión real no es visual sino de producto: cuáles son las 5 principales y dónde van Consorcios, Proveedores y Usuarios.</span></p>
+    </div>
+  </section>
+
+  <!-- Recomendación ---------------------------------------------------- -->
+  <section class="seccion" id="recomendacion" aria-labelledby="titulo-rec">
+    <h2 id="titulo-rec">Recomendación</h2>
+    <div class="tarjeta">
+      <p style="margin-top: 0;"><b>Elegir la variante 0 ahora.</b> El problema reportado es solo de disposición (el lateral flota porque mide lo de su contenido), y el fix mínimo lo elimina con 2 líneas, sin cambiar el <code>layout.tsx</code> real, sin reaprendizaje y sin riesgo de accesibilidad. Todo lo demás es mejora opcional, no corrección.</p>
+      <p>Fundamento en una línea por variante descartada (por ahora): <b>A</b> obliga a reestructurar el armazón y esconde 8 secciones en un carrusel; <b>B</b> suma un estado y exige iconos inequívocos para no perder a nadie; <b>C</b> exige una decisión de producto (las 5 principales) que excede el fix visual.</p>
+      <p style="margin-bottom: 0;">Camino sugerido: aplicar 0 en el panel real y, si el uso en teléfono lo pide, prototipar C solo para móvil con las 5 secciones ya decididas.</p>
+    </div>
+    <div class="aviso aviso--atencion">
+      <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+      <span><b>Cómo comparar:</b> recorra las 4 variantes con teclado (Tab + Intro), achique a 390 px (solo las tablas se desplazan en horizontal, nunca la página) y active movimiento reducido: ninguna animación debe persistir. Prototipo fuera de <code>src/app</code>: solo migra al panel tras aprobación explícita.</span>
+    </div>
+    <p><a class="boton boton--fantasma" href="index.html"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>Volver a la revisión UI</a></p>
+  </section>
+
+</main>
+</div>
+
+<script>
+// Variante B: alterna riel/lateral con botón accesible por teclado.
+(function () {
+  document.querySelectorAll('[data-riel]').forEach(function (boton) {
+    boton.addEventListener('click', function () {
+      var marco = document.getElementById(boton.getAttribute('data-riel'));
+      var expandido = marco.classList.toggle('expandido');
+      boton.setAttribute('aria-expanded', String(expandido));
+      var etiqueta = boton.querySelector('.v-texto');
+      if (etiqueta) etiqueta.textContent = expandido ? 'Contraer menú' : 'Expandir menú';
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

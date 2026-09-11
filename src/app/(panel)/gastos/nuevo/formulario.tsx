@@ -34,9 +34,12 @@ export function FormularioGasto({
   precargado: Readonly<Record<string, string>>
 }) {
   const [estado, accion, enviando] = useActionState(accionRegistrarGasto, SIN_ERROR)
+  const hayError = estado.mensaje !== ''
 
   const marca = (campo: string) =>
-    precargado[campo] ? <span className="etiqueta-precargado">Precargado — revisalo</span> : null
+    precargado[campo] ? (
+      <span className="etiqueta-precargado">Precargado: revisar antes de confirmar</span>
+    ) : null
 
   return (
     <form action={accion} noValidate>
@@ -44,20 +47,36 @@ export function FormularioGasto({
 
       <div className="campo">
         <label htmlFor="periodo">Período</label>
-        <select id="periodo" name="periodo" defaultValue={precargado.periodo ?? ''} required>
+        <select
+          id="periodo"
+          name="periodo"
+          defaultValue={precargado.periodo ?? ''}
+          required
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-gasto ayuda-periodo' : 'ayuda-periodo'}
+        >
           {periodos.map((periodo) => (
             <option key={periodo.id} value={periodo.id}>
               {periodo.etiqueta}
             </option>
           ))}
         </select>
-        <p className="ayuda">Sólo se listan los períodos abiertos: el resto no admite gastos.</p>
+        <p className="ayuda" id="ayuda-periodo">
+          Sólo se listan los períodos abiertos: el resto no admite gastos.
+        </p>
       </div>
 
       <div className="campo">
         <label htmlFor="rubro">Rubro</label>
         {marca('rubro')}
-        <select id="rubro" name="rubro" defaultValue={precargado.rubro ?? ''} required>
+        <select
+          id="rubro"
+          name="rubro"
+          defaultValue={precargado.rubro ?? ''}
+          required
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-gasto' : undefined}
+        >
           {rubros.map((rubro) => (
             <option key={rubro.id} value={rubro.id}>
               {rubro.etiqueta}
@@ -69,7 +88,13 @@ export function FormularioGasto({
       <div className="campo">
         <label htmlFor="proveedor">Proveedor</label>
         {marca('proveedor')}
-        <select id="proveedor" name="proveedor" defaultValue={precargado.proveedor ?? ''}>
+        <select
+          id="proveedor"
+          name="proveedor"
+          defaultValue={precargado.proveedor ?? ''}
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-gasto' : undefined}
+        >
           <option value="">Sin proveedor</option>
           {proveedores.map((proveedor) => (
             <option key={proveedor.id} value={proveedor.id}>
@@ -90,24 +115,42 @@ export function FormularioGasto({
           placeholder="0.00"
           defaultValue={precargado.importe ?? ''}
           required
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-gasto ayuda-importe' : 'ayuda-importe'}
         />
-        <p className="ayuda">Con punto decimal y hasta dos decimales. Sin separador de miles.</p>
+        <p className="ayuda" id="ayuda-importe">
+          Con punto decimal y hasta dos decimales. Sin separador de miles.
+        </p>
       </div>
 
       <div className="campo">
         <label htmlFor="fecha">Fecha</label>
         {marca('fecha')}
-        <input id="fecha" name="fecha" type="date" defaultValue={precargado.fecha ?? ''} required />
+        <input
+          id="fecha"
+          name="fecha"
+          type="date"
+          defaultValue={precargado.fecha ?? ''}
+          required
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-gasto' : undefined}
+        />
       </div>
 
       <div className="campo">
         <label htmlFor="descripcion">Descripción</label>
         {marca('descripcion')}
-        <input id="descripcion" name="descripcion" defaultValue={precargado.descripcion ?? ''} />
+        <input
+          id="descripcion"
+          name="descripcion"
+          defaultValue={precargado.descripcion ?? ''}
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-gasto' : undefined}
+        />
       </div>
 
-      {estado.mensaje && (
-        <p className="error" role="alert">
+      {hayError && (
+        <p className="error" id="error-gasto" role="alert">
           {estado.mensaje}
         </p>
       )}

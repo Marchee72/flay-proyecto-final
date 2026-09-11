@@ -28,17 +28,39 @@ export function FormularioInvitar({
 
       <div className="campo">
         <label htmlFor="nombre">Nombre</label>
-        <input id="nombre" name="nombre" required autoComplete="given-name" />
+        <input
+          id="nombre"
+          name="nombre"
+          required
+          autoComplete="given-name"
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-invitacion' : undefined}
+        />
       </div>
 
       <div className="campo">
         <label htmlFor="apellido">Apellido</label>
-        <input id="apellido" name="apellido" required autoComplete="family-name" />
+        <input
+          id="apellido"
+          name="apellido"
+          required
+          autoComplete="family-name"
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-invitacion' : undefined}
+        />
       </div>
 
       <div className="campo">
         <label htmlFor="correo">Correo electrónico</label>
-        <input id="correo" name="correo" type="email" required autoComplete="email" />
+        <input
+          id="correo"
+          name="correo"
+          type="email"
+          required
+          autoComplete="email"
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-invitacion ayuda-correo' : 'ayuda-correo'}
+        />
         <p className="ayuda" id="ayuda-correo">
           A esta dirección va el enlace para fijar la contraseña. Vence en 72 horas.
         </p>
@@ -46,7 +68,13 @@ export function FormularioInvitar({
 
       <div className="campo">
         <label htmlFor="rol">Rol</label>
-        <select id="rol" name="rol" defaultValue="consorcista">
+        <select
+          id="rol"
+          name="rol"
+          defaultValue="consorcista"
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-invitacion' : undefined}
+        >
           {roles.map((rol) => (
             <option key={rol.valor} value={rol.valor}>
               {rol.etiqueta}
@@ -57,11 +85,19 @@ export function FormularioInvitar({
 
       <div className="campo">
         <label htmlFor="vigenciaDesde">Habilitado desde</label>
-        <input id="vigenciaDesde" name="vigenciaDesde" type="date" defaultValue={hoy} required />
+        <input
+          id="vigenciaDesde"
+          name="vigenciaDesde"
+          type="date"
+          defaultValue={hoy}
+          required
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-invitacion' : undefined}
+        />
       </div>
 
       {hayError && (
-        <p className="error" role="alert">
+        <p className="error" id="error-invitacion" role="alert">
           {estado.mensaje}
         </p>
       )}

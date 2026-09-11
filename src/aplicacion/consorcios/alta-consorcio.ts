@@ -3,6 +3,7 @@ import { ErrorDeAplicacion } from '@/compartido/errores'
 import { exigirSumaExacta } from '@/dominio/coeficientes/suma'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
+import { TIPO_UNIDAD_POR_OMISION, type TipoUnidad } from '@/dominio/unidades/tipo'
 import { conAutorizacionDePlataforma } from '@/aplicacion/autorizacion'
 import { prismaBase } from '@/infraestructura/prisma'
 
@@ -10,6 +11,11 @@ import { prismaBase } from '@/infraestructura/prisma'
 export interface UnidadNueva {
   designacion: string
   coeficiente: string
+  /**
+   * Tipo de la unidad. Opcional y con omision a departamento: el alta desde el
+   * formulario historico no lo pide y sigue comportandose igual que antes.
+   */
+  tipo?: TipoUnidad
 }
 
 /**
@@ -93,6 +99,7 @@ export async function altaConsorcio(
             data: {
               consorcioId: creado.id,
               designacion: unidad.designacion,
+              tipo: unidad.tipo ?? TIPO_UNIDAD_POR_OMISION,
               coeficiente: unidad.coeficiente,
             },
           })

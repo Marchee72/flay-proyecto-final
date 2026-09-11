@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { Building2 } from 'lucide-react'
 
 import { misAdministradoras } from '@/aplicacion/administradoras/mis-administradoras'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
@@ -21,10 +22,13 @@ export default async function NuevoConsorcioPage() {
       <h1>Nuevo consorcio</h1>
 
       {administradoras.length === 0 ? (
-        <p className="vacio">
-          No tenés ninguna administradora a tu alcance. El alta de consorcios la autoriza el
-          administrador de la plataforma.
-        </p>
+        <div className="vacio">
+          <Building2 aria-hidden="true" />
+          <p>
+            Sin administradora al alcance. El alta de consorcios la autoriza el administrador de la
+            plataforma.
+          </p>
+        </div>
       ) : (
         <div className="tarjeta">
           <FormularioConsorcio administradoras={administradoras} />

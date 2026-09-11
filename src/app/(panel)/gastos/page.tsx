@@ -1,14 +1,22 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
+import { Building2, ChevronLeft, ChevronRight, Receipt, Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { importeParaMostrar } from '@/compartido/formato'
 import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarGastos } from '@/aplicacion/gastos/listar-gastos'
 import { listarPeriodos } from '@/aplicacion/periodos/periodos'
-import { listarRubros } from '@/aplicacion/proveedores/proveedores'
+import { listarProveedores, listarRubros } from '@/aplicacion/proveedores/proveedores'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+
+import { AvisoConsorcioNoElegido } from '../selector-consorcio'
+import { NOMBRE_GALLETA_CONSORCIO, resolverConsorcioActivo } from '../consorcio-activo'
+import { EncabezadoDeConsorcio } from '../encabezado-consorcio'
+import { ModalGasto } from './modal-gasto'
 
 export const metadata: Metadata = { title: 'Gastos — Flay' }
 
@@ -31,19 +39,42 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
 
   const parametros = await searchParams
   const consorcios = await misConsorcios(HABILITACIONES, RELOJ, usuarioId)
-  const activo = consorcios.find((c) => c.id === parametros.consorcio) ?? consorcios[0]
+
+  if (consorcios.length === 0) {
+    return (
+      <>
+        <h1>Gastos</h1>
+        <div className="vacio">
+          <Building2 aria-hidden="true" />
+          <p>Todavía no hay ningún consorcio al alcance.</p>
+        </div>
+      </>
+    )
+  }
+
+  const galletas = await cookies()
+  const { activo, pedidoDesconocido } = resolverConsorcioActivo(
+    parametros,
+    consorcios,
+    galletas.get(NOMBRE_GALLETA_CONSORCIO)?.value,
+  )
 
   if (!activo) {
     return (
       <>
         <h1>Gastos</h1>
-        <p className="vacio">Todavía no tenés ningún consorcio a tu alcance.</p>
+        <AvisoConsorcioNoElegido
+          consorcios={consorcios}
+          base="/gastos"
+          parametros={parametros}
+          pedidoDesconocido={pedidoDesconocido}
+        />
       </>
     )
   }
 
   try {
-    const [listado, periodos, rubros] = await Promise.all([
+    const [listado, periodos, rubros, proveedores] = await Promise.all([
       listarGastos(HABILITACIONES, RELOJ, {
         usuarioId,
         consorcioId: activo.id,
@@ -53,12 +84,43 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
       }),
       listarPeriodos(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
       listarRubros(),
+      listarProveedores(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
     ])
+
+    const abiertos = periodos.filter((periodo) => periodo.estado === 'abierto')
+    const precargado = Object.fromEntries(
+      (['rubro', 'proveedor', 'importe', 'fecha', 'descripcion', 'periodo'] as const)
+        .filter((campo) => (parametros as Record<string, string | undefined>)[campo])
+        .map((campo) => [
+          campo,
+          (parametros as Record<string, string | undefined>)[campo] as string,
+        ]),
+    )
 
     return (
       <>
+        <EncabezadoDeConsorcio
+          nombre={activo.nombre}
+          volverHref="/consorcios"
+          volverTexto="Volver a consorcios"
+        />
         <h1>Gastos</h1>
-        <p className="apagado">De {activo.nombre}.</p>
+
+        <p>
+          <ModalGasto
+            consorcioId={activo.id}
+            periodos={abiertos.map((periodo) => ({
+              id: periodo.id,
+              etiqueta: `${String(periodo.mes).padStart(2, '0')}/${periodo.anio}`,
+            }))}
+            rubros={rubros.map((rubro) => ({ id: rubro.id, etiqueta: rubro.nombre }))}
+            proveedores={proveedores.map((proveedor) => ({
+              id: proveedor.id,
+              etiqueta: proveedor.razonSocial,
+            }))}
+            precargado={precargado}
+          />
+        </p>
 
         <form method="get" className="fila-de-filtros">
           {consorcios.length > 1 ? (
@@ -106,10 +168,33 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
         </form>
 
         {listado.cantidad === 0 ? (
-          <p className="vacio">No hay gastos que coincidan con el filtro.</p>
+          <div className="vacio">
+            <Receipt aria-hidden="true" />
+            <p>No hay gastos que coincidan con el filtro.</p>
+            <p>
+              <ModalGasto
+                consorcioId={activo.id}
+                periodos={abiertos.map((periodo) => ({
+                  id: periodo.id,
+                  etiqueta: `${String(periodo.mes).padStart(2, '0')}/${periodo.anio}`,
+                }))}
+                rubros={rubros.map((rubro) => ({ id: rubro.id, etiqueta: rubro.nombre }))}
+                proveedores={proveedores.map((proveedor) => ({
+                  id: proveedor.id,
+                  etiqueta: proveedor.razonSocial,
+                }))}
+                precargado={precargado}
+              />
+            </p>
+          </div>
         ) : (
           <>
-            <div className="tabla-desplazable">
+            <div
+              className="tabla-desplazable"
+              tabIndex={0}
+              role="region"
+              aria-label="Gastos del filtro"
+            >
               <table>
                 <caption className="ayuda">
                   {listado.cantidad} gastos · página {listado.pagina} de {listado.paginas}
@@ -128,25 +213,25 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                 <tbody>
                   {listado.gastos.map((gasto) => (
                     <tr key={gasto.id}>
-                      <td className="cifra">{gasto.fecha}</td>
+                      <td>{formatearFecha(gasto.fecha)}</td>
                       <td>{gasto.rubro}</td>
                       <td>{gasto.proveedor ?? '—'}</td>
                       <td>
                         <Link href={`/gastos/${gasto.id}?consorcio=${activo.id}`}>
-                          {gasto.descripcion || 'Ver gasto'}
+                          {gasto.descripcion || 'Ver detalle'}
                         </Link>
                         {gasto.comprobantes > 0 && (
                           <span className="ayuda"> · {gasto.comprobantes} comprobante(s)</span>
                         )}
                       </td>
-                      <td className="numero cifra">{gasto.importe}</td>
+                      <td className="numero cifra">{importeParaMostrar(gasto.importe)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr>
                     <td colSpan={4}>Total del filtro</td>
-                    <td className="numero cifra">{listado.total}</td>
+                    <td className="numero cifra">{importeParaMostrar(listado.total)}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -161,7 +246,8 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
     if (!(error instanceof ErrorDeAplicacion)) throw error
     return (
       <p className="aviso aviso--problema" role="alert">
-        {error.mensajeParaUsuario}
+        <Siren className="icono" aria-hidden="true" />
+        <span>{error.mensajeParaUsuario}</span>
       </p>
     )
   }
@@ -185,18 +271,67 @@ function Paginado({
     return `/gastos?${busqueda}`
   }
 
+  const paginas = paginasAMostrar(listado.pagina, listado.paginas)
+
   return (
-    <nav className="fila-de-filtros" aria-label="Paginado">
-      {listado.pagina > 1 && (
-        <Link className="boton boton--fantasma" href={direccion(listado.pagina - 1)}>
-          Anterior
-        </Link>
-      )}
-      {listado.pagina < listado.paginas && (
-        <Link className="boton boton--fantasma" href={direccion(listado.pagina + 1)}>
-          Siguiente
-        </Link>
-      )}
+    <nav aria-label="Paginación de gastos">
+      <ul className="paginacion">
+        {listado.pagina > 1 && (
+          <li>
+            <Link href={direccion(listado.pagina - 1)}>
+              <ChevronLeft className="icono" aria-hidden="true" />
+              Anterior
+            </Link>
+          </li>
+        )}
+        {paginas.map((pagina) => (
+          <li key={pagina}>
+            {pagina === listado.pagina ? (
+              <Link
+                href={direccion(pagina)}
+                aria-current="page"
+                aria-label={`Página ${pagina}, página actual`}
+              >
+                {pagina}
+              </Link>
+            ) : (
+              <Link href={direccion(pagina)} aria-label={`Ir a la página ${pagina}`}>
+                {pagina}
+              </Link>
+            )}
+          </li>
+        ))}
+        {listado.pagina < listado.paginas && (
+          <li>
+            <Link href={direccion(listado.pagina + 1)}>
+              Siguiente
+              <ChevronRight className="icono" aria-hidden="true" />
+            </Link>
+          </li>
+        )}
+      </ul>
     </nav>
   )
+}
+
+/**
+ * `2026-09-05` → `05/09/2026`: solo reordena la cadena (§4, presentación).
+ * La fecha no es dinero: se muestra sin `.cifra`.
+ */
+function formatearFecha(iso: string): string {
+  const [anio, mes, dia] = iso.split('-')
+  return `${dia}/${mes}/${anio}`
+}
+
+/**
+ * Ventana de hasta 5 páginas centrada en la actual (solo presentación): evita
+ * una fila de 100 enlaces cuando el listado crece. Sin aritmética monetaria,
+ * solo índices de página.
+ */
+function paginasAMostrar(actual: number, total: number): number[] {
+  const inicio = Math.max(1, Math.min(actual - 2, total - 4))
+  const fin = Math.min(total, inicio + 4)
+  const paginas: number[] = []
+  for (let pagina = inicio; pagina <= fin; pagina++) paginas.push(pagina)
+  return paginas
 }

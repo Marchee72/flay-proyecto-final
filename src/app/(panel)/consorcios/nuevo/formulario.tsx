@@ -16,12 +16,19 @@ export function FormularioConsorcio({
   administradoras: readonly { id: string; razonSocial: string }[]
 }) {
   const [estado, accion, enviando] = useActionState(accionAltaConsorcio, SIN_ERROR)
+  const hayError = estado.mensaje !== ''
 
   return (
     <form action={accion} noValidate>
       <div className="campo">
         <label htmlFor="administradora">Administradora</label>
-        <select id="administradora" name="administradora" required>
+        <select
+          id="administradora"
+          name="administradora"
+          required
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-consorcio' : undefined}
+        >
           {administradoras.map((administradora) => (
             <option key={administradora.id} value={administradora.id}>
               {administradora.razonSocial}
@@ -32,26 +39,51 @@ export function FormularioConsorcio({
 
       <div className="campo">
         <label htmlFor="nombre">Nombre</label>
-        <input id="nombre" name="nombre" required />
+        <input
+          id="nombre"
+          name="nombre"
+          required
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-consorcio' : undefined}
+        />
       </div>
 
       <div className="campo">
         <label htmlFor="direccion">Dirección</label>
-        <input id="direccion" name="direccion" required />
+        <input
+          id="direccion"
+          name="direccion"
+          required
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-consorcio' : undefined}
+        />
       </div>
 
       <div className="campo">
         <label htmlFor="localidad">Localidad</label>
-        <input id="localidad" name="localidad" required />
+        <input
+          id="localidad"
+          name="localidad"
+          required
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-consorcio' : undefined}
+        />
       </div>
 
       <div className="campo">
         <label htmlFor="cuit">CUIT</label>
-        <input id="cuit" name="cuit" required inputMode="numeric" />
+        <input
+          id="cuit"
+          name="cuit"
+          required
+          inputMode="numeric"
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-consorcio' : undefined}
+        />
       </div>
 
-      {estado.mensaje && (
-        <p className="error" role="alert">
+      {hayError && (
+        <p className="error" id="error-consorcio" role="alert">
           {estado.mensaje}
         </p>
       )}

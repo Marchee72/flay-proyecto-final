@@ -57,13 +57,20 @@ model Consorcio {
   creadoEn         DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn    DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  administradora Administradora @relation(fields: [administradoraId], references: [id])
+  administradora Administradora          @relation(fields: [administradoraId], references: [id])
   unidades       Unidad[]
   proveedores    Proveedor[]
   periodos       Periodo[]
   gastos         Gasto[]
   liquidaciones  Liquidacion[]
   pagos          Pago[]
+  reclamos       Reclamo[]
+  espacios       EspacioComun[]
+  reservas       Reserva[]
+  novedades      Novedad[]
+  documentos     DocumentoConsorcio[]
+  consultas      ConsultaDocumental[]
+  extracciones   ExtraccionComprobante[]
 
   @@index([administradoraId])
 }
@@ -106,6 +113,10 @@ enum TipoTrabajo {
   invitacion
   confirmacion_subida
   documento_expensa
+  notificacion
+  extraccion_comprobante
+  triage_reclamo
+  indexar_documento
 }
 
 enum EstadoTrabajo {
@@ -251,6 +262,8 @@ model Unidad {
   ocupaciones Ocupacion[]
   detalles    DetalleLiquidacion[]
   pagos       Pago[]
+  reclamos    Reclamo[]
+  reservas    Reserva[]
 
   @@unique([consorcioId, designacion])
   @@index([consorcioId])
@@ -323,8 +336,10 @@ model RubroGasto {
   creadoEn      DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn DateTime      @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  gastos     Gasto[]
-  habituales Proveedor[]
+  gastos       Gasto[]
+  habituales   Proveedor[]
+  reclamos     Reclamo[]
+  extracciones ExtraccionComprobante[]
 }
 
 /// Ordinario o extraordinario (regla RN-04). Se **congela en el gasto** al
@@ -349,6 +364,7 @@ model Proveedor {
   consorcio     Consorcio   @relation(fields: [consorcioId], references: [id])
   rubroHabitual RubroGasto? @relation(fields: [rubroHabitualId], references: [id])
   gastos        Gasto[]
+  reclamos      Reclamo[]
 
   @@unique([consorcioId, cuit])
   @@index([consorcioId])
@@ -399,11 +415,13 @@ model Gasto {
   creadoEn      DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn DateTime      @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  consorcio    Consorcio     @relation(fields: [consorcioId], references: [id])
-  periodo      Periodo       @relation(fields: [periodoId], references: [id])
-  rubro        RubroGasto    @relation(fields: [rubroId], references: [id])
-  proveedor    Proveedor?    @relation(fields: [proveedorId], references: [id])
+  consorcio    Consorcio              @relation(fields: [consorcioId], references: [id])
+  periodo      Periodo                @relation(fields: [periodoId], references: [id])
+  rubro        RubroGasto             @relation(fields: [rubroId], references: [id])
+  proveedor    Proveedor?             @relation(fields: [proveedorId], references: [id])
   comprobantes Comprobante[]
+  reclamos     Reclamo[]
+  extraccion   ExtraccionComprobante?
 
   @@index([consorcioId, periodoId, rubroId])
   @@index([consorcioId, fecha])
@@ -424,7 +442,8 @@ model Comprobante {
   creadoEn      DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn DateTime          @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  gasto Gasto @relation(fields: [gastoId], references: [id])
+  gasto      Gasto                  @relation(fields: [gastoId], references: [id])
+  extraccion ExtraccionComprobante?
 
   @@index([gastoId])
 }
@@ -606,6 +625,7 @@ enum TipoNotificacion {
   liquidacion_publicada
   cambio_estado_reclamo
   reserva_confirmada
+  reserva_rechazada
   vencimiento_proximo
   novedad
 }
@@ -614,4 +634,290 @@ enum EstadoEnvio {
   pendiente
   enviada
   fallida
+}
+
+// ---------------------------------------------------------------------------
+// 004-servicios: reclamos, reservas, comunicacion y asistencia automatica.
+// Lo que declara `consorcioId` queda aislado por la extension de 001 sin
+// escribir un filtro. Lo que no lo declara se alcanza por su padre, nunca
+// directo (decision 10 de CLAUDE.md).
+// ---------------------------------------------------------------------------
+
+/// Pedido de intervencion (RF-11, RF-13, CU-07). RN-11 la impone la base:
+/// `CHECK (estado = 'abierto' OR responsable_id IS NOT NULL)`.
+model Reclamo {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId     String         @map("consorcio_id") @db.Uuid
+  unidadId        String?        @map("unidad_id") @db.Uuid
+  creadoPor       String         @map("creado_por") @db.Uuid
+  titulo          String         @db.VarChar(140)
+  descripcion     String         @db.Text
+  alcance         AlcanceReclamo @default(individual)
+  rubroId         String?        @map("rubro_id") @db.Uuid
+  urgencia        Urgencia       @default(media)
+  estado          EstadoReclamo  @default(abierto)
+  responsableId   String?        @map("responsable_id") @db.Uuid
+  proveedorId     String?        @map("proveedor_id") @db.Uuid
+  gastoId         String?        @map("gasto_id") @db.Uuid
+  fechaApertura   DateTime       @default(now()) @map("fecha_apertura") @db.Timestamptz(6)
+  fechaResolucion DateTime?      @map("fecha_resolucion") @db.Timestamptz(6)
+  creadoEn        DateTime       @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn   DateTime       @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio  Consorcio          @relation(fields: [consorcioId], references: [id])
+  unidad     Unidad?            @relation(fields: [unidadId], references: [id])
+  rubro      RubroGasto?        @relation(fields: [rubroId], references: [id])
+  proveedor  Proveedor?         @relation(fields: [proveedorId], references: [id])
+  gasto      Gasto?             @relation(fields: [gastoId], references: [id])
+  historial  ReclamoHistorial[]
+  sugerencia SugerenciaReclamo?
+
+  @@index([consorcioId, estado, fechaApertura])
+}
+
+enum AlcanceReclamo {
+  individual
+  general
+}
+
+enum Urgencia {
+  baja
+  media
+  alta
+  critica
+}
+
+enum EstadoReclamo {
+  abierto
+  asignado
+  en_curso
+  resuelto
+  cerrado
+  rechazado
+}
+
+/// Un asiento por transicion, en la misma transaccion que el cambio (SC-003).
+/// Fuente del indicador I-4. Sin consorcio: se alcanza por el reclamo.
+model ReclamoHistorial {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reclamoId      String         @map("reclamo_id") @db.Uuid
+  estadoAnterior EstadoReclamo? @map("estado_anterior")
+  estadoNuevo    EstadoReclamo  @map("estado_nuevo")
+  comentario     String?        @db.Text
+  usuarioId      String         @map("usuario_id") @db.Uuid
+  ocurridoEn     DateTime       @default(now()) @map("ocurrido_en") @db.Timestamptz(6)
+
+  reclamo Reclamo @relation(fields: [reclamoId], references: [id], onDelete: Cascade)
+
+  @@index([reclamoId, ocurridoEn])
+}
+
+/// Triage asistido (RF-12, CU-14): sugiere, nunca decide (Principio IV).
+model SugerenciaReclamo {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reclamoId           String    @unique @map("reclamo_id") @db.Uuid
+  rubroSugeridoId     String?   @map("rubro_sugerido_id") @db.Uuid
+  urgenciaSugerida    Urgencia? @map("urgencia_sugerida")
+  proveedorSugeridoId String?   @map("proveedor_sugerido_id") @db.Uuid
+  horasEstimadas      Int?      @map("horas_estimadas")
+  confianza           Decimal?  @db.Decimal(4, 3)
+  /// Nulo hasta que el administrador aplica (true) o descarta (false).
+  aceptada            Boolean?
+  procesadoEn         DateTime  @default(now()) @map("procesado_en") @db.Timestamptz(6)
+
+  reclamo Reclamo @relation(fields: [reclamoId], references: [id], onDelete: Cascade)
+}
+
+/// Espacio de uso comun y las reglas del reglamento interno (RF-15).
+model EspacioComun {
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId             String   @map("consorcio_id") @db.Uuid
+  nombre                  String   @db.VarChar(80)
+  capacidadMaxima         Int?     @map("capacidad_maxima")
+  anticipacionMinimaHoras Int      @default(48) @map("anticipacion_minima_horas")
+  anticipacionMaximaDias  Int      @default(60) @map("anticipacion_maxima_dias")
+  duracionMaximaHoras     Int      @default(8) @map("duracion_maxima_horas")
+  reservasMaxMesUnidad    Int      @default(2) @map("reservas_max_mes_unidad")
+  /// El cobro del deposito no se construye en esta etapa; el campo existe para
+  /// que el reglamento se pueda cargar entero.
+  requiereDeposito        Boolean  @default(false) @map("requiere_deposito")
+  importeDeposito         Decimal? @map("importe_deposito") @db.Decimal(14, 2)
+  activo                  Boolean  @default(true)
+  creadoEn                DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn           DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio Consorcio @relation(fields: [consorcioId], references: [id])
+  reservas  Reserva[]
+
+  @@unique([consorcioId, nombre])
+}
+
+/// Reserva de un espacio (RF-16, CU-09). La superposicion la rechaza la base:
+/// `EXCLUDE USING gist (espacio_id WITH =, tstzrange(desde, hasta) WITH &&)
+/// WHERE (estado = 'confirmada')` (regla RN-10 § 7.2).
+model Reserva {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId      String        @map("consorcio_id") @db.Uuid
+  espacioId        String        @map("espacio_id") @db.Uuid
+  unidadId         String        @map("unidad_id") @db.Uuid
+  solicitadaPor    String        @map("solicitada_por") @db.Uuid
+  desde            DateTime      @db.Timestamptz(6)
+  hasta            DateTime      @db.Timestamptz(6)
+  cantidadPersonas Int?          @map("cantidad_personas")
+  estado           EstadoReserva @default(confirmada)
+  motivoRechazo    String?       @map("motivo_rechazo") @db.Text
+  observaciones    String?       @db.Text
+  creadoEn         DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn    DateTime      @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio Consorcio    @relation(fields: [consorcioId], references: [id])
+  espacio   EspacioComun @relation(fields: [espacioId], references: [id])
+  unidad    Unidad       @relation(fields: [unidadId], references: [id])
+
+  @@index([consorcioId, espacioId, desde])
+  @@index([unidadId, desde])
+}
+
+enum EstadoReserva {
+  pendiente
+  confirmada
+  cancelada
+  cumplida
+  rechazada
+}
+
+/// Comunicado del consorcio (RF-18, CU-12).
+model Novedad {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId   String   @map("consorcio_id") @db.Uuid
+  titulo        String   @db.VarChar(140)
+  cuerpo        String   @db.Text
+  publicadaPor  String   @map("publicada_por") @db.Uuid
+  publicadaEn   DateTime @default(now()) @map("publicada_en") @db.Timestamptz(6)
+  fijada        Boolean  @default(false)
+  creadoEn      DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio Consorcio @relation(fields: [consorcioId], references: [id])
+
+  @@index([consorcioId, fijada, publicadaEn])
+}
+
+/// Reglamento, acta o contrato (RF-19, CU-15). La baja esta diferida (§ 9.11).
+model DocumentoConsorcio {
+  id                  String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId         String           @map("consorcio_id") @db.Uuid
+  tipo                TipoDocumento
+  titulo              String           @db.VarChar(200)
+  claveAlmacenamiento String           @map("clave_almacenamiento") @db.VarChar(400)
+  tipoContenido       String           @map("tipo_contenido") @db.Text
+  /// La calcula el indexador al bajar los bytes; nula hasta entonces.
+  hashSha256          String?          @map("hash_sha256") @db.Char(64)
+  fechaDocumento      DateTime?        @map("fecha_documento") @db.Date
+  /// false: solo administrador y consejo (SC-016).
+  visibleConsorcistas Boolean          @default(true) @map("visible_consorcistas")
+  estadoIndexacion    EstadoIndexacion @default(pendiente) @map("estado_indexacion")
+  errorIndexacion     String?          @map("error_indexacion") @db.Text
+  cargadoPor          String           @map("cargado_por") @db.Uuid
+  creadoEn            DateTime         @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn       DateTime         @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio  Consorcio            @relation(fields: [consorcioId], references: [id])
+  fragmentos FragmentoDocumento[]
+
+  @@index([consorcioId, tipo])
+}
+
+enum TipoDocumento {
+  reglamento_copropiedad
+  reglamento_interno
+  acta
+  contrato
+  poliza
+  otro
+}
+
+enum EstadoIndexacion {
+  pendiente
+  procesando
+  indexado
+  error
+}
+
+/// Fragmento indexado con su vector (RF-20). **Nunca se consulta directo**: la
+/// unica busqueda une con el documento y filtra por consorcio y visibilidad en
+/// el WHERE, antes de ordenar por distancia (FR-029, research R-06).
+model FragmentoDocumento {
+  id              String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentoId     String                      @map("documento_id") @db.Uuid
+  numeroFragmento Int                         @map("numero_fragmento")
+  pagina          Int?
+  contenido       String                      @db.Text
+  vector          Unsupported("vector(768)")?
+
+  documento DocumentoConsorcio @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+
+  @@unique([documentoId, numeroFragmento])
+}
+
+/// Pregunta, respuesta y fuentes (RF-20, CU-10). `sinRespaldo` es la evidencia
+/// de que el sistema no improvisa (Principio IV, SC-015).
+model ConsultaDocumental {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId       String   @map("consorcio_id") @db.Uuid
+  usuarioId         String   @map("usuario_id") @db.Uuid
+  pregunta          String   @db.Text
+  respuesta         String?  @db.Text
+  fragmentosCitados Json     @default("[]") @map("fragmentos_citados") @db.JsonB
+  sinRespaldo       Boolean  @map("sin_respaldo")
+  util              Boolean?
+  consultadoEn      DateTime @default(now()) @map("consultado_en") @db.Timestamptz(6)
+
+  consorcio Consorcio @relation(fields: [consorcioId], references: [id])
+
+  @@index([consorcioId, consultadoEn])
+}
+
+/// Datos propuestos a partir de un comprobante (RF-06, CU-13) — **economica**.
+/// Separada de `Gasto`: el gasto nace solo al confirmar (regla RN-14 § 7.2).
+/// Lleva consorcio y clave de objeto propios porque el comprobante se sube
+/// antes de que exista el gasto (research R-04).
+model ExtraccionComprobante {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId        String           @map("consorcio_id") @db.Uuid
+  claveObjeto        String           @map("clave_objeto") @db.Text
+  tipoContenido      String           @map("tipo_contenido") @db.Text
+  comprobanteId      String?          @unique @map("comprobante_id") @db.Uuid
+  proveedorDetectado String?          @map("proveedor_detectado") @db.VarChar(160)
+  cuitDetectado      String?          @map("cuit_detectado") @db.VarChar(13)
+  fechaDetectada     DateTime?        @map("fecha_detectada") @db.Date
+  importeDetectado   Decimal?         @map("importe_detectado") @db.Decimal(14, 2)
+  rubroSugeridoId    String?          @map("rubro_sugerido_id") @db.Uuid
+  confianza          Decimal?         @db.Decimal(4, 3)
+  confianzaPorCampo  Json?            @map("confianza_por_campo") @db.JsonB
+  estado             EstadoExtraccion @default(pendiente)
+  confirmadaPor      String?          @map("confirmada_por") @db.Uuid
+  /// Los campos que la persona cambio: fuente de I-5.
+  camposCorregidos   Json?            @map("campos_corregidos") @db.JsonB
+  gastoId            String?          @unique @map("gasto_id") @db.Uuid
+  cargadoPor         String           @map("cargado_por") @db.Uuid
+  procesadoEn        DateTime?        @map("procesado_en") @db.Timestamptz(6)
+  creadoEn           DateTime         @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn      DateTime         @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio   Consorcio    @relation(fields: [consorcioId], references: [id])
+  comprobante Comprobante? @relation(fields: [comprobanteId], references: [id])
+  gasto       Gasto?       @relation(fields: [gastoId], references: [id])
+  rubro       RubroGasto?  @relation(fields: [rubroSugeridoId], references: [id])
+
+  @@index([consorcioId, estado])
+}
+
+enum EstadoExtraccion {
+  pendiente
+  propuesta
+  confirmada
+  corregida
+  descartada
+  no_disponible
 }

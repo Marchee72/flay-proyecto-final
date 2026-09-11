@@ -17,6 +17,8 @@ const PERMITIDOS: Record<string, string> = {
     'decide el aislamiento: sujetarla a el seria circular',
   'src/aplicacion/consorcios/ver-consorcio.ts':
     'la cabecera es el consorcio, direccionado por su propio identificador',
+  'src/aplicacion/liquidacion/liquidar.ts':
+    'lee del consorcio, por su propio identificador, el dia de vencimiento y la tasa de mora',
   'src/aplicacion/consorcios/alta-consorcio.ts':
     'crea el consorcio: trabaja por encima del aislamiento, no hay contexto todavia',
   'src/aplicacion/consorcios/registrar-ocupacion.ts': 'otorga la habilitacion del consorcista',

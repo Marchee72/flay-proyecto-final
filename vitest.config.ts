@@ -11,12 +11,38 @@ const alias = { '@': fileURLToPath(new URL('./src', import.meta.url)) }
  */
 export default defineConfig({
   test: {
+    /**
+     * El unico umbral de cobertura del repositorio, y es del 100 % de ramas
+     * (SC-014): el motor de liquidacion es el lugar donde un error invalida el
+     * sistema. Poner un umbral global mas bajo seria peor que no tenerlo, asi
+     * que el resto queda sin exigencia y esta carpeta con la maxima.
+     */
+    coverage: {
+      provider: 'v8',
+      include: ['src/dominio/liquidacion/**'],
+      thresholds: { branches: 100, functions: 100, lines: 100, statements: 100 },
+    },
     projects: [
       {
         resolve: { alias },
         test: {
           name: 'dominio',
           include: ['pruebas/dominio/**/*.spec.ts'],
+          environment: 'node',
+          setupFiles: ['pruebas/dominio/sin-base.ts'],
+        },
+      },
+      {
+        /**
+         * La validacion contra las tres liquidaciones reales del cliente
+         * (paquete 4.6, SC-005). Proyecto propio y **sin base**: es la condicion
+         * de aceptacion del entregable, no una prueba de integracion mas, y
+         * tiene que poder correrse sola.
+         */
+        resolve: { alias },
+        test: {
+          name: 'planillas',
+          include: ['pruebas/planillas/**/*.spec.ts'],
           environment: 'node',
           setupFiles: ['pruebas/dominio/sin-base.ts'],
         },

@@ -8,6 +8,9 @@ import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarPeriodos } from '@/aplicacion/periodos/periodos'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 
+import { importeParaMostrar } from '@/compartido/formato'
+
+import { BotonAnular, BotonCerrar, BotonLiquidar } from './acciones-de-estado'
 import { FormularioPeriodo } from './formulario'
 
 export const metadata: Metadata = { title: 'Períodos — Flay' }
@@ -65,6 +68,10 @@ export default async function PeriodosPage({
                   <th scope="col" className="numero">
                     Gastos
                   </th>
+                  <th scope="col" className="numero">
+                    Liquidación
+                  </th>
+                  {administra && <th scope="col">Acciones</th>}
                 </tr>
               </thead>
               <tbody>
@@ -75,6 +82,36 @@ export default async function PeriodosPage({
                     </td>
                     <td>{periodo.estado}</td>
                     <td className="numero cifra">{periodo.gastos}</td>
+                    <td className="numero cifra">
+                      {periodo.liquidacion ? (
+                        <>
+                          <Link
+                            href={`/liquidaciones/${periodo.liquidacion.id}?consorcio=${activo.id}`}
+                          >
+                            {importeParaMostrar(periodo.liquidacion.totalGeneral)}
+                          </Link>
+                          <span className="ayuda"> vence {periodo.liquidacion.vencimiento}</span>
+                        </>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    {administra && (
+                      <td>
+                        {periodo.estado === 'abierto' && (
+                          <BotonCerrar consorcioId={activo.id} periodoId={periodo.id} />
+                        )}
+                        {periodo.estado !== 'abierto' && !periodo.liquidacion && (
+                          <BotonLiquidar consorcioId={activo.id} periodoId={periodo.id} />
+                        )}
+                        {periodo.liquidacion && (
+                          <BotonAnular
+                            consorcioId={activo.id}
+                            liquidacionId={periodo.liquidacion.id}
+                          />
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

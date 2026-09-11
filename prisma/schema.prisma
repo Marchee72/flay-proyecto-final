@@ -47,6 +47,13 @@ model Consorcio {
   direccion        String   @db.Text
   localidad        String   @db.Text
   cuit             String   @unique @db.Text
+  /// Dia del mes siguiente en que vence la liquidacion (FR-002b). Tope 28 por
+  /// `CHECK`: el 30 no existe en febrero, y resolver esa excepcion en cada
+  /// calculo es la clase de defecto que aparece una vez al año.
+  diaVencimiento   Int      @default(10) @map("dia_vencimiento") @db.SmallInt
+  /// Tasa mensual de mora, la fija el administrador. Cero es valido: hay
+  /// consorcios que no cobran mora.
+  tasaMoraMensual  Decimal  @default(0) @map("tasa_mora_mensual") @db.Decimal(6, 4)
   creadoEn         DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn    DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
@@ -55,6 +62,8 @@ model Consorcio {
   proveedores    Proveedor[]
   periodos       Periodo[]
   gastos         Gasto[]
+  liquidaciones  Liquidacion[]
+  pagos          Pago[]
 
   @@index([administradoraId])
 }
@@ -96,6 +105,7 @@ model TrabajoPendiente {
 enum TipoTrabajo {
   invitacion
   confirmacion_subida
+  documento_expensa
 }
 
 enum EstadoTrabajo {
@@ -239,6 +249,8 @@ model Unidad {
   consorcio   Consorcio              @relation(fields: [consorcioId], references: [id])
   historico   CoeficienteHistorico[]
   ocupaciones Ocupacion[]
+  detalles    DetalleLiquidacion[]
+  pagos       Pago[]
 
   @@unique([consorcioId, designacion])
   @@index([consorcioId])
@@ -357,8 +369,9 @@ model Periodo {
   creadoEn      DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn DateTime      @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  consorcio Consorcio @relation(fields: [consorcioId], references: [id])
-  gastos    Gasto[]
+  consorcio     Consorcio     @relation(fields: [consorcioId], references: [id])
+  gastos        Gasto[]
+  liquidaciones Liquidacion[]
 
   @@unique([consorcioId, anio, mes])
   @@index([consorcioId])
@@ -420,4 +433,185 @@ enum EstadoComprobante {
   pendiente
   disponible
   fallido
+}
+
+/// Emision de expensas de un periodo — **economica** (RF-07, regla RN-06 § 7.2).
+///
+/// El candado contra la emision doble **no es el estado del periodo**: despues
+/// de anular, una reemision legitima lo encuentra en `liquidado` igual. Es un
+/// indice unico **parcial** sobre (periodo_id) WHERE estado = vigente, escrito
+/// a mano en la migracion (FR-003b, research R-03).
+model Liquidacion {
+  id                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId         String            @map("consorcio_id") @db.Uuid
+  periodoId           String            @map("periodo_id") @db.Uuid
+  totalOrdinario      Decimal           @map("total_ordinario") @db.Decimal(14, 2)
+  totalExtraordinario Decimal           @map("total_extraordinario") @db.Decimal(14, 2)
+  totalGeneral        Decimal           @map("total_general") @db.Decimal(14, 2)
+  /// Copiado al emitir desde `Consorcio.dia_vencimiento`: una liquidacion vieja
+  /// conserva su vencimiento aunque despues cambien el dia (FR-002b).
+  vencimiento         DateTime          @db.Date
+  emitidaEn           DateTime          @default(now()) @map("emitida_en") @db.Timestamptz(6)
+  emitidaPor          String            @map("emitida_por") @db.Uuid
+  estado              EstadoLiquidacion @default(vigente)
+  anulaAId            String?           @map("anula_a_id") @db.Uuid
+  creadoEn            DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn       DateTime          @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio  Consorcio            @relation(fields: [consorcioId], references: [id])
+  periodo    Periodo              @relation(fields: [periodoId], references: [id])
+  anulaA     Liquidacion?         @relation("Reemplazo", fields: [anulaAId], references: [id])
+  anuladaPor Liquidacion[]        @relation("Reemplazo")
+  detalles   DetalleLiquidacion[]
+  intereses  InteresLiquidado[]   @relation("Origen")
+
+  @@index([consorcioId])
+  @@index([periodoId])
+}
+
+enum EstadoLiquidacion {
+  vigente
+  anulada
+}
+
+/// Lo que se le liquida a una unidad — **economica**.
+///
+/// Es **una sola obligacion**: los dos subtotales de la Ley 27.551 son
+/// informativos y el cobro es por unidad (FR-011b). No lleva `consorcio_id`:
+/// cuelga de `Liquidacion`, que si lo lleva.
+model DetalleLiquidacion {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  liquidacionId         String   @map("liquidacion_id") @db.Uuid
+  unidadId              String   @map("unidad_id") @db.Uuid
+  coeficienteAplicado   Decimal  @map("coeficiente_aplicado") @db.Decimal(11, 8)
+  importeOrdinario      Decimal  @map("importe_ordinario") @db.Decimal(14, 2)
+  importeExtraordinario Decimal  @map("importe_extraordinario") @db.Decimal(14, 2)
+  deudaAnterior         Decimal  @default(0) @map("deuda_anterior") @db.Decimal(14, 2)
+  interesMora           Decimal  @default(0) @map("interes_mora") @db.Decimal(14, 2)
+  saldoAFavorAplicado   Decimal  @default(0) @map("saldo_a_favor_aplicado") @db.Decimal(14, 2)
+  /// Campo propio, no mezclado con el importe: es lo que se le puede explicar a
+  /// un propietario que pregunta (regla RN-07 § 7.2).
+  ajusteRedondeo        Decimal  @default(0) @map("ajuste_redondeo") @db.Decimal(14, 2)
+  totalUnidad           Decimal  @map("total_unidad") @db.Decimal(14, 2)
+  /// Nulo mientras el trabajo diferido no genero el documento (FR-016).
+  claveDocumento        String?  @map("clave_documento") @db.Text
+  creadoEn              DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn         DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  liquidacion  Liquidacion        @relation(fields: [liquidacionId], references: [id])
+  unidad       Unidad             @relation(fields: [unidadId], references: [id])
+  intereses    InteresLiquidado[]
+  imputaciones PagoImputacion[]
+
+  @@unique([liquidacionId, unidadId])
+  @@index([unidadId])
+}
+
+/// Desglose del interes: una fila por liquidacion impaga — **economica**.
+///
+/// Existe porque el interes de una unidad es la **suma de varios calculos**, uno
+/// por cada liquidacion vencida desde su propio vencimiento (FR-024). Guardar
+/// solo el total no lo reconstruye: apenas llega un pago posterior ya no se sabe
+/// que estaba impago al emitir (research R-07).
+model InteresLiquidado {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  detalleId           String   @map("detalle_id") @db.Uuid
+  liquidacionOrigenId String   @map("liquidacion_origen_id") @db.Uuid
+  capital             Decimal  @db.Decimal(14, 2)
+  tasaMensual         Decimal  @map("tasa_mensual") @db.Decimal(6, 4)
+  meses               Int      @db.SmallInt
+  importe             Decimal  @db.Decimal(14, 2)
+  creadoEn            DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn       DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  detalle           DetalleLiquidacion @relation(fields: [detalleId], references: [id])
+  liquidacionOrigen Liquidacion        @relation("Origen", fields: [liquidacionOrigenId], references: [id])
+
+  @@index([detalleId])
+}
+
+/// Cobro recibido de una unidad — **economica** (RF-09).
+model Pago {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId   String      @map("consorcio_id") @db.Uuid
+  unidadId      String      @map("unidad_id") @db.Uuid
+  fechaPago     DateTime    @map("fecha_pago") @db.Date
+  importe       Decimal     @db.Decimal(14, 2)
+  medio         MedioDePago
+  referencia    String?     @db.Text
+  /// Excedente sin imputar. Se aplica **solo** a la liquidacion siguiente de la
+  /// unidad, y despues de los intereses (FR-026, FR-026b, M-05).
+  saldoAFavor   Decimal     @default(0) @map("saldo_a_favor") @db.Decimal(14, 2)
+  registradoPor String      @map("registrado_por") @db.Uuid
+  creadoEn      DateTime    @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime    @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio    Consorcio        @relation(fields: [consorcioId], references: [id])
+  unidad       Unidad           @relation(fields: [unidadId], references: [id])
+  imputaciones PagoImputacion[]
+
+  @@index([consorcioId])
+  @@index([unidadId, fechaPago])
+}
+
+enum MedioDePago {
+  transferencia
+  efectivo
+  deposito
+  debito
+}
+
+/// Aplicacion de un pago a un detalle — **economica** (regla RN-08 § 7.2).
+///
+/// La reversion **marca**, nunca borra: una imputacion borrada es plata que se
+/// movio sin rastro (FR-027).
+model PagoImputacion {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pagoId               String    @map("pago_id") @db.Uuid
+  detalleLiquidacionId String    @map("detalle_liquidacion_id") @db.Uuid
+  importeImputado      Decimal   @map("importe_imputado") @db.Decimal(14, 2)
+  revertidaEn          DateTime? @map("revertida_en") @db.Timestamptz(6)
+  creadoEn             DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn        DateTime  @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  pago    Pago               @relation(fields: [pagoId], references: [id])
+  detalle DetalleLiquidacion @relation(fields: [detalleLiquidacionId], references: [id])
+
+  @@index([pagoId])
+  @@index([detalleLiquidacionId])
+}
+
+/// Aviso pendiente de despacho. **No economica**: no lleva disparador.
+///
+/// Esta etapa solo crea filas en `pendiente`; el despachador es de
+/// `004-servicios` (FR-015, hallazgo 2, research R-08).
+model Notificacion {
+  id            String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuarioId     String           @map("usuario_id") @db.Uuid
+  tipo          TipoNotificacion
+  titulo        String           @db.Text
+  cuerpo        String           @db.Text
+  entidadTipo   String?          @map("entidad_tipo") @db.Text
+  entidadId     String?          @map("entidad_id") @db.Uuid
+  enviadaEn     DateTime?        @map("enviada_en") @db.Timestamptz(6)
+  leidaEn       DateTime?        @map("leida_en") @db.Timestamptz(6)
+  estadoEnvio   EstadoEnvio      @default(pendiente)
+  creadoEn      DateTime         @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime         @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  @@index([usuarioId, estadoEnvio])
+}
+
+enum TipoNotificacion {
+  liquidacion_publicada
+  cambio_estado_reclamo
+  reserva_confirmada
+  vencimiento_proximo
+  novedad
+}
+
+enum EstadoEnvio {
+  pendiente
+  enviada
+  fallida
 }

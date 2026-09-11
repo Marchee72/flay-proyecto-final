@@ -50,6 +50,21 @@ export const almacenBlob: AlmacenObjetos = {
   },
 
   /**
+   * Los bytes del documento de expensa los produce el servidor, asi que acá si
+   * atraviesan el proceso: son unos pocos kilobytes de PDF, no los 25 MB de un
+   * comprobante (`003-liquidacion` research R-01).
+   */
+  async guardar(clave: string, bytes: Uint8Array, tipoContenido: 'application/pdf'): Promise<void> {
+    const { put } = await import('@vercel/blob')
+    await put(clave, Buffer.from(bytes), {
+      token: token(),
+      access: 'public',
+      contentType: tipoContenido,
+      addRandomSuffix: false,
+    })
+  },
+
+  /**
    * Lectura autorizada. El comprobante no es publico: la direccion se resuelve
    * recien cuando alguien con habilitacion vigente lo pide (FR-018).
    */

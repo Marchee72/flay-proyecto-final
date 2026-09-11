@@ -50,4 +50,20 @@ describe('fixtures negativas', () => {
     expect(status).not.toBe(0)
     expect(salida).toContain('El dominio no conoce la base de datos')
   })
+
+  /**
+   * La puerta que mas importa: si el punto flotante entra al motor de
+   * liquidacion, ninguna otra medida alcanza (`003-liquidacion` FR-007).
+   */
+  it('5. total de gastos como numero: el motor de prorrateo no lo acepta', () => {
+    const { status, stdout } = correr('npx', [
+      'tsc',
+      '--noEmit',
+      '-p',
+      'pruebas/fixtures-negativas/tsconfig.json',
+    ])
+    expect(status).not.toBe(0)
+    expect(stdout).toContain("Type 'number' is not assignable to type 'string'")
+    expect(stdout).toContain('prorrateo-con-numero.ts')
+  })
 })

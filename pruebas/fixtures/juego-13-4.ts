@@ -61,6 +61,9 @@ export const JUEGO = {
       direccion: 'Bartolome Mitre 456',
       localidad: 'Rosario',
       cuit: '33-70000012-9',
+      // El 10 y el 2 % son los del reglamento ficticio de § 13.4 (FR-002b).
+      diaVencimiento: 10,
+      tasaMoraMensual: '2.0000',
       unidades: doceUnidades(),
     },
     {
@@ -68,6 +71,8 @@ export const JUEGO = {
       direccion: 'San Martin 7890',
       localidad: 'Rosario',
       cuit: '33-70000096-9',
+      diaVencimiento: 15,
+      tasaMoraMensual: '3.0000',
       unidades: noventaYSeisUnidades(),
     },
   ],
@@ -106,6 +111,8 @@ export async function sembrarJuego(
           direccion: definicion.direccion,
           localidad: definicion.localidad,
           cuit: definicion.cuit,
+          diaVencimiento: definicion.diaVencimiento,
+          tasaMoraMensual: definicion.tasaMoraMensual,
         },
       }))
 

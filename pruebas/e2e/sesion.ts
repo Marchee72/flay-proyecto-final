@@ -146,3 +146,93 @@ export const desbordaALoAncho = (page: Page) =>
   page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
   )
+
+export interface Expensa {
+  detallePropioId: string
+  detalleAjenoId: string
+  liquidacionId: string
+}
+
+/**
+ * Una liquidacion emitida sobre dos unidades: la de quien entra y una ajena
+ * (`003-liquidacion` SC-008). Se siembra directo, sin pasar por el motor: lo
+ * que la prueba de extremo a extremo verifica es la pantalla y quien ve que,
+ * no el calculo, que ya tiene sus propias pruebas.
+ */
+export async function sembrarExpensa(escenario: Escenario): Promise<Expensa> {
+  // Las dos unidades entran juntas: el disparador diferido exige que el padron
+  // sume 100 al confirmar, y una sola unidad de 50 no confirma (FR-011c).
+  const filas = ['3B', '3C'].map((designacion) => ({
+    id: crypto.randomUUID(),
+    consorcioId: escenario.consorcioId,
+    designacion,
+    coeficiente: '50.00000000',
+  }))
+  await prisma.unidad.createMany({ data: filas })
+  const [propia, ajena] = filas
+
+  // La ocupacion lleva rango de fechas: el mapeador no lo modela (research R-04 de 002).
+  await prisma.$executeRaw`
+    INSERT INTO "Ocupacion" (unidad_id, persona_id, tipo, vigencia)
+    VALUES (${propia.id}::uuid, ${escenario.personaId}::uuid, 'propietario'::"TipoOcupacion",
+            daterange('2026-01-01', NULL))`
+
+  const liquidacion = await prisma.liquidacion.create({
+    data: {
+      consorcioId: escenario.consorcioId,
+      periodoId: escenario.periodoId,
+      totalOrdinario: '184320.75',
+      totalExtraordinario: '0.00',
+      totalGeneral: '184320.75',
+      // Ya vencida: asi las dos unidades estan en mora para la prueba de
+      // morosidad, cualquiera sea el dia en que corra.
+      vencimiento: new Date('2026-08-10'),
+      emitidaPor: escenario.usuarioId,
+    },
+  })
+
+  const detalle = (unidadId: string, importe: string, ajuste: string, total: string) =>
+    prisma.detalleLiquidacion.create({
+      data: {
+        liquidacionId: liquidacion.id,
+        unidadId,
+        coeficienteAplicado: '50.00000000',
+        importeOrdinario: importe,
+        importeExtraordinario: '0.00',
+        ajusteRedondeo: ajuste,
+        totalUnidad: total,
+      },
+    })
+
+  const [detallePropio, detalleAjeno] = await Promise.all([
+    detalle(propia.id, '92160.37', '0.01', '92160.38'),
+    detalle(ajena.id, '92160.37', '0.00', '92160.37'),
+  ])
+
+  await prisma.periodo.update({ where: { id: escenario.periodoId }, data: { estado: 'liquidado' } })
+
+  return {
+    detallePropioId: detallePropio.id,
+    detalleAjenoId: detalleAjeno.id,
+    liquidacionId: liquidacion.id,
+  }
+}
+
+export async function limpiarExpensa(escenario: Escenario): Promise<void> {
+  await prisma.$executeRaw`DELETE FROM "Notificacion"`
+  await prisma.trabajoPendiente.deleteMany({ where: { tipo: 'documento_expensa' } })
+  await prisma.interesLiquidado.deleteMany({
+    where: { detalle: { liquidacion: { consorcioId: escenario.consorcioId } } },
+  })
+  await prisma.detalleLiquidacion.deleteMany({
+    where: { liquidacion: { consorcioId: escenario.consorcioId } },
+  })
+  await prisma.liquidacion.deleteMany({ where: { consorcioId: escenario.consorcioId } })
+  await prisma.$executeRaw`
+    DELETE FROM "Ocupacion" WHERE unidad_id IN
+      (SELECT id FROM "Unidad" WHERE consorcio_id = ${escenario.consorcioId}::uuid)`
+  await prisma.coeficienteHistorico.deleteMany({
+    where: { unidad: { consorcioId: escenario.consorcioId } },
+  })
+  await prisma.unidad.deleteMany({ where: { consorcioId: escenario.consorcioId } })
+}

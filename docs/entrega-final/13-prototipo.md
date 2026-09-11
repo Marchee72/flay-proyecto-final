@@ -47,20 +47,20 @@ operativo, no una maqueta.
 punto 9.11: 433 puntos de función sin ajustar, con las 23 funcionalidades diferidas allí
 enumeradas.*
 
-**Estado al cierre de la iteración 1** (etapa `002-nucleo`, 2026-09-10):
+**Estado al cierre de la iteración 2** (etapa `003-liquidacion`, 2026-09-10):
 
 | Módulo | Requerimientos | Estado | Observaciones |
 |---|---|---|---|
 | Usuarios, roles y habilitaciones | RF-03 | **Construido** | Identidad, invitación por correo y habilitación en tres niveles (plataforma, administradora, consorcio). Bloqueo por intentos fallidos con mensaje único |
 | Consorcios y unidades | RF-01, RF-02 | **Construido** | Alta, padrón y cambio de coeficiente hacia el futuro. La suma exacta la impone un disparador diferido, no el código. La unidad lleva su tipo —departamento, cochera, local o baulera (punto 7)—, y una cochera puede tener dueño propio, sin departamento en el edificio. El padrón se pega desde una planilla, se puede generar por pisos, y la pantalla ofrece cerrar el sobrante del reparto dentro del límite de § 14.4. Faltan `piso`, `superficie_m2` y `activa`, que el punto 7 declara y esta etapa no necesitó |
 | Gastos y comprobantes | RF-04, RF-05, RF-10 | **Construido** | Alta de gasto sobre período abierto, subida directa del comprobante al almacenamiento, listado filtrable. Sin baja de gasto: diferida (§ 9.11) |
-| Liquidación de expensas | RF-07, RF-08 | Iteración 2 | El contrato del estado del período ya está declarado y compartido (M-04) |
-| Pagos y morosidad | RF-09 | Iteración 2 | |
-| Reclamos | RF-11, RF-13 | Iteración 2 | |
+| Liquidación de expensas | RF-07, RF-08 | **Construido** | Motor en el dominio con 100 % de ramas y coincidencia al centavo con las tres planillas del cliente (SC-005). Cierre, emisión en una transacción, anulación y reemisión con el candado en la base. Documento por unidad en diferido, accesible sólo por quien corresponde. Interés por mes vencido, desglosado por liquidación impaga |
+| Pagos y morosidad | RF-09 | **Construido** | Imputación por antigüedad en el dominio; saldo a favor aplicado en la emisión siguiente; nómina nominada sólo para administrador y consejo, agregado para el consorcista |
+| Reclamos | RF-11, RF-13 | Iteración 3 | |
 | Reservas | RF-15, RF-16 | Iteración 3 | |
 | Proveedores | RF-17 | **Construido** | Alta y edición. Sin baja: diferida (§ 9.11) |
 | Comunicación y documentación | RF-18, RF-19 | Iteración 3 | |
-| Notificaciones | RF-14 | **Parcial** | El mecanismo de reintento está construido y probado; el único aviso que produce esta etapa es la invitación |
+| Notificaciones | RF-14 | **Parcial** | El mecanismo de reintento está construido y probado. La emisión deja `Notificacion` en `pendiente` por cada habilitado; el despachador es de la iteración 3 |
 | Indicadores de gestión | RF-21 a RF-25 | Iteración 3 | |
 | Funciones asistidas | RF-06, RF-12, RF-20 | Iteración 3 | La pantalla de alta de gasto ya admite valores precargados y exige confirmación humana, para que `RF-06` se enchufe sin rediseñarla (FR-020, regla RN-14) |
 | Auditoría | RF-26 | **Construido** | Las cinco tablas económicas de la etapa dejan asiento por disparador; la aplicación no puede escribir la bitácora |
@@ -74,6 +74,19 @@ enumeradas.*
 | Invariantes impuestos por la base (SC-004b, SC-005) | Verificados **salteándose la capa de aplicación** |
 | Tiempo de respuesta del listado con 10.800 gastos (SC-006) | p95 de 363 ms contra un límite de 2.000 ms (§ 14.5) |
 | Accesibilidad de las pantallas del consorcista (SC-011) | axe sin infracciones A ni AA |
+
+### Lo que la iteración 2 deja verificado
+
+| Criterio | Medición al 2026-09-10 |
+|---|---|
+| Cuadratura del prorrateo con tolerancia cero sobre 1, 12, 96 y 100 unidades (SC-001) | 33 pruebas de dominio sin base, 100 % de ramas (SC-002, SC-014) |
+| Coincidencia con las tres liquidaciones reales del cliente (SC-005) | Al centavo en las tres; una diferencia de convención en el ajuste de redondeo, explicada en § 15.2.1 |
+| Emisión doble, incluida la concurrente (SC-011) | Exactamente una emite; el candado es un índice único parcial de la base |
+| Liquidación de 100 unidades (SC-006, RNF-07) | 1.155 ms en la peor de cinco corridas, contra 30.000 |
+| 96 documentos en diferido (SC-007) | 38 s en dos disparos, contra 10 min; una falla inyectada deja los otros 95 intactos |
+| Expensa de otra unidad por identificador directo (SC-008) | «No encontramos lo que buscabas», en escritorio y a 390 px |
+| Nómina de deudores por rol (SC-015) | Dos consultas distintas: la del consorcista no trae un solo nombre |
+| Aislamiento entre consorcios en la morosidad (RT-04) | Fuga encontrada y cerrada: las tablas sin `consorcio_id` se alcanzan por su padre aislado |
 
 ### Ensayo del recorrido sobre el entorno desplegado (SC-014)
 
@@ -143,7 +156,7 @@ conforme al punto 5.3.2.
 | Usuario operador | No existe en la iteración 1: los roles construidos son administrador, consejo y consorcista (RF-03) |
 | Usuario consorcista | Se crea por invitación desde la pantalla de usuarios. Queda en estado `invitado` hasta que salga el correo con el enlace, y la demostración todavía no tiene proveedor de correo configurado |
 | Repositorio de código | <https://github.com/Marchee72/flay-proyecto-final> |
-| Versión entregada | `v0.2.0` — etiqueta de cierre de la iteración 1 sobre `main` (§ 8.3.5) |
+| Versión entregada | `v0.3.0` — etiqueta de cierre de la iteración 2 sobre `main` (§ 8.3.5) |
 
 ## 13.6 Guion de demostración
 

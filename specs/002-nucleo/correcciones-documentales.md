@@ -81,3 +81,21 @@ reescribiendo entregas presentadas.
 Y un hueco nuevo, **H-11** en `specs/000-plan-construccion/analisis-insumos.md`: el motor de
 liquidación reparte un solo coeficiente sobre todo el padrón, y hay consorcios que reparten ciertos
 rubros sólo entre un grupo de unidades. Es pregunta para el cliente **antes** de escribir el motor.
+
+## Lo que agregó el plan de `003-liquidacion` (2026-09-10)
+
+Tres campos y una restricción que el punto 7 declara de una manera que la construcción no puede
+seguir. Van al mismo registro porque son del mismo documento entregado.
+
+11. **§ 7, `Liquidacion.periodo_id`: `UQ` a secas.** Con eso, una liquidación anulada bloquea para
+    siempre la reemisión de su período, y la regla RN-06 (§ 7.2) ordena justamente anular y emitir de
+    nuevo. Lo que corresponde es único **parcial**: un solo `vigente` por período. Es lo que el plan
+    construye (research R-03) y lo que hace que dos emisiones en paralelo no puedan ganar las dos.
+12. **§ 7, `Consorcio`** no tiene ni **día de vencimiento** ni **tasa de mora**, y sin el primero no
+    hay desde cuándo contar el interés. Los agrega esta etapa (`FR-002b`, `data-model.md`).
+13. **§ 7, `DetalleLiquidacion`** no tiene `tasa_mora_aplicada`, que la observación M-05 ya había
+    marcado como importe sin residencia. Además hace falta el **desglose** del interés —una fila por
+    liquidación impaga—, porque el interés de una unidad es la suma de varios cálculos y un pago
+    posterior cambia qué estaba impago: sin el desglose, el importe deja de poder rehacerse a los
+    treinta días (research R-07).
+14. **§ 7, `Pago`** no tiene `saldo_a_favor`, la otra mitad de M-05. `FR-026` lo asigna ahí.

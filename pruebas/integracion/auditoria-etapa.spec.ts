@@ -41,6 +41,9 @@ const almacenDoble: AlmacenObjetos = {
   async emitirPermisoDeSubida(clave) {
     return { clave, credencial: 'credencial-de-prueba', vence: new Date('2026-09-09T12:10:00Z') }
   },
+  // El documento de expensa lo produce el servidor (003 FR-016); esta etapa no
+  // lo ejercita, pero el puerto lo exige.
+  async guardar() {},
   async resolverLecturaAutorizada(clave) {
     return `https://almacen.test/${clave}`
   },

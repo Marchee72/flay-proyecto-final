@@ -16,6 +16,10 @@ export async function crearConsorcio(administradoraId: string, nombre = 'Mitre 4
       direccion: nombre,
       localidad: 'Rosario',
       cuit: `33-${crypto.randomUUID().slice(0, 8)}-9`,
+      // Vencimiento el 10 y 2 % mensual: con tasa cero, las pruebas de interes
+      // pasarian sin ejercitar nada (`003-liquidacion` FR-002b).
+      diaVencimiento: 10,
+      tasaMoraMensual: '2.0000',
     },
   })
 }

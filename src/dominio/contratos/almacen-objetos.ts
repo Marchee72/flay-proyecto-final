@@ -33,6 +33,16 @@ export interface AlmacenObjetos {
     tipoContenido: TipoComprobante,
     bytesMaximos: number,
   ): Promise<PermisoDeSubida>
+  /**
+   * Guardar bytes que produjo el **servidor**, no el navegador.
+   *
+   * El comprobante sube directo porque los bytes son del usuario; el documento
+   * de expensa lo rendea el servidor, asi que sin esta operacion no habria
+   * forma de que el archivo exista (`003-liquidacion` FR-016, research R-01).
+   * Es la unica entrada de bytes del puerto, y por eso esta acotada: no admite
+   * el tipo de contenido de un comprobante cualquiera.
+   */
+  guardar(clave: string, bytes: Uint8Array, tipoContenido: 'application/pdf'): Promise<void>
   resolverLecturaAutorizada(clave: string, duracionSegundos: number): Promise<string>
   eliminar(clave: string): Promise<void>
 }

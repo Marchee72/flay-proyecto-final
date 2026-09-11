@@ -15,6 +15,7 @@
 :root {
   /* Superficies */
   --grafito: #23272E;
+  --grafito-claro: #2E333B;
   --fondo: #F4F6F4;
   --superficie: #FFFFFF;
 
@@ -28,7 +29,8 @@
   --lima: #7CB342;           /* enfasis, accion principal */
   --lima-alto: #9CCC65;      /* solo sobre grafito */
   --ambar: #8A5F14;          /* atencion */
-  --rojo: #B3261E;           /* peligro, deuda vencida */
+  --rojo: #B3261E;          /* peligro, deuda vencida */
+  --rojo-borde: #8F1D16;      /* borde del aviso de problema */
 
   /* Fondos palidos de aviso y etiqueta */
   --verde-palido: #F1F8F1;  /* mas palido que el de guia: con #2E7D32 da 4,75:1 */
@@ -69,7 +71,9 @@ body {
   margin: 0;
   background: var(--fondo);
   color: var(--tinta);
-  font: var(--t-cuerpo)/1.5 Poppins, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: var(--t-cuerpo);
+  line-height: 1.5;
+  font-family: Poppins, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 h1, h2, h3 { font-weight: 600; margin: 0; }
@@ -88,7 +92,6 @@ h3 { font-size: var(--t-titulo3); }
 .ayuda { font-size: var(--t-ayuda); color: var(--tinta-apagada); }
 
 a { color: var(--tinta); }
-a:hover { color: var(--verde); }
 
 /* Foco visible en todo lo operable, tambien sobre grafito (§5). */
 :focus-visible {
@@ -112,7 +115,7 @@ a:hover { color: var(--verde); }
   gap: var(--e3);
   align-items: center;
 }
-.marca { font-weight: 700; font-size: 17px; letter-spacing: .04em; }
+.marca { font-weight: 700; font-size: var(--t-titulo3); letter-spacing: .04em; }
 .consorcio {
   margin-left: auto;
   font-size: var(--t-menor);
@@ -138,7 +141,7 @@ a:hover { color: var(--verde); }
   background: var(--grafito);
   border-radius: var(--radio);
   padding: var(--e3);
-  font-size: 14px;
+  font-size: var(--t-cuerpo);
 }
 .lateral a {
   display: flex;
@@ -150,8 +153,8 @@ a:hover { color: var(--verde); }
   color: var(--tinta-clara);
   text-decoration: none;
 }
-.lateral a:hover { background: #2E333B; color: var(--tinta-clara); }
-.lateral a[aria-current="page"] { font-weight: 700; color: var(--lima-alto); background: #2E333B; }
+.lateral a:hover { background: var(--grafito-claro); color: var(--tinta-clara); }
+.lateral a[aria-current="page"] { font-weight: 700; color: var(--lima-alto); background: var(--grafito-claro); }
 .lateral .cuenta { margin-left: auto; font-size: var(--t-ayuda); }
 
 /* Menu de telefono: apertura nativa, sin guion (§3.4). */
@@ -199,13 +202,19 @@ a:hover { color: var(--verde); }
   flex: none;
 }
 .kpi__rotulo {
-  font-size: 10px;
+  font-size: 10px; /* única medida fuera de la escala §3.1, documentada en la guía */
   letter-spacing: .06em;
   color: var(--lima-alto);
   font-weight: 600;
   text-transform: uppercase;
 }
-.kpi__cifra { font-size: var(--t-titulo2); font-weight: 700; color: var(--superficie); }
+.kpi__cifra {
+  font-family: Inter, Poppins, -apple-system, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--t-titulo2);
+  font-weight: 700;
+  color: var(--superficie);
+}
 .kpi__detalle { font-size: var(--t-ayuda); color: var(--tinta-clara); }
 
 /* ------------------------------------------------------------------ *
@@ -214,14 +223,14 @@ a:hover { color: var(--verde); }
 .aviso {
   border-radius: var(--radio-chico);
   padding: var(--e3) var(--e4);
-  font-size: 14px;
+  font-size: var(--t-cuerpo);
   margin: var(--e3) 0;
   display: flex;
   gap: var(--e3);
   align-items: flex-start;
 }
 .aviso--atencion { background: var(--ambar-palido); border: 1px solid var(--ambar); border-left-width: 4px; }
-.aviso--problema { background: var(--rojo-palido); border: 1px solid #8F1D16; border-left: 4px solid var(--rojo); }
+.aviso--problema { background: var(--rojo-palido); border: 1px solid var(--rojo-borde); border-left: 4px solid var(--rojo); }
 .aviso svg { margin-top: 2px; }
 
 /* ------------------------------------------------------------------ *
@@ -235,7 +244,10 @@ a:hover { color: var(--verde); }
   min-height: var(--toque);
   padding: 0 var(--e5);
   border-radius: var(--pastilla);
-  font: 700 14px/1 Poppins, sans-serif;
+  font-weight: 700;
+  font-size: var(--t-cuerpo);
+  line-height: 1;
+  font-family: Poppins, sans-serif;
   border: 2px solid transparent;
   cursor: pointer;
 }
@@ -256,7 +268,7 @@ a:hover { color: var(--verde); }
 }
 table { width: 100%; border-collapse: collapse; min-width: 560px; }
 caption { text-align: left; padding: var(--e3) var(--e4); font-size: var(--t-ayuda); color: var(--tinta-apagada); }
-th, td { text-align: left; padding: var(--e3) var(--e4); border-bottom: 1px solid var(--linea-suave); font-size: 14px; height: var(--toque); }
+th, td { text-align: left; padding: var(--e3) var(--e4); border-bottom: 1px solid var(--linea-suave); font-size: var(--t-cuerpo); height: var(--toque); }
 thead th { background: var(--gris-palido); color: var(--tinta-apagada); font-size: var(--t-ayuda); text-transform: uppercase; letter-spacing: .04em; }
 td.numero, th.numero { text-align: right; }
 tfoot td { font-weight: 700; border-top: 2px solid var(--linea); border-bottom: none; background: var(--gris-palido); }
@@ -283,22 +295,29 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--linea); border-bottom: 
 
 .campo { margin-top: var(--e3); max-width: 320px; }
 .campo label { display: block; font-size: var(--t-menor); font-weight: 600; margin-bottom: var(--e1); }
-.campo input {
+.campo input,
+.campo select {
   width: 100%;
   min-height: var(--toque);
   padding: 0 var(--e3);
   border: 1px solid var(--linea-control);
   border-radius: var(--radio-chico);
-  font: var(--t-cuerpo) Inter, Poppins, sans-serif;
+  font-size: var(--t-cuerpo);
+  line-height: 1.5;
+  font-family: Inter, Poppins, sans-serif;
   color: var(--tinta);
 }
-.campo input[aria-invalid="true"] { border-color: var(--rojo); border-width: 2px; }
+.campo select {
+  background: var(--superficie);
+}
+.campo input[aria-invalid="true"],
+.campo select[aria-invalid="true"] { border-color: var(--rojo); border-width: 2px; }
 .error { font-size: var(--t-menor); color: var(--rojo); font-weight: 600; margin-top: var(--e1); display: flex; gap: var(--e1); align-items: center; }
 
 .vacio { border: 1px dashed var(--linea); border-radius: var(--radio); padding: var(--e6); text-align: center; background: var(--superficie); }
-.vacio svg { width: 32px; height: 32px; color: var(--tinta-apagada); }
+.vacio svg { width: var(--e6); height: var(--e6); color: var(--tinta-apagada); }
 
-.esqueleto { height: 14px; border-radius: var(--radio-chico); background: var(--linea-suave); animation: latir 1.4s ease-in-out infinite; }
+.esqueleto { height: var(--t-ayuda); border-radius: var(--radio-chico); background: var(--linea-suave); animation: latir 1.4s ease-in-out infinite; }
 .esqueleto + .esqueleto { margin-top: var(--e2); }
 @keyframes latir { 50% { opacity: .45; } }
 @media (prefers-reduced-motion: reduce) { .esqueleto { animation: none; } }
@@ -313,9 +332,9 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--linea); border-bottom: 
 /* Referencia de tokens */
 .muestras { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--e3); margin-top: var(--e3); }
 .muestra { border: 1px solid var(--linea-suave); border-radius: var(--radio-chico); overflow: hidden; background: var(--superficie); }
-.muestra .tono { height: 44px; }
+.muestra .tono { height: var(--toque); }
 .muestra .pie { padding: var(--e2) var(--e3); font-size: var(--t-ayuda); }
-.muestra code { font-size: 11px; color: var(--tinta-apagada); }
+.muestra code { font-size: var(--t-ayuda); color: var(--tinta-apagada); }
 
 /* ------------------------------------------------------------------ *
  * 390 px: una columna, menu en la barra, cero desplazamiento lateral.
@@ -379,7 +398,7 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--linea); border-bottom: 
 
     <div class="aviso aviso--atencion">
       <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-      <span><b>Morosidad <span class="cifra">13,2</span> %</b> — supera el 12 % de referencia (+3,1 puntos en dos meses). <a href="#">Ver nómina</a> (solo administrador y consejo).</span>
+      <span><b>Morosidad 13,2 %</b> — supera el 12 % de referencia (+3,1 puntos en dos meses). <a href="#">Ver nómina</a> (solo administrador y consejo).</span>
     </div>
 
     <div class="rejilla seccion">
@@ -437,28 +456,28 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--linea); border-bottom: 
           </thead>
           <tbody>
             <tr>
-              <td class="cifra">05/08/2026</td>
+              <td>05/08/2026</td>
               <td>Consorcio Personal SRL</td>
               <td>Sueldos</td>
               <td class="numero cifra">$ 490.000,00</td>
               <td><span class="etiqueta etiqueta--rendido">rendido</span></td>
             </tr>
             <tr>
-              <td class="cifra">10/08/2026</td>
+              <td>10/08/2026</td>
               <td>EPE</td>
               <td>Luz de espacios comunes</td>
               <td class="numero cifra">$ 92.000,00</td>
               <td><span class="etiqueta etiqueta--rendido">rendido</span></td>
             </tr>
             <tr>
-              <td class="cifra">22/08/2026</td>
+              <td>22/08/2026</td>
               <td>Ascensores Rosario SA</td>
               <td>Mantenimiento</td>
               <td class="numero cifra">$ 568.000,00</td>
               <td><span class="etiqueta etiqueta--pendiente">pendiente de rendir</span></td>
             </tr>
             <tr>
-              <td class="cifra">28/08/2026</td>
+              <td>28/08/2026</td>
               <td>Tableros AEA SRL</td>
               <td>Tableros (extraordinario)</td>
               <td class="numero cifra">$ 175.000,00</td>
@@ -486,7 +505,7 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--linea); border-bottom: 
       <p class="apagado">El importe va en grande y la confirmación es explícita: nada automático toca dinero (RN-14).</p>
       <div class="tarjeta">
         <h3>Anular liquidación</h3>
-        <p>Se anula la <span class="cifra">2026-08</span> por <span class="cifra">$ 1.325.000,00</span> y se emite una nueva que la referencia. Ambas quedan registradas.</p>
+        <p>Se anula la 2026-08 por <span class="cifra">$ 1.325.000,00</span> y se emite una nueva que la referencia. Ambas quedan registradas.</p>
 
         <div class="campo">
           <label for="motivo">Motivo de la anulación</label>
@@ -497,7 +516,7 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--linea); border-bottom: 
           </p>
         </div>
 
-        <p style="margin-top:24px">
+        <p style="margin-top:var(--e5)">
           <button class="boton boton--peligro" type="button">Confirmar anulación</button>
           <button class="boton boton--fantasma" type="button">Cancelar</button>
         </p>
@@ -505,23 +524,50 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--linea); border-bottom: 
     </section>
 
     <section class="seccion">
+      <h2>Campo select nativo</h2>
+      <p class="apagado">El mismo control que el texto: etiqueta siempre visible, ayuda debajo, error debajo en rojo con <code>aria-invalid</code> + mensaje. Sin guion: filtra con GET a la misma dirección.</p>
+      <div class="tarjeta">
+        <div class="campo">
+          <label for="filtro-periodo">Período</label>
+          <select id="filtro-periodo" name="periodo" aria-describedby="filtro-periodo-ayuda">
+            <option value="2026-08" selected>2026-08 · abierto</option>
+            <option value="2026-07">2026-07 · liquidado</option>
+            <option value="2026-06">2026-06 · liquidado</option>
+          </select>
+          <p class="ayuda" id="filtro-periodo-ayuda">El listado muestra solo el período elegido.</p>
+        </div>
+
+        <div class="campo">
+          <label for="filtro-rubro">Rubro</label>
+          <select id="filtro-rubro" name="rubro" aria-invalid="true" aria-describedby="filtro-rubro-error">
+            <option value="">Elegir rubro…</option>
+            <option value="sueldos">Sueldos</option>
+            <option value="luz">Luz de espacios comunes</option>
+            <option value="mantenimiento">Mantenimiento</option>
+          </select>
+          <p class="error" id="filtro-rubro-error">Falta el rubro: sin él el gasto no se puede clasificar.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="seccion">
       <h2>Estados de la interfaz</h2>
 
-      <h3 style="margin-top:16px">Vacío, con la acción a mano</h3>
+      <h3 style="margin-top:var(--e4)">Vacío, con la acción a mano</h3>
       <div class="vacio">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
         <p>Sin gastos cargados en 2026-09.</p>
         <button class="boton boton--primario" type="button">Cargar gasto</button>
       </div>
 
-      <h3 style="margin-top:24px">Cargando: esqueleto, nunca pantalla en blanco</h3>
+      <h3 style="margin-top:var(--e5)">Cargando: esqueleto, nunca pantalla en blanco</h3>
       <div class="tarjeta" aria-hidden="true">
         <div class="esqueleto" style="width:40%"></div>
         <div class="esqueleto" style="width:85%"></div>
         <div class="esqueleto" style="width:70%"></div>
       </div>
 
-      <h3 style="margin-top:24px">Escala de urgencias</h3>
+      <h3 style="margin-top:var(--e5)">Escala de urgencias</h3>
       <p class="apagado">La misma en reclamos, reservas y avisos: color, icono y palabra, siempre los tres.</p>
       <p>
         <span class="urgencia urgencia--urgente">
@@ -559,19 +605,19 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--linea); border-bottom: 
         <div class="muestra"><div class="tono" style="background:var(--fondo);border-bottom:1px solid var(--linea)"></div><div class="pie">Fondo<br><code>--fondo · lienzo</code></div></div>
       </div>
 
-      <div class="tabla-desplazable" style="margin-top:24px" tabindex="0" role="region" aria-label="Reglas de uso">
+      <div class="tabla-desplazable" style="margin-top:var(--e5)" tabindex="0" role="region" aria-label="Reglas de uso">
         <table>
           <thead>
             <tr><th scope="col">Decisión</th><th scope="col">Regla</th></tr>
           </thead>
           <tbody>
-            <tr><td>Espaciado</td><td>Base 4: <span class="cifra">4 · 8 · 12 · 16 · 24 · 32</span>. Ningún valor fuera de la escala.</td></tr>
+            <tr><td>Espaciado</td><td>Base 4: 4 · 8 · 12 · 16 · 24 · 32. Ningún valor fuera de la escala.</td></tr>
             <tr><td>Tipografía</td><td>Poppins en todo; las cifras en Inter tabular con la clase <code>cifra</code>.</td></tr>
-            <tr><td>Tamaños</td><td><span class="cifra">12</span> ayuda · <span class="cifra">13</span> menor · <span class="cifra">15</span> cuerpo · <span class="cifra">18/22/28</span> títulos.</td></tr>
+            <tr><td>Tamaños</td><td>12 ayuda · 13 menor · 15 cuerpo · 18/22/28 títulos.</td></tr>
             <tr><td>Aviso ámbar</td><td>Algo requiere atención y todavía se puede corregir.</td></tr>
             <tr><td>Aviso rojo</td><td>Ya hay consecuencia económica: deuda vencida, liquidación abortada.</td></tr>
             <tr><td>Botón primario</td><td>Uno por vista. El resto, fantasma. Peligro solo con confirmación explícita.</td></tr>
-            <tr><td>Objetivo táctil</td><td>Mínimo <span class="cifra">44</span> px de alto en todo lo que se toca.</td></tr>
+            <tr><td>Objetivo táctil</td><td>Mínimo 44 px de alto en todo lo que se toca.</td></tr>
             <tr><td>Color</td><td>Nunca es la única señal: siempre hay palabra, y en urgencias también icono.</td></tr>
             <tr><td>Dinero</td><td><span class="cifra">$ 1.234.567,89</span> alineado a la derecha, tabular, como cadena.</td></tr>
           </tbody>

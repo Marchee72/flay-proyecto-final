@@ -6,6 +6,7 @@
 :root {
   /* Superficies */
   --grafito: #23272e;
+  --grafito-claro: #2e333b;
   --fondo: #f4f6f4;
   --superficie: #ffffff;
 
@@ -20,6 +21,7 @@
   --lima-alto: #9ccc65;
   --ambar: #8a5f14;
   --rojo: #b3261e;
+  --rojo-borde: #8f1d16;
 
   /* Fondos palidos */
   --verde-palido: #f1f8f1;
@@ -40,7 +42,9 @@
   --e5: 24px;
   --e6: 32px;
 
-  /* Tipografia */
+  /* Tipografia: Poppins en todo, Inter tabular en cifras (§3.1) */
+  --tipografia: 'Poppins', -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --tipografia-cifra: 'Inter', 'Poppins', -apple-system, sans-serif;
   --t-ayuda: 12px;
   --t-menor: 13px;
   --t-cuerpo: 15px;
@@ -62,12 +66,9 @@ body {
   margin: 0;
   background: var(--fondo);
   color: var(--tinta);
-  font:
-    var(--t-cuerpo) / 1.5 var(--tipografia),
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  font-size: var(--t-cuerpo);
+  line-height: 1.5;
+  font-family: var(--tipografia);
 }
 
 h1,
@@ -88,6 +89,7 @@ h3 {
 
 /* Las cifras alinean coma con coma (§3.1). */
 .cifra {
+  font-family: var(--tipografia-cifra);
   font-variant-numeric: tabular-nums;
 }
 
@@ -110,7 +112,8 @@ a {
   border-radius: var(--radio-chico);
 }
 .barra :focus-visible,
-.lateral :focus-visible {
+.lateral :focus-visible,
+.barra-inferior :focus-visible {
   outline-color: var(--lima-alto);
 }
 
@@ -131,7 +134,7 @@ a {
 }
 .marca {
   font-weight: 700;
-  font-size: 17px;
+  font-size: var(--t-titulo3);
   letter-spacing: 0.04em;
   color: var(--tinta-clara);
   text-decoration: none;
@@ -151,27 +154,58 @@ a {
   font-family: inherit;
 }
 
-.envoltorio {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: var(--e5);
+/* Armazon a alto completo: la columna flex empuja la grilla hasta abajo y
+   el lateral estira con ella (align-items: stretch de .disposicion). */
+.armazon {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
+.envoltorio {
+  /* A filo izquierdo: el menu siempre pegado al borde de la pantalla. */
+  margin: 0;
+  max-width: none;
+  padding: 0 var(--e5) var(--e5) 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.armazon .disposicion {
+  flex: 1;
+}
+/* Opcion 3 del prototipo: la L de grafito abraza el contenido y la esquina
+   superior izquierda del contenido se curva hacia adentro. Arriba fundido
+   con la barra (sin radio), abajo tarjeta redondeada. `clip` recorta
+   las esquinas redondeadas sin abrir un contenedor de desplazamiento, asi
+   que el lateral pegado sigue funcionando. */
 .disposicion {
   display: grid;
   grid-template-columns: 220px 1fr;
-  gap: var(--e5);
-  align-items: start;
+  align-items: stretch;
+  background: var(--grafito);
+  /* A filo: sin radio exterior; solo la curva interior del contenido. */
+  border-radius: 0;
+  overflow: clip;
 }
 /* Sin esto, una tabla ancha estira la columna y desborda la pagina. */
 .disposicion > * {
   min-width: 0;
 }
+/* El contenido como cuadrado redondeado sobre el grafito. */
+.disposicion > main {
+  background: var(--fondo);
+  border-top-left-radius: var(--radio);
+  padding: var(--e4);
+}
 
 .lateral {
   background: var(--grafito);
-  border-radius: var(--radio);
   padding: var(--e3);
-  font-size: 14px;
+  font-size: var(--t-cuerpo);
+  /* Pegado y de alto completo: ya no flota a mitad de pagina. */
+  position: sticky;
+  top: 0;
 }
 .lateral a {
   display: flex;
@@ -184,12 +218,12 @@ a {
   text-decoration: none;
 }
 .lateral a:hover {
-  background: #2e333b;
+  background: var(--grafito-claro);
 }
 .lateral a[aria-current='page'] {
   font-weight: 700;
   color: var(--lima-alto);
-  background: #2e333b;
+  background: var(--grafito-claro);
 }
 
 /* Menu de telefono: apertura nativa, sin guion. */
@@ -218,12 +252,64 @@ a {
   z-index: 2;
 }
 
+/* Variante C del prototipo: barra inferior solo en telefono; en escritorio
+   manda el lateral y no se muestra. */
+.barra-inferior {
+  display: none;
+}
+
 /* Componentes ------------------------------------------------------------ */
 .tarjeta {
   background: var(--superficie);
   border: 1px solid var(--linea-suave);
   border-radius: var(--radio);
   padding: var(--e4);
+}
+/* Buscador a todo el ancho: el campo crece, los botones quedan al final. */
+.buscador .campo {
+  flex: 1 1 auto;
+  max-width: none;
+}
+
+/* Tarjeta de consorcio: insignia lima + nombre y direccion, acciones abajo. */
+.tarjeta-consorcio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+}
+.tarjeta-consorcio__encabezado {
+  display: flex;
+  gap: var(--e3);
+  align-items: flex-start;
+}
+.tarjeta-consorcio__insignia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--toque);
+  min-height: var(--toque);
+  border-radius: var(--pastilla);
+  background: var(--lima);
+  color: var(--grafito);
+}
+.tarjeta-consorcio h2 {
+  font-size: var(--t-titulo3);
+}
+.tarjeta-consorcio .apagado {
+  margin: var(--e1) 0 0;
+}
+.tarjeta-consorcio .fila-acciones {
+  margin: auto 0 0;
+}
+
+/* Titulos de tarjeta: el enlace se subraya solo al pasar el cursor. */
+.tarjeta h2 a,
+.tarjeta h3 a {
+  text-decoration: none;
+}
+.tarjeta h2 a:hover,
+.tarjeta h3 a:hover {
+  text-decoration: underline;
 }
 
 .boton {
@@ -234,9 +320,14 @@ a {
   min-height: var(--toque);
   padding: 0 var(--e5);
   border-radius: var(--pastilla);
-  font: 700 14px/1 inherit;
+  font-weight: 700;
+  font-size: var(--t-cuerpo);
+  line-height: 1;
+  font-family: var(--tipografia);
   border: 2px solid transparent;
   cursor: pointer;
+  /* Los botones suelen ser enlaces: sin subrayado de enlace. */
+  text-decoration: none;
 }
 .boton--primario {
   background: var(--lima);
@@ -256,6 +347,52 @@ a {
   opacity: 0.5;
   cursor: not-allowed;
 }
+/* Boton solo-icono (tachos, cerrar): cuadrado tactil sin relleno lateral. */
+.boton--icono {
+  padding: 0;
+  min-width: var(--toque);
+}
+
+/* Confirmación en dos pasos (RN-06, RN-14): el resumen con la magnitud exacta
+   antes del clic final. Solo tokens; la fila de acciones envuelve a 390px.
+   Sin animaciones, así que no pide `prefers-reduced-motion`. */
+.confirmacion {
+  border: 1px solid var(--linea-control);
+  border-left: 4px solid var(--rojo);
+  border-radius: var(--radio-chico);
+  background: var(--superficie);
+  padding: var(--e4);
+  margin-top: var(--e3);
+}
+.confirmacion--liquidar {
+  border-left-color: var(--verde);
+}
+.resumen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--e3);
+  margin: var(--e3) 0;
+}
+.resumen__item {
+  background: var(--gris-palido);
+  border-radius: var(--radio-chico);
+  padding: var(--e3) var(--e4);
+}
+.resumen__rotulo {
+  font-size: var(--t-ayuda);
+  color: var(--tinta-apagada);
+  font-weight: 600;
+}
+.resumen__valor {
+  font-size: var(--t-titulo3);
+  font-weight: 700;
+}
+.fila-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+  margin-top: var(--e4);
+}
 
 .campo {
   margin-top: var(--e3);
@@ -274,13 +411,16 @@ a {
   padding: 0 var(--e3);
   border: 1px solid var(--linea-control);
   border-radius: var(--radio-chico);
-  font: var(--t-cuerpo) inherit;
+  font-size: var(--t-cuerpo);
+  line-height: 1.5;
+  font-family: var(--tipografia);
   color: var(--tinta);
 }
 .campo select {
   background: var(--superficie);
 }
-.campo input[aria-invalid='true'] {
+.campo input[aria-invalid='true'],
+.campo select[aria-invalid='true'] {
   border-color: var(--rojo);
   border-width: 2px;
 }
@@ -294,8 +434,11 @@ a {
 .aviso {
   border-radius: var(--radio-chico);
   padding: var(--e3) var(--e4);
-  font-size: 14px;
+  font-size: var(--t-cuerpo);
   margin: var(--e3) 0;
+  display: flex;
+  gap: var(--e3);
+  align-items: flex-start;
 }
 .aviso--atencion {
   background: var(--ambar-palido);
@@ -304,8 +447,13 @@ a {
 }
 .aviso--problema {
   background: var(--rojo-palido);
-  border: 1px solid #8f1d16;
+  border: 1px solid var(--rojo-borde);
   border-left: 4px solid var(--rojo);
+}
+/* El icono acompaña al texto; nunca es la unica señal (§3.2). */
+.aviso svg {
+  margin-top: 2px;
+  flex: none;
 }
 
 /* La tabla se desplaza dentro de su contenedor; la pagina nunca (RNF-01). */
@@ -325,7 +473,7 @@ td {
   text-align: left;
   padding: var(--e3) var(--e4);
   border-bottom: 1px solid var(--linea-suave);
-  font-size: 14px;
+  font-size: var(--t-cuerpo);
   height: var(--toque);
 }
 thead th {
@@ -352,6 +500,197 @@ tfoot td {
   text-align: center;
   background: var(--superficie);
 }
+/* Ilustracion simple del estado vacio (§3.4): tamaño y color fijos. */
+.vacio svg {
+  width: var(--e6);
+  height: var(--e6);
+  color: var(--tinta-apagada);
+}
+
+/* KPI hero + etiquetas + urgencias + carga + listados ---------------------- */
+/* Rejilla de KPI: una hero por pantalla para la metrica que manda (§3.4). */
+.rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--e3);
+}
+.kpi {
+  background: var(--grafito);
+  border-radius: var(--radio);
+  padding: var(--e3) var(--e4);
+  display: flex;
+  gap: var(--e3);
+  align-items: center;
+}
+.kpi__icono {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radio-chico);
+  background: var(--lima-alto);
+  color: var(--grafito);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+/* Rotulo 10px en mayusculas lima: unica excepcion fuera de escala,
+   documentada en guia §3.4. */
+.kpi__rotulo {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--lima-alto);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+/* La cifra va en Inter tabular blanco; se usa con la clase `cifra`. */
+.kpi__cifra {
+  font-family: var(--tipografia-cifra);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--t-titulo2);
+  font-weight: 700;
+  color: var(--superficie);
+}
+.kpi__detalle {
+  font-size: var(--t-ayuda);
+  color: var(--tinta-clara);
+}
+
+/* Etiquetas de estado: color + palabra, nunca color solo (§3.2). */
+.etiqueta {
+  display: inline-block;
+  font-size: var(--t-ayuda);
+  font-weight: 600;
+  padding: var(--e1) var(--e3);
+  border-radius: var(--pastilla);
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.etiqueta--rendido {
+  color: var(--verde);
+  background: var(--verde-palido);
+}
+.etiqueta--propietario {
+  color: var(--ambar);
+  background: var(--ambar-palido);
+}
+.etiqueta--pendiente {
+  color: var(--tinta-apagada);
+  background: var(--gris-palido);
+}
+.etiqueta--vencido {
+  color: var(--rojo);
+  background: var(--rojo-palido);
+}
+/* Estados con icono (períodos, §3.2): el icono acompaña a la palabra dentro
+   de la pastilla; nunca color solo. Separación con token; el alineado vertical
+   no tiene token y se fija en la línea de texto. */
+.etiqueta .icono {
+  vertical-align: -4px;
+  margin-right: var(--e1);
+}
+
+/* Escala de urgencias: color + icono Lucide + palabra, igual en reclamos,
+   reservas y avisos (§3.2). */
+.urgencia {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  font-weight: 600;
+  font-size: var(--t-menor);
+}
+.urgencia--urgente {
+  color: var(--rojo);
+}
+.urgencia--alta {
+  color: var(--ambar);
+}
+.urgencia--ordinaria {
+  color: var(--tinta-apagada);
+}
+.urgencia--aldia {
+  color: var(--verde);
+}
+
+/* Carga con esqueleto, nunca pantalla en blanco (§3.4). Solo opacity. */
+.esqueleto {
+  height: var(--t-ayuda);
+  border-radius: var(--radio-chico);
+  background: var(--linea-suave);
+  animation: latir 1.4s ease-in-out infinite;
+}
+.esqueleto + .esqueleto {
+  margin-top: var(--e2);
+}
+@keyframes latir {
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto {
+    animation: none;
+  }
+}
+
+/* Paginacion al pie de cada tabla con filtro (§3.4). La pagina actual
+   lleva `aria-current="page"`; los controles cumplen `--toque`. */
+.paginacion {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+  align-items: center;
+  justify-content: center;
+  margin: var(--e4) 0;
+  padding: 0;
+  list-style: none;
+}
+.paginacion a,
+.paginacion button {
+  min-height: var(--toque);
+  min-width: var(--toque);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--e3);
+  border: 1px solid var(--linea-control);
+  border-radius: var(--radio-chico);
+  background: var(--superficie);
+  color: var(--tinta);
+  text-decoration: none;
+  font-size: var(--t-menor);
+  font-weight: 600;
+  font-family: var(--tipografia);
+}
+.paginacion [aria-current='page'] {
+  background: var(--grafito);
+  border-color: var(--grafito);
+  color: var(--tinta-clara);
+}
+
+/* Progreso de diferidos (documentos, indexacion): barra + texto con
+   magnitud exacta + reintento visible (§6, RNF-10). El reintento es un
+   `.boton--fantasma` dentro de `.progreso`; nada avanza solo. */
+.progreso {
+  display: grid;
+  gap: var(--e2);
+  margin: var(--e3) 0;
+}
+.progreso__barra {
+  height: var(--e2);
+  border-radius: var(--pastilla);
+  background: var(--gris-palido);
+  border: 1px solid var(--linea);
+  overflow: hidden;
+}
+.progreso__relleno {
+  height: 100%;
+  background: var(--lima);
+  border-radius: var(--pastilla);
+}
+.progreso__texto {
+  font-size: var(--t-menor);
+  color: var(--tinta-apagada);
+}
 
 @media (max-width: 760px) {
   .envoltorio {
@@ -359,6 +698,11 @@ tfoot td {
   }
   .disposicion {
     grid-template-columns: 1fr;
+    /* Sin lateral no hay L: el contenido ocupa todo y no muestra grafito. */
+    background: transparent;
+  }
+  .disposicion > main {
+    border-radius: 0;
   }
   .disposicion > .lateral {
     display: none;
@@ -371,6 +715,89 @@ tfoot td {
   }
   h1 {
     font-size: var(--t-titulo2);
+  }
+  /* Las 5 principales al alcance del pulgar: icono + etiqueta corta, cada
+     destino tactil (alto de toque mas una fila de etiqueta) y siempre a la
+     vista con `sticky` (sigue en flujo: no tapa contenido ni pide relleno).
+     Solo iconos + palabra, nunca color solo; la activa lleva filo lima. */
+  .barra-inferior {
+    display: block;
+    position: sticky;
+    bottom: 0;
+    background: var(--grafito);
+    border-top: 1px solid var(--tinta-apagada);
+  }
+  .barra-inferior ul {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .barra-inferior a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--e1);
+    min-height: calc(var(--toque) + var(--e3));
+    min-width: var(--toque);
+    padding: var(--e1);
+    color: var(--tinta-clara);
+    text-decoration: none;
+    font-size: var(--t-ayuda);
+    font-weight: 600;
+    text-align: center;
+  }
+  .barra-inferior a[aria-current='page'] {
+    color: var(--lima-alto);
+    box-shadow: inset 0 var(--e1) 0 var(--lima-alto);
+  }
+}
+
+/* Encabezado de consorcio (guía §3.4, Navegación): insignia + nombre a la
+   izquierda, Volver a la derecha. El nombre va en título2 22px peso 600 y
+   baja a título3 en teléfono. La fila puede envolverse a 390px; el botón
+   nunca se corta (`flex: none` + sin quiebre interno). Solo tokens. */
+.encabezado-consorcio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e2) var(--e3);
+  margin: 0 0 var(--e3);
+}
+.encabezado-consorcio__nombre {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  font-size: var(--t-titulo2);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.encabezado-consorcio__insignia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--toque);
+  min-height: var(--toque);
+  border-radius: var(--pastilla);
+  background: var(--lima);
+  color: var(--grafito);
+  flex: none;
+}
+.encabezado-consorcio .boton {
+  flex: none;
+  white-space: nowrap;
+  max-width: 100%;
+  margin-left: auto;
+}
+@media (max-width: 760px) {
+  .encabezado-consorcio__nombre {
+    font-size: var(--t-titulo3);
   }
 }
 
@@ -426,19 +853,57 @@ fieldset > legend {
   margin-left: auto;
 }
 
+/* Selector global de consorcio en la barra (§3.4): el mismo control que en
+   los filtros, sin guion (GET a la misma dirección). En teléfono la barra
+   envuelve y el selector baja a su propia fila, sin desplazar a lo ancho. */
+.selector-consorcio {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  min-width: 0;
+}
+.selector-consorcio + .salida {
+  margin-left: 0;
+}
+.selector-consorcio .icono {
+  color: var(--lima-alto);
+}
+.selector-consorcio select {
+  min-height: var(--toque);
+  max-width: 40vw;
+  border: 1px solid var(--tinta-apagada);
+  border-radius: var(--radio-chico);
+  background: transparent;
+  color: var(--tinta-clara);
+  font-family: var(--tipografia);
+  font-size: var(--t-menor);
+  padding: 0 var(--e2);
+}
+.selector-consorcio select option {
+  color: var(--tinta);
+}
+
 /* Campos dentro de una tabla: el mismo control, sin repetir la envoltura. */
-td input {
+td input,
+td select {
   width: 100%;
   min-height: var(--toque);
   padding: 0 var(--e3);
   border: 1px solid var(--linea-control);
   border-radius: var(--radio-chico);
-  font: var(--t-cuerpo) inherit;
+  font-size: var(--t-cuerpo);
+  line-height: 1.5;
+  font-family: var(--tipografia);
   color: var(--tinta);
   background: var(--superficie);
 }
 td input.cifra {
   text-align: right;
+}
+/* El tipo de unidad («Departamento») entra entero sin recortarse. */
+td select {
+  min-width: 150px;
 }
 
 /* Etiqueta que solo lee el lector de pantalla: la columna ya dice que es. */
@@ -474,4 +939,143 @@ td input.cifra {
   border-radius: var(--radio-chico);
   background: var(--gris-palido);
   object-fit: contain;
+}
+
+/* Dialogo modal (guia §3.4, patron «Modal»): `<dialog>` nativo. Centrado,
+   ancho min(720px, casi todo el ancho), el fondo lo atenua `::backdrop`.
+   Solo tokens; la entrada anima `opacity`/`transform` 200 ms y se apaga con
+   `prefers-reduced-motion` (regla dura de animaciones). */
+.modal {
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  color: var(--tinta);
+  padding: 0;
+  margin: auto;
+  width: min(720px, calc(100vw - 2 * var(--e4)));
+  max-height: calc(100dvh - 2 * var(--e4));
+  overflow: auto;
+}
+.modal::backdrop {
+  background: var(--grafito);
+  opacity: 0.55;
+}
+.modal[open] {
+  animation: modal-entrar 200ms ease-out;
+}
+@keyframes modal-entrar {
+  from {
+    opacity: 0;
+    transform: translateY(var(--e2));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal[open] {
+    animation: none;
+  }
+}
+.modal__interior {
+  padding: var(--e5);
+  display: grid;
+  gap: var(--e4);
+}
+/* Formulario profesional: los campos llenan el dialogo (nada de columna
+   angosta con aire a la derecha) y el bloque de acciones respira. */
+.modal .campo {
+  max-width: none;
+}
+.modal .fila-acciones {
+  margin-top: var(--e5);
+}
+/* Sin esto, lo ancho —la tabla del padron, de 560px minimo— estira la pista
+   de la grilla y el dialogo desborda a 390px (igual que `.disposicion > *`).
+   Contenido, el `fieldset` trae `min-inline-size: min-content` de fabrica y
+   tambien se contiene: lo que no entra desplaza adentro de su caja. */
+.modal__interior > * {
+  min-width: 0;
+}
+.modal fieldset {
+  min-width: 0;
+}
+.modal__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e2);
+  padding-bottom: var(--e3);
+  border-bottom: 1px solid var(--linea-suave);
+}
+.modal__titulo {
+  font-size: var(--t-titulo2);
+  margin: 0;
+}
+/* Indicador de pasos del asistente: pastillas numeradas; la corriente en
+   grafito con numero lima, las demas en gris. El numero lo dibuja el CSS
+   (contador), el texto lo pone el asistente sin numero. */
+.modal__pasos {
+  display: flex;
+  /* Siempre en una fila: si no entran, desplazan adentro, nunca abajo. */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: var(--e2);
+  margin: 0;
+  padding: 0 0 var(--e1);
+  list-style: none;
+  counter-reset: paso;
+  font-size: var(--t-menor);
+  font-weight: 600;
+}
+.modal__pasos li {
+  /* Las 3 se reparten todo el ancho del dialogo en partes iguales. */
+  flex: 1 1 0;
+  justify-content: center;
+}
+.modal__pasos li {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  padding: var(--e1) var(--e3) var(--e1) var(--e1);
+  border-radius: var(--pastilla);
+  background: var(--gris-palido);
+  color: var(--tinta-apagada);
+}
+.modal__pasos li::before {
+  counter-increment: paso;
+  content: counter(paso);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--toque);
+  min-height: var(--toque);
+  border-radius: var(--pastilla);
+  background: var(--superficie);
+  border: 1px solid var(--linea);
+  font-weight: 700;
+}
+.modal__pasos [aria-current='step'] {
+  background: var(--grafito);
+  color: var(--tinta-clara);
+}
+.modal__pasos [aria-current='step']::before {
+  background: var(--lima);
+  border-color: var(--lima);
+  color: var(--grafito);
+}
+/* A 390px casi pantalla completa, sin desplazar la pagina a lo ancho
+   (RNF-01): lo que no entra —la tabla del padron— desplaza adentro de
+   `.tabla-desplazable`. */
+@media (max-width: 480px) {
+  .modal {
+    width: calc(100vw - 2 * var(--e2));
+    max-height: calc(100dvh - 2 * var(--e2));
+  }
+  /* Pastillas compactas: entran las 3 en 390 px sin achicar el dialogo. */
+  .modal__pasos {
+    font-size: var(--t-ayuda);
+  }
+  .modal__pasos li::before {
+    min-width: var(--e6);
+    min-height: var(--e6);
+  }
 }

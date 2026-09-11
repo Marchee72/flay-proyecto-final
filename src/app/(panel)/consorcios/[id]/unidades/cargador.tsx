@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useState } from 'react'
+import { Trash2, TriangleAlert } from 'lucide-react'
 
 import { importe } from '@/compartido/dinero'
 import {
@@ -57,6 +58,16 @@ export function CargadorDePadron({
     setFilas(filas.map((fila, i) => (i === indice ? { ...fila, [campo]: valor } : fila)))
 
   /**
+   * Quitar una fila del padrón en carga (solo presentación: la fila vive en el
+   * estado del formulario hasta confirmar). Si era la última, queda una vacía
+   * para seguir cargando. Táctil: `.boton` ya cumple `--toque` (RNF-01).
+   */
+  const quitar = (indice: number) => {
+    const restantes = filas.filter((_, i) => i !== indice)
+    setFilas(restantes.length > 0 ? restantes : [{ ...VACIA }])
+  }
+
+  /**
    * Pegar desde una planilla es como llega un padron de verdad: el del
    * reglamento son noventa y seis renglones, y transcribirlos a mano es donde
    * se cuelan los errores que despues rechaza el disparador.
@@ -89,7 +100,7 @@ export function CargadorDePadron({
       <input type="hidden" name="consorcio" value={consorcioId} />
 
       <p className="ayuda">
-        Pegá el padrón desde una planilla en la primera casilla —designación y coeficiente— y las
+        Pegar el padrón desde una planilla en la primera casilla —designación y coeficiente— y las
         filas se completan solas.
       </p>
 
@@ -138,6 +149,7 @@ export function CargadorDePadron({
               <th scope="col" className="numero">
                 Coeficiente %
               </th>
+              <th scope="col">Quitar</th>
             </tr>
           </thead>
           <tbody>
@@ -186,6 +198,16 @@ export function CargadorDePadron({
                     onChange={(evento) => cambiar(indice, 'coeficiente', evento.target.value)}
                   />
                 </td>
+                <td>
+                  <button
+                    className="boton boton--fantasma boton--icono"
+                    type="button"
+                    onClick={() => quitar(indice)}
+                    aria-label={`Quitar la unidad ${indice + 1}${fila.designacion.trim() ? ` (${fila.designacion.trim()})` : ''}`}
+                  >
+                    <Trash2 className="icono" aria-hidden="true" />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -193,15 +215,19 @@ export function CargadorDePadron({
             <tr>
               <td colSpan={2}>Suma corriente</td>
               <td className="numero cifra">{suma.toFixed(decimales)}</td>
+              <td></td>
             </tr>
           </tfoot>
         </table>
       </div>
 
       <p aria-live="polite" className={cuadra ? 'aviso aviso--atencion' : 'ayuda'}>
-        {cuadra
-          ? `Cierra exacto en ${importe(OBJETIVO).toFixed(decimales)} %.`
-          : `${diferencia.isNegative() ? 'Falta' : 'Sobra'} ${diferencia.abs().toFixed(decimales)} % para llegar a 100.`}
+        {cuadra && <TriangleAlert className="icono" aria-hidden="true" />}
+        <span>
+          {cuadra
+            ? `Cierra exacto en ${importe(OBJETIVO).toFixed(decimales)} %.`
+            : `${diferencia.isNegative() ? 'Falta' : 'Sobra'} ${diferencia.abs().toFixed(decimales)} % para llegar a 100.`}
+        </span>
       </p>
 
       {ajuste && (

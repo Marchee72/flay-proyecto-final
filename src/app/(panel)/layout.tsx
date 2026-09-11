@@ -1,13 +1,19 @@
 import Link from 'next/link'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { after } from 'next/server'
+import { Menu } from 'lucide-react'
 
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
+import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { drenar } from '@/aplicacion/pendientes/drenar'
 import { MANEJADORES } from '@/aplicacion/pendientes/manejadores'
 
 import { salir } from './acciones'
-import { Navegacion } from './navegacion'
+import { NOMBRE_GALLETA_CONSORCIO, resolverConsorcioActivo } from './consorcio-activo'
+import { BarraInferior, Navegacion } from './navegacion'
+import { SelectorDeConsorcio } from './selector-consorcio'
 
 /**
  * Armazon del panel. Ademas del marco visual, es donde el drenaje oportunista
@@ -19,7 +25,23 @@ import { Navegacion } from './navegacion'
  * armazon corre en paralelo con la pagina y no puede ser la unica barrera.
  */
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
-  if (!(await usuarioDeLaSesion())) redirect('/ingresar')
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) redirect('/ingresar')
+
+  const consorcios = await misConsorcios(HABILITACIONES, RELOJ, usuarioId)
+
+  // El selector de la barra muestra el consorcio recordado en la galleta
+  // (guía §3.4). El armazón no ve `?consorcio=`, pero `src/middleware.ts` lo
+  // espeja en la galleta antes de renderizar: barra y pantalla van juntas.
+  // Cada pantalla igual resuelve lo suyo con `resolverConsorcioActivo`,
+  // donde el parámetro manda.
+  const galletas = await cookies()
+  const { activo: recordado } = resolverConsorcioActivo(
+    {},
+    consorcios,
+    galletas.get(NOMBRE_GALLETA_CONSORCIO)?.value,
+  )
+  const recordadoId = recordado?.id
 
   after(async () => {
     // Cada historia agrega su manejador; lo que no tiene ninguno queda
@@ -28,7 +50,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
   })
 
   return (
-    <>
+    <div className="armazon">
       <header className="barra">
         <Link className="marca" href="/">
           FLAY
@@ -36,22 +58,12 @@ export default async function PanelLayout({ children }: { children: React.ReactN
 
         <details className="menu">
           <summary aria-label="Abrir menú de navegación">
-            <svg
-              className="icono"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <path d="M4 12h16" />
-              <path d="M4 18h16" />
-              <path d="M4 6h16" />
-            </svg>
+            <Menu className="icono" aria-hidden="true" />
           </summary>
-          <Navegacion />
+          <Navegacion etiqueta="Todas las secciones" />
         </details>
+
+        <SelectorDeConsorcio consorcios={consorcios} activoId={recordadoId} />
 
         <form action={salir} className="salida">
           <button className="boton boton--fantasma" type="submit">
@@ -66,6 +78,8 @@ export default async function PanelLayout({ children }: { children: React.ReactN
           <main>{children}</main>
         </div>
       </div>
-    </>
+
+      <BarraInferior />
+    </div>
   )
 }

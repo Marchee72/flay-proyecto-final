@@ -59,7 +59,9 @@ beforeEach(async () => {
       { designacion: '1B', coeficiente: '50.00000000' },
     ],
   })
-  unidadA = (await prismaBase.unidad.findFirstOrThrow({ where: { designacion: '1A' } })).id
+  unidadA = (
+    await prismaBase.unidad.findFirstOrThrow({ where: { consorcioId, designacion: '1A' } })
+  ).id
 })
 
 afterEach(async () => {
@@ -280,7 +282,9 @@ describe('morosidad por rol (FR-029, SC-015)', () => {
     expect(propio.saldo).toBe('500.00')
     expect(propio.movimientos[0].concepto).toBe('Expensas 01/2026')
 
-    const unidadB = (await prismaBase.unidad.findFirstOrThrow({ where: { designacion: '1B' } })).id
+    const unidadB = (
+      await prismaBase.unidad.findFirstOrThrow({ where: { consorcioId, designacion: '1B' } })
+    ).id
     await expect(
       verEstadoDeCuenta(repo, RELOJ, { usuarioId: vecino.id, consorcioId, unidadId: unidadB }),
     ).rejects.toThrow('No encontramos lo que buscabas.')

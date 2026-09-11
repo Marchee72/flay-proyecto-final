@@ -41,6 +41,58 @@ export async function accionAltaConsorcio(_previo: Resultado, datos: FormData): 
 }
 
 /**
+ * Alta de consorcio con padron en el mismo envio (asistente «Nuevo consorcio»
+ * en modal). Llama al mismo caso de uso `altaConsorcio` con las unidades: la
+ * transaccion es la misma que cuando el alta trae unidades (FR-011c) y los
+ * rechazos —CUIT repetido, suma que no cierra— llegan con el mismo mensaje
+ * RNF-10. Solo presentacion: arma las listas paralelas del formulario.
+ */
+export async function accionAltaConsorcioConPadron(
+  _previo: Resultado,
+  datos: FormData,
+): Promise<Resultado> {
+  const usuarioId = await quienOpera()
+  let creado = ''
+
+  const designaciones = datos.getAll('designacion').map(String)
+  const coeficientes = datos.getAll('coeficiente').map(String)
+  const tipos = datos.getAll('tipo').map(String)
+
+  try {
+    const unidades = designaciones
+      .map((designacion, i) => ({
+        designacion: designacion.trim(),
+        coeficiente: String(coeficientes[i] ?? '').trim(),
+        tipo: tipoDeUnidadDesdeFormulario(tipos[i]),
+      }))
+      .filter((unidad) => unidad.designacion !== '')
+
+    if (unidades.length === 0) {
+      return {
+        mensaje:
+          'El padrón quedó vacío. Cargá al menos una unidad con su coeficiente: sin padrón no se puede liquidar.',
+      }
+    }
+
+    const { consorcioId } = await altaConsorcio(HABILITACIONES, RELOJ, {
+      usuarioId,
+      administradoraId: String(datos.get('administradora') ?? ''),
+      nombre: String(datos.get('nombre') ?? '').trim(),
+      direccion: String(datos.get('direccion') ?? '').trim(),
+      localidad: String(datos.get('localidad') ?? '').trim(),
+      cuit: String(datos.get('cuit') ?? '').trim(),
+      unidades,
+    })
+    creado = consorcioId
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
+    throw error
+  }
+
+  redirect(`/consorcios/${creado}`)
+}
+
+/**
  * Carga del padron entero. Las unidades llegan como listas paralelas de
  * designacion, tipo y coeficiente, en el orden en que se cargaron.
  */

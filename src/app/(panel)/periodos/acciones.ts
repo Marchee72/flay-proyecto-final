@@ -102,7 +102,7 @@ export async function accionGenerarDocumentos(
       mensaje:
         progreso.generados === progreso.total
           ? ''
-          : `${progreso.generados} de ${progreso.total} documentos. Volvé a apretar para seguir.`,
+          : `${progreso.generados} de ${progreso.total} documentos. Volver a pulsar para seguir.`,
     }
   } catch (error) {
     if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }

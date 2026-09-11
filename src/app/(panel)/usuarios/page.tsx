@@ -1,14 +1,21 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
+import { Users, UserPlus } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarUsuarios, type UsuarioDelConsorcio } from '@/aplicacion/identidad/listar-usuarios'
+import { ROLES_ASIGNABLES } from '@/aplicacion/identidad/roles'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 
 import { accionReenviar } from './acciones'
+import { ModalInvitar } from './modal-invitar'
+import { EncabezadoDeConsorcio } from '../encabezado-consorcio'
+import { AvisoConsorcioNoElegido, SelectorDeConsorcio } from '../selector-consorcio'
+import { NOMBRE_GALLETA_CONSORCIO, resolverConsorcioActivo } from '../consorcio-activo'
 
 export const metadata: Metadata = { title: 'Usuarios — Flay' }
 
@@ -24,16 +31,36 @@ export default async function UsuariosPage({
 
   const parametros = await searchParams
   const consorcios = await misConsorcios(HABILITACIONES, RELOJ, usuarioId)
-  const activo = consorcios.find((c) => c.id === parametros.consorcio) ?? consorcios[0]
+
+  if (consorcios.length === 0) {
+    return (
+      <>
+        <h1>Usuarios</h1>
+        <p className="vacio">
+          Todavía no hay ningún consorcio a cargo. Pedir al administrador de la plataforma la
+          habilitación en uno.
+        </p>
+      </>
+    )
+  }
+
+  const galletas = await cookies()
+  const { activo, pedidoDesconocido } = resolverConsorcioActivo(
+    parametros,
+    consorcios,
+    galletas.get(NOMBRE_GALLETA_CONSORCIO)?.value,
+  )
 
   if (!activo) {
     return (
       <>
         <h1>Usuarios</h1>
-        <p className="vacio">
-          Todavía no tenés ningún consorcio a cargo. Pedile al administrador de la plataforma que te
-          habilite en uno.
-        </p>
+        <AvisoConsorcioNoElegido
+          consorcios={consorcios}
+          base="/usuarios"
+          parametros={parametros}
+          pedidoDesconocido={pedidoDesconocido}
+        />
       </>
     )
   }
@@ -53,10 +80,22 @@ export default async function UsuariosPage({
 
   return (
     <>
+      <EncabezadoDeConsorcio
+        nombre={activo.nombre}
+        volverHref="/consorcios"
+        volverTexto="Volver a consorcios"
+      />
       <h1>Usuarios</h1>
-      <p className="apagado">Quiénes tienen acceso a {activo.nombre}, y con qué rol.</p>
+      <p className="apagado">Quiénes tienen acceso y con qué rol.</p>
 
-      {consorcios.length > 1 && <SelectorDeConsorcio consorcios={consorcios} activo={activo.id} />}
+      {consorcios.length > 1 && (
+        <SelectorDeConsorcio
+          consorcios={consorcios}
+          activoId={activo.id}
+          id="consorcio"
+          mostrarEtiqueta
+        />
+      )}
 
       {parametros.invitado && (
         <p className="aviso aviso--atencion" role="status">
@@ -82,45 +121,17 @@ export default async function UsuariosPage({
       ) : (
         <>
           <p>
-            <Link
-              className="boton boton--primario"
-              href={`/usuarios/invitar?consorcio=${activo.id}`}
-            >
-              Invitar persona
-            </Link>
+            <ModalInvitar
+              consorcioId={activo.id}
+              roles={ROLES_ASIGNABLES}
+              hoy={RELOJ.hoy().toISOString().slice(0, 10)}
+            />
           </p>
 
           <Tabla usuarios={usuarios} consorcioId={activo.id} />
         </>
       )}
     </>
-  )
-}
-
-/** Cambio de consorcio activo sin guion: un formulario que navega. */
-function SelectorDeConsorcio({
-  consorcios,
-  activo,
-}: {
-  consorcios: { id: string; nombre: string }[]
-  activo: string
-}) {
-  return (
-    <form method="get" className="fila-de-filtros">
-      <div className="campo">
-        <label htmlFor="consorcio">Consorcio</label>
-        <select id="consorcio" name="consorcio" defaultValue={activo}>
-          {consorcios.map((consorcio) => (
-            <option key={consorcio.id} value={consorcio.id}>
-              {consorcio.nombre}
-            </option>
-          ))}
-        </select>
-      </div>
-      <button className="boton boton--fantasma" type="submit">
-        Ver
-      </button>
-    </form>
   )
 }
 
@@ -132,11 +143,29 @@ function Tabla({
   consorcioId: string
 }) {
   if (usuarios.length === 0) {
-    return <p className="vacio">Todavía no hay nadie habilitado en este consorcio.</p>
+    return (
+      <div className="vacio">
+        <Users aria-hidden="true" />
+        <p>Todavía no hay nadie habilitado en este consorcio.</p>
+        <p>
+          <Link
+            className="boton boton--primario"
+            href={`/usuarios/invitar?consorcio=${consorcioId}`}
+          >
+            <UserPlus className="icono" aria-hidden="true" />
+            Invitar persona
+          </Link>
+        </p>
+      </div>
+    )
   }
-
   return (
-    <div className="tabla-desplazable">
+    <div
+      className="tabla-desplazable"
+      tabIndex={0}
+      role="region"
+      aria-label="Personas con acceso a este consorcio"
+    >
       <table>
         <caption className="ayuda">Personas con acceso a este consorcio</caption>
         <thead>
@@ -153,10 +182,9 @@ function Tabla({
             <tr key={usuario.usuarioId}>
               <td>{usuario.nombre}</td>
               <td>{usuario.correo}</td>
-              <td>{usuario.roles.join(', ')}</td>
+              <td>{usuario.roles.map((rol) => ETIQUETA_ROL[rol] ?? rol).join(', ')}</td>
               <td>
-                {usuario.estado}
-                {usuario.bloqueado && <span className="ayuda"> · bloqueado</span>}
+                <EstadoDelUsuario estado={usuario.estado} bloqueado={usuario.bloqueado} />
               </td>
               <td>
                 <Invitacion usuario={usuario} consorcioId={consorcioId} />
@@ -212,4 +240,33 @@ function textoDeLaInvitacion({ invitacion }: UsuarioDelConsorcio): string {
   return invitacion.intentos === 0
     ? 'Correo en cola.'
     : `Correo en cola, ${invitacion.intentos} intento(s) fallido(s).`
+}
+
+/**
+ * La base guarda `administrador`/`consejo`/`consorcista` e
+ * `invitado`/`activo`/`suspendido` en minúsculas; en pantalla van con
+ * mayúscula inicial y el estado con `.etiqueta` (guía §3.4: color + palabra,
+ * nunca color solo). Solo presentación: no cambia roles ni estados.
+ */
+const ETIQUETA_ROL: Record<string, string> = {
+  administrador: 'Administrador',
+  consejo: 'Consejo',
+  consorcista: 'Consorcista',
+}
+
+const ETIQUETA_ESTADO: Record<string, { texto: string; clase: string }> = {
+  invitado: { texto: 'Invitado', clase: 'etiqueta--pendiente' },
+  activo: { texto: 'Activo', clase: 'etiqueta--rendido' },
+  suspendido: { texto: 'Suspendido', clase: 'etiqueta--vencido' },
+}
+
+function EstadoDelUsuario({ estado, bloqueado }: { estado: string; bloqueado: boolean }) {
+  const etiqueta = ETIQUETA_ESTADO[estado] ?? { texto: estado, clase: 'etiqueta--pendiente' }
+
+  return (
+    <>
+      <span className={`etiqueta ${etiqueta.clase}`}>{etiqueta.texto}</span>
+      {bloqueado && <span className="etiqueta etiqueta--vencido">Bloqueado</span>}
+    </>
+  )
 }

@@ -21,8 +21,8 @@ export default async function InvitacionPage({
       <span className="marca">FLAY</span>
 
       <div className="tarjeta">
-        <h1>Fijá tu contraseña</h1>
-        <p className="apagado">Con ella entrás a Flay de ahora en más.</p>
+        <h1>Fijar contraseña</h1>
+        <p className="apagado">Con ella se ingresa a Flay de ahora en más.</p>
 
         <FormularioInvitacion credencial={credencial} />
       </div>

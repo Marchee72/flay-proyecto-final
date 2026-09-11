@@ -1,7 +1,9 @@
 'use client'
 
 import { put } from '@vercel/blob/client'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { TriangleAlert } from 'lucide-react'
 
 import { accionConfirmarComprobante } from '../acciones'
 
@@ -21,18 +23,22 @@ export function AdjuntarComprobante({
   gastoId: string
 }) {
   const [mensaje, setMensaje] = useState('')
+  const [subido, setSubido] = useState(false)
   const [subiendo, setSubiendo] = useState(false)
+  const router = useRouter()
 
   async function subir(evento: React.FormEvent<HTMLFormElement>) {
     evento.preventDefault()
     const archivo = new FormData(evento.currentTarget).get('archivo')
 
     if (!(archivo instanceof File) || archivo.size === 0) {
-      setMensaje('Elegí un archivo.')
+      setSubido(false)
+      setMensaje('Falta el archivo: seleccionar un comprobante para subir.')
       return
     }
 
     setSubiendo(true)
+    setSubido(false)
     setMensaje('')
 
     try {
@@ -52,7 +58,8 @@ export function AdjuntarComprobante({
 
       // El rechazo llega antes de subir nada: 26 MB no viajan (SC-006c).
       if (!respuesta.ok) {
-        setMensaje(cuerpo.mensaje ?? 'No pudimos preparar la subida.')
+        setSubido(false)
+        setMensaje(cuerpo.mensaje ?? 'No se pudo preparar la subida.')
         return
       }
 
@@ -69,10 +76,14 @@ export function AdjuntarComprobante({
       })
 
       setMensaje(confirmacion.mensaje || 'Comprobante subido.')
-      if (!confirmacion.mensaje) location.reload()
+      setSubido(!confirmacion.mensaje)
+      // Sin recarga completa: se revalida el detalle (Server Component) para
+      // mostrar el comprobante nuevo y se anuncia con `role="status"`.
+      if (!confirmacion.mensaje) router.refresh()
     } catch {
       // Si la confirmacion no llegó, el trabajo pendiente la reintenta (FR-006b).
-      setMensaje('La subida falló. Volvé a intentar; el gasto ya quedó registrado.')
+      setSubido(false)
+      setMensaje('La subida falló. Volver a intentar; el gasto ya quedó registrado.')
     } finally {
       setSubiendo(false)
     }
@@ -91,11 +102,17 @@ export function AdjuntarComprobante({
         <p className="ayuda">PDF, JPEG, PNG, WebP, HEIC o TIFF, hasta 25 MB.</p>
       </div>
 
-      {mensaje && (
-        <p className="error" role="alert">
-          {mensaje}
-        </p>
-      )}
+      {mensaje &&
+        (subido ? (
+          <p className="aviso aviso--atencion" role="status">
+            <TriangleAlert className="icono" aria-hidden="true" />
+            <span>{mensaje}</span>
+          </p>
+        ) : (
+          <p className="error" role="alert">
+            {mensaje}
+          </p>
+        ))}
 
       <button className="boton boton--primario" type="submit" disabled={subiendo}>
         {subiendo ? 'Subiendo…' : 'Subir comprobante'}

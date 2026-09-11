@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { coeficienteParaMostrar } from '@/compartido/formato'
@@ -10,6 +10,7 @@ import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 
 import { CargadorDePadron } from './cargador'
+import { EncabezadoDeConsorcio } from '../../../encabezado-consorcio'
 
 export const metadata: Metadata = { title: 'Unidades — Flay' }
 
@@ -26,13 +27,19 @@ export default async function UnidadesPage({ params }: { params: Promise<{ id: s
     if (!(error instanceof ErrorDeAplicacion)) throw error
     return (
       <p className="aviso aviso--problema" role="alert">
-        {error.mensajeParaUsuario}
+        <Siren className="icono" aria-hidden="true" />
+        <span>{error.mensajeParaUsuario}</span>
       </p>
     )
   }
 
   return (
     <>
+      <EncabezadoDeConsorcio
+        nombre={consorcio.nombre}
+        volverHref={`/consorcios/${consorcio.id}`}
+        volverTexto="Volver al consorcio"
+      />
       <h1>Unidades de {consorcio.nombre}</h1>
 
       {consorcio.unidades.length === 0 ? (
@@ -74,10 +81,6 @@ export default async function UnidadesPage({ params }: { params: Promise<{ id: s
           </table>
         </div>
       )}
-
-      <p>
-        <Link href={`/consorcios/${consorcio.id}`}>Volver al consorcio</Link>
-      </p>
     </>
   )
 }

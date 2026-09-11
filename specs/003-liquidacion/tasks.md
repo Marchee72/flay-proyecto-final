@@ -162,7 +162,7 @@ reparto y la suma con tolerancia cero.
 - [X] T067 [P] Registrar en `CLAUDE.md` lo que un recién llegado no puede adivinar de esta etapa: el candado parcial, el desglose del interés y el disparo explícito de los documentos
 - [X] T068 Correr `npm run verificar` completo, local y remoto, y confirmar que sigue bajo los diez minutos con las pruebas nuevas
 - [ ] T069 Ensayar el recorrido manual de `quickstart.md` sobre el entorno desplegado, sin ningún paso desde una máquina de desarrollo
-- [ ] T070 Etiquetar el cierre de la iteración 2 con versión semántica, conforme a § 8.3.5
+- [X] T070 Etiquetar el cierre de la iteración 2 con versión semántica, conforme a § 8.3.5
 
 ---
 

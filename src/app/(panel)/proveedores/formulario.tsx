@@ -18,6 +18,7 @@ export function FormularioProveedor({
   rubros: readonly { id: string; etiqueta: string }[]
 }) {
   const [estado, accion, enviando] = useActionState(accionAltaProveedor, SIN_ERROR)
+  const hayError = estado.mensaje !== ''
 
   return (
     <form action={accion} noValidate>
@@ -25,18 +26,39 @@ export function FormularioProveedor({
 
       <div className="campo">
         <label htmlFor="razonSocial">Razón social</label>
-        <input id="razonSocial" name="razonSocial" required />
+        <input
+          id="razonSocial"
+          name="razonSocial"
+          required
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-proveedor' : undefined}
+        />
       </div>
 
       <div className="campo">
         <label htmlFor="cuit">CUIT</label>
-        <input id="cuit" name="cuit" className="cifra" inputMode="numeric" required />
-        <p className="ayuda">No se puede editar después: identifica al proveedor.</p>
+        <input
+          id="cuit"
+          name="cuit"
+          inputMode="numeric"
+          required
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-proveedor ayuda-cuit' : 'ayuda-cuit'}
+        />
+        <p className="ayuda" id="ayuda-cuit">
+          No se puede editar después: identifica al proveedor.
+        </p>
       </div>
 
       <div className="campo">
         <label htmlFor="rubro">Rubro habitual</label>
-        <select id="rubro" name="rubro" defaultValue="">
+        <select
+          id="rubro"
+          name="rubro"
+          defaultValue=""
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-proveedor' : undefined}
+        >
           <option value="">Sin rubro habitual</option>
           {rubros.map((rubro) => (
             <option key={rubro.id} value={rubro.id}>
@@ -46,8 +68,8 @@ export function FormularioProveedor({
         </select>
       </div>
 
-      {estado.mensaje && (
-        <p className="error" role="alert">
+      {hayError && (
+        <p className="error" id="error-proveedor" role="alert">
           {estado.mensaje}
         </p>
       )}

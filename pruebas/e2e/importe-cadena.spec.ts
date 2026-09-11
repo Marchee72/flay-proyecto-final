@@ -21,6 +21,7 @@ import { expect, test } from '@playwright/test'
 if (existsSync('.env')) process.loadEnvFile('.env')
 
 const IMPORTE = '999999999999.99'
+const IMPORTE_EN_PANTALLA = '$ 999.999.999.999,99'
 const CONTRASENA = 'una-contrasena-larga-de-prueba'
 
 const prisma = new PrismaClient()
@@ -123,8 +124,9 @@ test('el importe mas largo que admite la columna llega intacto a la pantalla', a
 
   await page.goto(`/gastos/${gastoId}?consorcio=${consorcioId}`)
 
-  // Exacto, digito por digito. Si alguna capa lo hubiera pasado por el tipo
-  // numerico nativo, el ultimo centavo seria otro.
-  await expect(page.locator('.cifra').first()).toHaveText(IMPORTE)
-  expect(await page.content()).toContain(IMPORTE)
+  // Exacto, digito por digito, con la agrupacion es-AR hecha sobre la cadena.
+  // Si alguna capa lo hubiera pasado por el tipo numerico nativo, el ultimo
+  // centavo seria otro.
+  await expect(page.locator('.cifra').first()).toHaveText(IMPORTE_EN_PANTALLA)
+  expect(await page.content()).toContain(IMPORTE_EN_PANTALLA)
 })

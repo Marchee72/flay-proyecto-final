@@ -271,19 +271,31 @@ async function avisarALosHabilitados(
 async function deudaVigentePorUnidad(
   periodoExcluido: string,
 ): Promise<Map<string, DeudaVencida[]>> {
-  const detalles = await prisma.detalleLiquidacion.findMany({
-    where: {
-      liquidacion: { estado: 'vigente', periodoId: { not: periodoExcluido } },
-    },
+  // Por `Liquidacion`, que si esta aislada: `DetalleLiquidacion` no lleva
+  // `consorcio_id` y consultarla directo trae la deuda de todos los consorcios
+  // (Principio I, RT-04).
+  const liquidaciones = await prisma.liquidacion.findMany({
+    where: { estado: 'vigente', periodoId: { not: periodoExcluido } },
     select: {
       id: true,
-      unidadId: true,
-      totalUnidad: true,
-      liquidacionId: true,
-      liquidacion: { select: { vencimiento: true } },
-      imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
+      vencimiento: true,
+      detalles: {
+        select: {
+          unidadId: true,
+          totalUnidad: true,
+          imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
+        },
+      },
     },
   })
+
+  const detalles = liquidaciones.flatMap((liquidacion) =>
+    liquidacion.detalles.map((detalle) => ({
+      ...detalle,
+      liquidacionId: liquidacion.id,
+      liquidacion: { vencimiento: liquidacion.vencimiento },
+    })),
+  )
 
   const porUnidad = new Map<string, DeudaVencida[]>()
 

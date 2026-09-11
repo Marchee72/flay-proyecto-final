@@ -139,14 +139,14 @@ alcanzable únicamente por los ocupantes de su unidad.
 **Independent Test**: registrar un pago parcial que cubre una liquidación y media y verificar el
 reparto y la suma con tolerancia cero.
 
-- [ ] T054 [US4] Implementar `registrarPago` en `src/aplicacion/pagos/registrar.ts`: registra e imputa en la misma transacción, y el excedente queda en `Pago.saldo_a_favor` (`FR-021`, `FR-022`, `FR-026`)
-- [ ] T055 [US4] Implementar `verEstadoDeCuenta` en `src/aplicacion/pagos/estado-de-cuenta.ts` con liquidaciones, pagos, imputaciones, **desglose de intereses** y saldo (`FR-028`)
-- [ ] T056 [US4] Implementar `verMorosidad` en `src/aplicacion/pagos/morosidad.ts` como **dos consultas distintas**: la nominada para `administrador` y `consejo`, la agregada para `consorcista`, que no trae un solo nombre (`FR-029`, regla RN-13 § 7.2)
-- [ ] T057 [P] [US4] Construir `src/app/(panel)/pagos/page.tsx` y `nuevo/page.tsx` con el alta y la imputación a la vista
-- [ ] T058 [P] [US4] Construir `src/app/(panel)/morosidad/page.tsx`, que muestra lo que el rol permite y nada más
-- [ ] T059 [US4] Escribir `pruebas/integracion/pagos.spec.ts`: la imputación por antigüedad, el excedente a favor, y la aplicación automática de ese saldo en la liquidación siguiente (`FR-026b`, SC-009, SC-014c)
-- [ ] T060 [US4] Extender esa prueba: al anular una liquidación, sus imputaciones quedan **marcadas y no borradas**, y el pago vuelve a estar disponible (`FR-027`)
-- [ ] T061 [P] [US4] Escribir `pruebas/e2e/morosidad.spec.ts`: un consorcista ve el dato agregado y **cero** nombres; un administrador ve la nómina (SC-015)
+- [X] T054 [US4] Implementar `registrarPago` en `src/aplicacion/pagos/registrar.ts`: registra e imputa en la misma transacción, y el excedente queda en `Pago.saldo_a_favor` (`FR-021`, `FR-022`, `FR-026`)
+- [X] T055 [US4] Implementar `verEstadoDeCuenta` en `src/aplicacion/pagos/estado-de-cuenta.ts` con liquidaciones, pagos, imputaciones, **desglose de intereses** y saldo (`FR-028`)
+- [X] T056 [US4] Implementar `verMorosidad` en `src/aplicacion/pagos/morosidad.ts` como **dos consultas distintas**: la nominada para `administrador` y `consejo`, la agregada para `consorcista`, que no trae un solo nombre (`FR-029`, regla RN-13 § 7.2)
+- [X] T057 [P] [US4] Construir `src/app/(panel)/pagos/page.tsx` y `nuevo/page.tsx` con el alta y la imputación a la vista
+- [X] T058 [P] [US4] Construir `src/app/(panel)/morosidad/page.tsx`, que muestra lo que el rol permite y nada más
+- [X] T059 [US4] Escribir `pruebas/integracion/pagos.spec.ts`: la imputación por antigüedad, el excedente a favor, y la aplicación automática de ese saldo en la liquidación siguiente (`FR-026b`, SC-009, SC-014c)
+- [X] T060 [US4] Extender esa prueba: al anular una liquidación, sus imputaciones quedan **marcadas y no borradas**, y el pago vuelve a estar disponible (`FR-027`)
+- [X] T061 [P] [US4] Escribir `pruebas/e2e/morosidad.spec.ts`: un consorcista ve el dato agregado y **cero** nombres; un administrador ve la nómina (SC-015)
 
 **Checkpoint**: el ciclo económico cierra y la nómina no se filtra
 

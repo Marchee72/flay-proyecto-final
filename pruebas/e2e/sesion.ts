@@ -184,7 +184,9 @@ export async function sembrarExpensa(escenario: Escenario): Promise<Expensa> {
       totalOrdinario: '184320.75',
       totalExtraordinario: '0.00',
       totalGeneral: '184320.75',
-      vencimiento: new Date('2026-10-10'),
+      // Ya vencida: asi las dos unidades estan en mora para la prueba de
+      // morosidad, cualquiera sea el dia en que corra.
+      vencimiento: new Date('2026-08-10'),
       emitidaPor: escenario.usuarioId,
     },
   })

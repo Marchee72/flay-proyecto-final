@@ -1,0 +1,1325 @@
+{
+  "proveedor": "gemini",
+  "modelos": [
+    [
+      "gemini-3.5-flash",
+      "C01",
+      "C20"
+    ],
+    [
+      "gemini-3.8-flash",
+      "C21",
+      "C27"
+    ],
+    [
+      "gemini-3.5-flash-lite",
+      "C28",
+      "C30"
+    ]
+  ],
+  "fecha": "2026-09-11T21:07:11.240Z",
+  "comprobantes": 30,
+  "aciertos": {
+    "proveedor": 30,
+    "cuit": 30,
+    "fecha": 30,
+    "importe": 30,
+    "rubro": 29
+  },
+  "correctos": 149,
+  "total": 150,
+  "precision": 0.9933333333333333,
+  "umbral": 0.8,
+  "supera": true,
+  "medianaMs": 7685,
+  "tokensEntrada": 42334,
+  "resultados": [
+    {
+      "id": "C01",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 4628,
+      "esperado": {
+        "proveedor": "EPE",
+        "cuit": "30-50873849-1",
+        "fecha": "2026-05-06",
+        "importe": "96500.00",
+        "rubro": "R04"
+      },
+      "obtenido": {
+        "proveedor": "Empresa Provincial de la Energia de Santa Fe",
+        "cuit": "30-50873849-1",
+        "fecha": "2026-05-06",
+        "importe": "96500.00",
+        "rubro": "R04"
+      },
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 84,
+        "totalTokenCount": 1624,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 406,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C02",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 9309,
+      "esperado": {
+        "proveedor": "Litoral Gas",
+        "cuit": "30-50234567-3",
+        "fecha": "2026-05-12",
+        "importe": "45230.50",
+        "rubro": "R06"
+      },
+      "obtenido": {
+        "proveedor": "Litoral Gas S.A.",
+        "cuit": "30-50234567-3",
+        "fecha": "2026-05-12",
+        "importe": "45230.50",
+        "rubro": "R06"
+      },
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 81,
+        "totalTokenCount": 1774,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          }
+        ],
+        "thoughtsTokenCount": 559,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C03",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 4310,
+      "esperado": {
+        "proveedor": "Ascensores Ing. López",
+        "cuit": "30-20123456-5",
+        "fecha": "2026-05-15",
+        "importe": "120000.00",
+        "rubro": "R07"
+      },
+      "obtenido": {
+        "proveedor": "Ascensores Ing. López",
+        "cuit": "30-20123456-5",
+        "fecha": "2026-05-15",
+        "importe": "120000.00",
+        "rubro": "R07"
+      },
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 60,
+        "totalTokenCount": 1592,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 398,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C04",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 3684,
+      "esperado": {
+        "proveedor": "Ferretería El Tornillo",
+        "cuit": "30-27123456-8",
+        "fecha": "2026-05-20",
+        "importe": "18750.00",
+        "rubro": "R10"
+      },
+      "obtenido": {
+        "proveedor": "FERRETERÍA EL TORNILLO",
+        "cuit": "30-27123456-8",
+        "fecha": "2026-05-20",
+        "importe": "18750.00",
+        "rubro": "R10"
+      },
+      "uso": {
+        "promptTokenCount": 1704,
+        "candidatesTokenCount": 62,
+        "totalTokenCount": 2168,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1102
+          }
+        ],
+        "thoughtsTokenCount": 402,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C05",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 15607,
+      "esperado": {
+        "proveedor": "Plomero R. Díaz (monotributo)",
+        "cuit": "20-25123456-7",
+        "fecha": "2026-05-22",
+        "importe": "45000.00",
+        "rubro": "R10"
+      },
+      "obtenido": {
+        "proveedor": "Roberto Díaz",
+        "cuit": "20-25123456-7",
+        "fecha": "2026-05-22",
+        "importe": "45000.00",
+        "rubro": "R10"
+      },
+      "uso": {
+        "promptTokenCount": 1709,
+        "candidatesTokenCount": 55,
+        "totalTokenCount": 2170,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1107
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 406,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C06",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 39793,
+      "esperado": {
+        "proveedor": "Pinturería Centro",
+        "cuit": "30-30654321-4",
+        "fecha": "2026-06-03",
+        "importe": "67890.00",
+        "rubro": "R10"
+      },
+      "obtenido": {
+        "proveedor": "Pinturería Centro",
+        "cuit": "30-30654321-4",
+        "fecha": "2026-06-03",
+        "importe": "67890.00",
+        "rubro": "R10"
+      },
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 80,
+        "totalTokenCount": 1584,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          }
+        ],
+        "thoughtsTokenCount": 370,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C07",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 9660,
+      "esperado": {
+        "proveedor": "Consorcio Personal SRL",
+        "cuit": "30-71234567-8",
+        "fecha": "2026-06-05",
+        "importe": "485000.00",
+        "rubro": "R01"
+      },
+      "obtenido": {
+        "proveedor": "Consorcio Personal SRL",
+        "cuit": "30-71234567-8",
+        "fecha": "2026-06-05",
+        "importe": "485000.00",
+        "rubro": "R01"
+      },
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 68,
+        "totalTokenCount": 1636,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          }
+        ],
+        "thoughtsTokenCount": 434,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C08",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 18302,
+      "esperado": {
+        "proveedor": "EPE",
+        "cuit": "30-50873849-1",
+        "fecha": "2026-06-08",
+        "importe": "88400.50",
+        "rubro": "R04"
+      },
+      "obtenido": {
+        "proveedor": "Empresa Provincial de la Energia de Santa Fe",
+        "cuit": "30-50873849-1",
+        "fecha": "2026-06-08",
+        "importe": "88400.50",
+        "rubro": "R04"
+      },
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 84,
+        "totalTokenCount": 1565,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          }
+        ],
+        "thoughtsTokenCount": 347,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C09",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 9007,
+      "esperado": {
+        "proveedor": "Jardinería Verde SRL",
+        "cuit": "30-70998877-1",
+        "fecha": "2026-06-11",
+        "importe": "32000.00",
+        "rubro": "R11"
+      },
+      "obtenido": {
+        "proveedor": "Jardinería Verde SRL",
+        "cuit": "30-70998877-1",
+        "fecha": "2026-06-11",
+        "importe": "32000.00",
+        "rubro": "R11"
+      },
+      "uso": {
+        "promptTokenCount": 1709,
+        "candidatesTokenCount": 81,
+        "totalTokenCount": 2203,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1107
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 413,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C10",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 5347,
+      "esperado": {
+        "proveedor": "Fumigaciones Santa Fe",
+        "cuit": "30-70776655-2",
+        "fecha": "2026-06-14",
+        "importe": "28000.00",
+        "rubro": "R12"
+      },
+      "obtenido": {
+        "proveedor": "Fumigaciones Santa Fe",
+        "cuit": "30-70776655-2",
+        "fecha": "2026-06-14",
+        "importe": "28000.00",
+        "rubro": "R12"
+      },
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 59,
+        "totalTokenCount": 1562,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 369,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C11",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 6843,
+      "esperado": {
+        "proveedor": "Seguros Rivadavia",
+        "cuit": "30-30567890-1",
+        "fecha": "2026-06-18",
+        "importe": "145300.00",
+        "rubro": "R08"
+      },
+      "obtenido": {
+        "proveedor": "Seguros Rivadavia",
+        "cuit": "30-30567890-1",
+        "fecha": "2026-06-18",
+        "importe": "145300.00",
+        "rubro": "R08"
+      },
+      "uso": {
+        "promptTokenCount": 1666,
+        "candidatesTokenCount": 59,
+        "totalTokenCount": 2334,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1064
+          }
+        ],
+        "thoughtsTokenCount": 609,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C12",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 6856,
+      "esperado": {
+        "proveedor": "Grupo Delta Adm.",
+        "cuit": "30-71654321-9",
+        "fecha": "2026-06-20",
+        "importe": "95000.00",
+        "rubro": "R09"
+      },
+      "obtenido": {
+        "proveedor": "Grupo Delta S.R.L.",
+        "cuit": "30-71654321-9",
+        "fecha": "2026-06-20",
+        "importe": "95000.00",
+        "rubro": "R09"
+      },
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 82,
+        "totalTokenCount": 1544,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 328,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C13",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 3483,
+      "esperado": {
+        "proveedor": "Limpieza Total SRL",
+        "cuit": "30-70876543-2",
+        "fecha": "2026-06-25",
+        "importe": "180000.00",
+        "rubro": "R02"
+      },
+      "obtenido": {
+        "proveedor": "Limpieza Total SRL",
+        "cuit": "30-70876543-2",
+        "fecha": "2026-06-25",
+        "importe": "180000.00",
+        "rubro": "R02"
+      },
+      "uso": {
+        "promptTokenCount": 1666,
+        "candidatesTokenCount": 80,
+        "totalTokenCount": 2129,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1064
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 383,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C14",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 6359,
+      "esperado": {
+        "proveedor": "Constructora Frente SRL",
+        "cuit": "30-70987654-3",
+        "fecha": "2026-06-28",
+        "importe": "300000.00",
+        "rubro": "R15"
+      },
+      "obtenido": {
+        "proveedor": "Constructora Frente SRL",
+        "cuit": "30-70987654-3",
+        "fecha": "2026-06-28",
+        "importe": "300000.00",
+        "rubro": "R15"
+      },
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 80,
+        "totalTokenCount": 1707,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          }
+        ],
+        "thoughtsTokenCount": 493,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C15",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 18115,
+      "esperado": {
+        "proveedor": "Electricista M. Sosa",
+        "cuit": "20-30987654-1",
+        "fecha": "2026-07-02",
+        "importe": "62500.00",
+        "rubro": "R10"
+      },
+      "obtenido": {
+        "proveedor": "Marcelo Sosa — Instalaciones electricas",
+        "cuit": "20-30987654-1",
+        "fecha": "2026-07-02",
+        "importe": "62500.00",
+        "rubro": "R10"
+      },
+      "uso": {
+        "promptTokenCount": 1709,
+        "candidatesTokenCount": 61,
+        "totalTokenCount": 2470,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1107
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 700,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C16",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 7431,
+      "esperado": {
+        "proveedor": "Aguas Santafesinas",
+        "cuit": "30-99923456-7",
+        "fecha": "2026-07-06",
+        "importe": "79600.00",
+        "rubro": "R05"
+      },
+      "obtenido": {
+        "proveedor": "Aguas Santafesinas S.A.",
+        "cuit": "30-99923456-7",
+        "fecha": "2026-07-06",
+        "importe": "79600.00",
+        "rubro": "R05"
+      },
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 84,
+        "totalTokenCount": 1825,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          }
+        ],
+        "thoughtsTokenCount": 607,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C17",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 6389,
+      "esperado": {
+        "proveedor": "Cerrajería 24hs",
+        "cuit": "30-27456789-0",
+        "fecha": "2026-07-09",
+        "importe": "23400.00",
+        "rubro": "R10"
+      },
+      "obtenido": {
+        "proveedor": "CERRAJERÍA 24HS",
+        "cuit": "30-27456789-0",
+        "fecha": "2026-07-09",
+        "importe": "23400.00",
+        "rubro": "R10"
+      },
+      "uso": {
+        "promptTokenCount": 1704,
+        "candidatesTokenCount": 83,
+        "totalTokenCount": 2167,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1102
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 380,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C18",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 7685,
+      "esperado": {
+        "proveedor": "Vidriería San Martín",
+        "cuit": "30-30345678-9",
+        "fecha": "2026-07-13",
+        "importe": "89000.00",
+        "rubro": "R10"
+      },
+      "obtenido": {
+        "proveedor": "Vidriería San Martín",
+        "cuit": "30-30345678-9",
+        "fecha": "2026-07-13",
+        "importe": "89000.00",
+        "rubro": "R10"
+      },
+      "uso": {
+        "promptTokenCount": 1666,
+        "candidatesTokenCount": 80,
+        "totalTokenCount": 2394,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1064
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 648,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C19",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 8981,
+      "esperado": {
+        "proveedor": "Calderas Bax SRL",
+        "cuit": "30-70112233-4",
+        "fecha": "2026-07-16",
+        "importe": "200000.00",
+        "rubro": "R16"
+      },
+      "obtenido": {
+        "proveedor": "Calderas Bax SRL",
+        "cuit": "30-70112233-4",
+        "fecha": "2026-07-16",
+        "importe": "200000.00",
+        "rubro": "R16"
+      },
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 81,
+        "totalTokenCount": 1649,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          }
+        ],
+        "thoughtsTokenCount": 434,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C20",
+      "modelo": "gemini-3.5-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 10774,
+      "esperado": {
+        "proveedor": "Telecom Fibra",
+        "cuit": "30-50345678-2",
+        "fecha": "2026-07-20",
+        "importe": "15999.00",
+        "rubro": "R13"
+      },
+      "obtenido": {
+        "proveedor": "Telecom Argentina S.A.",
+        "cuit": "30-50345678-2",
+        "fecha": "2026-07-20",
+        "importe": "15999.00",
+        "rubro": "R13"
+      },
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 80,
+        "totalTokenCount": 1587,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          }
+        ],
+        "thoughtsTokenCount": 373,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C21",
+      "modelo": "gemini-3.8-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 86223,
+      "esperado": {
+        "proveedor": "Librería Papelera",
+        "cuit": "30-30112233-5",
+        "fecha": "2026-07-23",
+        "importe": "8750.00",
+        "rubro": "R13"
+      },
+      "obtenido": {
+        "proveedor": "LIBRERÍA PAPELERA",
+        "cuit": "30-30112233-5",
+        "fecha": "2026-07-23",
+        "importe": "8750.00",
+        "rubro": "R13"
+      },
+      "uso": {
+        "promptTokenCount": 1666,
+        "candidatesTokenCount": 64,
+        "totalTokenCount": 2097,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1064
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 367,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C22",
+      "modelo": "gemini-3.8-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 13002,
+      "esperado": {
+        "proveedor": "Albañil J. Peralta",
+        "cuit": "20-28456789-3",
+        "fecha": "2026-07-27",
+        "importe": "78000.00",
+        "rubro": "R10"
+      },
+      "obtenido": {
+        "proveedor": "Jorge Peralta — Albañileria en general",
+        "cuit": "20-28456789-3",
+        "fecha": "2026-07-27",
+        "importe": "78000.00",
+        "rubro": "R10"
+      },
+      "uso": {
+        "promptTokenCount": 1709,
+        "candidatesTokenCount": 62,
+        "totalTokenCount": 2471,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1107
+          }
+        ],
+        "thoughtsTokenCount": 700,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C23",
+      "modelo": "gemini-3.8-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 38898,
+      "esperado": {
+        "proveedor": "EPE",
+        "cuit": "30-50873849-1",
+        "fecha": "2026-08-01",
+        "importe": "92000.00",
+        "rubro": "R04"
+      },
+      "obtenido": {
+        "proveedor": "Empresa Provincial de la Energia de Santa Fe",
+        "cuit": "30-50873849-1",
+        "fecha": "2026-08-01",
+        "importe": "92000.00",
+        "rubro": "R04"
+      },
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 84,
+        "totalTokenCount": 1631,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 413,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C24",
+      "modelo": "gemini-3.8-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 33551,
+      "esperado": {
+        "proveedor": "Matafuegos Rosario",
+        "cuit": "30-70445566-7",
+        "fecha": "2026-08-04",
+        "importe": "45600.00",
+        "rubro": "R10"
+      },
+      "obtenido": {
+        "proveedor": "Matafuegos Rosario",
+        "cuit": "30-70445566-7",
+        "fecha": "2026-08-04",
+        "importe": "45600.00",
+        "rubro": "R10"
+      },
+      "uso": {
+        "promptTokenCount": 1666,
+        "candidatesTokenCount": 58,
+        "totalTokenCount": 2361,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1064
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 637,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C25",
+      "modelo": "gemini-3.8-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 6419,
+      "esperado": {
+        "proveedor": "Pinturería Centro",
+        "cuit": "30-30654321-4",
+        "fecha": "2026-08-08",
+        "importe": "112300.00",
+        "rubro": "R10"
+      },
+      "obtenido": {
+        "proveedor": "Pinturería Centro",
+        "cuit": "30-30654321-4",
+        "fecha": "2026-08-08",
+        "importe": "112300.00",
+        "rubro": "R10"
+      },
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 81,
+        "totalTokenCount": 1448,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 233,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C26",
+      "modelo": "gemini-3.8-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 34925,
+      "esperado": {
+        "proveedor": "Tableros AEA SRL",
+        "cuit": "30-70334455-6",
+        "fecha": "2026-08-12",
+        "importe": "175000.00",
+        "rubro": "R17"
+      },
+      "obtenido": {
+        "proveedor": "Tableros AEA SRL",
+        "cuit": "30-70334455-6",
+        "fecha": "2026-08-12",
+        "importe": "175000.00",
+        "rubro": "R17"
+      },
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 82,
+        "totalTokenCount": 1607,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          }
+        ],
+        "thoughtsTokenCount": 391,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C27",
+      "modelo": "gemini-3.8-flash",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 4787,
+      "esperado": {
+        "proveedor": "Seguros Rivadavia",
+        "cuit": "30-30567890-1",
+        "fecha": "2026-08-15",
+        "importe": "145300.00",
+        "rubro": "R08"
+      },
+      "obtenido": {
+        "proveedor": "Seguros Rivadavia",
+        "cuit": "30-30567890-1",
+        "fecha": "2026-08-15",
+        "importe": "145300.00",
+        "rubro": "R08"
+      },
+      "uso": {
+        "promptTokenCount": 1666,
+        "candidatesTokenCount": 81,
+        "totalTokenCount": 1907,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1064
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 160,
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C28",
+      "modelo": "gemini-3.5-flash-lite",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 3259,
+      "esperado": {
+        "proveedor": "Desagotes Rápido",
+        "cuit": "30-70667788-9",
+        "fecha": "2026-08-18",
+        "importe": "54000.00",
+        "rubro": "R10"
+      },
+      "obtenido": {
+        "proveedor": "Desagotes Rápido",
+        "cuit": "30-70667788-9",
+        "fecha": "2026-08-18",
+        "importe": "54000.00",
+        "rubro": "R10"
+      },
+      "uso": {
+        "promptTokenCount": 1709,
+        "candidatesTokenCount": 81,
+        "totalTokenCount": 1790,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1107
+          }
+        ],
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C29",
+      "modelo": "gemini-3.5-flash-lite",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": false
+      },
+      "ms": 1982,
+      "esperado": {
+        "proveedor": "Herrero L. Gómez",
+        "cuit": "20-26345678-4",
+        "fecha": "2026-08-22",
+        "importe": "96000.00",
+        "rubro": "R15"
+      },
+      "obtenido": {
+        "proveedor": "Luis Gómez — Herrería de obra",
+        "cuit": "20-26345678-4",
+        "fecha": "2026-08-22",
+        "importe": "96000.00",
+        "rubro": "R10"
+      },
+      "uso": {
+        "promptTokenCount": 1709,
+        "candidatesTokenCount": 82,
+        "totalTokenCount": 1791,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1107
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "serviceTier": "standard"
+      }
+    },
+    {
+      "id": "C30",
+      "modelo": "gemini-3.5-flash-lite",
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 2154,
+      "esperado": {
+        "proveedor": "Limpieza Total SRL",
+        "cuit": "30-70876543-2",
+        "fecha": "2026-08-25",
+        "importe": "124700.00",
+        "rubro": "R02"
+      },
+      "obtenido": {
+        "proveedor": "Limpieza Total SRL",
+        "cuit": "30-70876543-2",
+        "fecha": "2026-08-25",
+        "importe": "124700.00",
+        "rubro": "R02"
+      },
+      "uso": {
+        "promptTokenCount": 1666,
+        "candidatesTokenCount": 80,
+        "totalTokenCount": 1746,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1064
+          }
+        ],
+        "serviceTier": "standard"
+      }
+    }
+  ]
+}

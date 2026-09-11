@@ -1,0 +1,1112 @@
+{
+  "proveedor": "gemini",
+  "modelo": "gemini-3.5-flash",
+  "fecha": "2026-09-11T20:59:45.547Z",
+  "comprobantes": 30,
+  "aciertos": {
+    "proveedor": 18,
+    "cuit": 21,
+    "fecha": 21,
+    "importe": 21,
+    "rubro": 21
+  },
+  "correctos": 102,
+  "total": 150,
+  "precision": 0.68,
+  "umbral": 0.8,
+  "supera": false,
+  "resultados": [
+    {
+      "id": "C01",
+      "esperado": {
+        "proveedor": "EPE",
+        "cuit": "30-50873849-1",
+        "fecha": "2026-05-06",
+        "importe": "96500.00",
+        "rubro": "R04"
+      },
+      "obtenido": {
+        "proveedor": "Empresa Provincial de la Energia de Santa Fe",
+        "cuit": "30-50873849-1",
+        "fecha": "2026-05-06",
+        "importe": "96500.00",
+        "rubro": "R04"
+      },
+      "campos": {
+        "proveedor": false,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 4628,
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 84,
+        "totalTokenCount": 1624,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 406,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C02",
+      "esperado": {
+        "proveedor": "Litoral Gas",
+        "cuit": "30-50234567-3",
+        "fecha": "2026-05-12",
+        "importe": "45230.50",
+        "rubro": "R06"
+      },
+      "obtenido": {
+        "proveedor": "Litoral Gas S.A.",
+        "cuit": "30-50234567-3",
+        "fecha": "2026-05-12",
+        "importe": "45230.50",
+        "rubro": "R06"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 9309,
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 81,
+        "totalTokenCount": 1774,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          }
+        ],
+        "thoughtsTokenCount": 559,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C03",
+      "esperado": {
+        "proveedor": "Ascensores Ing. López",
+        "cuit": "30-20123456-5",
+        "fecha": "2026-05-15",
+        "importe": "120000.00",
+        "rubro": "R07"
+      },
+      "obtenido": {
+        "proveedor": "Ascensores Ing. López",
+        "cuit": "30-20123456-5",
+        "fecha": "2026-05-15",
+        "importe": "120000.00",
+        "rubro": "R07"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 4310,
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 60,
+        "totalTokenCount": 1592,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 398,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C04",
+      "esperado": {
+        "proveedor": "Ferretería El Tornillo",
+        "cuit": "30-27123456-8",
+        "fecha": "2026-05-20",
+        "importe": "18750.00",
+        "rubro": "R10"
+      },
+      "obtenido": {
+        "proveedor": "FERRETERÍA EL TORNILLO",
+        "cuit": "30-27123456-8",
+        "fecha": "2026-05-20",
+        "importe": "18750.00",
+        "rubro": "R10"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 3684,
+      "uso": {
+        "promptTokenCount": 1704,
+        "candidatesTokenCount": 62,
+        "totalTokenCount": 2168,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1102
+          }
+        ],
+        "thoughtsTokenCount": 402,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C05",
+      "esperado": {
+        "proveedor": "Plomero R. Díaz (monotributo)",
+        "cuit": "20-25123456-7",
+        "fecha": "2026-05-22",
+        "importe": "45000.00",
+        "rubro": "R10"
+      },
+      "obtenido": {
+        "proveedor": "Roberto Díaz",
+        "cuit": "20-25123456-7",
+        "fecha": "2026-05-22",
+        "importe": "45000.00",
+        "rubro": "R10"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 15607,
+      "uso": {
+        "promptTokenCount": 1709,
+        "candidatesTokenCount": 55,
+        "totalTokenCount": 2170,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1107
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 406,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C06",
+      "esperado": {
+        "proveedor": "Pinturería Centro",
+        "cuit": "30-30654321-4",
+        "fecha": "2026-06-03",
+        "importe": "67890.00",
+        "rubro": "R10"
+      },
+      "obtenido": {
+        "proveedor": "Pinturería Centro",
+        "cuit": "30-30654321-4",
+        "fecha": "2026-06-03",
+        "importe": "67890.00",
+        "rubro": "R10"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 39793,
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 80,
+        "totalTokenCount": 1584,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          }
+        ],
+        "thoughtsTokenCount": 370,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C07",
+      "esperado": {
+        "proveedor": "Consorcio Personal SRL",
+        "cuit": "30-71234567-8",
+        "fecha": "2026-06-05",
+        "importe": "485000.00",
+        "rubro": "R01"
+      },
+      "obtenido": {
+        "proveedor": "Consorcio Personal SRL",
+        "cuit": "30-71234567-8",
+        "fecha": "2026-06-05",
+        "importe": "485000.00",
+        "rubro": "R01"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 9660,
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 68,
+        "totalTokenCount": 1636,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          }
+        ],
+        "thoughtsTokenCount": 434,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C08",
+      "esperado": {
+        "proveedor": "EPE",
+        "cuit": "30-50873849-1",
+        "fecha": "2026-06-08",
+        "importe": "88400.50",
+        "rubro": "R04"
+      },
+      "obtenido": {
+        "proveedor": "Empresa Provincial de la Energia de Santa Fe",
+        "cuit": "30-50873849-1",
+        "fecha": "2026-06-08",
+        "importe": "88400.50",
+        "rubro": "R04"
+      },
+      "campos": {
+        "proveedor": false,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 18302,
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 84,
+        "totalTokenCount": 1565,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          }
+        ],
+        "thoughtsTokenCount": 347,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C09",
+      "esperado": {
+        "proveedor": "Jardinería Verde SRL",
+        "cuit": "30-70998877-1",
+        "fecha": "2026-06-11",
+        "importe": "32000.00",
+        "rubro": "R11"
+      },
+      "obtenido": {
+        "proveedor": "Jardinería Verde SRL",
+        "cuit": "30-70998877-1",
+        "fecha": "2026-06-11",
+        "importe": "32000.00",
+        "rubro": "R11"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 9007,
+      "uso": {
+        "promptTokenCount": 1709,
+        "candidatesTokenCount": 81,
+        "totalTokenCount": 2203,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1107
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 413,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C10",
+      "esperado": {
+        "proveedor": "Fumigaciones Santa Fe",
+        "cuit": "30-70776655-2",
+        "fecha": "2026-06-14",
+        "importe": "28000.00",
+        "rubro": "R12"
+      },
+      "obtenido": {
+        "proveedor": "Fumigaciones Santa Fe",
+        "cuit": "30-70776655-2",
+        "fecha": "2026-06-14",
+        "importe": "28000.00",
+        "rubro": "R12"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 5347,
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 59,
+        "totalTokenCount": 1562,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 369,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C11",
+      "esperado": {
+        "proveedor": "Seguros Rivadavia",
+        "cuit": "30-30567890-1",
+        "fecha": "2026-06-18",
+        "importe": "145300.00",
+        "rubro": "R08"
+      },
+      "obtenido": {
+        "proveedor": "Seguros Rivadavia",
+        "cuit": "30-30567890-1",
+        "fecha": "2026-06-18",
+        "importe": "145300.00",
+        "rubro": "R08"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 6843,
+      "uso": {
+        "promptTokenCount": 1666,
+        "candidatesTokenCount": 59,
+        "totalTokenCount": 2334,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1064
+          }
+        ],
+        "thoughtsTokenCount": 609,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C12",
+      "esperado": {
+        "proveedor": "Grupo Delta Adm.",
+        "cuit": "30-71654321-9",
+        "fecha": "2026-06-20",
+        "importe": "95000.00",
+        "rubro": "R09"
+      },
+      "obtenido": {
+        "proveedor": "Grupo Delta S.R.L.",
+        "cuit": "30-71654321-9",
+        "fecha": "2026-06-20",
+        "importe": "95000.00",
+        "rubro": "R09"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 6856,
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 82,
+        "totalTokenCount": 1544,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 328,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C13",
+      "esperado": {
+        "proveedor": "Limpieza Total SRL",
+        "cuit": "30-70876543-2",
+        "fecha": "2026-06-25",
+        "importe": "180000.00",
+        "rubro": "R02"
+      },
+      "obtenido": {
+        "proveedor": "Limpieza Total SRL",
+        "cuit": "30-70876543-2",
+        "fecha": "2026-06-25",
+        "importe": "180000.00",
+        "rubro": "R02"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 3483,
+      "uso": {
+        "promptTokenCount": 1666,
+        "candidatesTokenCount": 80,
+        "totalTokenCount": 2129,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1064
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 383,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C14",
+      "esperado": {
+        "proveedor": "Constructora Frente SRL",
+        "cuit": "30-70987654-3",
+        "fecha": "2026-06-28",
+        "importe": "300000.00",
+        "rubro": "R15"
+      },
+      "obtenido": {
+        "proveedor": "Constructora Frente SRL",
+        "cuit": "30-70987654-3",
+        "fecha": "2026-06-28",
+        "importe": "300000.00",
+        "rubro": "R15"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 6359,
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 80,
+        "totalTokenCount": 1707,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          }
+        ],
+        "thoughtsTokenCount": 493,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C15",
+      "esperado": {
+        "proveedor": "Electricista M. Sosa",
+        "cuit": "20-30987654-1",
+        "fecha": "2026-07-02",
+        "importe": "62500.00",
+        "rubro": "R10"
+      },
+      "obtenido": {
+        "proveedor": "Marcelo Sosa — Instalaciones electricas",
+        "cuit": "20-30987654-1",
+        "fecha": "2026-07-02",
+        "importe": "62500.00",
+        "rubro": "R10"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 18115,
+      "uso": {
+        "promptTokenCount": 1709,
+        "candidatesTokenCount": 61,
+        "totalTokenCount": 2470,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1107
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 700,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C16",
+      "esperado": {
+        "proveedor": "Aguas Santafesinas",
+        "cuit": "30-99923456-7",
+        "fecha": "2026-07-06",
+        "importe": "79600.00",
+        "rubro": "R05"
+      },
+      "obtenido": {
+        "proveedor": "Aguas Santafesinas S.A.",
+        "cuit": "30-99923456-7",
+        "fecha": "2026-07-06",
+        "importe": "79600.00",
+        "rubro": "R05"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 7431,
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 84,
+        "totalTokenCount": 1825,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          }
+        ],
+        "thoughtsTokenCount": 607,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C17",
+      "esperado": {
+        "proveedor": "Cerrajería 24hs",
+        "cuit": "30-27456789-0",
+        "fecha": "2026-07-09",
+        "importe": "23400.00",
+        "rubro": "R10"
+      },
+      "obtenido": {
+        "proveedor": "CERRAJERÍA 24HS",
+        "cuit": "30-27456789-0",
+        "fecha": "2026-07-09",
+        "importe": "23400.00",
+        "rubro": "R10"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 6389,
+      "uso": {
+        "promptTokenCount": 1704,
+        "candidatesTokenCount": 83,
+        "totalTokenCount": 2167,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1102
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 380,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C18",
+      "esperado": {
+        "proveedor": "Vidriería San Martín",
+        "cuit": "30-30345678-9",
+        "fecha": "2026-07-13",
+        "importe": "89000.00",
+        "rubro": "R10"
+      },
+      "obtenido": {
+        "proveedor": "Vidriería San Martín",
+        "cuit": "30-30345678-9",
+        "fecha": "2026-07-13",
+        "importe": "89000.00",
+        "rubro": "R10"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 7685,
+      "uso": {
+        "promptTokenCount": 1666,
+        "candidatesTokenCount": 80,
+        "totalTokenCount": 2394,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1064
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "thoughtsTokenCount": 648,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C19",
+      "esperado": {
+        "proveedor": "Calderas Bax SRL",
+        "cuit": "30-70112233-4",
+        "fecha": "2026-07-16",
+        "importe": "200000.00",
+        "rubro": "R16"
+      },
+      "obtenido": {
+        "proveedor": "Calderas Bax SRL",
+        "cuit": "30-70112233-4",
+        "fecha": "2026-07-16",
+        "importe": "200000.00",
+        "rubro": "R16"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 8981,
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 81,
+        "totalTokenCount": 1649,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          }
+        ],
+        "thoughtsTokenCount": 434,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C20",
+      "esperado": {
+        "proveedor": "Telecom Fibra",
+        "cuit": "30-50345678-2",
+        "fecha": "2026-07-20",
+        "importe": "15999.00",
+        "rubro": "R13"
+      },
+      "obtenido": {
+        "proveedor": "Telecom Argentina S.A.",
+        "cuit": "30-50345678-2",
+        "fecha": "2026-07-20",
+        "importe": "15999.00",
+        "rubro": "R13"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 10774,
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 80,
+        "totalTokenCount": 1587,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          }
+        ],
+        "thoughtsTokenCount": 373,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C21",
+      "esperado": {
+        "proveedor": "Librería Papelera",
+        "cuit": "30-30112233-5",
+        "fecha": "2026-07-23",
+        "importe": "8750.00",
+        "rubro": "R13"
+      },
+      "obtenido": {},
+      "campos": {
+        "proveedor": false,
+        "cuit": false,
+        "fecha": false,
+        "importe": false,
+        "rubro": false
+      },
+      "ms": 25503,
+      "uso": null,
+      "error": "gemini 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.5-flash\\nPlease retry in 28.544198572s.\",\n    \"status\": \"RESOURCE_EXHAUSTED\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.Help\",\n        \"links\": [\n          {\n            \"description\": \"Learn more about Gemini API quotas\",\n            \"url\": \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n          }\n        ]\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.QuotaFailure\",\n        \"violations\": [\n          {\n            \"quotaMetric\": \"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\n            \"quotaId\": \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\n            \"quotaDimensions\": {\n              \"location\": \"global\",\n              \"model\": \"gemini-3.5-flash\"\n            },\n            \"quotaValue\": \"20\"\n          }\n        ]\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.RetryInfo\",\n        \"retryDelay\": \"28s\"\n      }\n    ]\n  }\n}\n"
+    },
+    {
+      "id": "C22",
+      "esperado": {
+        "proveedor": "Albañil J. Peralta",
+        "cuit": "20-28456789-3",
+        "fecha": "2026-07-27",
+        "importe": "78000.00",
+        "rubro": "R10"
+      },
+      "obtenido": {},
+      "campos": {
+        "proveedor": false,
+        "cuit": false,
+        "fecha": false,
+        "importe": false,
+        "rubro": false
+      },
+      "ms": 24732,
+      "uso": null,
+      "error": "gemini 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.5-flash\\nPlease retry in 3.789822447s.\",\n    \"status\": \"RESOURCE_EXHAUSTED\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.Help\",\n        \"links\": [\n          {\n            \"description\": \"Learn more about Gemini API quotas\",\n            \"url\": \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n          }\n        ]\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.QuotaFailure\",\n        \"violations\": [\n          {\n            \"quotaMetric\": \"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\n            \"quotaId\": \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\n            \"quotaDimensions\": {\n              \"location\": \"global\",\n              \"model\": \"gemini-3.5-flash\"\n            },\n            \"quotaValue\": \"20\"\n          }\n        ]\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.RetryInfo\",\n        \"retryDelay\": \"3s\"\n      }\n    ]\n  }\n}\n"
+    },
+    {
+      "id": "C23",
+      "esperado": {
+        "proveedor": "EPE",
+        "cuit": "30-50873849-1",
+        "fecha": "2026-08-01",
+        "importe": "92000.00",
+        "rubro": "R04"
+      },
+      "obtenido": {
+        "proveedor": "Empresa Provincial de la Energia de Santa Fe",
+        "cuit": "30-50873849-1",
+        "fecha": "2026-08-01",
+        "importe": "92000.00",
+        "rubro": "R04"
+      },
+      "campos": {
+        "proveedor": false,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 56382,
+      "uso": {
+        "promptTokenCount": 1134,
+        "candidatesTokenCount": 84,
+        "totalTokenCount": 1639,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 532
+          }
+        ],
+        "thoughtsTokenCount": 421,
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C24",
+      "esperado": {
+        "proveedor": "Matafuegos Rosario",
+        "cuit": "30-70445566-7",
+        "fecha": "2026-08-04",
+        "importe": "45600.00",
+        "rubro": "R10"
+      },
+      "obtenido": {},
+      "campos": {
+        "proveedor": false,
+        "cuit": false,
+        "fecha": false,
+        "importe": false,
+        "rubro": false
+      },
+      "ms": 24467,
+      "uso": null,
+      "error": "gemini 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.5-flash\\nPlease retry in 43.012974429s.\",\n    \"status\": \"RESOURCE_EXHAUSTED\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.Help\",\n        \"links\": [\n          {\n            \"description\": \"Learn more about Gemini API quotas\",\n            \"url\": \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n          }\n        ]\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.QuotaFailure\",\n        \"violations\": [\n          {\n            \"quotaMetric\": \"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\n            \"quotaId\": \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\n            \"quotaDimensions\": {\n              \"location\": \"global\",\n              \"model\": \"gemini-3.5-flash\"\n            },\n            \"quotaValue\": \"20\"\n          }\n        ]\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.RetryInfo\",\n        \"retryDelay\": \"43s\"\n      }\n    ]\n  }\n}\n"
+    },
+    {
+      "id": "C25",
+      "esperado": {
+        "proveedor": "Pinturería Centro",
+        "cuit": "30-30654321-4",
+        "fecha": "2026-08-08",
+        "importe": "112300.00",
+        "rubro": "R10"
+      },
+      "obtenido": {},
+      "campos": {
+        "proveedor": false,
+        "cuit": false,
+        "fecha": false,
+        "importe": false,
+        "rubro": false
+      },
+      "ms": 23585,
+      "uso": null,
+      "error": "gemini 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.5-flash\\nPlease retry in 19.352295793s.\",\n    \"status\": \"RESOURCE_EXHAUSTED\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.Help\",\n        \"links\": [\n          {\n            \"description\": \"Learn more about Gemini API quotas\",\n            \"url\": \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n          }\n        ]\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.QuotaFailure\",\n        \"violations\": [\n          {\n            \"quotaMetric\": \"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\n            \"quotaId\": \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\n            \"quotaDimensions\": {\n              \"location\": \"global\",\n              \"model\": \"gemini-3.5-flash\"\n            },\n            \"quotaValue\": \"20\"\n          }\n        ]\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.RetryInfo\",\n        \"retryDelay\": \"19s\"\n      }\n    ]\n  }\n}\n"
+    },
+    {
+      "id": "C26",
+      "esperado": {
+        "proveedor": "Tableros AEA SRL",
+        "cuit": "30-70334455-6",
+        "fecha": "2026-08-12",
+        "importe": "175000.00",
+        "rubro": "R17"
+      },
+      "obtenido": {},
+      "campos": {
+        "proveedor": false,
+        "cuit": false,
+        "fecha": false,
+        "importe": false,
+        "rubro": false
+      },
+      "ms": 24545,
+      "uso": null,
+      "error": "gemini 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.5-flash\\nPlease retry in 54.843131092s.\",\n    \"status\": \"RESOURCE_EXHAUSTED\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.Help\",\n        \"links\": [\n          {\n            \"description\": \"Learn more about Gemini API quotas\",\n            \"url\": \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n          }\n        ]\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.QuotaFailure\",\n        \"violations\": [\n          {\n            \"quotaMetric\": \"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\n            \"quotaId\": \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\n            \"quotaDimensions\": {\n              \"location\": \"global\",\n              \"model\": \"gemini-3.5-flash\"\n            },\n            \"quotaValue\": \"20\"\n          }\n        ]\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.RetryInfo\",\n        \"retryDelay\": \"54s\"\n      }\n    ]\n  }\n}\n"
+    },
+    {
+      "id": "C27",
+      "esperado": {
+        "proveedor": "Seguros Rivadavia",
+        "cuit": "30-30567890-1",
+        "fecha": "2026-08-15",
+        "importe": "145300.00",
+        "rubro": "R08"
+      },
+      "obtenido": {},
+      "campos": {
+        "proveedor": false,
+        "cuit": false,
+        "fecha": false,
+        "importe": false,
+        "rubro": false
+      },
+      "ms": 24478,
+      "uso": null,
+      "error": "gemini 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.5-flash\\nPlease retry in 30.330357363s.\",\n    \"status\": \"RESOURCE_EXHAUSTED\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.Help\",\n        \"links\": [\n          {\n            \"description\": \"Learn more about Gemini API quotas\",\n            \"url\": \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n          }\n        ]\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.QuotaFailure\",\n        \"violations\": [\n          {\n            \"quotaMetric\": \"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\n            \"quotaId\": \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\n            \"quotaDimensions\": {\n              \"location\": \"global\",\n              \"model\": \"gemini-3.5-flash\"\n            },\n            \"quotaValue\": \"20\"\n          }\n        ]\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.RetryInfo\",\n        \"retryDelay\": \"30s\"\n      }\n    ]\n  }\n}\n"
+    },
+    {
+      "id": "C28",
+      "esperado": {
+        "proveedor": "Desagotes Rápido",
+        "cuit": "30-70667788-9",
+        "fecha": "2026-08-18",
+        "importe": "54000.00",
+        "rubro": "R10"
+      },
+      "obtenido": {},
+      "campos": {
+        "proveedor": false,
+        "cuit": false,
+        "fecha": false,
+        "importe": false,
+        "rubro": false
+      },
+      "ms": 26183,
+      "uso": null,
+      "error": "gemini 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.5-flash\\nPlease retry in 4.150376832s.\",\n    \"status\": \"RESOURCE_EXHAUSTED\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.Help\",\n        \"links\": [\n          {\n            \"description\": \"Learn more about Gemini API quotas\",\n            \"url\": \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n          }\n        ]\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.QuotaFailure\",\n        \"violations\": [\n          {\n            \"quotaMetric\": \"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\n            \"quotaId\": \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\n            \"quotaDimensions\": {\n              \"location\": \"global\",\n              \"model\": \"gemini-3.5-flash\"\n            },\n            \"quotaValue\": \"20\"\n          }\n        ]\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.RetryInfo\",\n        \"retryDelay\": \"4s\"\n      }\n    ]\n  }\n}\n"
+    },
+    {
+      "id": "C29",
+      "esperado": {
+        "proveedor": "Herrero L. Gómez",
+        "cuit": "20-26345678-4",
+        "fecha": "2026-08-22",
+        "importe": "96000.00",
+        "rubro": "R15"
+      },
+      "obtenido": {},
+      "campos": {
+        "proveedor": false,
+        "cuit": false,
+        "fecha": false,
+        "importe": false,
+        "rubro": false
+      },
+      "ms": 25527,
+      "uso": null,
+      "error": "gemini 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.5-flash\\nPlease retry in 38.71813016s.\",\n    \"status\": \"RESOURCE_EXHAUSTED\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.Help\",\n        \"links\": [\n          {\n            \"description\": \"Learn more about Gemini API quotas\",\n            \"url\": \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n          }\n        ]\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.QuotaFailure\",\n        \"violations\": [\n          {\n            \"quotaMetric\": \"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\n            \"quotaId\": \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\n            \"quotaDimensions\": {\n              \"location\": \"global\",\n              \"model\": \"gemini-3.5-flash\"\n            },\n            \"quotaValue\": \"20\"\n          }\n        ]\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.RetryInfo\",\n        \"retryDelay\": \"38s\"\n      }\n    ]\n  }\n}\n"
+    },
+    {
+      "id": "C30",
+      "esperado": {
+        "proveedor": "Limpieza Total SRL",
+        "cuit": "30-70876543-2",
+        "fecha": "2026-08-25",
+        "importe": "124700.00",
+        "rubro": "R02"
+      },
+      "obtenido": {},
+      "campos": {
+        "proveedor": false,
+        "cuit": false,
+        "fecha": false,
+        "importe": false,
+        "rubro": false
+      },
+      "ms": 24268,
+      "uso": null,
+      "error": "gemini 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.5-flash\\nPlease retry in 14.359992624s.\",\n    \"status\": \"RESOURCE_EXHAUSTED\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.Help\",\n        \"links\": [\n          {\n            \"description\": \"Learn more about Gemini API quotas\",\n            \"url\": \"https://ai.google.dev/gemini-api/docs/rate-limits\"\n          }\n        ]\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.QuotaFailure\",\n        \"violations\": [\n          {\n            \"quotaMetric\": \"generativelanguage.googleapis.com/generate_content_free_tier_requests\",\n            \"quotaId\": \"GenerateRequestsPerDayPerProjectPerModel-FreeTier\",\n            \"quotaDimensions\": {\n              \"location\": \"global\",\n              \"model\": \"gemini-3.5-flash\"\n            },\n            \"quotaValue\": \"20\"\n          }\n        ]\n      },\n      {\n        \"@type\": \"type.googleapis.com/google.rpc.RetryInfo\",\n        \"retryDelay\": \"14s\"\n      }\n    ]\n  }\n}\n"
+    }
+  ]
+}

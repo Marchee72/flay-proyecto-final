@@ -80,12 +80,12 @@ Estas pruebas se ejecutan **por cada entidad expuesta**, no una sola vez.
 
 | ID | Caso | Resultado esperado | Estado |
 |---|---|---|---|
-| PI-01 | Extracción sobre 30 comprobantes reales de formatos variados | Al menos 80 % de campos correctos, según el criterio del punto 8.4.3 | |
+| PI-01 | Extracción sobre 30 comprobantes de formatos variados (ficticios, generados; ver § 14.3) | Al menos 80 % de campos correctos, según el criterio del punto 8.4.3 | **Supera**: 149 de 150 campos (99,3 %), 11/09/2026, `poc/resultados/extraccion-gemini-consolidado.json` |
 | PI-02 | Comprobante ilegible o fuera de foco | Confianza por debajo del umbral; formulario vacío, sin precarga | |
 | PI-03 | Servicio de extracción deshabilitado | La carga manual funciona sin degradación de ninguna otra función (RNF-14) | |
 | PI-04 | Salida del servicio malformada o fuera de esquema | Se descarta; se comporta como servicio no disponible | |
 | PI-05 | La extracción devuelve un importe erróneo y el operador no lo corrige | Verificar que el comprobante permanece visible junto al campo, de modo que el error sea detectable | |
-| PI-06 | Consulta documental con 20 preguntas frecuentes sobre un reglamento real | Al menos 85 % con el fragmento correcto entre los tres primeros | |
+| PI-06 | Consulta documental con 20 preguntas frecuentes sobre un reglamento de 72 artículos (ficticio) | Al menos 85 % con el fragmento correcto entre los tres primeros | **Supera**: 20 de 20 (100 %), 19 en primer lugar; línea de base léxica 16 de 20. 11/09/2026, `poc/resultados/busqueda-gemini.json` |
 | PI-07 | Consulta cuya respuesta **no** está en la documentación cargada | Se responde que no hay respaldo documental. **No se improvisa una respuesta** | |
 | PI-08 | Toda respuesta generada | Cita documento y página | |
 | PI-09 | Triage con el servicio deshabilitado | El reclamo se crea sin clasificar | |

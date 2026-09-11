@@ -50,6 +50,15 @@ ${rubros.map((r) => `  ${r.codigo} — ${r.nombre}: ${r.descripcion}`).join('\n'
 Si un campo no se puede leer, devolvé una cadena vacia en ese campo.`
 }
 
+/** Los proveedores devuelven 429 o 503 bajo carga: se reintenta con espera creciente antes de contarlo como error. */
+async function pedir(url, opciones, intentos = 4) {
+  for (let i = 0; ; i++) {
+    const r = await fetch(url, opciones)
+    if (r.ok || i === intentos - 1 || ![429, 500, 502, 503, 504].includes(r.status)) return r
+    await new Promise((f) => setTimeout(f, 3000 * 2 ** i))
+  }
+}
+
 const aDataUri = (archivo) => `data:${archivo.mime};base64,${archivo.bytes.toString('base64')}`
 
 /** Anthropic: PDF como documento, PNG como imagen, salida estructurada con Zod. Sin vectores propios. */
@@ -99,7 +108,7 @@ const voyage = {
   modeloVectores: process.env.VOYAGE_MODELO ?? 'voyage-4',
   clave: 'VOYAGE_API_KEY',
   async vectorizar(textos, tipo) {
-    const r = await fetch('https://api.voyageai.com/v1/embeddings', {
+    const r = await pedir('https://api.voyageai.com/v1/embeddings', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -124,7 +133,7 @@ const gemini = {
   modeloVectores: process.env.GEMINI_MODELO_VECTORES ?? 'gemini-embedding-001',
   clave: 'GEMINI_API_KEY',
   async extraer(archivo, sistema) {
-    const r = await fetch(
+    const r = await pedir(
       `https://generativelanguage.googleapis.com/v1beta/models/${this.modeloExtraccion}:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: 'POST',
@@ -157,7 +166,7 @@ const gemini = {
   async vectorizar(textos, tipo) {
     const salida = []
     for (const texto of textos) {
-      const r = await fetch(
+      const r = await pedir(
         `https://generativelanguage.googleapis.com/v1beta/models/${this.modeloVectores}:embedContent?key=${process.env.GEMINI_API_KEY}`,
         {
           method: 'POST',
@@ -186,7 +195,7 @@ const mistral = {
       archivo.mime === 'application/pdf'
         ? { type: 'document_url', document_url: aDataUri(archivo) }
         : { type: 'image_url', image_url: aDataUri(archivo) }
-    const r = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    const r = await pedir('https://api.mistral.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -213,7 +222,7 @@ const mistral = {
     return { datos: JSON.parse(cuerpo.choices[0].message.content), uso: cuerpo.usage }
   },
   async vectorizar(textos) {
-    const r = await fetch('https://api.mistral.ai/v1/embeddings', {
+    const r = await pedir('https://api.mistral.ai/v1/embeddings', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',

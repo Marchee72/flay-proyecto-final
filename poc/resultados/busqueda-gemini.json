@@ -1,0 +1,655 @@
+{
+  "proveedor": "gemini",
+  "modelo": "gemini-embedding-001",
+  "fecha": "2026-09-11T20:30:18.288Z",
+  "fragmentos": 72,
+  "k": 3,
+  "aciertos": 20,
+  "preguntas": 20,
+  "tasa": 1,
+  "umbral": 0.85,
+  "supera": true,
+  "detalle": [
+    {
+      "n": "P01",
+      "pregunta": "¿Hasta qué hora puedo hacer una fiesta en el SUM?",
+      "esperado": "pueden extenderse hasta las 02:00, con aviso previo de al menos 72 horas",
+      "fuentes": [
+        "Art. 44"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 44",
+          "similitud": 0.741097781714034
+        },
+        {
+          "articulo": "Art. 50",
+          "similitud": 0.6596872509697231
+        },
+        {
+          "articulo": "Art. 43",
+          "similitud": 0.6482536683356711
+        },
+        {
+          "articulo": "Art. 48",
+          "similitud": 0.6428949371324667
+        },
+        {
+          "articulo": "Art. 45",
+          "similitud": 0.6380420035239615
+        }
+      ]
+    },
+    {
+      "n": "P02",
+      "pregunta": "Soy inquilino, ¿me corresponde pagar la obra de la fachada?",
+      "esperado": "Las expensas extraordinarias son siempre a cargo del propietario",
+      "fuentes": [
+        "Art. 9"
+      ],
+      "posicion": 3,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 40",
+          "similitud": 0.6782360380178623
+        },
+        {
+          "articulo": "Art. 60",
+          "similitud": 0.6728428728382121
+        },
+        {
+          "articulo": "Art. 9",
+          "similitud": 0.6727613548358562
+        },
+        {
+          "articulo": "Art. 59",
+          "similitud": 0.6712089642717994
+        },
+        {
+          "articulo": "Art. 21",
+          "similitud": 0.6572952117837738
+        }
+      ]
+    },
+    {
+      "n": "P03",
+      "pregunta": "¿Cuándo vencen las expensas y qué interés corre si me atraso?",
+      "esperado": "vencen el día 10, interés del tres por ciento mensual directo",
+      "fuentes": [
+        "Art. 11",
+        "Art. 12"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 12",
+          "similitud": 0.7995150963222595
+        },
+        {
+          "articulo": "Art. 11",
+          "similitud": 0.7898197076727987
+        },
+        {
+          "articulo": "Art. 14",
+          "similitud": 0.7275645935464362
+        },
+        {
+          "articulo": "Art. 13",
+          "similitud": 0.7097175106661391
+        },
+        {
+          "articulo": "Art. 15",
+          "similitud": 0.695688960439972
+        }
+      ]
+    },
+    {
+      "n": "P04",
+      "pregunta": "¿Puedo ver quién debe expensas en el edificio?",
+      "esperado": "La nómina nominada de deudores sólo es visible para el administrador y el consejo",
+      "fuentes": [
+        "Art. 15"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 15",
+          "similitud": 0.7447633840474862
+        },
+        {
+          "articulo": "Art. 12",
+          "similitud": 0.697611023647585
+        },
+        {
+          "articulo": "Art. 49",
+          "similitud": 0.693134313399111
+        },
+        {
+          "articulo": "Art. 14",
+          "similitud": 0.6917924793847912
+        },
+        {
+          "articulo": "Art. 9",
+          "similitud": 0.6887268979017007
+        }
+      ]
+    },
+    {
+      "n": "P05",
+      "pregunta": "Se equivocaron en la liquidación de este mes, ¿se puede corregir?",
+      "esperado": "puede ser anulada y reemplazada por otra que la referencie",
+      "fuentes": [
+        "Art. 16"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 16",
+          "similitud": 0.7139978276389126
+        },
+        {
+          "articulo": "Art. 15",
+          "similitud": 0.6218565931143778
+        },
+        {
+          "articulo": "Art. 11",
+          "similitud": 0.6122695651869215
+        },
+        {
+          "articulo": "Art. 12",
+          "similitud": 0.6112001820069641
+        },
+        {
+          "articulo": "Art. 13",
+          "similitud": 0.6071786679304834
+        }
+      ]
+    },
+    {
+      "n": "P06",
+      "pregunta": "¿Qué datos tengo que cargar cuando hago un reclamo?",
+      "esperado": "se registran con rubro y descripción, y opcionalmente con fotografías",
+      "fuentes": [
+        "Art. 54"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 54",
+          "similitud": 0.7065447414862258
+        },
+        {
+          "articulo": "Art. 55",
+          "similitud": 0.6970048294484068
+        },
+        {
+          "articulo": "Art. 56",
+          "similitud": 0.6824354071900908
+        },
+        {
+          "articulo": "Art. 57",
+          "similitud": 0.6460579318215794
+        },
+        {
+          "articulo": "Art. 66",
+          "similitud": 0.6270205794609927
+        }
+      ]
+    },
+    {
+      "n": "P07",
+      "pregunta": "Se cortó el agua en todo el piso, ¿en cuánto tiempo lo atienden?",
+      "esperado": "72 horas para las urgencias que afecten el suministro de agua",
+      "fuentes": [
+        "Art. 55"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 55",
+          "similitud": 0.7055794203127292
+        },
+        {
+          "articulo": "Art. 36",
+          "similitud": 0.630463355555593
+        },
+        {
+          "articulo": "Art. 45",
+          "similitud": 0.6286782984558132
+        },
+        {
+          "articulo": "Art. 59",
+          "similitud": 0.6218963830664569
+        },
+        {
+          "articulo": "Art. 66",
+          "similitud": 0.6104322845640695
+        }
+      ]
+    },
+    {
+      "n": "P08",
+      "pregunta": "Debo dos meses de expensas, ¿puedo reservar el quincho igual?",
+      "esperado": "La unidad que registre deuda vencida no puede efectuar reservas",
+      "fuentes": [
+        "Art. 49"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 49",
+          "similitud": 0.7718983848078212
+        },
+        {
+          "articulo": "Art. 50",
+          "similitud": 0.7463726224702701
+        },
+        {
+          "articulo": "Art. 48",
+          "similitud": 0.7342901448070299
+        },
+        {
+          "articulo": "Art. 51",
+          "similitud": 0.7157156074954634
+        },
+        {
+          "articulo": "Art. 12",
+          "similitud": 0.6887877782973425
+        }
+      ]
+    },
+    {
+      "n": "P09",
+      "pregunta": "Dos vecinos pidieron el SUM el mismo sábado, ¿quién lo usa?",
+      "esperado": "No se confirman reservas superpuestas, prevalece la registrada primero",
+      "fuentes": [
+        "Art. 48"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 48",
+          "similitud": 0.6971168154447416
+        },
+        {
+          "articulo": "Art. 44",
+          "similitud": 0.6611872658985156
+        },
+        {
+          "articulo": "Art. 50",
+          "similitud": 0.6606288738338144
+        },
+        {
+          "articulo": "Art. 51",
+          "similitud": 0.6494257599939122
+        },
+        {
+          "articulo": "Art. 45",
+          "similitud": 0.6413569266127634
+        }
+      ]
+    },
+    {
+      "n": "P10",
+      "pregunta": "¿Cuánta gente entra en el salón de usos múltiples?",
+      "esperado": "capacidad máxima del salón de usos múltiples es de cuarenta personas",
+      "fuentes": [
+        "Art. 50"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 50",
+          "similitud": 0.7261921504476624
+        },
+        {
+          "articulo": "Art. 48",
+          "similitud": 0.686085204898448
+        },
+        {
+          "articulo": "Art. 44",
+          "similitud": 0.6853149264590643
+        },
+        {
+          "articulo": "Art. 51",
+          "similitud": 0.6352699367911567
+        },
+        {
+          "articulo": "Art. 46",
+          "similitud": 0.6088023168411336
+        }
+      ]
+    },
+    {
+      "n": "P11",
+      "pregunta": "¿Qué mayoría hace falta para aprobar una obra grande?",
+      "esperado": "dos expensas ordinarias totales requieren asamblea con dos tercios de los presentes",
+      "fuentes": [
+        "Art. 21"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 21",
+          "similitud": 0.7315990032594308
+        },
+        {
+          "articulo": "Art. 58",
+          "similitud": 0.6792431132366504
+        },
+        {
+          "articulo": "Art. 71",
+          "similitud": 0.6629904702052053
+        },
+        {
+          "articulo": "Art. 20",
+          "similitud": 0.6577114188249771
+        },
+        {
+          "articulo": "Art. 60",
+          "similitud": 0.6501451533387891
+        }
+      ]
+    },
+    {
+      "n": "P12",
+      "pregunta": "¿Con qué criterio se elige o se cambia un proveedor?",
+      "esperado": "se evalúan por el costo, el cumplimiento de los plazos y la calidad de los reclamos que atendieron",
+      "fuentes": [
+        "Art. 36"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 36",
+          "similitud": 0.7159203019062954
+        },
+        {
+          "articulo": "Art. 35",
+          "similitud": 0.6835806781096375
+        },
+        {
+          "articulo": "Art. 37",
+          "similitud": 0.6734607812452748
+        },
+        {
+          "articulo": "Art. 30",
+          "similitud": 0.6184155781345795
+        },
+        {
+          "articulo": "Art. 18",
+          "similitud": 0.6077299212164536
+        }
+      ]
+    },
+    {
+      "n": "P13",
+      "pregunta": "Hay un contrato que no puedo abrir en la documentación, ¿por qué?",
+      "esperado": "marque como no visibles sólo pueden ser consultados por el administrador y el consejo",
+      "fuentes": [
+        "Art. 65"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 65",
+          "similitud": 0.6816054601551973
+        },
+        {
+          "articulo": "Art. 66",
+          "similitud": 0.6296399316831975
+        },
+        {
+          "articulo": "Art. 37",
+          "similitud": 0.6208079192129575
+        },
+        {
+          "articulo": "Art. 67",
+          "similitud": 0.6177951407740095
+        },
+        {
+          "articulo": "Art. 35",
+          "similitud": 0.6152709553739764
+        }
+      ]
+    },
+    {
+      "n": "P14",
+      "pregunta": "Si no me llegó el correo de la liquidación, ¿la liquidación vale igual?",
+      "esperado": "La falla del servicio de correo no bloquea ni invalida la operación",
+      "fuentes": [
+        "Art. 66"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 66",
+          "similitud": 0.6947167344736348
+        },
+        {
+          "articulo": "Art. 16",
+          "similitud": 0.6846158185784771
+        },
+        {
+          "articulo": "Art. 15",
+          "similitud": 0.6579294681922176
+        },
+        {
+          "articulo": "Art. 17",
+          "similitud": 0.6036278255198029
+        },
+        {
+          "articulo": "Art. 11",
+          "similitud": 0.5971275682584312
+        }
+      ]
+    },
+    {
+      "n": "P15",
+      "pregunta": "Le pregunté al asistente algo que no está en ningún documento, ¿qué debería contestar?",
+      "esperado": "debe indicar que no la encuentra, sin fuente no hay respuesta",
+      "fuentes": [
+        "Art. 67"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 67",
+          "similitud": 0.6848990503749801
+        },
+        {
+          "articulo": "Art. 55",
+          "similitud": 0.6026438415727323
+        },
+        {
+          "articulo": "Art. 16",
+          "similitud": 0.6008282796140864
+        },
+        {
+          "articulo": "Art. 66",
+          "similitud": 0.6003853374781677
+        },
+        {
+          "articulo": "Art. 56",
+          "similitud": 0.593787554698869
+        }
+      ]
+    },
+    {
+      "n": "P16",
+      "pregunta": "¿Puedo llevar al perro al quincho durante un cumpleaños?",
+      "esperado": "prohibida su presencia en el salón de usos múltiples y en el quincho durante los eventos",
+      "fuentes": [
+        "Art. 46"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 46",
+          "similitud": 0.7286481499755829
+        },
+        {
+          "articulo": "Art. 50",
+          "similitud": 0.6600114624790268
+        },
+        {
+          "articulo": "Art. 44",
+          "similitud": 0.6415612323679848
+        },
+        {
+          "articulo": "Art. 48",
+          "similitud": 0.6374702647575404
+        },
+        {
+          "articulo": "Art. 4",
+          "similitud": 0.6148413905256829
+        }
+      ]
+    },
+    {
+      "n": "P17",
+      "pregunta": "Perdí la tarjeta magnética de la puerta, ¿qué hago?",
+      "esperado": "denunciarse a la administración dentro de las 24 horas para su inhabilitación",
+      "fuentes": [
+        "Art. 47"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 47",
+          "similitud": 0.7367507058644913
+        },
+        {
+          "articulo": "Art. 37",
+          "similitud": 0.5982239807904511
+        },
+        {
+          "articulo": "Art. 54",
+          "similitud": 0.5845211355834993
+        },
+        {
+          "articulo": "Art. 34",
+          "similitud": 0.5801070308829817
+        },
+        {
+          "articulo": "Art. 66",
+          "similitud": 0.5781103047711195
+        }
+      ]
+    },
+    {
+      "n": "P18",
+      "pregunta": "Quiero cerrar el balcón con vidrio, ¿necesito permiso?",
+      "esperado": "El cerramiento de balcones se considera modificación de fachada, autorización escrita",
+      "fuentes": [
+        "Art. 40"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 40",
+          "similitud": 0.7186879914971079
+        },
+        {
+          "articulo": "Art. 5",
+          "similitud": 0.6722446883021858
+        },
+        {
+          "articulo": "Art. 42",
+          "similitud": 0.6547067533111666
+        },
+        {
+          "articulo": "Art. 70",
+          "similitud": 0.6255827190383614
+        },
+        {
+          "articulo": "Art. 41",
+          "similitud": 0.6249859685340697
+        }
+      ]
+    },
+    {
+      "n": "P19",
+      "pregunta": "¿Hay horario de silencio a la siesta?",
+      "esperado": "ruidos molestos entre las 22:00 y las 08:00, y de 13:00 a 16:00",
+      "fuentes": [
+        "Art. 43"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 43",
+          "similitud": 0.7183840847454737
+        },
+        {
+          "articulo": "Art. 41",
+          "similitud": 0.6496801658199371
+        },
+        {
+          "articulo": "Art. 45",
+          "similitud": 0.6492765291723966
+        },
+        {
+          "articulo": "Art. 44",
+          "similitud": 0.6395249797378066
+        },
+        {
+          "articulo": "Art. 46",
+          "similitud": 0.62893854096297
+        }
+      ]
+    },
+    {
+      "n": "P20",
+      "pregunta": "¿La reparación de la filtración que reclamé va a aparecer en los gastos?",
+      "esperado": "el gasto resultante se vincula al reclamo que lo originó",
+      "fuentes": [
+        "Art. 56"
+      ],
+      "posicion": 1,
+      "acierto": true,
+      "top": [
+        {
+          "articulo": "Art. 56",
+          "similitud": 0.692385742298226
+        },
+        {
+          "articulo": "Art. 8",
+          "similitud": 0.6601984284425864
+        },
+        {
+          "articulo": "Art. 55",
+          "similitud": 0.6595578960080211
+        },
+        {
+          "articulo": "Art. 15",
+          "similitud": 0.6521215109340867
+        },
+        {
+          "articulo": "Art. 9",
+          "similitud": 0.6516629888701346
+        }
+      ]
+    }
+  ]
+}

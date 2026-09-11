@@ -1,0 +1,146 @@
+{
+  "proveedor": "gemini",
+  "modelo": "gemini-3.5-flash-lite",
+  "fecha": "2026-09-11T21:06:35.692Z",
+  "comprobantes": 3,
+  "aciertos": {
+    "proveedor": 3,
+    "cuit": 3,
+    "fecha": 3,
+    "importe": 3,
+    "rubro": 2
+  },
+  "correctos": 14,
+  "total": 15,
+  "precision": 0.9333333333333333,
+  "umbral": 0.8,
+  "supera": true,
+  "resultados": [
+    {
+      "id": "C28",
+      "esperado": {
+        "proveedor": "Desagotes Rápido",
+        "cuit": "30-70667788-9",
+        "fecha": "2026-08-18",
+        "importe": "54000.00",
+        "rubro": "R10"
+      },
+      "obtenido": {
+        "proveedor": "Desagotes Rápido",
+        "cuit": "30-70667788-9",
+        "fecha": "2026-08-18",
+        "importe": "54000.00",
+        "rubro": "R10"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 3259,
+      "uso": {
+        "promptTokenCount": 1709,
+        "candidatesTokenCount": 81,
+        "totalTokenCount": 1790,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1107
+          }
+        ],
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C29",
+      "esperado": {
+        "proveedor": "Herrero L. Gómez",
+        "cuit": "20-26345678-4",
+        "fecha": "2026-08-22",
+        "importe": "96000.00",
+        "rubro": "R15"
+      },
+      "obtenido": {
+        "proveedor": "Luis Gómez — Herrería de obra",
+        "cuit": "20-26345678-4",
+        "fecha": "2026-08-22",
+        "importe": "96000.00",
+        "rubro": "R10"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": false
+      },
+      "ms": 1982,
+      "uso": {
+        "promptTokenCount": 1709,
+        "candidatesTokenCount": 82,
+        "totalTokenCount": 1791,
+        "promptTokensDetails": [
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1107
+          },
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          }
+        ],
+        "serviceTier": "standard"
+      },
+      "error": null
+    },
+    {
+      "id": "C30",
+      "esperado": {
+        "proveedor": "Limpieza Total SRL",
+        "cuit": "30-70876543-2",
+        "fecha": "2026-08-25",
+        "importe": "124700.00",
+        "rubro": "R02"
+      },
+      "obtenido": {
+        "proveedor": "Limpieza Total SRL",
+        "cuit": "30-70876543-2",
+        "fecha": "2026-08-25",
+        "importe": "124700.00",
+        "rubro": "R02"
+      },
+      "campos": {
+        "proveedor": true,
+        "cuit": true,
+        "fecha": true,
+        "importe": true,
+        "rubro": true
+      },
+      "ms": 2154,
+      "uso": {
+        "promptTokenCount": 1666,
+        "candidatesTokenCount": 80,
+        "totalTokenCount": 1746,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 602
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 1064
+          }
+        ],
+        "serviceTier": "standard"
+      },
+      "error": null
+    }
+  ]
+}

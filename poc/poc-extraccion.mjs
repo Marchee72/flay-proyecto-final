@@ -3,7 +3,7 @@
 // el indice, campo por campo. Umbral: al menos el 80 % de los campos correctos
 // sin correccion humana.
 //
-//   node poc/poc-extraccion.mjs <anthropic|gemini|mistral> [--limite N]
+//   node poc/poc-extraccion.mjs <anthropic|gemini|mistral> [--limite N] [--desde Cnn]
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 
 import { CAMPOS, elegir, instrucciones, tokens } from './proveedores.mjs'
@@ -12,6 +12,7 @@ if (existsSync('.env')) process.loadEnvFile('.env')
 
 const [nombre, ...resto] = process.argv.slice(2)
 const limite = Number(resto[resto.indexOf('--limite') + 1]) || 30
+const desde = resto.includes('--desde') ? resto[resto.indexOf('--desde') + 1] : 'C01'
 const proveedor = elegir(nombre ?? 'anthropic', 'extraer')
 const UMBRAL = 0.8
 
@@ -20,7 +21,8 @@ const csv = (ruta) => {
   const claves = cabecera.split(';')
   return filas.map((f) => Object.fromEntries(f.split(';').map((v, i) => [claves[i], v])))
 }
-const indice = csv('datos-cliente/comprobantes/indice-30.csv').slice(0, limite)
+const todas = csv('datos-cliente/comprobantes/indice-30.csv')
+const indice = todas.slice(todas.findIndex((f) => f.id === desde)).slice(0, limite)
 const rubros = csv('datos-cliente/rubros-semilla.csv')
 const sistema = instrucciones(rubros)
 
@@ -42,7 +44,10 @@ const nombreParecido = (esperado, obtenido) => {
   const b = tokens(String(obtenido ?? ''))
   if (a.length === 0 || b.length === 0) return false
   const comunes = a.filter((t) => b.includes(t)).length
-  return comunes / Math.min(a.length, b.length) >= 0.5
+  if (comunes / Math.min(a.length, b.length) >= 0.5) return true
+  // "EPE" contra "Empresa Provincial de la Energia de Santa Fe": la sigla del nombre largo.
+  const sigla = b.map((t) => t[0]).join('')
+  return a.length === 1 && a[0].length <= 5 && sigla.startsWith(a[0])
 }
 const COMPARAR = {
   proveedor: (e, o) => nombreParecido(e, o),
@@ -103,7 +108,7 @@ console.log(
 )
 
 mkdirSync('poc/resultados', { recursive: true })
-const salida = `poc/resultados/extraccion-${proveedor.nombre}.json`
+const salida = `poc/resultados/extraccion-${proveedor.nombre}-${proveedor.modeloExtraccion}.json`
 writeFileSync(
   salida,
   JSON.stringify(

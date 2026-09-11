@@ -209,7 +209,48 @@ en pie y la decisión pasa a depender de las dos pruebas de concepto de § 8.4.3
 
 ### Decisión y justificación
 
-*A completar.*
+**Se elige Google — Gemini API, en su capa paga**, para las cuatro interfaces del punto 12.8.2:
+`gemini-3.5-flash` (o el `flash` vigente) como `ExtractorDocumental` y `ClasificadorTexto`,
+`gemini-embedding-001` como `GeneradorVectores` y el mismo modelo de texto como
+`GeneradorRespuesta`. El fundamento no es la tabla sola sino las dos pruebas de concepto de § 8.4.3,
+ejecutadas el 11 de septiembre de 2026 contra los juegos de `datos-cliente/` y cuyo detalle por
+comprobante y por pregunta queda en `poc/resultados/`:
+
+| Prueba de concepto | Criterio | Resultado | Detalle |
+|---|---|---|---|
+| Extracción de comprobantes (30 archivos: 20 PDF digitales, 10 fotos y tickets con defectos) | ≥ 80 % de campos correctos sin corrección humana | **149 de 150 campos = 99,3 %** | Proveedor, CUIT, fecha e importe: 30 de 30. Rubro: 29 de 30; el fallo es una reja de portón clasificada como mantenimiento general en lugar de reparación extraordinaria de frentes, ambigüedad que la confirmación humana de RN-14 resuelve. Mediana 7,7 s por comprobante; 42.000 tokens de entrada en total |
+| Búsqueda semántica (reglamento de 72 artículos, 20 preguntas) | ≥ 85 % con el artículo correcto entre los tres primeros | **20 de 20 = 100 %**, 19 en primer lugar | La línea de base léxica sin proveedor (TF-IDF) da 16 de 20; las cuatro que pierde son las preguntas formuladas con otras palabras que el reglamento («soy inquilino…», «se cortó el agua…»), que es exactamente lo que se compra con los vectores |
+
+Tres observaciones de la ejecución pesan tanto como los porcentajes:
+
+1. **La capa gratuita no sirve ni para la propia prueba de concepto.** La cuota diaria de cada
+   modelo se agotó a mitad de corrida —tres veces, en tres modelos— y hubo que completar los 30
+   comprobantes repartidos entre `gemini-3.5-flash` (C01 a C20), `gemini-3.8-flash` (C21 a C27) y
+   `gemini-3.5-flash-lite` (C28 a C30). Confirma la lectura de C1 de la tabla: en producción se usa
+   la capa paga, que además es la única que cumple C3. Con ~1.400 tokens de entrada por
+   comprobante, los 900 mensuales del punto 4.2 cuestan del orden de **USD 2 a 3 por mes** para
+   toda la cartera.
+2. **La latencia es variable y a veces larga**: mediana de 7,7 s, pero hasta 86 s bajo carga del
+   proveedor, con reintentos. La extracción no puede ser sincrónica con la carga del comprobante;
+   entra por la cola de trabajos pendientes que ya existe desde la iteración 1, y el operador
+   confirma cuando la propuesta está lista (RN-14).
+3. **Los comprobantes son ficticios.** Grupo Delta es una organización construida para el
+   ejercicio, así que los 30 archivos se generaron a partir del índice con tipografía de impresora
+   y defectos simulados (inclinación, desenfoque, sombra, sello, total manuscrito). Una foto real
+   de un ticket arrugado con luz de cocina va a rendir peor. El 99,3 % es un techo, no una
+   estimación; el margen sobre el 80 % es lo que absorbe esa diferencia, y el indicador I-5 (campos
+   corregidos por el operador) es la medición de verdad, sobre datos reales, desde el primer día de
+   uso.
+
+Los otros dos candidatos de la tabla no se midieron: no se contaba con credenciales y el primero
+medido superó ambos umbrales con margen. Medirlos no cambia la decisión de construir `RF-06` y
+`RF-20` completos, que es lo que la prueba de concepto tenía que decidir; podría cambiar el
+proveedor, y para eso el diseño del punto 12.8.2 deja el costo del cambio en una implementación por
+interfaz, sin tocar la lógica de negocio.
+
+Con este resultado, **`RF-06`, `RF-12` y `RF-20` se construyen completos** (FR-002 de
+`004-servicios` no se activa) y el riesgo RT-02 y el RT-03 del punto 11 quedan con su detonante
+verificado en negativo.
 
 La elección se difirió deliberadamente hasta esta etapa, y no se comprometió en la documentación de
 análisis, por dos razones: porque es exactamente el punto donde la consigna la solicita, y porque el

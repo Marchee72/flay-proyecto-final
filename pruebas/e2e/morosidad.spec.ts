@@ -40,8 +40,8 @@ test('el consorcista ve el agregado y ningun nombre de unidad', async ({ page })
   await entrar(page, consorcista.correo)
   await page.goto(`/morosidad?consorcio=${consorcista.consorcioId}`)
 
-  // El numero va en su propio <strong>: se mira el parrafo entero.
-  await expect(page.locator('.tarjeta p').first()).toHaveText(/2\s+de 2 unidades con deuda vencida/)
+  await expect(page.locator('.kpi__rotulo')).toHaveText('Unidades con deuda vencida')
+  await expect(page.locator('.kpi__cifra')).toHaveText(/2\s+de 2/)
   await expect(page.getByRole('table')).toHaveCount(0)
   // Ni la propia ni la vecina: el agregado no nombra a nadie.
   await expect(page.getByText('3B', { exact: true })).toHaveCount(0)

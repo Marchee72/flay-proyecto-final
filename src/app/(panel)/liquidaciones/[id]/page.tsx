@@ -174,7 +174,9 @@ export default async function LiquidacionPage({
               {liquidacion.detalles.map((detalle) => (
                 <tr key={detalle.id}>
                   <td>{detalle.designacion}</td>
-                  <td className="numero cifra">{coeficienteParaMostrar(detalle.coeficienteAplicado)}</td>
+                  <td className="numero cifra">
+                    {coeficienteParaMostrar(detalle.coeficienteAplicado)}
+                  </td>
                   <td className="numero cifra">{importeParaMostrar(detalle.importeOrdinario)}</td>
                   <td className="numero cifra">
                     {importeParaMostrar(detalle.importeExtraordinario)}

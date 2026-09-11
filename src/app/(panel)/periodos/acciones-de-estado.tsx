@@ -278,11 +278,7 @@ function ConfirmacionEnDosPasos({
             <button className={`boton ${claseConfirmar}`} type="submit" disabled={enCurso}>
               {enCurso ? trabajando : etiquetaConfirmar}
             </button>
-            <button
-              className="boton boton--fantasma"
-              type="button"
-              onClick={cerrar}
-            >
+            <button className="boton boton--fantasma" type="button" onClick={cerrar}>
               Cancelar
             </button>
           </div>

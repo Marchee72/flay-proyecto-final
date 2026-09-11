@@ -38,7 +38,10 @@ export function SelectorDeConsorcio({
   }
 
   return (
-    <form action={elegirConsorcio} className={mostrarEtiqueta ? 'fila-de-filtros' : 'selector-consorcio'}>
+    <form
+      action={elegirConsorcio}
+      className={mostrarEtiqueta ? 'fila-de-filtros' : 'selector-consorcio'}
+    >
       {mostrarEtiqueta ? (
         <div className="campo">
           <label htmlFor={id}>Consorcio</label>
@@ -103,8 +106,8 @@ export function AvisoConsorcioNoElegido({
         {pedidoDesconocido
           ? 'Ese consorcio no está al alcance, por eso no se muestra ningún dato. '
           : 'No se eligió ningún consorcio, por eso no se muestra ningún dato. '}
-        Elegir uno en el selector «Consorcio activo» de la barra superior y presionar «Cambiar»,
-        o <Link href={`${base}?${busqueda}`}>Ver {sugerido.nombre}</Link>.
+        Elegir uno en el selector «Consorcio activo» de la barra superior y presionar «Cambiar», o{' '}
+        <Link href={`${base}?${busqueda}`}>Ver {sugerido.nombre}</Link>.
       </span>
     </p>
   )

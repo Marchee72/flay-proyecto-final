@@ -1,6 +1,7 @@
 import type { TipoTrabajo } from '@prisma/client'
 import { z } from 'zod'
 
+import { manejadorNotificacion } from '@/aplicacion/comunicacion/despachar'
 import { manejadorDocumentoExpensa } from '@/aplicacion/liquidacion/documentos'
 import type { Manejador } from '@/aplicacion/pendientes/drenar'
 import { generadorPdf } from '@/infraestructura/documentos/expensa'
@@ -26,4 +27,7 @@ export const MANEJADORES: Partial<Record<TipoTrabajo, Manejador>> = {
   // la clave. El drenaje oportunista lo toma de a lotes; el disparo explicito
   // del administrador lo agota (research R-02).
   documento_expensa: manejadorDocumentoExpensa(generadorPdf, almacenBlob),
+  // Los avisos de § 12.7 (`004-servicios` FR-012): la fila la creo `notificar`
+  // junto con este trabajo; aca solo se manda y se anota.
+  notificacion: manejadorNotificacion(notificadorResend),
 }

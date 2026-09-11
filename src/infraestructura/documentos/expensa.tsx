@@ -1,4 +1,6 @@
-import { Document, Page, StyleSheet, Text, View, renderToBuffer } from '@react-pdf/renderer'
+import { Document, Font, Page, StyleSheet, Text, View, renderToBuffer } from '@react-pdf/renderer'
+// Explicito: fuera de Next (las pruebas) el transformador no inyecta el runtime de JSX.
+import React from 'react'
 
 import { importeParaMostrar, coeficienteParaMostrar } from '@/compartido/formato'
 import type {
@@ -6,6 +8,18 @@ import type {
   GeneradorDeDocumentos,
   LineaDeInteres,
 } from '@/dominio/contratos/documentos'
+
+import { NOTO_SANS_REGULAR_BASE64 } from './tipografia'
+
+/**
+ * Una sola tipografia, incrustada. Se registra una vez por proceso; el
+ * renderizador la cachea. La negrita se simula con la misma fuente: un
+ * subconjunto latino de 27 KB alcanza para un documento de expensa.
+ */
+Font.register({
+  family: 'Noto Sans',
+  src: `data:font/ttf;base64,${NOTO_SANS_REGULAR_BASE64}`,
+})
 
 /**
  * El documento de expensa, rendeado en el servidor (`FR-017`, research R-01).
@@ -15,17 +29,17 @@ import type {
  * `@/compartido/formato`— porque el papel tiene que decir exactamente lo que
  * dice la base. Ningun subtotal se recalcula aca (medida 3 de § 14.1).
  *
- * `Helvetica` es la tipografia incorporada: no se descarga nada al generar, que
- * con 96 documentos seguidos es la diferencia entre minutos y decenas de
- * minutos (SC-007).
+ * La tipografia va incrustada en el modulo (ver `tipografia.ts`): no se
+ * descarga nada al generar, que con 96 documentos seguidos es la diferencia
+ * entre minutos y decenas de minutos (SC-007).
  */
 
 const estilos = StyleSheet.create({
-  pagina: { padding: 36, fontSize: 10, fontFamily: 'Helvetica', color: '#1a1a1a' },
-  titulo: { fontSize: 16, fontFamily: 'Helvetica-Bold', marginBottom: 2 },
+  pagina: { padding: 36, fontSize: 10, fontFamily: 'Noto Sans', color: '#1a1a1a' },
+  titulo: { fontSize: 16, marginBottom: 2 },
   apagado: { color: '#555555', marginBottom: 2 },
   bloque: { marginTop: 16 },
-  subtitulo: { fontSize: 12, fontFamily: 'Helvetica-Bold', marginBottom: 6 },
+  subtitulo: { fontSize: 12, marginBottom: 6 },
   fila: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 },
   filaConLinea: {
     flexDirection: 'row',
@@ -41,7 +55,6 @@ const estilos = StyleSheet.create({
     marginTop: 6,
     borderTopWidth: 1,
     borderTopColor: '#1a1a1a',
-    fontFamily: 'Helvetica-Bold',
     fontSize: 12,
   },
   celdaAncha: { width: '40%' },

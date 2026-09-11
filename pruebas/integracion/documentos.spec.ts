@@ -4,6 +4,7 @@ import type { AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
 import type { GeneradorDeDocumentos } from '@/dominio/contratos/documentos'
 import { NoEncontrado } from '@/compartido/errores'
 import { generarDocumentos, manejadorDocumentoExpensa } from '@/aplicacion/liquidacion/documentos'
+import { generadorPdf } from '@/infraestructura/documentos/expensa'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
 import { verExpensa } from '@/aplicacion/liquidacion/ver-expensa'
@@ -193,5 +194,42 @@ describe('quien ve que (FR-018, SC-008)', () => {
         detalleId: ajena.id,
       }),
     ).rejects.toThrow(NoEncontrado)
+  })
+})
+
+/**
+ * El renderizador **real**, una vez. Los dobles de arriba prueban la cola y la
+ * autorizacion; esto prueba que el PDF sale. Sin esta prueba, el primer
+ * documento de verdad fallo en el entorno desplegado con `unitsPerEm`
+ * indefinido, y nada lo habia atrapado antes.
+ */
+describe('el renderizador real', () => {
+  it('produce un PDF con la tipografia incrustada', async () => {
+    const bytes = await generadorPdf.expensa({
+      consorcio: { nombre: 'Mitre 456', direccion: 'Mitre 456', localidad: 'Rosario' },
+      periodo: '07/2026',
+      vencimiento: '2026-08-10',
+      unidad: { designacion: '1A', tipo: 'departamento' },
+      coeficienteAplicado: '12.50000000',
+      importeOrdinario: '150000.00',
+      importeExtraordinario: '0.00',
+      deudaAnterior: '500.00',
+      interesMora: '10.00',
+      desgloseInteres: [
+        {
+          periodo: '06/2026',
+          capital: '500.00',
+          tasaMensual: '2.0000',
+          meses: 1,
+          importe: '10.00',
+        },
+      ],
+      saldoAFavorAplicado: '0.00',
+      ajusteRedondeo: '0.01',
+      totalUnidad: '150510.01',
+    })
+
+    expect(Buffer.from(bytes.slice(0, 4)).toString()).toBe('%PDF')
+    expect(bytes.byteLength).toBeGreaterThan(1000)
   })
 })

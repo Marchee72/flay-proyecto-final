@@ -181,18 +181,31 @@ Los criterios están fijados desde el punto 4 y no se negocian al momento de ele
 
 ### Comparación
 
-*A completar con la evaluación efectiva al momento de la construcción, en la iteración 3.*
+Evaluación hecha al abrir la iteración 3 (septiembre de 2026), sobre la documentación pública de
+cada proveedor en esa fecha. Se comparan los tres candidatos con oferta multimodal y capa gratuita o
+costo marginal: **Google (Gemini API)**, **Mistral (La Plateforme)** y **Anthropic (Claude API)**,
+este último combinado con **Voyage AI** para los vectores, que es el proveedor que la propia
+documentación de Anthropic indica. OpenAI queda fuera en la primera fila: no tiene capa gratuita.
+Escala: **✔** cumple · **~** cumple con condición · **✘** no cumple.
 
-| Criterio | Opción 1 | Opción 2 | Opción 3 |
+| Criterio | Google — Gemini API | Mistral — La Plateforme | Anthropic — Claude API + Voyage AI |
 |---|---|---|---|
-| C1 Capa gratuita suficiente | | | |
-| C2 Reemplazabilidad | | | |
-| C3 Términos de tratamiento | | | |
-| C4 Procesamiento de imágenes | | | |
-| C5 Vectores semánticos | | | |
-| C6 Jurisdicción | | | |
-| Límites de uso declarados | | | |
-| Costo al superar la capa gratuita | | | |
+| C1 Capa gratuita suficiente | ~ Existe (modelos `flash` y `gemini-embedding` sin cargo, cuota diaria visible sólo en la consola del proyecto), **pero es incompatible con C3**: en la capa gratuita el contenido se usa para mejorar los productos | ~ Plan *Experiment* gratuito con límite de ~1 solicitud/s y ~1.000 millones de tokens/mes; la documentación lo declara "para evaluación, no para producción" | ✘ Sin capa gratuita. El volumen del punto 4.2 (900 comprobantes y 70 reclamos mensuales, ~1,5 M de tokens de entrada) cuesta del orden de **USD 2 a 8 por mes** según el modelo; Voyage ofrece 200 M de tokens de vectores sin cargo, más que suficiente |
+| C2 Reemplazabilidad | ✔ REST y JSON con esquema | ✔ REST compatible con el formato de mensajes más difundido | ✔ SDK oficial y REST; las cuatro interfaces del punto 12.8.2 lo aíslan igual que a los otros dos |
+| C3 Términos de tratamiento | ~ Sólo en la capa **paga** el contenido no se usa para mejorar productos; el tratamiento por cuenta del responsable requiere aceptar el anexo de protección de datos | ~ El plan gratuito comparte datos para entrenamiento salvo exclusión; los planes pagos permiten "sin telemetría" y retención cero | ✔ Los términos comerciales prohíben entrenar con el contenido de la API sin permiso expreso; retención máxima de 30 días y retención cero disponible por contrato |
+| C4 Procesamiento de imágenes y documentos | ✔ Imágenes y PDF en línea | ✔ Imágenes y PDF en línea, más un modelo de OCR dedicado | ✔ Imágenes y PDF en línea, hasta 100 páginas |
+| C5 Vectores semánticos | ✔ `gemini-embedding`, propio | ✔ `mistral-embed`, propio | ~ No tiene modelo propio; se combina con Voyage AI (`voyage-4`), que el criterio admite explícitamente |
+| C6 Jurisdicción | ~ Procesamiento en EE. UU. por defecto | ✔ Empresa y procesamiento en la Unión Europea, que la autoridad argentina reconoce con nivel adecuado de protección (Ley 25.326, Disp. 60-E/2016) | ~ Procesamiento en EE. UU. por defecto; el parámetro de geografía de inferencia permite fijar región, con costo adicional |
+| Límites de uso declarados | Por proyecto: solicitudes/minuto, tokens/minuto y solicitudes/día, visibles en la consola, no publicados | Por espacio de trabajo: solicitudes/segundo y tokens por minuto y por mes, visibles en la consola | Por organización, por nivel de gasto acumulado; el primer nivel alcanza para el volumen previsto |
+| Costo al superar la capa gratuita | `gemini-2.5-flash`: USD 0,30 entrada / 2,50 salida por millón de tokens; vectores USD 0,20 por millón | `mistral-small`: USD 0,20 / 0,60 por millón; vectores USD 0,10 por millón | `claude-haiku-4-5`: USD 1 / 5 por millón; `claude-sonnet-5`: USD 2 / 10; Voyage `voyage-4`: USD 0,06 por millón |
+
+Lo que la tabla deja claro antes de medir nada: **ningún candidato cumple C1 y C3 a la vez con su
+capa gratuita**. En Google y en Mistral la gratuidad se paga con los datos, que es exactamente lo
+que el punto 5.3.3 prohíbe para comprobantes con CUIT y reclamos con nombre y unidad. La
+consecuencia es que C1 se reinterpreta como *costo marginal compatible con el precio del punto 6*
+(del orden de USD 5 mensuales para toda la cartera), y con esa lectura los tres candidatos quedan
+en pie y la decisión pasa a depender de las dos pruebas de concepto de § 8.4.3, que están en
+`poc/` con sus juegos de datos en `datos-cliente/`.
 
 ### Decisión y justificación
 

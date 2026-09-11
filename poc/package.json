@@ -1,0 +1,10 @@
+{
+  "name": "flay-poc",
+  "private": true,
+  "description": "Pruebas de concepto desechables de § 8.4.3. Ninguna linea pasa a src/.",
+  "type": "module",
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.90.0",
+    "zod": "^4.6.2"
+  }
+}

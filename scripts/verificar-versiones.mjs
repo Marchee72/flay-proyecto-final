@@ -18,6 +18,8 @@ const COMPROMETIDAS = [
   'lucide-react',
   '@vercel/blob',
   'resend',
+  '@google/genai',
+  'unpdf',
   'vitest',
   '@vitest/coverage-v8',
   '@playwright/test',

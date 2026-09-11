@@ -22,10 +22,10 @@ del proveedor real **no** se ejercita en la puerta automática, sólo la determi
 
 **Purpose**: dependencias y guiones antes de tocar el esquema
 
-- [ ] T001 Instalar `@google/genai` y `unpdf` con versión exacta en `package.json` (research R-01, R-05) y fijarlas en la tabla de `docs/entrega-final/14-codificacion.md` § 14.1; `npm run docs:versiones` debe pasar
-- [ ] T002 [P] Agregar a `package.json` los guiones `indicadores:refrescar`, `validar:indicadores` y `exportar:verificar`, apuntando a `scripts/refrescar-vistas.mjs`, `scripts/validar-indicadores.mjs` y `scripts/exportar-verificar.mjs`, que se completan en T060, T061 y T104
-- [ ] T003 [P] Agregar a `.env.example` `GEMINI_API_KEY`, `FLAY_ASISTENCIA` (vacío, `determinista`) y `CRON_SECRET`, con el comentario de research R-02 sobre cómo se elige la implementación; en `pruebas/integracion/entorno.ts` y en `playwright.config.ts` fijar `FLAY_ASISTENCIA=determinista`
-- [ ] T004 [P] Ratificar § 14.2 en `docs/entrega-final/14-codificacion.md` con Recharts 2.15.0 ya instalado, en una tabla de una fila contra el criterio de la sección, y actualizar la fila 14 de `docs/README.md` (`FR-024`, research R-12)
+- [X] T001 Instalar `@google/genai` y `unpdf` con versión exacta en `package.json` (research R-01, R-05) y fijarlas en la tabla de `docs/entrega-final/14-codificacion.md` § 14.1; `npm run docs:versiones` debe pasar
+- [X] T002 [P] Agregar a `package.json` los guiones `indicadores:refrescar`, `validar:indicadores` y `exportar:verificar`, apuntando a `scripts/refrescar-vistas.mjs`, `scripts/validar-indicadores.mjs` y `scripts/exportar-verificar.mjs`, que se completan en T060, T061 y T104
+- [X] T003 [P] Agregar a `.env.example` `GEMINI_API_KEY`, `FLAY_ASISTENCIA` (vacío, `determinista`) y `CRON_SECRET`, con el comentario de research R-02 sobre cómo se elige la implementación; en `pruebas/integracion/entorno.ts` y en `playwright.config.ts` fijar `FLAY_ASISTENCIA=determinista`
+- [X] T004 [P] Ratificar § 14.2 en `docs/entrega-final/14-codificacion.md` con Recharts 2.15.0 ya instalado, en una tabla de una fila contra el criterio de la sección, y actualizar la fila 14 de `docs/README.md` (`FR-024`, research R-12)
 
 ---
 

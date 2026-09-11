@@ -8,6 +8,10 @@ import { defineConfig, devices } from '@playwright/test'
 const PUERTO = process.env.PUERTO ?? '3000'
 const URL_BASE = process.env.URL_BASE ?? `http://localhost:${PUERTO}`
 
+// Las pruebas de extremo a extremo corren con la implementacion determinista de
+// la asistencia (research R-02 de 004-servicios): predecible y sin proveedor.
+process.env.FLAY_ASISTENCIA ??= 'determinista'
+
 export default defineConfig({
   testDir: 'pruebas/e2e',
   fullyParallel: true,
@@ -17,6 +21,7 @@ export default defineConfig({
   use: { baseURL: URL_BASE, trace: 'on-first-retry' },
   webServer: {
     command: `npm run start -- --port ${PUERTO}`,
+    env: { FLAY_ASISTENCIA: process.env.FLAY_ASISTENCIA },
     url: `${URL_BASE}/api/salud`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

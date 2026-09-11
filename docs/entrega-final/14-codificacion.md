@@ -115,6 +115,8 @@ modo que desarrollo, verificación y demostración corren la misma. Las transiti
 | Gráficos del panel de indicadores | Recharts | 2.15.0 | MIT | Biblioteca de gráficos dentro de la aplicación, conforme a la decisión del punto 14.2: los indicadores heredan la autorización por consorcio |
 | Almacenamiento de objetos | Vercel Blob (`@vercel/blob`) | 2.8.0 | Apache-2.0 | Comprobantes digitalizados de hasta 25 MB con subida directa del navegador al almacenamiento: la función de despliegue limita el cuerpo de un pedido muy por debajo de ese tamaño. Se consume tras una interfaz del dominio (punto 12.1.3), de modo que el acoplamiento con la plataforma queda en un solo archivo |
 | Correo transaccional | Resend | 6.26.0 | MIT | Invitación de usuario de la iteración 1 y, más adelante, el despachador de RF-14. Se consume tras la interfaz `Notificador` del dominio |
+| Servicios de procesamiento automático | Gemini API (`@google/genai`) | 2.22.0 | Apache-2.0 | Proveedor elegido en el punto 14.3 tras las dos pruebas de concepto de § 8.4.3. Se consume únicamente detrás de las cuatro interfaces del dominio de § 12.8.2, con una implementación determinística y una nula al lado (RNF-14, RNF-15); el archivo que lo importa es uno solo |
+| Extracción de texto de PDF | `unpdf` | 1.8.1 | MIT | Texto por página de los documentos del consorcio para la indexación de RF-20, en el propio proceso y sin depender del proveedor externo: si el proveedor no está, el texto igual existe y la indexación se reintenta |
 | Iconos de interfaz | Lucide (`lucide-react`) | 0.525.0 | ISC | Set abierto de trazo consistente 24px (urgencias, estados, navegación); se verifica contra `package-lock` junto al resto |
 | Pruebas automatizadas | Vitest y Playwright | Vitest 3.2.7 + `@vitest/coverage-v8` 3.2.7 / Playwright 1.63.0 + `@axe-core/playwright` 4.9.0 | MIT y Apache-2.0 | Vitest ejercita el dominio sin base de datos (punto 8.3.3); Playwright cubre extremo a extremo y verifica RNF-01 sobre ventana de teléfono |
 | Análisis estático y formato | ESLint y Prettier | ESLint 9.20.0 + Prettier 3.4.2 + `eslint-config-prettier` 10.0.1 + `@typescript-eslint` 8.20.0 | MIT | Verificación automática en cada envío (punto 8.3.5) y sede de la medida 4 de contención |
@@ -162,7 +164,20 @@ La contrapartida —el usuario no puede construir sus propios tableros— es ace
 define seis indicadores, cada uno vinculado a una decisión concreta de la administración, y no un
 entorno de exploración libre de datos.
 
-*A completar con la herramienta de graficación finalmente utilizada y su justificación.*
+### Ratificación al iniciar el paquete 5.5
+
+Se **ratifica** la decisión preliminar al abrir la construcción de los indicadores (iteración 3,
+septiembre de 2026). La herramienta de graficación es **Recharts 2.15.0**, instalada desde la
+iteración 1 y fijada en la tabla de § 14.1, contra el criterio de la sección:
+
+| Criterio | Cómo lo cumple Recharts |
+|---|---|
+| Sin servicio adicional | Es una biblioteca dentro de la aplicación; el gráfico se dibuja en el navegador con los datos que ya autorizó la capa de aplicación |
+| Hereda la autorización por consorcio | Recibe lo que devuelve el caso de uso, que leyó las vistas con el consorcio activo (research R-11 de `004-servicios`); no tiene acceso a la base |
+| El dato no sale del sistema | Ninguna llamada externa; los importes viajan como cadena hasta el componente y se convierten a número sólo para la escala del dibujo |
+| Accesible | Cada gráfico lleva debajo una tabla con los mismos datos, para lectores de pantalla y para quien prefiere el número (RNF-11) |
+
+No se rectifica nada: las alternativas descartadas arriba siguen descartadas por las mismas razones.
 
 ## 14.3 Elección del proveedor de servicios de procesamiento automático
 

@@ -20,7 +20,7 @@
     "test:e2e": "playwright test --project=escritorio --project=telefono",
     "test:a11y": "playwright test --project=a11y",
     "medir:p95": "node scripts/medir-p95.mjs",
-    "medir:liquidacion": "node scripts/medir-liquidacion.mjs",
+    "medir:liquidacion": "vitest run --project integracion pruebas/integracion/medicion-liquidacion.spec.ts",
     "validar:planillas": "vitest run --project planillas",
     "docs:versiones": "node scripts/verificar-versiones.mjs",
     "db:deploy": "prisma migrate deploy",

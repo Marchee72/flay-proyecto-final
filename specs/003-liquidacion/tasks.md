@@ -154,12 +154,12 @@ reparto y la suma con tolerancia cero.
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T062 Escribir `scripts/medir-liquidacion.mjs` y correr `npm run medir:liquidacion` sobre el consorcio de **100 unidades**: cinco corridas, todas bajo **30 segundos**, sin contar documentos (SC-006, RNF-07)
-- [ ] T063 [P] Medir la generación de los 96 documentos: menos de diez minutos, con progreso, reintento y alerta observables, y registrar el resultado (SC-007)
-- [ ] T064 [P] Completar `docs/entrega-final/15-pruebas.md` con los casos `PL-01` a `PL-10` y su resultado real (`FR-033`) — hecho para PL-01 a PL-06, PL-08 y PL-10; faltan PL-07 y PL-09
-- [ ] T065 [P] Actualizar `docs/entrega-final/13-prototipo.md` § 13.3 con el estado por módulo al cierre de la iteración 2, y § 13.5 si cambia el acceso
-- [ ] T066 [P] Actualizar `docs/entrega-final/14-codificacion.md` § 14.5 con el esfuerzo real de la etapa contra las 194 h planificadas, con el mismo criterio declarado en la iteración 1
-- [ ] T067 [P] Registrar en `CLAUDE.md` lo que un recién llegado no puede adivinar de esta etapa: el candado parcial, el desglose del interés y el disparo explícito de los documentos
+- [X] T062 Escribir `scripts/medir-liquidacion.mjs` y correr `npm run medir:liquidacion` sobre el consorcio de **100 unidades**: cinco corridas, todas bajo **30 segundos**, sin contar documentos (SC-006, RNF-07)
+- [X] T063 [P] Medir la generación de los 96 documentos: menos de diez minutos, con progreso, reintento y alerta observables, y registrar el resultado (SC-007)
+- [X] T064 [P] Completar `docs/entrega-final/15-pruebas.md` con los casos `PL-01` a `PL-10` y su resultado real (`FR-033`) — PL-01 a PL-08 y PL-10 superan; PL-09 (gasto en cuotas) no es alcance de la etapa
+- [X] T065 [P] Actualizar `docs/entrega-final/13-prototipo.md` § 13.3 con el estado por módulo al cierre de la iteración 2, y § 13.5 si cambia el acceso
+- [X] T066 [P] Actualizar `docs/entrega-final/14-codificacion.md` § 14.5 con el esfuerzo real de la etapa contra las 194 h planificadas, con el mismo criterio declarado en la iteración 1
+- [X] T067 [P] Registrar en `CLAUDE.md` lo que un recién llegado no puede adivinar de esta etapa: el candado parcial, el desglose del interés y el disparo explícito de los documentos
 - [ ] T068 Correr `npm run verificar` completo, local y remoto, y confirmar que sigue bajo los diez minutos con las pruebas nuevas
 - [ ] T069 Ensayar el recorrido manual de `quickstart.md` sobre el entorno desplegado, sin ningún paso desde una máquina de desarrollo
 - [ ] T070 Etiquetar el cierre de la iteración 2 con versión semántica, conforme a § 8.3.5

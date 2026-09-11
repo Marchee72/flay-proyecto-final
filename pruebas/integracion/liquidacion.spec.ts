@@ -4,7 +4,7 @@ import { importe } from '@/compartido/dinero'
 import { anularLiquidacion } from '@/aplicacion/liquidacion/anular'
 import { liquidarPeriodo, PeriodoNoCerrado } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
-import { cargarPadron } from '@/aplicacion/consorcios/unidades'
+import { cambiarCoeficiente, cargarPadron } from '@/aplicacion/consorcios/unidades'
 import { abrirPeriodo } from '@/aplicacion/periodos/periodos'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { prismaBase } from '@/infraestructura/prisma'
@@ -241,5 +241,49 @@ describe('deuda anterior e interes (FR-024b)', () => {
     expect(desglose).toHaveLength(1)
     expect(desglose[0].meses).toBe(7)
     expect(importe(desglose[0].capital.toFixed(2)).toFixed(2)).toBe('500.00')
+  })
+})
+
+/** PL-07 (§ 15.2.1): la liquidacion vieja conserva su coeficiente (regla RN-02). */
+describe('coeficiente cambiado entre dos emisiones (PL-07)', () => {
+  it('la anterior conserva el coeficiente aplicado y la nueva usa el vigente', async () => {
+    const enero = await periodoConGasto(1)
+    const primera = await liquidarPeriodo(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId: enero,
+    })
+
+    const unidades = await prismaBase.unidad.findMany({
+      where: { consorcioId },
+      orderBy: { designacion: 'asc' },
+    })
+
+    // 1A pasa de 50 a 60 desde hoy, y 1B se reajusta a 40 en la misma operacion.
+    await cambiarCoeficiente(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidadId: unidades[0].id,
+      coeficiente: '60.00000000',
+      vigenciaDesde: RELOJ.hoy(),
+      ajustes: [{ unidadId: unidades[1].id, coeficiente: '40.00000000' }],
+    })
+
+    const marzo = await periodoConGasto(3)
+    const segunda = await liquidarPeriodo(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId: marzo,
+    })
+
+    const de = async (liquidacionId: string) =>
+      (
+        await prismaBase.detalleLiquidacion.findFirstOrThrow({
+          where: { liquidacionId, unidadId: unidades[0].id },
+        })
+      ).coeficienteAplicado.toFixed(8)
+
+    expect(await de(primera.liquidacionId)).toBe('50.00000000')
+    expect(await de(segunda.liquidacionId)).toBe('60.00000000')
   })
 })

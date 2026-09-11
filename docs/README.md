@@ -50,9 +50,9 @@ transcripta y el mapeo de cada punto a su documento.
 
 | # | Documento | Estado |
 |---|---|---|
-| 13 | [Prototipo](entrega-final/13-prototipo.md) | Parcial — § 13.3 a § 13.5 al día con el cierre de la iteración 1; § 13.6 y § 13.7 abiertos |
-| 14 | [Codificación](entrega-final/14-codificacion.md) | Parcial — § 14.1, § 14.4 y § 14.5 al día con la iteración 1; § 14.3 (proveedor de IA) diferido a la iteración 3 |
-| 15 | [Pruebas](entrega-final/15-pruebas.md) | Esqueleto |
+| 13 | [Prototipo](entrega-final/13-prototipo.md) | Parcial — § 13.3 a § 13.5 al día con el cierre de la iteración 2; § 13.6 y § 13.7 abiertos |
+| 14 | [Codificación](entrega-final/14-codificacion.md) | Parcial — § 14.1, § 14.4 y § 14.5 al día con la iteración 2; § 14.3 (proveedor de IA) diferido a la iteración 3 |
+| 15 | [Pruebas](entrega-final/15-pruebas.md) | Parcial — § 15.2.1 con resultado real: PL-01 a PL-08 y PL-10 superan, PL-09 abierto |
 | 16 | [Manual de usuario](entrega-final/16-manual-usuario.md) | Esqueleto |
 | 17 | [Cronograma de capacitación](entrega-final/17-cronograma-capacitacion.md) | Esqueleto |
 | 18 | [Seguridad](entrega-final/18-seguridad.md) | Política esbozada, se completa al codificar |

@@ -34,6 +34,8 @@ el primer minuto.
 | `npm run semilla` | Rubros y el juego de § 13.4: dos consorcios de 12 y 96 unidades |
 | `npm run semilla:volumen` | 10.800 gastos anuales para medir con datos de verdad |
 | `npm run medir:p95 [ruta]` | Arnés de RNF-06; entra por el formulario si la ruta es del panel |
+| `npm run medir:liquidacion` | RNF-07: liquidación de 100 unidades, cinco corridas bajo 30 s |
+| `npm run validar:planillas` | SC-005: el motor contra las tres liquidaciones reales, al centavo, sin base |
 
 Base local: `docker run -d --name flay-db -p 5432:5432 -e POSTGRES_PASSWORD=flay_local -e POSTGRES_DB=flay pgvector/pgvector:0.8.6-pg18`.
 Variables en `.env` (nunca versionado); plantilla en `.env.example`. `DATABASE_URL` es la cadena de
@@ -149,7 +151,7 @@ comprensibles (RNF-10), auditoría registrada si toca datos económicos, documen
 
 ## Lo que no se adivina leyendo el código
 
-Ocho decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
+Catorce decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
 
 1. **El orden de las semillas y las pruebas.** `npm run test:integracion` **vacía** las tablas de
    negocio, semilla incluida: en una base compartida no hay forma de distinguir lo sembrado de lo
@@ -182,6 +184,26 @@ Ocho decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
    `@default(now())` en la aplicación— contra una base administrada hay décimas de segundo de
    desfase, y un trabajo recién encolado queda vencido en el futuro: el drenaje siguiente no lo ve.
    En integración continua no se nota, porque la aplicación y la base comparten máquina.
+10. **Las tablas sin `consorcio_id` se alcanzan por su padre aislado, nunca directo.**
+    `DetalleLiquidacion`, `InteresLiquidado`, `PagoImputacion` y `CoeficienteHistorico` no llevan
+    la columna, así que la extensión no las filtra: `prisma.detalleLiquidacion.findMany(...)` trae
+    los detalles de **todos** los consorcios. Se consulta `prisma.liquidacion.findMany({ include:
+    { detalles } })`, que sí está aislada. Lo encontró una prueba de extremo a extremo con dos
+    consorcios en paralelo diciendo «4 de 2 unidades en mora»; es RT-04 tal cual.
+11. **Dentro de una transacción, las filas se escriben por lote.** Prisma corta una transacción
+    interactiva a los 5 s, y cien `create` de a uno contra la base remota son cien viajes de
+    ~250 ms. `cargarPadron` y `liquidarPeriodo` generan los identificadores en memoria y usan
+    `createMany`: dos sentencias, no doscientas. La semilla ya lo hacía; los casos de uso no.
+12. **El candado de la emisión doble es un índice único parcial**, `UNIQUE (periodo_id) WHERE
+    estado = 'vigente'`, no el estado del período. Un período liquidado nunca vuelve atrás (contrato
+    de `002`), y lo que se anula es la `Liquidacion`: una reemisión legítima encuentra el período en
+    `liquidado` igual. Por eso `liquidarPeriodo` rechaza sólo `abierto` y `anulado`.
+13. **El interés se guarda desglosado** en `InteresLiquidado`, una fila por liquidación impaga con
+    capital, tasa y meses. El total solo no se puede rehacer: apenas llega un pago posterior, ya no
+    se sabe qué estaba impago al emitir.
+14. **La generación de documentos se dispara a mano, acotada a 20 s por disparo.** Contra la base
+    remota cada disparo cierra unos sesenta; los 96 del consorcio grande salen en dos. El drenaje
+    oportunista de la cola sigue funcionando como red, pero solo no alcanza sin que alguien navegue.
 
 ## Notas
 

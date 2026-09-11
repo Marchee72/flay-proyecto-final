@@ -235,7 +235,7 @@ cerrada; las iteraciones 2 y 3 conservan sólo lo planificado.*
 |---|---:|---:|---:|
 | Esfuerzo total | 770 h | | |
 | Esfuerzo de la iteración 1 | 221 h | ≈ 16 h † | −205 h (−93 %) |
-| Esfuerzo de la iteración 2 | 194 h | | |
+| Esfuerzo de la iteración 2 | 194 h | ≈ 4 h † | −190 h (−98 %) |
 | Esfuerzo de la iteración 3 | 243 h | | |
 | Razón de productividad | 1,6 h/PF | † | |
 | Reserva de contingencia consumida | 214 h disponibles | 0 h | |
@@ -267,6 +267,35 @@ medirse del mismo modo.
 
 Lo que la cifra sí dice es que el riesgo de cronograma de la iteración 1 no se materializó y que la
 reserva de contingencia (214 h) sigue entera.
+
+### Tiempo de la liquidación y de los documentos (RNF-07, SC-006, SC-007)
+
+Medido el 2026-09-10 contra la base administrada en San Pablo, con `npm run medir:liquidacion` y con
+la prueba de integración de documentos, ambas dentro de la puerta única.
+
+| Medición | Corridas | Resultado | Límite |
+|---|---:|---:|---:|
+| Liquidación de **100 unidades**, sin documentos | 5 | 1.155 · 752 · 734 · 807 · 767 ms | 30.000 ms |
+| Generación de los **96 documentos** del consorcio B | 1 | 38 s, en dos disparos | 10 min |
+
+La liquidación cierra en menos de un segundo y medio en la peor corrida, veinticinco veces por debajo
+del límite. Lo que la mantiene ahí es una decisión y no una casualidad: los cien detalles y sus
+líneas de interés se escriben con **dos sentencias**, no con doscientas (decisión R-09). El mismo
+bucle de a uno, contra una base remota, ya había hecho fallar la carga del padrón de 96 unidades:
+noventa y seis idas y vueltas no entran en el tope de cinco segundos de una transacción interactiva.
+
+Los documentos van por la cola de trabajos, en disparos acotados a veinte segundos: cada uno cierra
+unos sesenta contra la base remota, y el administrador vuelve a apretar. Es el diseño (R-02), y los
+96 salieron en dos disparos.
+
+### Esfuerzo de la iteración 2
+
+| Etapa | Planificado | Transcurrido | Ventana |
+|---|---:|---:|---|
+| `003-liquidacion` | 194 h | ≈ 4 h de reloj | 2026-09-10, de la clarificación al cierre |
+
+Mismo criterio que la iteración 1: es tiempo transcurrido de sesiones asistidas, no horas persona,
+y no valida ni refuta la razón de 1,6 h/PF del punto 9.
 
 ### Duración de la puerta de verificación (FR-018 de `001`)
 

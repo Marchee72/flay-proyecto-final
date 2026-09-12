@@ -23,6 +23,7 @@ import { importeParaMostrar } from '@/compartido/formato'
 import { BotonAnular, BotonCerrar, BotonLiquidar } from './acciones-de-estado'
 import { ModalPeriodo } from './modal-periodo'
 import { EncabezadoDeConsorcio } from '../encabezado-consorcio'
+import { EnlaceExportar } from '../exportar'
 import { AvisoConsorcioNoElegido } from '../selector-consorcio'
 import { NOMBRE_GALLETA_CONSORCIO, resolverConsorcioActivo } from '../consorcio-activo'
 
@@ -94,6 +95,11 @@ export default async function PeriodosPage({
         />
         <h1>Períodos</h1>
         <p className="apagado">Un período por mes.</p>
+        {roles.some((r) => r === 'administrador' || r === 'consejo') && (
+          <p>
+            <EnlaceExportar consorcioId={activo.id} tabla="liquidaciones" />
+          </p>
+        )}
 
         {administra && (
           <p>

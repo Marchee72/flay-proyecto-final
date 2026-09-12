@@ -15,6 +15,7 @@ import { MEDIOS_DE_PAGO } from '@/aplicacion/pagos/registrar'
 import { AvisoConsorcioNoElegido } from '../selector-consorcio'
 import { NOMBRE_GALLETA_CONSORCIO, resolverConsorcioActivo } from '../consorcio-activo'
 import { EncabezadoDeConsorcio } from '../encabezado-consorcio'
+import { EnlaceExportar } from '../exportar'
 import { ModalPago } from './modal-pago'
 
 export const metadata: Metadata = { title: 'Pagos — Flay' }
@@ -96,6 +97,11 @@ export default async function PagosPage({
         />
         <h1>Pagos</h1>
         <p className="apagado">Estado de cuenta por unidad.</p>
+        {roles.some((r) => r === 'administrador' || r === 'consejo') && (
+          <p>
+            <EnlaceExportar consorcioId={activo.id} tabla="pagos" />
+          </p>
+        )}
 
         {parametros.registrado && (
           <p className="aviso aviso--atencion" role="status">

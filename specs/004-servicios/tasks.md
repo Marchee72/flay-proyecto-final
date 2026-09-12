@@ -214,10 +214,10 @@ del proveedor real **no** se ejercita en la puerta automática, sólo la determi
 
 **Purpose**: exportación abierta, cierre documental de los puntos 13 a 18 y la puerta completa
 
-- [ ] T082 [P] Implementar `src/compartido/csv.ts` (BOM, separador `;`, escape de comillas) y la ruta `src/app/api/exportar/[consorcio]/[tabla]/route.ts` para `gastos`, `liquidaciones` y `pagos` con sesión, habilitación vigente y 404 para otro consorcio; importes como cadena; botón «exportar» en cada listado (`FR-032b`, research R-13)
-- [ ] T083 [P] Escribir `pruebas/integracion/exportar.spec.ts`: el CSV de un consorcio suma lo mismo que su liquidación en `Decimal`; otro consorcio da 404; sin sesión da 401
-- [ ] T084 Escribir `scripts/exportar-verificar.mjs` (SC-018): baja los tres CSV del consorcio de 12 contra el entorno desplegado y cuadra el total con la liquidación vigente
-- [ ] T085 Escribir `pruebas/integracion/auditoria-servicios.spec.ts`: alta y cambio de `Reclamo`, `Reserva` y `ExtraccionComprobante` dejan exactamente un asiento con anterior y posterior (SC-021, `FR-032`)
+- [X] T082 [P] Implementar `src/compartido/csv.ts` (BOM, separador `;`, escape de comillas) y la ruta `src/app/api/exportar/[consorcio]/[tabla]/route.ts` para `gastos`, `liquidaciones` y `pagos` con sesión, habilitación vigente y 404 para otro consorcio; importes como cadena; botón «exportar» en cada listado (`FR-032b`, research R-13)
+- [X] T083 [P] Escribir `pruebas/integracion/exportar.spec.ts`: el CSV de un consorcio suma lo mismo que su liquidación en `Decimal`; otro consorcio da 404; sin sesión da 401
+- [X] T084 Escribir `scripts/exportar-verificar.mjs` (SC-018): baja los tres CSV del consorcio de 12 contra el entorno desplegado y cuadra el total con la liquidación vigente
+- [X] T085 Escribir `pruebas/integracion/auditoria-servicios.spec.ts`: alta y cambio de `Reclamo`, `Reserva` y `ExtraccionComprobante` dejan exactamente un asiento con anterior y posterior (SC-021, `FR-032`)
 - [ ] T086 Registrar las tres condiciones de § 5.5.4 como verificadas en `docs/entrega-final/15-pruebas.md`: degradación ante terceros (SC-013 y SC-008), exportación abierta (SC-018), PoC de `RF-20` (US1) (`FR-033`)
 - [ ] T087 [P] Completar `docs/entrega-final/15-pruebas.md` con el resultado real de `PA-01` a `PA-07`, `PI-01` a `PI-09`, `PR-01` a `PR-09` y `PN-01` a `PN-06`, nombrando la prueba automática o el guion que lo verifica (`FR-034`)
 - [ ] T088 [P] Actualizar `docs/entrega-final/13-prototipo.md` § 13.3 (estado por módulo al cierre), § 13.5 (accesos) y § 13.7 (limitaciones: depósitos, baja de documentos, HEIC/TIFF, sólo PDF indexable), y § 13.4 con el hash de la semilla (SC-019, `FR-035`)

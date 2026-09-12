@@ -6,7 +6,7 @@ import { Building2, ChevronLeft, ChevronRight, Receipt, Siren } from 'lucide-rea
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { importeParaMostrar } from '@/compartido/formato'
-import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
+import { misConsorcios, rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarGastos } from '@/aplicacion/gastos/listar-gastos'
 import { listarPeriodos } from '@/aplicacion/periodos/periodos'
@@ -17,6 +17,7 @@ import { AvisoConsorcioNoElegido } from '../selector-consorcio'
 import { NOMBRE_GALLETA_CONSORCIO, resolverConsorcioActivo } from '../consorcio-activo'
 import { EncabezadoDeConsorcio } from '../encabezado-consorcio'
 import { ModalGasto } from './modal-gasto'
+import { EnlaceExportar } from '../exportar'
 
 export const metadata: Metadata = { title: 'Gastos — Flay' }
 
@@ -74,7 +75,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   }
 
   try {
-    const [listado, periodos, rubros, proveedores] = await Promise.all([
+    const [listado, periodos, rubros, proveedores, roles] = await Promise.all([
       listarGastos(HABILITACIONES, RELOJ, {
         usuarioId,
         consorcioId: activo.id,
@@ -85,6 +86,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
       listarPeriodos(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
       listarRubros(),
       listarProveedores(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
+      rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id),
     ])
 
     const abiertos = periodos.filter((periodo) => periodo.estado === 'abierto')
@@ -122,7 +124,10 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
           />{' '}
           <Link className="boton boton--fantasma" href={`/gastos/asistida?consorcio=${activo.id}`}>
             Cargar comprobante con asistencia
-          </Link>
+          </Link>{' '}
+          {roles.some((r) => r === 'administrador' || r === 'consejo') && (
+            <EnlaceExportar consorcioId={activo.id} tabla="gastos" />
+          )}
         </p>
 
         <form method="get" className="fila-de-filtros">

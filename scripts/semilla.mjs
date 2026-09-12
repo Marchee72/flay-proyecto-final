@@ -6,10 +6,13 @@
 // espacios comunes, los reclamos con historial y el reglamento como documento
 // del consorcio de 12, en `pendiente` con su trabajo de indexacion.
 //
-// No crea contraseñas: el unico administrador que entra sale de
+// No crea contraseñas salvo que DEMO_CLAVE este definida: entonces los siete
+// usuarios ficticios nacen activos con esa misma clave, para entrar como cada
+// rol en la demostracion (§ 13.5). Sin ella, el unico que entra sale de
 // `npm run semilla:arranque`, con la clave en variable de entorno (FR-005).
 import { existsSync, readFileSync } from 'node:fs'
 
+import { hash } from '@node-rs/argon2'
 import { PrismaClient } from '@prisma/client'
 
 import { sembrarJuego } from '../pruebas/fixtures/juego-13-4.ts'
@@ -46,6 +49,9 @@ try {
         tipoContenido: 'text/markdown',
       },
       guardar: process.env.BLOB_READ_WRITE_TOKEN ? guardarEnAlmacen : undefined,
+      claveDerivada: process.env.DEMO_CLAVE
+        ? await hash(process.env.DEMO_CLAVE, { memoryCost: 19_456, timeCost: 2, parallelism: 1 })
+        : undefined,
     },
   )
   console.log(

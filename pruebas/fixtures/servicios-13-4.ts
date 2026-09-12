@@ -2,8 +2,8 @@ import { PrismaClient } from '@prisma/client'
 
 /**
  * Lo que `004-servicios` agrega al juego de § 13.4: los usuarios ficticios de
- * `usuarios.csv` (sin contraseña: el unico que entra sale de
- * `semilla:arranque`), dos espacios comunes por consorcio, los reclamos de
+ * `usuarios.csv` (sin contraseña salvo que la semilla reciba una derivada:
+ * entonces entran todos, con la misma, para la demostracion), dos espacios comunes por consorcio, los reclamos de
  * `reclamos.csv` con su historial, y el reglamento ficticio como documento del
  * consorcio de 12 unidades, en `pendiente` con su trabajo de indexacion.
  *
@@ -192,6 +192,8 @@ export async function sembrarServicios(
   opciones: {
     reglamento?: { titulo: string; contenido: Buffer; tipoContenido: string }
     guardar?: (clave: string, bytes: Buffer, tipoContenido: string) => Promise<void>
+    /** Con clave derivada, los usuarios nacen activos: es lo que permite entrar como cada rol en la demostracion. */
+    claveDerivada?: string
   } = {},
 ): Promise<ServiciosSembrados> {
   const usuarios: Record<string, string> = {}
@@ -209,7 +211,14 @@ export async function sembrarServicios(
       })
       usuarioId = (
         await cliente.usuario.create({
-          data: { personaId: persona.id, correo: definicion.correo, estado: 'invitado' },
+          data: opciones.claveDerivada
+            ? {
+                personaId: persona.id,
+                correo: definicion.correo,
+                estado: 'activo',
+                claveDerivada: opciones.claveDerivada,
+              }
+            : { personaId: persona.id, correo: definicion.correo, estado: 'invitado' },
         })
       ).id
       for (const [consorcio, rol] of definicion.roles) {

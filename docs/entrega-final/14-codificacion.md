@@ -3,10 +3,9 @@
 > **Requisito de la cátedra (Última entrega, punto 14):** *"Codificación. Elección del lenguaje de
 > programación – Justificación. Elección de herramientas para la toma de decisiones. Justificación."*
 
-> ⚠️ **Estado: parcial.** El punto 14.1 —elección del lenguaje— está resuelto y justificado. El
-> 14.2 tiene decisión preliminar tomada. Quedan abiertos el 14.3 —proveedor de servicios de
-> procesamiento automático, diferido deliberadamente a la iteración 3—, el 14.4 y el 14.5, que se
-> completan al codificar.
+> ✅ **Estado: completo.** El 14.1 y el 14.2 están decididos y ratificados; el 14.3 se decidió con
+> las dos pruebas de concepto de la iteración 3 y su reemplazabilidad está verificada; el 14.4 rige
+> desde el primer requerimiento; el 14.5 cierra con las métricas de las tres iteraciones.
 
 ---
 
@@ -275,8 +274,27 @@ introducido una dependencia que el diseño está construido para evitar.
 
 ### Verificación de la reemplazabilidad
 
-*A completar.* Debe acreditarse que existen las tres implementaciones previstas en el punto 12.8.2:
-la del proveedor seleccionado, la determinística para pruebas y la nula para degradación.
+Las tres implementaciones del punto 12.8.2 existen, y son exactamente tres archivos en
+`src/infraestructura/asistencia/`:
+
+| Archivo | Implementación | Qué hace |
+|---|---|---|
+| `gemini.ts` | La del proveedor | `@google/genai`: extracción con salida estructurada por esquema y `temperature 0`, clasificación, vectores de 768 dimensiones (`gemini-embedding-001`) y respuesta con citas. Un reintento ante 429/503 y después «no disponible» con motivo. Toda salida pasa por Zod antes de entrar al dominio |
+| `determinista.ts` | La de pruebas | Expresiones regulares para CUIT, fecha e importe; rubro y urgencia por palabras; bolsa de palabras proyectada por hash como vector; cita el fragmento que comparte más palabras con sentido o se abstiene. Mismo texto, misma salida, sin red |
+| `nula.ts` | La de degradación | Cada método responde «no disponible» con un motivo legible y nada lanza |
+
+Las cuatro interfaces del dominio (`ExtractorDocumental`, `ClasificadorTexto`,
+`GeneradorVectores`, `GeneradorRespuesta`, en `src/dominio/contratos/asistencia.ts`) devuelven
+`Resultado<T>`: `{ disponible: true, valor }` o `{ disponible: false, motivo }`. Ningún caso de
+uso conoce cuál de las tres corre: la elige una sola vez `src/aplicacion/dependencias.ts` según el
+entorno (`FLAY_ASISTENCIA=determinista` → pruebas; `GEMINI_API_KEY` → proveedor; ninguna → nula).
+
+La verificación es una prueba y no una afirmación: `pruebas/integracion/asistencia-implementaciones.spec.ts`
+cuenta los archivos del directorio (exactamente tres), comprueba que cada uno expone las cuatro
+interfaces, que la nula responde «no disponible» en los cuatro métodos sin lanzar y que la
+determinista es idempotente (SC-012). Reemplazar el proveedor es escribir un cuarto archivo con la
+misma forma y cambiar una línea en `dependencias.ts`; el resto del sistema, incluidas las pruebas
+de extremo a extremo que corren con la determinista, no se entera.
 
 ## 14.4 Estándares de codificación
 
@@ -297,16 +315,15 @@ después no los reabre.*
 
 ## 14.5 Métricas de la construcción
 
-*Se completa al cierre de cada iteración. La iteración 1 (`001-andamiaje` y `002-nucleo`) está
-cerrada; las iteraciones 2 y 3 conservan sólo lo planificado.*
+Las tres iteraciones están cerradas.
 
 | Métrica | Planificado | Real | Desvío |
 |---|---:|---:|---:|
-| Esfuerzo total | 770 h | | |
+| Esfuerzo total | 770 h | ≈ 40 h † | −730 h (−95 %) |
 | Esfuerzo de la iteración 1 | 221 h | ≈ 16 h † | −205 h (−93 %) |
 | Esfuerzo de la iteración 2 | 194 h | ≈ 4 h † | −190 h (−98 %) |
-| Esfuerzo de la iteración 3 | 243 h | | |
-| Razón de productividad | 1,6 h/PF | † | |
+| Esfuerzo de la iteración 3 | 243 h | ≈ 20 h † | −223 h (−92 %) |
+| Razón de productividad | 1,6 h/PF | ≈ 0,09 h/PF de reloj † | no comparable |
 | Reserva de contingencia consumida | 214 h disponibles | 0 h | |
 
 † No es una medición de horas persona: es tiempo transcurrido. Ver «Esfuerzo de la iteración 1».
@@ -366,6 +383,20 @@ unos sesenta contra la base remota, y el administrador vuelve a apretar. Es el d
 Mismo criterio que la iteración 1: es tiempo transcurrido de sesiones asistidas, no horas persona,
 y no valida ni refuta la razón de 1,6 h/PF del punto 9.
 
+### Esfuerzo de la iteración 3
+
+| Etapa | Planificado | Transcurrido | Ventana |
+|---|---:|---:|---|
+| `004-servicios` | 243 h | ≈ 20 h de reloj | 2026-09-11 17:24 → 2026-09-12 (cierre), en dos jornadas |
+
+Mismo criterio que las anteriores: tiempo transcurrido de sesiones asistidas, no horas persona. La
+iteración fue la más larga de las tres en reloj y la que más código dejó —cinco historias, cuatro
+interfaces con doce implementaciones, seis indicadores, dos pruebas de concepto contra el proveedor
+real—, y aun así cerró en menos de un décimo de lo planificado. La razón de 1,6 h/PF del punto 9
+queda **sin validar** por este proyecto: mide otra forma de construir. Lo que sí queda validado es
+el orden de magnitud relativo entre iteraciones (la 3 costó más que la 1 y que la 2, como el plan
+preveía) y que la reserva de contingencia no se tocó.
+
 ### Duración de la puerta de verificación (FR-018 de `001`)
 
 `npm run verificar` encadena análisis estático, pruebas de dominio, migraciones, deriva, pruebas de
@@ -410,4 +441,11 @@ la cabecera del índice y no obliga a recorrer la tabla.
 
 ## Referencias
 
-*A completar.*
+- Google. (2026). *Gemini API reference*. <https://ai.google.dev/api>
+- Vercel. (2026). *Next.js documentation*. <https://nextjs.org/docs>
+- Prisma. (2026). *Prisma ORM documentation*. <https://www.prisma.io/docs>
+- pgvector. (2026). *Open-source vector similarity search for Postgres*.
+  <https://github.com/pgvector/pgvector>
+- Microsoft Research. (2024). *Playwright*. <https://playwright.dev>
+- Deque Systems. (2026). *axe-core rules*. <https://github.com/dequelabs/axe-core>
+- Fowler, M. (2002). *Patterns of Enterprise Application Architecture*. Addison-Wesley.

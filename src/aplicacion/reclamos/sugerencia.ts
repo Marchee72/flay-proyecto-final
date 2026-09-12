@@ -6,6 +6,7 @@ import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import type { Manejador } from '@/aplicacion/pendientes/drenar'
+import { enConsorcio } from '@/infraestructura/cliente-aislado'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 
 /**
@@ -42,10 +43,11 @@ export function manejadorTriage(clasificador: ClasificadorTexto): Manejador {
     if (yaTiene) return
 
     const rubros = await rubrosParaClasificar()
-    const proveedores = await prismaBase.proveedor.findMany({
-      where: { consorcioId: reclamo.consorcioId },
-      include: { rubroHabitual: { select: { nombre: true } } },
-    })
+    // El contexto se abre con el consorcio del reclamo: el filtro lo pone la
+    // extension, no esta consulta (Principio I).
+    const proveedores = await enConsorcio(reclamo.consorcioId, async () =>
+      prisma.proveedor.findMany({ include: { rubroHabitual: { select: { nombre: true } } } }),
+    )
 
     const resultado = await clasificador.clasificar(
       { titulo: reclamo.titulo, descripcion: reclamo.descripcion },

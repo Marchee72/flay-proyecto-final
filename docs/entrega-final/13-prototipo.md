@@ -3,8 +3,8 @@
 > **Requisito de la cátedra (Última entrega, punto 13):** *"Prototipo."*
 > **Fecha límite:** 18 de diciembre de 2026.
 
-> ⚠️ **Estado: esqueleto.** Este documento se completa durante la construcción. La estructura y los
-> criterios ya están definidos; el contenido se incorpora al cerrar cada iteración.
+> ✅ **Estado: completo.** Cerrado con la iteración 3 (etapa `004-servicios`). Cada módulo dice qué
+> quedó construido, qué quedó diferido y qué difiere de lo diseñado (§ 13.7).
 
 ---
 
@@ -43,9 +43,46 @@ operativo, no una maqueta.
 
 ## 13.3 Alcance del prototipo entregado
 
-*A completar al cierre de las tres iteraciones. Debe coincidir con el alcance comprometido del
-punto 9.11: 433 puntos de función sin ajustar, con las 23 funcionalidades diferidas allí
-enumeradas.*
+El alcance comprometido en el punto 9.11 —433 puntos de función sin ajustar, con 23 funcionalidades
+diferidas— está construido. De las diferidas, tres se construyeron igual porque una decisión de la
+etapa las volvió baratas (§ 13.7); el resto sigue diferido con el paliativo que el punto 9.11
+enumera.
+
+**Estado al cierre de la iteración 3** (etapa `004-servicios`, 2026-09-12):
+
+| Módulo | Requerimientos | Estado | Observaciones |
+|---|---|---|---|
+| Usuarios, roles y habilitaciones | RF-03 | **Construido** | Sin cambios desde la iteración 1 |
+| Consorcios y unidades | RF-01, RF-02 | **Construido** | Sin cambios desde la iteración 1 |
+| Gastos y comprobantes | RF-04, RF-05, RF-10 | **Construido** | Se suma la carga asistida (RF-06) y la exportación en CSV. Sin baja de gasto ni detección de comprobante duplicado (§ 13.7) |
+| Liquidación de expensas | RF-07, RF-08 | **Construido** | Sin cambios desde la iteración 2; exportación en CSV por unidad |
+| Pagos y morosidad | RF-09 | **Construido** | Sin cambios desde la iteración 2; exportación en CSV |
+| Reclamos | RF-11, RF-13 | **Construido** | Máquina de estados con historial por transición; RN-11 la impone un `CHECK` de la base; bandeja y detalle desde el teléfono; aviso al vecino en cada cambio |
+| Reservas | RF-15, RF-16 | **Construido** | Espacios con reglas (anticipación, duración, capacidad, tope mensual); la superposición la rechaza una restricción `EXCLUDE` de la base, verificada con dos inserciones concurrentes; la deuda vencida bloquea la reserva |
+| Proveedores | RF-17 | **Construido** | Sin baja: diferida (§ 9.11) |
+| Comunicación y documentación | RF-18, RF-19 | **Construido** | Novedades con aviso a cada habilitado; documentos con subida directa, marca de visibilidad e indexación en segundo plano. Sin baja de documento ni edición de novedad (§ 9.11) |
+| Notificaciones | RF-14 | **Construido** | Despachador sobre la cola de trabajos, con reintentos, «agotado» visible y botón de reintento; sin proveedor de correo, todo queda pendiente y ninguna operación falla |
+| Indicadores de gestión | RF-21 a RF-25 | **Construido** | Seis indicadores sobre vistas materializadas en `NUMERIC`, refrescadas a diario y a mano; validados contra un cálculo independiente con tolerancia cero (SC-009); p95 de 184 ms |
+| Funciones asistidas | RF-06, RF-12, RF-20 | **Construido** | Cuatro interfaces con tres implementaciones cada una (proveedor, determinista, nula). Extracción con confirmación humana y umbral de confianza; triage que sugiere y nunca decide; consulta documental que cita o se abstiene. Proveedor: Gemini (§ 14.3) |
+| Auditoría | RF-26 | **Construido** | Reclamo, reserva y extracción se suman a las tablas auditadas por disparador (SC-021) |
+| Exportación abierta | § 5.5.4 | **Construido** | Gastos, liquidaciones y pagos en CSV por consorcio, con sesión y habilitación; `npm run exportar:verificar` cuadra los tres al centavo (SC-018) |
+
+### Lo que la iteración 3 deja verificado
+
+| Criterio | Medición al 2026-09-12 |
+|---|---|
+| Dos reservas concurrentes del mismo espacio y horario (SC-005, RN-10) | Exactamente una queda confirmada; la segunda la rechaza la base, salteándose la aplicación |
+| Cambio de estado sin responsable (RN-11) | Rechazado por la aplicación con mensaje, y por el `CHECK` de la base ante un `UPDATE` directo |
+| Indicadores contra cálculo independiente (SC-009, SC-022) | 554 filas comparadas en decimal, tolerancia cero, sobre 10.800 gastos |
+| Panel de indicadores (SC-010, RNF-06) | p95 de 184 ms en 100 cargas sobre el volumen anual |
+| Extracción de comprobantes (SC-001, PI-01) | 149 de 150 campos sobre 30 comprobantes, contra el umbral del 80 % |
+| Búsqueda semántica (SC-001, PI-06) | 20 de 20 preguntas con el fragmento correcto entre los tres primeros, contra el 85 % |
+| Abstención sin respaldo (SC-015, PI-07) | Diez preguntas sin respuesta en el reglamento, diez abstenciones; cero invenciones, con la determinista y con el proveedor real |
+| Aislamiento de la consulta documental (SC-016) | Ningún fragmento no visible ni de otro consorcio llega al generador: lo filtra el `WHERE`, no la aplicación |
+| Confirmación humana (SC-017, RN-14) | Ningún gasto nace de una extracción sin el envío explícito de la persona; los campos corregidos quedan anotados |
+| Degradación (SC-013, RNF-14) | Con la implementación nula y con el correo caído, cero operaciones de negocio fallan; un proyecto de Playwright lo recorre contra un servidor sin clave |
+| Exportación abierta (SC-018) | Los tres CSV cuadran al centavo contra la base |
+| Accesibilidad (SC-020, RNF-11) | Cero infracciones A/AA en las once pantallas de servicios |
 
 **Estado al cierre de la iteración 2** (etapa `003-liquidacion`, 2026-09-10):
 
@@ -128,10 +165,29 @@ sobre esta semilla; se registra su hash SHA256 por archivo:*
   `npm run semilla`; el volumen anual de 10.800 gastos lo agrega `npm run semilla:volumen`. La
   semilla es código y no un juego de archivos con hash bajo `datos-cliente/`: al ser
   determinística, el hash que M-08 pedía lo da el control de versiones.
-- Doce períodos (C-A 2025-09 a 2026-08, 11 liquidados + 1 abierto; C-B 11 liquidados + 1 abierto).
-- Mora: C-A 3B (3 períodos), 1C (2), 2C (1); resto al día. Reclamos RC-01 a RC-05 en todos los estados.
-- Reglamento indexado: `datos-cliente/reglamento/reglamento-copropiedad.md` + 20 preguntas.
-- Un usuario por rol (`usuarios.csv`): administrador, consejo, consorcistas al día y morosos.
+- Doce períodos de 2026 por consorcio, los abre `semilla:volumen` con sus 450 gastos cada uno. Las
+  liquidaciones y los pagos **no** los deja la semilla: se emiten desde la pantalla durante la
+  demostración (paso 2 del guion), porque emitir es justamente lo que se muestra. La mora prevista
+  (C-A 3B, 1C, 2C) se produce pagando el resto de las unidades y dejando esas tres.
+- Reclamos RC-01 a RC-05 en todos los estados, con su historial; dos espacios comunes por consorcio.
+- Reglamento como documento del consorcio de 12: `datos-cliente/reglamento/reglamento-copropiedad.md`,
+  en `pendiente` con su trabajo de indexación, que corre con el primer pedido al panel.
+- Un usuario por rol (`usuarios.csv`): administrador, consejo, consorcistas al día y morosos. Nacen
+  `invitado`; con `DEMO_CLAVE` en el entorno de demostración nacen activos con esa clave.
+
+Como la semilla es código, su huella es la del control de versiones. Los archivos que la componen y
+su hash de objeto en Git al cierre (`git hash-object`):
+
+| Archivo | Hash de objeto |
+|---|---|
+| `pruebas/fixtures/juego-13-4.ts` | `6ceec7458b32bc8d4270918b4fac72fa012f3a9f` |
+| `pruebas/fixtures/servicios-13-4.ts` | `90b9f33db8f836b0c351bb35c1df3cd91b9820f3` |
+| `scripts/semilla.mjs` | `d56c04fadef7899e49c1d59e9e341ea6849b3c59` |
+| `scripts/semilla-volumen.mjs` | `47def30e7a3199f2edbd0e46c68ad0414edb1927` |
+| `prisma/semilla-rubros.ts` | `a3c39a2a20739d2ff713779f6eb9eef435f19648` |
+
+Los archivos CSV de `datos-cliente/juego-ficticio-13-4/` son la especificación legible de la misma
+semilla; sus hashes:
 
 | Archivo | SHA256 |
 |---|---|
@@ -147,44 +203,105 @@ conforme al punto 5.3.2.
 
 ## 13.5 Acceso al prototipo
 
-*Se completa en cada cierre de iteración. Estado al cierre de la iteración 1.*
+Estado al cierre de la iteración 3.
 
 | Dato | Valor |
 |---|---|
 | Dirección del sistema | <https://flay-bamba-team.vercel.app> — sigue al último despliegue verde de `main`; `/api/salud` dice qué versión y qué migración sirve |
-| Usuario administrador | `admin@flay.test`, creado por `npm run semilla:arranque` con la clave en variable de entorno. **La clave no se versiona** y se rota en el primer ingreso (FR-005) |
-| Usuario operador | No existe en la iteración 1: los roles construidos son administrador, consejo y consorcista (RF-03) |
-| Usuario consorcista | Se crea por invitación desde la pantalla de usuarios. Queda en estado `invitado` hasta que salga el correo con el enlace, y la demostración todavía no tiene proveedor de correo configurado |
+| Usuario de plataforma | `admin@flay.test`, creado por `npm run semilla:arranque` con la clave en variable de entorno. **La clave no se versiona** y se rota en el primer ingreso (FR-005). Alcanza los dos consorcios |
+| Usuario administrador | `admin1@flay.demo` (Grupo Delta, administra C-A y C-B) y `operador1@flay.demo` (administrador sólo de C-B) |
+| Usuario consejo | `consejo1@flay.demo` (consejo y consorcista de C-A) |
+| Usuarios consorcistas | `vecino1a@flay.demo` (1A, al día), `moroso3b@flay.demo` (3B, en mora), `inquilino1c@flay.demo` (1C, inquilino), `vecinob010@flay.demo` (C-B) |
+| Clave de los usuarios ficticios | La de `DEMO_CLAVE` en el entorno de demostración, una sola para los siete; sin esa variable nacen `invitado` y no entran. **No se versiona** |
+| Usuario operador | No existe como rol: los roles son administrador, consejo y consorcista (RF-03). `operador1@flay.demo` es un administrador acotado a un consorcio |
 | Repositorio de código | <https://github.com/Marchee72/flay-proyecto-final> |
-| Versión entregada | `v0.3.0` — etiqueta de cierre de la iteración 2 sobre `main` (§ 8.3.5) |
+| Versión entregada | `v0.4.0` — etiqueta de cierre de la iteración 3 sobre `main` (§ 8.3.5) |
 
 ## 13.6 Guion de demostración
 
-*A completar.* Recorrido sugerido para la evaluación, que muestra el circuito completo del negocio:
+Recorrido para la evaluación sobre las pantallas construidas, con la semilla de § 13.4 y los
+usuarios de § 13.5. Cada paso nombra la pantalla y lo que se debe ver:
 
-1. Ingreso como operador, carga de un gasto adjuntando el comprobante y verificación de la extracción
-   asistida.
-2. Ingreso como administrador, ejecución de la liquidación del período y verificación de la
-   cuadratura.
-3. Ingreso como consorcista, consulta del estado de cuenta y descarga de la expensa con acceso a los
-   comprobantes de respaldo.
-4. Alta de un reclamo como consorcista y verificación de la clasificación automática.
-5. Gestión del reclamo como operador hasta su cierre, con notificación al vecino.
-6. Consulta sobre el reglamento en lenguaje natural, verificando la cita de la fuente.
-7. Panel de indicadores: morosidad, desvío de gasto, desempeño de proveedores y tiempo de resolución.
-8. Demostración de la degradación: con el servicio de asistencia deshabilitado, la carga manual y el
-   alta de reclamo siguen funcionando.
+1. **Carga asistida** — como `admin1`, Gastos → «Cargar comprobante con asistencia», subir
+   `datos-cliente/comprobantes/archivos/C15.png` (total manuscrito). En menos de un minuto la
+   revisión muestra el formulario precargado con `62500.00` y la marca «Precargado: revisar antes
+   de confirmar» al lado del comprobante; el gasto existe recién al apretar «Registrar gasto».
+2. **Liquidación** — como `admin1`, Períodos → cerrar el mes y emitir. La emisión muestra el total
+   y la cuadratura; los 12 documentos se generan en diferido. Pagos → registrar el pago de las
+   unidades al día y dejar 3B, 1C y 2C: es la mora que después muestran los indicadores.
+3. **El consorcista** — como `vecino1a`, desde un teléfono: Expensas → su expensa con el detalle y
+   la descarga; Gastos → el listado con los comprobantes. Probar la dirección de la expensa de otra
+   unidad: «No encontramos lo que buscabas».
+4. **Reclamo con sugerencia** — como `vecino1a`, Reclamos → «Nuevo reclamo» («El ascensor quedó
+   parado con una persona atrapada»). Como `admin1`, abrir el reclamo: la tarjeta «Sugerencia
+   automática» propone rubro, urgencia crítica y proveedor; aplicar no cambia el estado.
+5. **Gestión hasta el cierre** — como `admin1`, Asignar → Marcar en curso → Resolver → Cerrar, con
+   comentario en cada paso; el historial lo muestra completo. Pendientes → «Despachar» muestra los
+   avisos al vecino (o «en cola» sin proveedor de correo).
+6. **Consulta documental** — como `vecino1a`, Documentación → «Preguntarle a la documentación»:
+   «¿Cuántas personas entran en el salón de usos múltiples?» responde «cuarenta» citando el
+   reglamento y el fragmento. «¿Cuánto cuesta el estacionamiento para visitas?» responde «No lo
+   encontramos en la documentación cargada».
+7. **Indicadores** — como `admin1`, Indicadores: morosidad con la meta del 12 % y sus alertas,
+   gasto por rubro con desvíos, proveedores por costo y recurrencia, resolución de reclamos por
+   urgencia con la meta de 72 h, carga administrativa contra las 38 h.
+8. **Degradación** — con `GEMINI_API_KEY` retirada del entorno y el servicio reiniciado: la carga
+   asistida deja el comprobante guardado y el formulario vacío; el reclamo se registra sin
+   sugerencia; la consulta lleva a la lista de documentos. Todo lo demás sigue igual (RNF-14).
 
 El punto 8 del guion no es habitual en una demostración, pero es la verificación de RNF-14 y de los
 principios del punto 12.8.1.
 
 ## 13.7 Limitaciones conocidas
 
-*A completar.* Debe enumerar, sin omitir: las funcionalidades diferidas del punto 9.11, los defectos
-abiertos de severidad baja y media, y toda diferencia entre lo diseñado y lo construido.
+Sin omitir nada, en tres grupos.
+
+**Diferidas en el punto 9.11 y que siguen diferidas** (20 de 23, con el paliativo allí enumerado):
+certificado de deuda (1); informe de precisión de la asistencia (3: la vista `v_precision_asistencia`
+y las columnas existen, la pantalla no); ocupación de espacios comunes como indicador (4); aviso de vencimiento próximo (5); carga masiva de unidades
+(6: el padrón entra entero pero desde el formulario, no desde un archivo); alta y modificación de
+rubro (9, 10: el catálogo se siembra); anulación de pago (8: se anula la liquidación entera y sus imputaciones se revierten, no un pago suelto); bajas lógicas de consorcio, unidad, usuario, proveedor y
+documento (11 a 15); modificación o baja de novedad (16); notificaciones leídas y su listado (17,
+23: los avisos van por correo, no hay centro de notificaciones); consulta de proveedor con
+histórico (19); consulta de la bitácora (20: se produce por disparador, se lee por base); listado de
+rubros (21); descarga de comprobante como transacción aparte (22).
+
+**Diferidas en el punto 9.11 que se construyeron igual** (3 de 23), porque una decisión de la etapa
+las volvió baratas o necesarias: exportación completa en formato abierto (2: es la condición de
+§ 5.5.4, y salió a un manejador de ruta); anulación de liquidación con reemisión (7: nació con el
+candado y la auditoría de la iteración 2, y al anular se revierten las imputaciones de sus pagos);
+modificación de espacio común (18: mismo formulario que el alta).
+
+**Defectos abiertos y diferencias entre lo diseñado y lo construido**:
+
+- D-01 (media, § 15.4): la dirección de descarga de un comprobante o documento la entrega el
+  almacenamiento y no vence. Sólo se resuelve con sesión y habilitación, pero una vez obtenida se
+  puede reutilizar. El diseño (§ 18, A6) pedía enlace firmado de vencimiento corto: queda para
+  producción con un almacén privado.
+- D-02 (media): el comprobante no guarda huella; el duplicado (CU-06, flujo 2a) no se detecta. La
+  huella sí existe para los documentos del consorcio.
+- Depósitos como medio de pago: se registran como `deposito` sin conciliación bancaria; la
+  conciliación no estaba en el alcance y sigue sin estarlo.
+- HEIC y TIFF no se muestran en el navegador: se ofrecen para descarga con la razón a la vista
+  (FR-018c). La vista previa convertida quedó fuera.
+- Sólo se indexa lo que tiene texto: PDF con texto y Markdown. Un PDF escaneado sin capa de texto
+  queda en `error` con el motivo legible y se sigue pudiendo descargar; no hay reconocimiento
+  óptico de documentos, aunque sí de comprobantes (que van por el extractor, no por el índice).
+- No hay rol «operador» (§ 13.5): el diseño de los casos de uso lo nombraba y el punto 12 lo
+  resolvió con administrador, consejo y consorcista. Un administrador acotado a un consorcio cumple
+  ese papel.
+- La cola de trabajos se drena con cada pedido al panel y con una tarea diaria para las vistas; no
+  hay un proceso aparte. Sin navegación no hay drenaje: para la demostración alcanza, y la nota 14
+  de `CLAUDE.md` lo deja dicho.
+- Restauración de respaldo (PN-05) y revisión de mensajes por una persona ajena (PN-06) no se
+  ejecutaron en esta entrega; ambas quedan como puerta de producción en § 18.
 
 ---
 
 ## Referencias
 
-*A completar.*
+- Documentos internos: puntos 8.4 (prototipos), 9.11 (decisión de alcance), 12 (diseño), 14
+  (codificación), 15 (prueba) y 18 (seguridad) de este mismo trabajo.
+- `specs/002-nucleo/quickstart.md`, `specs/003-liquidacion/quickstart.md` y
+  `specs/004-servicios/quickstart.md`: los recorridos manuales de cada etapa, de los que sale el
+  guion de § 13.6.

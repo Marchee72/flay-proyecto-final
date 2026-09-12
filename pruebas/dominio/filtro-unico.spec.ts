@@ -23,6 +23,10 @@ const PERMITIDOS: Record<string, string> = {
     'crea el consorcio: trabaja por encima del aislamiento, no hay contexto todavia',
   'src/aplicacion/consorcios/registrar-ocupacion.ts': 'otorga la habilitacion del consorcista',
   'src/aplicacion/identidad/invitar-persona.ts': 'otorga la habilitacion de la persona invitada',
+  'src/aplicacion/indicadores/indicadores.ts':
+    'el panel consolidado agrega los consorcios de la cartera: la lista sale de la habilitacion de empresa',
+  'src/aplicacion/reclamos/asignar.ts':
+    'lista los administradores habilitados: consulta sobre habilitaciones, la tabla que decide el aislamiento',
 }
 
 /** El filtro escrito a mano: `consorcioId` dentro de un `where` o un `data`. */

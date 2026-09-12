@@ -24,6 +24,8 @@ const notificadorQue = (fn: (aviso: Aviso) => Promise<void>): Notificador => ({
 })
 
 beforeEach(async () => {
+  await prismaBase.$executeRaw`DELETE FROM "Notificacion"`
+  await prismaBase.trabajoPendiente.deleteMany({})
   const administradora = await crearAdministradora()
   consorcioId = (await crearConsorcio(administradora.id)).id
   usuarioId = (await crearUsuario('Ada')).id

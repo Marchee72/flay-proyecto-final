@@ -50,12 +50,12 @@ transcripta y el mapeo de cada punto a su documento.
 
 | # | Documento | Estado |
 |---|---|---|
-| 13 | [Prototipo](entrega-final/13-prototipo.md) | Parcial — § 13.3 a § 13.5 al día con el cierre de la iteración 2; § 13.6 y § 13.7 abiertos |
-| 14 | [Codificación](entrega-final/14-codificacion.md) | Parcial — § 14.1, § 14.4 y § 14.5 al día con la iteración 2; § 14.2 ratificado con Recharts, § 14.3 decidido con las dos PoC de § 8.4.3 ejecutadas (99,3 % y 100 %) |
-| 15 | [Pruebas](entrega-final/15-pruebas.md) | Parcial — § 15.2.1 con resultado real: PL-01 a PL-08 y PL-10 superan, PL-09 abierto; § 15.2.3 PI-01 y PI-06 superan |
-| 16 | [Manual de usuario](entrega-final/16-manual-usuario.md) | Esqueleto |
-| 17 | [Cronograma de capacitación](entrega-final/17-cronograma-capacitacion.md) | Esqueleto |
-| 18 | [Seguridad](entrega-final/18-seguridad.md) | Política esbozada, se completa al codificar |
+| 13 | [Prototipo](entrega-final/13-prototipo.md) | Completo |
+| 14 | [Codificación](entrega-final/14-codificacion.md) | Completo |
+| 15 | [Pruebas](entrega-final/15-pruebas.md) | Completo |
+| 16 | [Manual de usuario](entrega-final/16-manual-usuario.md) | Completo |
+| 17 | [Cronograma de capacitación](entrega-final/17-cronograma-capacitacion.md) | Completo |
+| 18 | [Seguridad](entrega-final/18-seguridad.md) | Completo |
 
 ---
 

@@ -204,6 +204,26 @@ Catorce decisiones que costaron una vuelta y conviene no volver a tomar desde ce
 14. **La generación de documentos se dispara a mano, acotada a 20 s por disparo.** Contra la base
     remota cada disparo cierra unos sesenta; los 96 del consorcio grande salen en dos. El drenaje
     oportunista de la cola sigue funcionando como red, pero solo no alcanza sin que alguien navegue.
+15. **El comprobante suelto vive en la extracción.** Al subir un comprobante antes de guardarlo como gasto,
+    el archivo y sus datos extraídos viven en `ExtraccionComprobante` con `clave_objeto`. La confirmación
+    humana crea el `Gasto` y el `Comprobante` en una única transacción, y calcula `campos_corregidos`
+    por diferencia. Si la extracción se descarta, el gasto nunca existió.
+16. **Las dos consultas SQL fuera de la extensión de aislamiento.** Las vistas materializadas de
+    indicadores (`v_morosidad_consorcio`, `v_gasto_rubro_periodo`, etc.) y el refresco (`REFRESH
+    MATERIALIZED VIEW`) operan fuera de la extensión de Prisma porque son vistas globales agregadas
+    por consorcio. El filtrado por `consorcio_id` debe ser explícito en el `WHERE` de la consulta SQL
+    directa (`prisma.$queryRaw`), garantizando que jamás se filtre información entre consorcios.
+17. **La abstención la decide el generador y no el umbral.** En la consulta documental asistida (`RF-20`),
+    la respuesta de abstención («no lo encontramos en la documentación cargada») no se decide por un
+    corte rígido de similitud de vectores en la aplicación: la emite el modelo generativo (`sinRespaldo:
+    true`) al constatar que los fragmentos recuperados no contienen sustento fáctico para responder la
+    pregunta, asegurando citas verificables.
+18. **La cola absorbe cuatro tipos de trabajo.** La tabla `Pendiente` no sólo encola avisos de correo:
+    procesa `indexar_documento` (extracción de texto, fragmentación y cálculo de vectores con reintentos),
+    `extraccion_comprobante` (análisis estructurado con IA), `triage_reclamo` (clasificación de rubro y
+    urgencia) y avisos de notificación, desacoplando cualquier demora o caída de servicios externos del
+    ciclo de petición del usuario.
+
 
 ## Notas
 

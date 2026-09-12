@@ -226,9 +226,9 @@ del proveedor real **no** se ejercita en la puerta automática, sólo la determi
 - [X] T091 [P] Completar `docs/entrega-final/17-cronograma-capacitacion.md` con fechas y evaluación, y `docs/entrega-final/18-seguridad.md` con lo que quedó «a verificar»: gestión de secretos efectiva (`GEMINI_API_KEY`, `CRON_SECRET`), revisión de dependencias, y la auditoría externa como puerta de producción
 - [X] T092 [P] Registrar en `CLAUDE.md` lo que un recién llegado no puede adivinar de esta etapa: el comprobante suelto vive en la extracción, las dos consultas SQL fuera de la extensión de aislamiento, la abstención la decide el generador y no el umbral, y la cola absorbe cuatro tipos de trabajo
 - [X] T093 Actualizar las tablas de estado de `docs/README.md` y `README.md`: puntos 13 a 18 completos
-- [ ] T094 Correr `npm run verificar` completo, local y remoto, y confirmar que sigue bajo los diez minutos con las pruebas nuevas
-- [ ] T095 Ensayar el guion de demostración de § 13.1 (8 pasos, `CU-07` a `CU-15`) sobre el entorno desplegado con la semilla ficticia y `GEMINI_API_KEY` de producción, sin ningún paso desde una máquina de desarrollo (SC-019)
-- [ ] T096 Ejecutar T028 (descartar `poc/`), abrir el pull request con revisión cruzada y etiquetar el cierre de la iteración 3 con versión semántica (§ 8.3.5)
+- [X] T094 Correr `npm run verificar` completo, local y remoto, y confirmar que sigue bajo los diez minutos con las pruebas nuevas
+- [X] T095 Ensayar el guion de demostración de § 13.1 (8 pasos, `CU-07` a `CU-15`) sobre el entorno desplegado con la semilla ficticia y `GEMINI_API_KEY` de producción, sin ningún paso desde una máquina de desarrollo (SC-019)
+- [X] T096 Ejecutar T028 (descartar `poc/`), abrir el pull request con revisión cruzada y etiquetar el cierre de la iteración 3 con versión semántica (§ 8.3.5)
 
 ---
 

@@ -6,6 +6,7 @@ import {
   Building2,
   CalendarDays,
   FileText,
+  MessageSquareWarning,
   Receipt,
   TriangleAlert,
   Truck,
@@ -21,6 +22,7 @@ export const SECCIONES = [
   { href: '/expensas', titulo: 'Expensas', Icono: FileText },
   { href: '/pagos', titulo: 'Pagos', Icono: Wallet },
   { href: '/morosidad', titulo: 'Morosidad', Icono: TriangleAlert },
+  { href: '/reclamos', titulo: 'Reclamos', Icono: MessageSquareWarning },
   { href: '/proveedores', titulo: 'Proveedores', Icono: Truck },
   { href: '/usuarios', titulo: 'Usuarios', Icono: Users },
 ] as const

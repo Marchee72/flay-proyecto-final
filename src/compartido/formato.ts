@@ -65,3 +65,17 @@ function agruparMiles(digitos: string): string {
   }
   return salida
 }
+
+/** `2026-09-12` o una marca ISO completa → `12/09/2026`. Solo la fecha. */
+export function fechaParaMostrar(iso: string): string {
+  const [anio, mes, dia] = iso.slice(0, 10).split('-')
+  return `${dia}/${mes}/${anio}`
+}
+
+/** Marca ISO → `12/09/2026 14:05`, en la hora del navegador del servidor (UTC en el despliegue). */
+export function momentoParaMostrar(iso: string): string {
+  const fecha = new Date(iso)
+  const hh = String(fecha.getUTCHours()).padStart(2, '0')
+  const mm = String(fecha.getUTCMinutes()).padStart(2, '0')
+  return `${fechaParaMostrar(fecha.toISOString())} ${hh}:${mm}`
+}

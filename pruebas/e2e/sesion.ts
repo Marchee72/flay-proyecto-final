@@ -236,3 +236,75 @@ export async function limpiarExpensa(escenario: Escenario): Promise<void> {
   })
   await prisma.unidad.deleteMany({ where: { consorcioId: escenario.consorcioId } })
 }
+
+/**
+ * Un segundo usuario sobre el mismo consorcio, con otro rol: para recorrer el
+ * ida y vuelta consorcista ↔ administrador de reclamos y reservas (004).
+ */
+export async function sembrarUsuarioEn(
+  escenario: Escenario,
+  rol: 'administrador' | 'consorcista' | 'consejo',
+): Promise<{ usuarioId: string; personaId: string; correo: string }> {
+  const correo = `e2e-${unico()}@ejemplo.test`
+  const persona = await prisma.persona.create({ data: { nombre: 'Bruno', apellido: 'Paz' } })
+  const usuario = await prisma.usuario.create({
+    data: {
+      personaId: persona.id,
+      correo,
+      estado: 'activo',
+      claveDerivada: await hash(CONTRASENA, { memoryCost: 19_456, timeCost: 2, parallelism: 1 }),
+    },
+  })
+  await prisma.habilitacion.create({
+    data: {
+      usuarioId: usuario.id,
+      consorcioId: escenario.consorcioId,
+      rol,
+      vigenciaDesde: new Date('2026-01-01'),
+    },
+  })
+  return { usuarioId: usuario.id, personaId: persona.id, correo }
+}
+
+/** Dos unidades que suman 100, la primera ocupada por la persona del escenario. Devuelve la propia. */
+export async function sembrarUnidadPropia(escenario: Escenario): Promise<string> {
+  const filas = ['3B', '3C'].map((designacion) => ({
+    id: crypto.randomUUID(),
+    consorcioId: escenario.consorcioId,
+    designacion,
+    coeficiente: '50.00000000',
+  }))
+  await prisma.unidad.createMany({ data: filas })
+  await prisma.$executeRaw`
+    INSERT INTO "Ocupacion" (unidad_id, persona_id, tipo, vigencia)
+    VALUES (${filas[0].id}::uuid, ${escenario.personaId}::uuid, 'propietario'::"TipoOcupacion",
+            daterange('2026-01-01', NULL))`
+  return filas[0].id
+}
+
+/** Lo de 004-servicios que cuelga del consorcio: reclamos, reservas, espacios, avisos, mas usuarios extra. */
+export async function limpiarServicios(
+  escenario: Escenario,
+  extras: { usuarioId: string; personaId: string; correo: string }[] = [],
+): Promise<void> {
+  await prisma.$executeRaw`DELETE FROM "Notificacion"`
+  await prisma.trabajoPendiente.deleteMany({
+    where: { tipo: { in: ['notificacion', 'triage_reclamo'] } },
+  })
+  await prisma.reclamo.deleteMany({ where: { consorcioId: escenario.consorcioId } })
+  await prisma.reserva.deleteMany({ where: { consorcioId: escenario.consorcioId } })
+  await prisma.espacioComun.deleteMany({ where: { consorcioId: escenario.consorcioId } })
+  await prisma.$executeRaw`
+    DELETE FROM "Ocupacion" WHERE unidad_id IN
+      (SELECT id FROM "Unidad" WHERE consorcio_id = ${escenario.consorcioId}::uuid)`
+  await prisma.coeficienteHistorico.deleteMany({
+    where: { unidad: { consorcioId: escenario.consorcioId } },
+  })
+  await prisma.unidad.deleteMany({ where: { consorcioId: escenario.consorcioId } })
+  for (const extra of extras) {
+    await prisma.habilitacion.deleteMany({ where: { usuarioId: extra.usuarioId } })
+    await prisma.intentoInicioSesion.deleteMany({ where: { correoProbado: extra.correo } })
+    await prisma.usuario.deleteMany({ where: { id: extra.usuarioId } })
+    await prisma.persona.deleteMany({ where: { id: extra.personaId } })
+  }
+}

@@ -405,7 +405,8 @@ a {
   margin-bottom: var(--e1);
 }
 .campo input,
-.campo select {
+.campo select,
+.campo textarea {
   width: 100%;
   min-height: var(--toque);
   padding: 0 var(--e3);
@@ -419,8 +420,13 @@ a {
 .campo select {
   background: var(--superficie);
 }
+.campo textarea {
+  padding: var(--e2) var(--e3);
+  resize: vertical;
+}
 .campo input[aria-invalid='true'],
-.campo select[aria-invalid='true'] {
+.campo select[aria-invalid='true'],
+.campo textarea[aria-invalid='true'] {
   border-color: var(--rojo);
   border-width: 2px;
 }
@@ -1078,4 +1084,43 @@ td select {
     min-width: var(--e6);
     min-height: var(--e6);
   }
+}
+
+/* Reclamos y reservas (004-servicios): ficha de definiciones e historial. */
+.definiciones {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--e1) var(--e4);
+  margin: var(--e3) 0 0;
+}
+.definiciones dt {
+  font-weight: 600;
+  color: var(--tinta-apagada);
+}
+.definiciones dd {
+  margin: 0;
+}
+.historial {
+  list-style: none;
+  padding: 0;
+  margin: var(--e3) 0 0;
+  border-left: 2px solid var(--linea-suave);
+}
+.historial li {
+  padding: var(--e2) 0 var(--e2) var(--e4);
+  position: relative;
+}
+.historial li::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: calc(var(--e2) + 0.4em);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--lima);
+  border: 2px solid var(--superficie);
+}
+.historial li p {
+  margin: var(--e1) 0 0;
 }

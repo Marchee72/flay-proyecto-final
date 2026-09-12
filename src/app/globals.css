@@ -1124,3 +1124,22 @@ td select {
 .historial li p {
   margin: var(--e1) 0 0;
 }
+
+/* Indicadores (004-servicios): el grafico es decorativo; la tabla debajo es el dato. */
+.grafico {
+  margin-top: var(--e3);
+  background: var(--superficie);
+  border: 1px solid var(--linea-suave);
+  border-radius: var(--radio);
+  padding: var(--e3) var(--e2) var(--e2) 0;
+}
+.alertas {
+  list-style: none;
+  padding: 0;
+  margin: var(--e3) 0 0;
+  display: grid;
+  gap: var(--e2);
+}
+.alertas li {
+  margin: 0;
+}

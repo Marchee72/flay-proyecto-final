@@ -102,7 +102,7 @@ PI-07 es la prueba más importante de esta sección: verifica el segundo princip
 | PR-04 | Dos ocupaciones vigentes del mismo tipo sobre una unidad | Rechazada, conforme a RN-09 | |
 | PR-05 | Carga de un comprobante ya existente | Se advierte el duplicado y se muestra el gasto asociado | |
 | PR-06 | Modificación de un gasto de un período liquidado | Rechazada, conforme a RN-03 | |
-| PR-07 | Cambio de estado de reclamo sin responsable asignado | Rechazado, conforme a RN-11 | |
+| PR-07 | Cambio de estado de reclamo sin responsable asignado | Rechazado, conforme a RN-11 | **Supera**: la aplicación lo rechaza con mensaje y un `UPDATE` directo lo rechaza el `CHECK` de la base (`pruebas/integracion/reclamos.spec.ts`, SC-004) |
 | PR-08 | Toda operación sobre datos económicos | Queda registrada en la bitácora, conforme a RN-15 | |
 | PR-09 | Intento de modificar o borrar un registro de auditoría desde la aplicación | Denegado, conforme a RNF-12 | |
 
@@ -110,7 +110,7 @@ PI-07 es la prueba más importante de esta sección: verifica el segundo princip
 
 | ID | Requerimiento | Criterio | Estado |
 |---|---|---|---|
-| PN-01 | RNF-06 | Percentil 95 de las consultas por debajo de 2 segundos | |
+| PN-01 | RNF-06 | Percentil 95 de las consultas por debajo de 2 segundos | **Supera** sobre el panel de indicadores I-6, la pantalla que agrega más: `medir:p95 /indicadores`, 100 cargas sobre `semilla:volumen` (10.800 gastos, doce períodos), p50 149 ms, p95 **184 ms** (12/09/2026, local contra la base administrada). Estado de cuenta, reclamos y reservas quedan fuera del presupuesto verificado (I-07) |
 | PN-02 | RNF-07 | Liquidación de 100 unidades en menos de 30 segundos | |
 | PN-03 | RNF-01 | Operación correcta en pantallas de 360 píxeles de ancho | |
 | PN-04 | RNF-11 | Contraste mínimo 4,5:1, navegación completa por teclado, etiquetas asociadas | |

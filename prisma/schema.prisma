@@ -921,3 +921,10 @@ enum EstadoExtraccion {
   descartada
   no_disponible
 }
+
+/// Cuando se refrescaron las vistas materializadas por ultima vez: Postgres no
+/// lo registra, y el panel lo muestra (FR-018). Una sola fila.
+model RefrescoIndicadores {
+  id           Int      @id @default(1)
+  refrescadoEn DateTime @map("refrescado_en") @db.Timestamptz(6)
+}

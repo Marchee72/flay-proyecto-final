@@ -58,6 +58,8 @@ const PANTALLAS = [
     ruta: (e: Escenario) => `/reclamos/${reclamoId}?consorcio=${e.consorcioId}`,
   },
   { nombre: 'reservas', ruta: (e: Escenario) => `/reservas?consorcio=${e.consorcioId}` },
+  { nombre: 'novedades', ruta: (e: Escenario) => `/novedades?consorcio=${e.consorcioId}` },
+  { nombre: 'documentación', ruta: (e: Escenario) => `/documentos?consorcio=${e.consorcioId}` },
 ]
 
 const DEL_ADMINISTRADOR = [
@@ -74,6 +76,7 @@ const DEL_ADMINISTRADOR = [
     ruta: (e: Escenario) => `/indicadores/gastos?consorcio=${e.consorcioId}`,
   },
   { nombre: 'espacios comunes', ruta: (e: Escenario) => `/espacios?consorcio=${e.consorcioId}` },
+  { nombre: 'avisos pendientes', ruta: (e: Escenario) => `/pendientes?consorcio=${e.consorcioId}` },
 ]
 
 for (const pantalla of PANTALLAS) {

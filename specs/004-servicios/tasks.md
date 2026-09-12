@@ -159,16 +159,16 @@ del proveedor real **no** se ejercita en la puerta automática, sólo la determi
 
 ### Tests for User Story 5
 
-- [ ] T055 [P] [US5] Escribir `pruebas/integracion/comunicacion.spec.ts`: publicar una novedad crea una `Notificacion` con trabajo por cada usuario habilitado del consorcio y ninguna para otro consorcio; un documento con `visible_consorcistas = false` no aparece en `listarDocumentos` del consorcista y sí en la del administrador y el consejo (escenario 4); el documento nace en `pendiente` con su trabajo `indexar_documento`
+- [X] T055 [P] [US5] Escribir `pruebas/integracion/comunicacion.spec.ts`: publicar una novedad crea una `Notificacion` con trabajo por cada usuario habilitado del consorcio y ninguna para otro consorcio; un documento con `visible_consorcistas = false` no aparece en `listarDocumentos` del consorcista y sí en la del administrador y el consejo (escenario 4); el documento nace en `pendiente` con su trabajo `indexar_documento`
 
 ### Implementation for User Story 5
 
-- [ ] T056 [US5] Implementar `despacharNotificaciones` en `src/aplicacion/comunicacion/despachar.ts` acotado a 20 s como los documentos de `003`, y la pantalla `src/app/(panel)/pendientes/page.tsx` con el estado de la cola (pendientes, agotados, último error) y el botón «enviar avisos ahora» (`FR-012`)
-- [ ] T057 [US5] Implementar `publicarNovedad` y `listarNovedades` en `src/aplicacion/comunicacion/novedades.ts` (`FR-015`), y la pantalla `src/app/(panel)/novedades/page.tsx` con modal de publicación para el administrador y listado con fijadas primero
-- [ ] T058 [US5] Generalizar `pedirPermisoDeSubida` de `src/aplicacion/gastos/comprobantes.ts` a un prefijo por uso (`comprobantes/`, `documentos/`, `extracciones/`) sin cambiar el contrato de `002`, y ampliar la ruta `src/app/api/comprobantes/permiso/route.ts` o crear `src/app/api/objetos/permiso/route.ts` para los otros dos prefijos, con la misma validación de tipo (`application/pdf`) y tamaño
-- [ ] T059 [US5] Implementar `cargarDocumento`, `listarDocumentos` y `verDocumento` en `src/aplicacion/comunicacion/documentos.ts` (`FR-016`): al confirmar la subida crea `DocumentoConsorcio` en `pendiente` y encola `indexar_documento`; lectura por enlace firmado; el consorcista sólo ve `visible_consorcistas`
-- [ ] T060 [US5] Pantalla `src/app/(panel)/documentos/page.tsx`: listado por tipo con estado de indexación legible («indexando», «listo», «no se pudo indexar: motivo»), carga con subida directa y marca de visibilidad, descarga
-- [ ] T061 [US5] Escribir `pruebas/e2e/comunicacion.spec.ts`: el administrador publica una novedad y el consorcista la ve; carga un documento no visible y el consorcista no lo ve; el botón de avisos despacha lo pendiente
+- [X] T056 [US5] Implementar `despacharNotificaciones` en `src/aplicacion/comunicacion/despachar.ts` acotado a 20 s como los documentos de `003`, y la pantalla `src/app/(panel)/pendientes/page.tsx` con el estado de la cola (pendientes, agotados, último error) y el botón «enviar avisos ahora» (`FR-012`)
+- [X] T057 [US5] Implementar `publicarNovedad` y `listarNovedades` en `src/aplicacion/comunicacion/novedades.ts` (`FR-015`), y la pantalla `src/app/(panel)/novedades/page.tsx` con modal de publicación para el administrador y listado con fijadas primero
+- [X] T058 [US5] Generalizar `pedirPermisoDeSubida` de `src/aplicacion/gastos/comprobantes.ts` a un prefijo por uso (`comprobantes/`, `documentos/`, `extracciones/`) sin cambiar el contrato de `002`, y ampliar la ruta `src/app/api/comprobantes/permiso/route.ts` o crear `src/app/api/objetos/permiso/route.ts` para los otros dos prefijos, con la misma validación de tipo (`application/pdf`) y tamaño
+- [X] T059 [US5] Implementar `cargarDocumento`, `listarDocumentos` y `verDocumento` en `src/aplicacion/comunicacion/documentos.ts` (`FR-016`): al confirmar la subida crea `DocumentoConsorcio` en `pendiente` y encola `indexar_documento`; lectura por enlace firmado; el consorcista sólo ve `visible_consorcistas`
+- [X] T060 [US5] Pantalla `src/app/(panel)/documentos/page.tsx`: listado por tipo con estado de indexación legible («indexando», «listo», «no se pudo indexar: motivo»), carga con subida directa y marca de visibilidad, descarga
+- [X] T061 [US5] Escribir `pruebas/e2e/comunicacion.spec.ts`: el administrador publica una novedad y el consorcista la ve; carga un documento no visible y el consorcista no lo ve; el botón de avisos despacha lo pendiente
 
 **Checkpoint**: todo lo que el consorcio le dice al consorcista, dicho
 

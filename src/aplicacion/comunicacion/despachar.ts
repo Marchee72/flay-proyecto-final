@@ -1,7 +1,11 @@
+import type { TipoTrabajo } from '@prisma/client'
 import { z } from 'zod'
 
 import type { Notificador } from '@/dominio/contratos/notificador'
-import type { Manejador } from '@/aplicacion/pendientes/drenar'
+import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
+import type { Reloj } from '@/dominio/contratos/reloj'
+import { conAutorizacion } from '@/aplicacion/autorizacion'
+import { drenar, reintentarAhora, type Manejador } from '@/aplicacion/pendientes/drenar'
 import { prismaBase } from '@/infraestructura/prisma'
 
 /**
@@ -50,4 +54,94 @@ export function manejadorNotificacion(notificador: Notificador): Manejador {
       data: { estadoEnvio: 'enviada', enviadaEn: new Date() },
     })
   }
+}
+
+/** Como maximo por disparo: un pedido web no puede durar minutos. */
+const PRESUPUESTO_MS = 20_000
+
+export interface EstadoDeLaCola {
+  pendientes: number
+  agotados: number
+  despachados: number
+  ultimoError: string | null
+  avisosSinEnviar: number
+}
+
+/**
+ * Disparo explicito del administrador («enviar avisos ahora», `FR-012`):
+ * drena la cola hasta agotar el presupuesto o los trabajos, con el mismo
+ * mapa de manejadores que el drenaje oportunista. Se puede apretar de nuevo.
+ */
+export async function despacharNotificaciones(
+  manejadores: Partial<Record<TipoTrabajo, Manejador>>,
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: { usuarioId: string; consorcioId: string },
+): Promise<EstadoDeLaCola> {
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    {
+      usuarioId: datos.usuarioId,
+      consorcioId: datos.consorcioId,
+      rolesPermitidos: ['administrador'],
+      accion: 'despachar los avisos',
+    },
+    async () => {
+      const inicio = Date.now()
+      while (Date.now() - inicio < PRESUPUESTO_MS) {
+        const { despachados, fallidos } = await drenar(manejadores)
+        if (despachados + fallidos === 0) break
+      }
+      return estadoDeLaCola()
+    },
+  )
+}
+
+/** Lo que la pantalla de pendientes muestra. La cola es global: no lleva consorcio. */
+export async function estadoDeLaCola(): Promise<EstadoDeLaCola> {
+  const [pendientes, agotados, despachados, ultimo, avisosSinEnviar] = await Promise.all([
+    prismaBase.trabajoPendiente.count({ where: { estado: 'pendiente' } }),
+    prismaBase.trabajoPendiente.count({ where: { estado: 'agotado' } }),
+    prismaBase.trabajoPendiente.count({ where: { estado: 'despachado' } }),
+    prismaBase.trabajoPendiente.findFirst({
+      where: { ultimoError: { not: null } },
+      orderBy: { actualizadoEn: 'desc' },
+      select: { ultimoError: true },
+    }),
+    prismaBase.notificacion.count({ where: { estadoEnvio: { not: 'enviada' } } }),
+  ])
+  return {
+    pendientes,
+    agotados,
+    despachados,
+    ultimoError: ultimo?.ultimoError ?? null,
+    avisosSinEnviar,
+  }
+}
+
+/** Reenvio manual de lo agotado: vuelve a pendiente con el proximo intento ahora. */
+export async function reintentarAgotados(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: { usuarioId: string; consorcioId: string },
+): Promise<number> {
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    {
+      usuarioId: datos.usuarioId,
+      consorcioId: datos.consorcioId,
+      rolesPermitidos: ['administrador'],
+      accion: 'reintentar los avisos',
+    },
+    async () => {
+      const agotados = await prismaBase.trabajoPendiente.findMany({
+        where: { estado: 'agotado' },
+        select: { id: true },
+      })
+      for (const trabajo of agotados) await reintentarAhora(trabajo.id)
+      return agotados.length
+    },
+  )
 }

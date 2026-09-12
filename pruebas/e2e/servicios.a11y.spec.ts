@@ -20,6 +20,7 @@ import {
 let escenario: Escenario
 let administrador: Escenario
 let reclamoId: string
+let extraccionId: string
 
 test.beforeAll(async () => {
   escenario = await sembrarEscenario('consorcista')
@@ -42,10 +43,25 @@ test.beforeAll(async () => {
   await prisma.espacioComun.create({
     data: { consorcioId: escenario.consorcioId, nombre: 'SUM', capacidadMaxima: 40 },
   })
+  const extraccion = await prisma.extraccionComprobante.create({
+    data: {
+      consorcioId: administrador.consorcioId,
+      claveObjeto: `extracciones/${administrador.consorcioId}/a11y/factura.pdf`,
+      tipoContenido: 'application/pdf',
+      cargadoPor: administrador.usuarioId,
+      estado: 'propuesta',
+      proveedorDetectado: 'Ascensores del Litoral',
+      importeDetectado: '15400.00',
+      confianza: '0.600',
+      procesadoEn: new Date(),
+    },
+  })
+  extraccionId = extraccion.id
 })
 
 test.afterAll(async () => {
   await limpiarServicios(escenario)
+  await limpiarServicios(administrador)
   await limpiarEscenario(escenario)
   await limpiarEscenario(administrador)
   await prisma.$disconnect()
@@ -60,6 +76,10 @@ const PANTALLAS = [
   { nombre: 'reservas', ruta: (e: Escenario) => `/reservas?consorcio=${e.consorcioId}` },
   { nombre: 'novedades', ruta: (e: Escenario) => `/novedades?consorcio=${e.consorcioId}` },
   { nombre: 'documentación', ruta: (e: Escenario) => `/documentos?consorcio=${e.consorcioId}` },
+  {
+    nombre: 'consulta documental',
+    ruta: (e: Escenario) => `/documentos/consultar?consorcio=${e.consorcioId}`,
+  },
 ]
 
 const DEL_ADMINISTRADOR = [
@@ -77,6 +97,14 @@ const DEL_ADMINISTRADOR = [
   },
   { nombre: 'espacios comunes', ruta: (e: Escenario) => `/espacios?consorcio=${e.consorcioId}` },
   { nombre: 'avisos pendientes', ruta: (e: Escenario) => `/pendientes?consorcio=${e.consorcioId}` },
+  {
+    nombre: 'carga asistida',
+    ruta: (e: Escenario) => `/gastos/asistida?consorcio=${e.consorcioId}`,
+  },
+  {
+    nombre: 'revisión del comprobante',
+    ruta: (e: Escenario) => `/gastos/asistida/${extraccionId}?consorcio=${e.consorcioId}`,
+  },
 ]
 
 for (const pantalla of PANTALLAS) {

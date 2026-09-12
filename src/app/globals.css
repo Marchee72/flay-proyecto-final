@@ -1146,3 +1146,25 @@ td select {
 .alertas li {
   margin: 0;
 }
+
+/* Carga asistida (004-servicios): el formulario y el comprobante, lado a lado en escritorio. */
+.dos-columnas {
+  display: grid;
+  gap: var(--e3);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 900px) {
+  .dos-columnas {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+.visor-comprobante {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-height: 24rem;
+  border: 1px solid var(--linea-suave);
+  border-radius: var(--radio);
+  background: var(--superficie);
+}

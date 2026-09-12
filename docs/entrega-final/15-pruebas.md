@@ -81,14 +81,14 @@ Estas pruebas se ejecutan **por cada entidad expuesta**, no una sola vez.
 | ID | Caso | Resultado esperado | Estado |
 |---|---|---|---|
 | PI-01 | Extracción sobre 30 comprobantes de formatos variados (ficticios, generados; ver § 14.3) | Al menos 80 % de campos correctos, según el criterio del punto 8.4.3 | **Supera**: 149 de 150 campos (99,3 %), 11/09/2026, `poc/resultados/extraccion-gemini-consolidado.json` |
-| PI-02 | Comprobante ilegible o fuera de foco | Confianza por debajo del umbral; formulario vacío, sin precarga | |
-| PI-03 | Servicio de extracción deshabilitado | La carga manual funciona sin degradación de ninguna otra función (RNF-14) | |
-| PI-04 | Salida del servicio malformada o fuera de esquema | Se descarta; se comporta como servicio no disponible | |
-| PI-05 | La extracción devuelve un importe erróneo y el operador no lo corrige | Verificar que el comprobante permanece visible junto al campo, de modo que el error sea detectable | |
+| PI-02 | Comprobante ilegible o fuera de foco | Confianza por debajo del umbral; formulario vacío, sin precarga | **Cumple** (12/09/2026, proveedor real): sobre una foto desenfocada y rotada el extractor devolvió confianza 0,300 con fecha e importe inventados; por debajo del umbral 0,5 (CU-06 3b) no se precarga ningún campo y la pantalla lo dice. Latencia 9,0 s. `pruebas/integracion/extraccion.spec.ts` reproduce esa salida |
+| PI-03 | Servicio de extracción deshabilitado | La carga manual funciona sin degradación de ninguna otra función (RNF-14) | **Cumple** (12/09/2026): proyecto `degradacion` de Playwright contra un servidor con la implementación nula (`pruebas/e2e/asistencia.degradacion.spec.ts`), más `asistencia.spec.ts` con `no_disponible`: el comprobante queda guardado, el formulario vacío y el gasto se carga a mano; reclamos y consulta siguen |
+| PI-04 | Salida del servicio malformada o fuera de esquema | Se descarta; se comporta como servicio no disponible | **Cumple**: `pruebas/integracion/extraccion.spec.ts` («una salida fuera de esquema equivale a servicio no disponible») |
+| PI-05 | La extracción devuelve un importe erróneo y el operador no lo corrige | Verificar que el comprobante permanece visible junto al campo, de modo que el error sea detectable | **Cumple**: la revisión (`/gastos/asistida/[id]`) muestra el comprobante junto al formulario; `pruebas/e2e/asistencia.spec.ts` (SC-017) corrige el importe y verifica `campos_corregidos = ["importe"]` |
 | PI-06 | Consulta documental con 20 preguntas frecuentes sobre un reglamento de 72 artículos (ficticio) | Al menos 85 % con el fragmento correcto entre los tres primeros | **Supera**: 20 de 20 (100 %), 19 en primer lugar; línea de base léxica 16 de 20. 11/09/2026, `poc/resultados/busqueda-gemini.json` |
-| PI-07 | Consulta cuya respuesta **no** está en la documentación cargada | Se responde que no hay respaldo documental. **No se improvisa una respuesta** | |
-| PI-08 | Toda respuesta generada | Cita documento y página | |
-| PI-09 | Triage con el servicio deshabilitado | El reclamo se crea sin clasificar | |
+| PI-07 | Consulta cuya respuesta **no** está en la documentación cargada | Se responde que no hay respaldo documental. **No se improvisa una respuesta** | **Cumple** (12/09/2026, proveedor real, `gemini-3.5-flash-lite` porque `gemini-3.5-flash` devolvía 503 por demanda): «¿Cuánto cuesta el estacionamiento para visitas?» → sin respaldo, 3,5 s; como consorcista del otro consorcio, la pregunta del SUM → sin respaldo, 0,6 s (ningún fragmento ajeno llega al generador). Con la determinista, diez preguntas sin respuesta dan diez abstenciones (`consulta-documental.spec.ts`) |
+| PI-08 | Toda respuesta generada | Cita documento y página | **Cumple** (12/09/2026, proveedor real): «¿Cuántas personas entran en el salón de usos múltiples?» → «La capacidad máxima del salón de usos múltiples es de cuarenta personas», cita Reglamento de copropiedad, fragmento 50, 3,9 s; indexar los 72 artículos tomó 7,3 s. Sin citas no hay respuesta, lo decide el caso de uso |
+| PI-09 | Triage con el servicio deshabilitado | El reclamo se crea sin clasificar | **Cumple**: `pruebas/integracion/triage.spec.ts` («con la nula el reclamo se crea sin sugerencia») |
 
 PI-07 es la prueba más importante de esta sección: verifica el segundo principio del punto 12.8.1.
 

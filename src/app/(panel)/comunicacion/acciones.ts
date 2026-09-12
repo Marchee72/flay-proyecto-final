@@ -5,10 +5,11 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { consultarDocumentacion, valorarConsulta } from '@/aplicacion/comunicacion/consultar'
 import { despacharNotificaciones, reintentarAgotados } from '@/aplicacion/comunicacion/despachar'
 import { cargarDocumento, TIPOS_DOCUMENTO } from '@/aplicacion/comunicacion/documentos'
 import { publicarNovedad } from '@/aplicacion/comunicacion/novedades'
-import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
+import { ASISTENCIA, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { MANEJADORES } from '@/aplicacion/pendientes/manejadores'
 
@@ -87,4 +88,48 @@ export async function accionDespachar(datos: FormData): Promise<void> {
   }
   revalidatePath('/pendientes')
   redirect(`/pendientes?consorcio=${consorcioId}&despachado=1`)
+}
+
+export type ResultadoDeConsultaVisible =
+  | { modo: 'inicial' }
+  | { modo: 'error'; mensaje: string }
+  | {
+      modo: 'respuesta'
+      consultaId: string
+      respuesta: string
+      citas: { documentoId: string; documento: string; pagina: number | null; numero: number }[]
+    }
+  | { modo: 'sin_respaldo'; consultaId: string }
+  | { modo: 'degradado'; motivo: string; documentos: { id: string; titulo: string }[] }
+
+/** La pregunta sobre la documentacion (`CU-10`). */
+export async function accionConsultar(
+  _previo: ResultadoDeConsultaVisible,
+  datos: FormData,
+): Promise<ResultadoDeConsultaVisible> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) redirect('/ingresar')
+  try {
+    const r = await consultarDocumentacion(ASISTENCIA, HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId: texto(datos, 'consorcio'),
+      pregunta: texto(datos, 'pregunta'),
+    })
+    return r
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion)
+      return { modo: 'error', mensaje: error.mensajeParaUsuario }
+    throw error
+  }
+}
+
+export async function accionValorar(datos: FormData): Promise<void> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) redirect('/ingresar')
+  await valorarConsulta(HABILITACIONES, RELOJ, {
+    usuarioId,
+    consorcioId: texto(datos, 'consorcio'),
+    consultaId: texto(datos, 'consulta'),
+    util: texto(datos, 'util') === 'si',
+  })
 }

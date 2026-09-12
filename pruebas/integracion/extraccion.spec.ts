@@ -241,4 +241,46 @@ describe('extraccion y confirmacion', () => {
     expect(vista.propuesta.fecha).toBeNull()
     expect(vista.propuesta.rubroId).toBeNull()
   })
+
+  it('con confianza global baja no se precarga ningun campo, ni los que parecen bien (PI-02, CU-06 3b)', async () => {
+    const borrosa = {
+      ...asistenciaDeterminista,
+      extractor: {
+        async extraer() {
+          // Lo que dio el proveedor real sobre una foto borrosa: proveedor y CUIT
+          // legibles, fecha e importe inventados, confianza 0,300.
+          return {
+            disponible: true as const,
+            valor: {
+              proveedor: 'Servicios Generales SRL',
+              cuit: '30-71234567-8',
+              fecha: '2023-10-15',
+              importe: '125000.00',
+              rubroCodigo: null,
+              confianza: '0.300',
+              confianzaPorCampo: {
+                proveedor: '0.300',
+                cuit: '0.300',
+                fecha: '0.300',
+                importe: '0.300',
+                rubro: '0.100',
+              },
+            },
+          }
+        },
+      },
+    }
+    const { extraccionId, almacen } = await subirYExtraer(borrosa)
+    const vista = await verExtraccion(almacen, repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      extraccionId,
+    })
+    expect(vista.estado).toBe('propuesta')
+    expect(vista.propuesta.confianza).toBe('0.300')
+    expect(vista.propuesta.proveedor).toBeNull()
+    expect(vista.propuesta.cuit).toBeNull()
+    expect(vista.propuesta.importe).toBeNull()
+    expect(vista.propuesta.fecha).toBeNull()
+  })
 })

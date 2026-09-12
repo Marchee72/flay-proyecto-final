@@ -282,15 +282,22 @@ export async function sembrarUnidadPropia(escenario: Escenario): Promise<string>
   return filas[0].id
 }
 
-/** Lo de 004-servicios que cuelga del consorcio: reclamos, reservas, espacios, avisos, mas usuarios extra. */
+/** Lo de 004-servicios que cuelga del consorcio: reclamos, reservas, espacios, avisos, extracciones, documentos, mas usuarios extra. */
 export async function limpiarServicios(
   escenario: Escenario,
   extras: { usuarioId: string; personaId: string; correo: string }[] = [],
 ): Promise<void> {
   await prisma.$executeRaw`DELETE FROM "Notificacion"`
   await prisma.trabajoPendiente.deleteMany({
-    where: { tipo: { in: ['notificacion', 'triage_reclamo'] } },
+    where: {
+      tipo: {
+        in: ['notificacion', 'triage_reclamo', 'extraccion_comprobante', 'indexar_documento'],
+      },
+    },
   })
+  await prisma.extraccionComprobante.deleteMany({ where: { consorcioId: escenario.consorcioId } })
+  await prisma.consultaDocumental.deleteMany({ where: { consorcioId: escenario.consorcioId } })
+  await prisma.documentoConsorcio.deleteMany({ where: { consorcioId: escenario.consorcioId } })
   await prisma.reclamo.deleteMany({ where: { consorcioId: escenario.consorcioId } })
   await prisma.reserva.deleteMany({ where: { consorcioId: escenario.consorcioId } })
   await prisma.espacioComun.deleteMany({ where: { consorcioId: escenario.consorcioId } })

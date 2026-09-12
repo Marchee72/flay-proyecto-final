@@ -119,7 +119,10 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
               etiqueta: proveedor.razonSocial,
             }))}
             precargado={precargado}
-          />
+          />{' '}
+          <Link className="boton boton--fantasma" href={`/gastos/asistida?consorcio=${activo.id}`}>
+            Cargar comprobante con asistencia
+          </Link>
         </p>
 
         <form method="get" className="fila-de-filtros">

@@ -7,6 +7,10 @@ import { defineConfig, devices } from '@playwright/test'
  */
 const PUERTO = process.env.PUERTO ?? '3000'
 const URL_BASE = process.env.URL_BASE ?? `http://localhost:${PUERTO}`
+// El proyecto `degradacion` levanta un segundo servidor con la implementacion
+// nula (RNF-14, SC-013): mismo build, otra variable, un puerto mas.
+const PUERTO_NULA = String(Number(PUERTO) + 1)
+const URL_NULA = `http://localhost:${PUERTO_NULA}`
 
 // Las pruebas de extremo a extremo corren con la implementacion determinista de
 // la asistencia (research R-02 de 004-servicios): predecible y sin proveedor.
@@ -19,28 +23,42 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : [['list']],
   use: { baseURL: URL_BASE, trace: 'on-first-retry' },
-  webServer: {
-    command: `npm run start -- --port ${PUERTO}`,
-    env: { FLAY_ASISTENCIA: process.env.FLAY_ASISTENCIA },
-    url: `${URL_BASE}/api/salud`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: `npm run start -- --port ${PUERTO}`,
+      env: { FLAY_ASISTENCIA: process.env.FLAY_ASISTENCIA },
+      url: `${URL_BASE}/api/salud`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+    {
+      command: `npm run start -- --port ${PUERTO_NULA}`,
+      env: { FLAY_ASISTENCIA: 'nula', GEMINI_API_KEY: '' },
+      url: `${URL_NULA}/api/salud`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+  ],
   projects: [
     {
       name: 'escritorio',
-      testIgnore: /.*\.a11y\.spec\.ts/,
+      testIgnore: /.*\.(a11y|degradacion)\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'telefono',
-      testIgnore: /.*\.a11y\.spec\.ts/,
+      testIgnore: /.*\.(a11y|degradacion)\.spec\.ts/,
       use: { ...devices['Pixel 5'], viewport: { width: 390, height: 844 } },
     },
     {
       name: 'a11y',
       testMatch: /.*\.a11y\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'degradacion',
+      testMatch: /.*\.degradacion\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'], baseURL: URL_NULA },
     },
   ],
 })

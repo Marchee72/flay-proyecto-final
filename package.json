@@ -17,7 +17,7 @@
     "typecheck": "tsc --noEmit",
     "test:dominio": "vitest run --project dominio",
     "test:integracion": "vitest run --project integracion",
-    "test:e2e": "playwright test --project=escritorio --project=telefono",
+    "test:e2e": "playwright test --project=escritorio --project=telefono --project=degradacion",
     "test:a11y": "playwright test --project=a11y",
     "medir:p95": "node scripts/medir-p95.mjs",
     "medir:liquidacion": "vitest run --project integracion pruebas/integracion/medicion-liquidacion.spec.ts",

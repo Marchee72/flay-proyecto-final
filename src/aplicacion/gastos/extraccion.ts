@@ -26,12 +26,20 @@ import { prisma, prismaBase } from '@/infraestructura/prisma'
 
 const CARGA = z.object({ extraccionId: z.string().uuid() })
 const IMPORTE_VALIDO = /^\d{1,12}(\.\d{1,2})?$/
+/**
+ * CU-06 3b: por debajo de esta confianza global no se precarga **ningun**
+ * campo. Una precarga poco confiable induce a confirmar sin mirar, que es
+ * peor que no precargar; el proveedor real dio 0,300 sobre una foto borrosa
+ * inventando fecha e importe (PI-02).
+ */
+const UMBRAL_DE_CONFIANZA = 0.5
 
 export interface ExtraccionVisible {
   id: string
   estado: EstadoExtraccion
   tipoContenido: string
-  direccion: string
+  /** Nula si el almacen no pudo resolverla: la revision sigue, sin visor. */
+  direccion: string | null
   propuesta: {
     proveedor: string | null
     cuit: string | null
@@ -132,17 +140,21 @@ export function manejadorExtraccion(
     }
 
     const v = resultado.valor
+    const confiable = Number(v.confianza) >= UMBRAL_DE_CONFIANZA
     const fecha =
       v.fecha && /^\d{4}-\d{2}-\d{2}$/.test(v.fecha) ? new Date(`${v.fecha}T00:00:00Z`) : null
     await prismaBase.extraccionComprobante.update({
       where: { id: extraccionId },
       data: {
         estado: 'propuesta',
-        proveedorDetectado: v.proveedor?.slice(0, 160) ?? null,
-        cuitDetectado: v.cuit?.slice(0, 13) ?? null,
-        fechaDetectada: fecha && !Number.isNaN(fecha.getTime()) ? fecha : null,
-        importeDetectado: v.importe && IMPORTE_VALIDO.test(v.importe) ? v.importe : null,
-        rubroSugeridoId: rubros.find((r) => r.codigo === v.rubroCodigo)?.id ?? null,
+        proveedorDetectado: confiable ? (v.proveedor?.slice(0, 160) ?? null) : null,
+        cuitDetectado: confiable ? (v.cuit?.slice(0, 13) ?? null) : null,
+        fechaDetectada: confiable && fecha && !Number.isNaN(fecha.getTime()) ? fecha : null,
+        importeDetectado:
+          confiable && v.importe && IMPORTE_VALIDO.test(v.importe) ? v.importe : null,
+        rubroSugeridoId: confiable
+          ? (rubros.find((r) => r.codigo === v.rubroCodigo)?.id ?? null)
+          : null,
         confianza: v.confianza,
         confianzaPorCampo: v.confianzaPorCampo,
         procesadoEn: new Date(),
@@ -177,7 +189,7 @@ export async function verExtraccion(
         id: e.id,
         estado: e.estado,
         tipoContenido: e.tipoContenido,
-        direccion: await almacen.resolverLecturaAutorizada(e.claveObjeto, 600),
+        direccion: await almacen.resolverLecturaAutorizada(e.claveObjeto, 600).catch(() => null),
         propuesta: {
           proveedor: e.proveedorDetectado,
           cuit: e.cuitDetectado,

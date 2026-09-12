@@ -146,7 +146,7 @@ export type Morosidad =
  * detalles de todos los consorcios, y una prueba de extremo a extremo con dos
  * consorcios en paralelo lo mostro sumando la mora ajena (Principio I, RT-04).
  */
-async function deudaPorUnidad(
+export async function saldoImpagoPorUnidad(
   hoy: Date,
 ): Promise<Map<string, { deuda: Decimal; vencidos: number }>> {
   const liquidaciones = await prisma.liquidacion.findMany({
@@ -194,7 +194,7 @@ export async function verMorosidad(
     async (acceso) => {
       const hoy = reloj.hoy()
       const [deudas, unidadesTotales] = await Promise.all([
-        deudaPorUnidad(hoy),
+        saldoImpagoPorUnidad(hoy),
         prisma.unidad.count(),
       ])
 

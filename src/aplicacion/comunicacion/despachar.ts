@@ -37,14 +37,15 @@ export function manejadorNotificacion(notificador: Notificador): Manejador {
       })
     } catch (error) {
       // Queda `fallida` para que la pantalla lo muestre; el trabajo reintenta.
-      await prismaBase.notificacion.update({
+      // `updateMany`: si la fila desaparecio mientras se enviaba, no es un error mas.
+      await prismaBase.notificacion.updateMany({
         where: { id: notificacionId },
         data: { estadoEnvio: 'fallida' },
       })
       throw error
     }
 
-    await prismaBase.notificacion.update({
+    await prismaBase.notificacion.updateMany({
       where: { id: notificacionId },
       data: { estadoEnvio: 'enviada', enviadaEn: new Date() },
     })

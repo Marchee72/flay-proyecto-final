@@ -39,6 +39,9 @@ test.beforeAll(async () => {
   await prisma.reclamoHistorial.create({
     data: { reclamoId, estadoNuevo: 'abierto', usuarioId: escenario.usuarioId },
   })
+  await prisma.espacioComun.create({
+    data: { consorcioId: escenario.consorcioId, nombre: 'SUM', capacidadMaxima: 40 },
+  })
 })
 
 test.afterAll(async () => {
@@ -54,6 +57,7 @@ const PANTALLAS = [
     nombre: 'detalle del reclamo',
     ruta: (e: Escenario) => `/reclamos/${reclamoId}?consorcio=${e.consorcioId}`,
   },
+  { nombre: 'reservas', ruta: (e: Escenario) => `/reservas?consorcio=${e.consorcioId}` },
 ]
 
 const DEL_ADMINISTRADOR = [
@@ -69,6 +73,7 @@ const DEL_ADMINISTRADOR = [
     nombre: 'I-2 gasto por rubro',
     ruta: (e: Escenario) => `/indicadores/gastos?consorcio=${e.consorcioId}`,
   },
+  { nombre: 'espacios comunes', ruta: (e: Escenario) => `/espacios?consorcio=${e.consorcioId}` },
 ]
 
 for (const pantalla of PANTALLAS) {

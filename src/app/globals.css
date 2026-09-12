@@ -465,6 +465,9 @@ a {
 /* La tabla se desplaza dentro de su contenedor; la pagina nunca (RNF-01). */
 .tabla-desplazable {
   overflow-x: auto;
+  /* Contiene a los hijos absolutos (.oculto): sin esto se escapan del
+     desplazamiento y ensanchan la pagina en el telefono. */
+  position: relative;
   border: 1px solid var(--linea);
   border-radius: var(--radio);
   background: var(--superficie);

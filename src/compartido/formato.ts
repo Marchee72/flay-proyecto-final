@@ -72,10 +72,17 @@ export function fechaParaMostrar(iso: string): string {
   return `${dia}/${mes}/${anio}`
 }
 
-/** Marca ISO → `12/09/2026 14:05`, en la hora del navegador del servidor (UTC en el despliegue). */
+/** Marca ISO → `12/09/2026 14:05`, en la hora de Argentina, que es la del consorcio. */
 export function momentoParaMostrar(iso: string): string {
-  const fecha = new Date(iso)
-  const hh = String(fecha.getUTCHours()).padStart(2, '0')
-  const mm = String(fecha.getUTCMinutes()).padStart(2, '0')
-  return `${fechaParaMostrar(fecha.toISOString())} ${hh}:${mm}`
+  const partes = new Intl.DateTimeFormat('es-AR', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date(iso))
+  const de = (tipo: string) => partes.find((p) => p.type === tipo)?.value ?? ''
+  return `${de('day')}/${de('month')}/${de('year')} ${de('hour')}:${de('minute')}`
 }

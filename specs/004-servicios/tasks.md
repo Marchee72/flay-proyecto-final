@@ -137,15 +137,15 @@ del proveedor real **no** se ejercita en la puerta automática, sólo la determi
 
 ### Tests for User Story 4
 
-- [ ] T049 [P] [US4] Escribir `pruebas/integracion/reservas.spec.ts`: dos `INSERT` **concurrentes** con `prismaBase` —saltando la aplicación— sobre el mismo espacio y rango dejan exactamente una `confirmada` y el otro falla con `23P01` (SC-005); una unidad con deuda vencida del juego de `003` recibe «la unidad tiene deuda vencida» y no se inserta nada (SC-006); una reserva `cancelada` no bloquea el rango; cada cambio de estado deja `Notificacion` al solicitante; otro consorcio no ve la reserva (RN-12); la reserva deja asiento de auditoría (SC-021)
+- [X] T049 [P] [US4] Escribir `pruebas/integracion/reservas.spec.ts`: dos `INSERT` **concurrentes** con `prismaBase` —saltando la aplicación— sobre el mismo espacio y rango dejan exactamente una `confirmada` y el otro falla con `23P01` (SC-005); una unidad con deuda vencida del juego de `003` recibe «la unidad tiene deuda vencida» y no se inserta nada (SC-006); una reserva `cancelada` no bloquea el rango; cada cambio de estado deja `Notificacion` al solicitante; otro consorcio no ve la reserva (RN-12); la reserva deja asiento de auditoría (SC-021)
 
 ### Implementation for User Story 4
 
-- [ ] T050 [US4] Exportar `saldoImpagoPorUnidad` desde `src/aplicacion/pagos/estado-de-cuenta.ts` sin cambiar su comportamiento, para que reservas lo consuma (`FR-011`)
-- [ ] T051 [US4] Implementar `administrarEspacio` en `src/aplicacion/reservas/espacios.ts`: alta y modificación con las reglas de `data-model.md`; la baja lógica pone `activo = false`, cancela las reservas futuras y las notifica (caso límite de la spec)
-- [ ] T052 [US4] Implementar `reservar`, `cancelarReserva` y `listarReservas` en `src/aplicacion/reservas/reservar.ts`: verifica deuda vencida, anticipación mínima y máxima, duración máxima, tope mensual por unidad y capacidad; inserta en `confirmada`; traduce `23P01` a «ese horario ya está reservado» (RNF-10); `notificar` con `reserva_confirmada` o `reserva_rechazada` (`contracts/casos-de-uso.md`)
-- [ ] T053 [US4] Pantallas: `src/app/(panel)/espacios/page.tsx` con modal de alta y edición para el administrador; `src/app/(panel)/reservas/page.tsx` con vista por espacio y día, reservas existentes sin nombre para el consorcista (sólo unidad), alta en modal `modal-reserva.tsx` con `<input type="datetime-local">`, y cancelación
-- [ ] T054 [US4] Extender la semilla de T024 si hace falta con dos reservas confirmadas en el consorcio de 12 para la demostración, y escribir `pruebas/e2e/reservas.spec.ts` desde el teléfono: reservar, ver el rechazo por superposición con el mensaje legible, cancelar; agregar reserva a `pruebas/e2e/a11y.spec.ts` (SC-020)
+- [X] T050 [US4] Exportar `saldoImpagoPorUnidad` desde `src/aplicacion/pagos/estado-de-cuenta.ts` sin cambiar su comportamiento, para que reservas lo consuma (`FR-011`)
+- [X] T051 [US4] Implementar `administrarEspacio` en `src/aplicacion/reservas/espacios.ts`: alta y modificación con las reglas de `data-model.md`; la baja lógica pone `activo = false`, cancela las reservas futuras y las notifica (caso límite de la spec)
+- [X] T052 [US4] Implementar `reservar`, `cancelarReserva` y `listarReservas` en `src/aplicacion/reservas/reservar.ts`: verifica deuda vencida, anticipación mínima y máxima, duración máxima, tope mensual por unidad y capacidad; inserta en `confirmada`; traduce `23P01` a «ese horario ya está reservado» (RNF-10); `notificar` con `reserva_confirmada` o `reserva_rechazada` (`contracts/casos-de-uso.md`)
+- [X] T053 [US4] Pantallas: `src/app/(panel)/espacios/page.tsx` con modal de alta y edición para el administrador; `src/app/(panel)/reservas/page.tsx` con vista por espacio y día, reservas existentes sin nombre para el consorcista (sólo unidad), alta en modal `modal-reserva.tsx` con `<input type="datetime-local">`, y cancelación
+- [X] T054 [US4] Extender la semilla de T024 si hace falta con dos reservas confirmadas en el consorcio de 12 para la demostración, y escribir `pruebas/e2e/reservas.spec.ts` desde el teléfono: reservar, ver el rechazo por superposición con el mensaje legible, cancelar; agregar reserva a `pruebas/e2e/a11y.spec.ts` (SC-020)
 
 **Checkpoint**: reservas completas
 

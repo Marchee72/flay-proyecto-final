@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Building2,
+  CalendarCheck,
   CalendarDays,
   FileText,
   Gauge,
@@ -24,6 +25,7 @@ export const SECCIONES = [
   { href: '/pagos', titulo: 'Pagos', Icono: Wallet },
   { href: '/morosidad', titulo: 'Morosidad', Icono: TriangleAlert },
   { href: '/reclamos', titulo: 'Reclamos', Icono: MessageSquareWarning },
+  { href: '/reservas', titulo: 'Reservas', Icono: CalendarCheck },
   { href: '/indicadores', titulo: 'Indicadores', Icono: Gauge },
   { href: '/proveedores', titulo: 'Proveedores', Icono: Truck },
   { href: '/usuarios', titulo: 'Usuarios', Icono: Users },

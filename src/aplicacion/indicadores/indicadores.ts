@@ -184,7 +184,7 @@ export async function verProveedores(
       rolesPermitidos: ['administrador'],
       accion: 'ver el desempeño de proveedores',
     },
-    () => desempenoProveedores(),
+    async () => await desempenoProveedores(),
   )
 }
 
@@ -369,7 +369,7 @@ export async function refrescarVistas(
       rolesPermitidos: ['administrador'],
       accion: 'actualizar los indicadores',
     },
-    () => refrescar(),
+    async () => await refrescar(),
   )
 }
 

@@ -76,6 +76,12 @@ export const DIMENSIONES_VECTOR = 768
 
 export interface GeneradorVectores {
   readonly dimensiones: typeof DIMENSIONES_VECTOR
+  /**
+   * Similitud coseno por debajo de la cual un fragmento es obviamente ajeno a
+   * la pregunta. Depende del modelo: la PoC dejo los aciertos del proveedor
+   * entre 0,68 y 0,80; una bolsa de palabras por hash da coseno mucho menor.
+   */
+  readonly pisoDeSimilitud: number
   vectorizar(textos: string[], tipo: 'documento' | 'consulta'): Promise<Resultado<number[][]>>
 }
 

@@ -68,12 +68,12 @@ del proveedor real **no** se ejercita en la puerta automática, sólo la determi
 ## Phase 3: User Story 1 — Las pruebas de concepto deciden qué se construye (P1) ✅ HECHA
 
 **Goal**: medir antes de construir. **Ejecutada antes de este plan**: `poc/`, `datos-cliente/`,
-`poc/resultados/`, § 14.3 decidido.
+`datos-cliente/poc-resultados/`, § 14.3 decidido.
 
-- [X] T025 [US1] PoC de extracción sobre 30 comprobantes: **149/150 campos = 99,3 %** contra el umbral del 80 % (`poc/resultados/extraccion-gemini-consolidado.json`, `FR-001`, SC-001)
-- [X] T026 [US1] PoC de búsqueda semántica sobre 72 artículos y 20 preguntas: **20/20 = 100 %** contra el 85 %, con línea de base léxica de 16/20 (`poc/resultados/busqueda-gemini.json`)
+- [X] T025 [US1] PoC de extracción sobre 30 comprobantes: **149/150 campos = 99,3 %** contra el umbral del 80 % (`datos-cliente/poc-resultados/extraccion-gemini-consolidado.json`, `FR-001`, SC-001)
+- [X] T026 [US1] PoC de búsqueda semántica sobre 72 artículos y 20 preguntas: **20/20 = 100 %** contra el 85 %, con línea de base léxica de 16/20 (`datos-cliente/poc-resultados/busqueda-gemini.json`)
 - [X] T027 [US1] § 14.3 escrito con tabla comparativa, decisión y justificación; PI-01 y PI-06 en § 15.2.3; detonantes RT-02 y RT-03 verificados en § 11.6 (`FR-003`, SC-002)
-- [ ] T028 [US1] Descartar el código de la PoC al cerrar la etapa (`FR-004`, escenario 5): mover `poc/resultados/` a `datos-cliente/poc-resultados/`, borrar `poc/` y su entrada en `eslint.config.mjs`, `.prettierignore` y `.gitignore`; los archivos de `datos-cliente/comprobantes/archivos/` quedan, porque son datos y no código
+- [X] T028 [US1] Descartar el código de la PoC al cerrar la etapa (`FR-004`, escenario 5): mover `poc/resultados/` a `datos-cliente/poc-resultados/`, borrar `poc/` y su entrada en `eslint.config.mjs`, `.prettierignore` y `.gitignore`; los archivos de `datos-cliente/comprobantes/archivos/` quedan, porque son datos y no código
 
 ---
 

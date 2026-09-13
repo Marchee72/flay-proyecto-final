@@ -228,7 +228,7 @@ en pie y la decisión pasa a depender de las dos pruebas de concepto de § 8.4.3
 `gemini-embedding-001` como `GeneradorVectores` y el mismo modelo de texto como
 `GeneradorRespuesta`. El fundamento no es la tabla sola sino las dos pruebas de concepto de § 8.4.3,
 ejecutadas el 11 de septiembre de 2026 contra los juegos de `datos-cliente/` y cuyo detalle por
-comprobante y por pregunta queda en `poc/resultados/`:
+comprobante y por pregunta queda en `datos-cliente/poc-resultados/`:
 
 | Prueba de concepto | Criterio | Resultado | Detalle |
 |---|---|---|---|

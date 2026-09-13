@@ -2,7 +2,7 @@
 
 Trece decisiones que el plan necesita cerradas antes de la primera prueba. Las que tocan al
 proveedor externo se apoyan en el Principio IV y en lo medido en las dos pruebas de concepto
-(`poc/resultados/`, § 14.3); las que tocan integridad, en la regla de «la base impone lo que puede
+(`datos-cliente/poc-resultados/`, § 14.3); las que tocan integridad, en la regla de «la base impone lo que puede
 imponer» que `002` y `003` ya siguen.
 
 ## R-01 — Proveedor: Gemini API en capa paga, por su SDK oficial, con tres modelos fijados por configuración

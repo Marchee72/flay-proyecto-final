@@ -60,6 +60,15 @@ export const habilitarEnConsorcio = (
  * Por eso el orden de `quickstart.md` es sembrar y medir, no al reves.
  */
 export async function limpiar() {
+  // 004-servicios: primero lo que referencia gastos, comprobantes, unidades y
+  // proveedores. Historial, sugerencia y fragmentos caen en cascada.
+  await prismaBase.extraccionComprobante.deleteMany({})
+  await prismaBase.consultaDocumental.deleteMany({})
+  await prismaBase.documentoConsorcio.deleteMany({})
+  await prismaBase.novedad.deleteMany({})
+  await prismaBase.reserva.deleteMany({})
+  await prismaBase.espacioComun.deleteMany({})
+  await prismaBase.reclamo.deleteMany({})
   await prismaBase.comprobante.deleteMany({})
   await prismaBase.gasto.deleteMany({})
   await prismaBase.periodo.deleteMany({})

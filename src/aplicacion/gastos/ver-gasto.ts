@@ -83,10 +83,13 @@ export async function verGasto(
               comprobante.tipoContenido,
             ),
             // La direccion se resuelve recien aca, con la habilitacion ya
-            // verificada: el comprobante no es publico (FR-018).
+            // verificada: el comprobante no es publico (FR-018). Si el almacen
+            // no responde, el gasto se ve igual y el comprobante dice que no.
             direccion:
               comprobante.estado === 'disponible'
-                ? await almacen.resolverLecturaAutorizada(comprobante.claveObjeto, SEGUNDOS)
+                ? await almacen
+                    .resolverLecturaAutorizada(comprobante.claveObjeto, SEGUNDOS)
+                    .catch(() => '')
                 : '',
           })),
         ),

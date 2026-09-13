@@ -245,6 +245,13 @@ bajos, sin acción.
 | Verificación de detonantes de riesgos críticos | Quincenal | Líder de proyecto |
 | Reporte de estado al cliente | Al cierre de cada iteración | Líder de proyecto |
 
+### Detonantes verificados
+
+| Riesgo | Detonante | Verificación | Resultado |
+|---|---|---|---|
+| RT-02 | La prueba de concepto de extracción no alcanza el 80 % | Ejecutada el 11/09/2026 sobre 30 comprobantes de formatos variados, antes de abrir la iteración 3 (punto 8.4.3) | **No se activa**: 99,3 % de campos correctos. Resultado y proveedor elegido en el punto 14.3; caso PI-01 del punto 15 |
+| RT-03 | La búsqueda semántica no ubica el fragmento correcto entre los tres primeros en el 85 % de las preguntas | Ejecutada el 11/09/2026 sobre un reglamento de 72 artículos y 20 preguntas | **No se activa**: 100 %, contra 80 % de una búsqueda por palabras sin servicio externo. Punto 14.3; caso PI-06 del punto 15 |
+
 ### Indicadores de seguimiento
 
 | Indicador | Valor esperado | Umbral de alerta |

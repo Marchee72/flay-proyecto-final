@@ -1,9 +1,15 @@
 import type { TipoTrabajo } from '@prisma/client'
 import { z } from 'zod'
 
+import { manejadorNotificacion } from '@/aplicacion/comunicacion/despachar'
+import { manejadorIndexacion } from '@/aplicacion/comunicacion/indexar'
+import { ASISTENCIA } from '@/aplicacion/dependencias'
+import { manejadorExtraccion } from '@/aplicacion/gastos/extraccion'
+import { manejadorTriage } from '@/aplicacion/reclamos/sugerencia'
 import { manejadorDocumentoExpensa } from '@/aplicacion/liquidacion/documentos'
 import type { Manejador } from '@/aplicacion/pendientes/drenar'
 import { generadorPdf } from '@/infraestructura/documentos/expensa'
+import { textoPorPagina } from '@/infraestructura/documentos/texto-pdf'
 import { almacenBlob } from '@/infraestructura/objetos/blob'
 import { notificadorResend } from '@/infraestructura/correo/resend'
 
@@ -26,4 +32,12 @@ export const MANEJADORES: Partial<Record<TipoTrabajo, Manejador>> = {
   // la clave. El drenaje oportunista lo toma de a lotes; el disparo explicito
   // del administrador lo agota (research R-02).
   documento_expensa: manejadorDocumentoExpensa(generadorPdf, almacenBlob),
+  // Los avisos de § 12.7 (`004-servicios` FR-012): la fila la creo `notificar`
+  // junto con este trabajo; aca solo se manda y se anota.
+  notificacion: manejadorNotificacion(notificadorResend),
+  // Las funciones asistidas (`004-servicios` US6) con la implementacion que
+  // el punto de composicion eligio: proveedor, determinista o nula.
+  extraccion_comprobante: manejadorExtraccion(almacenBlob, ASISTENCIA.extractor),
+  triage_reclamo: manejadorTriage(ASISTENCIA.clasificador),
+  indexar_documento: manejadorIndexacion(almacenBlob, ASISTENCIA.vectores, textoPorPagina),
 }

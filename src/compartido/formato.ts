@@ -65,3 +65,24 @@ function agruparMiles(digitos: string): string {
   }
   return salida
 }
+
+/** `2026-09-12` o una marca ISO completa → `12/09/2026`. Solo la fecha. */
+export function fechaParaMostrar(iso: string): string {
+  const [anio, mes, dia] = iso.slice(0, 10).split('-')
+  return `${dia}/${mes}/${anio}`
+}
+
+/** Marca ISO → `12/09/2026 14:05`, en la hora de Argentina, que es la del consorcio. */
+export function momentoParaMostrar(iso: string): string {
+  const partes = new Intl.DateTimeFormat('es-AR', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date(iso))
+  const de = (tipo: string) => partes.find((p) => p.type === tipo)?.value ?? ''
+  return `${de('day')}/${de('month')}/${de('year')} ${de('hour')}:${de('minute')}`
+}

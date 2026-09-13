@@ -4,6 +4,7 @@ import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
+import { ocupaUnidad } from '@/infraestructura/repositorios/ocupaciones'
 
 /**
  * Estado de cuenta de una unidad (`FR-028`) y morosidad del consorcio
@@ -110,31 +111,13 @@ export async function verEstadoDeCuenta(
       if (!unidad) throw new NoEncontrado()
 
       const privilegiado = acceso.roles.some((rol) => rol === 'administrador' || rol === 'consejo')
-      if (!privilegiado && !(await ocupa(datos.usuarioId, unidad.id, reloj.hoy()))) {
+      if (!privilegiado && !(await ocupaUnidad(datos.usuarioId, unidad.id, reloj.hoy()))) {
         throw new NoEncontrado()
       }
 
       return estadoDe(unidad)
     },
   )
-}
-
-async function ocupa(usuarioId: string, unidadId: string, hoy: Date): Promise<boolean> {
-  const usuario = await prismaBase.usuario.findUnique({
-    where: { id: usuarioId },
-    select: { personaId: true },
-  })
-  if (!usuario) return false
-
-  const filas = await prismaBase.$queryRaw<{ existe: boolean }[]>`
-    SELECT EXISTS (
-      SELECT 1 FROM "Ocupacion"
-      WHERE "unidad_id" = ${unidadId}::uuid
-        AND "persona_id" = ${usuario.personaId}::uuid
-        AND "vigencia" @> ${hoy}::date
-    ) AS existe`
-
-  return filas[0]?.existe === true
 }
 
 export interface MorosidadAgregada {
@@ -163,7 +146,7 @@ export type Morosidad =
  * detalles de todos los consorcios, y una prueba de extremo a extremo con dos
  * consorcios en paralelo lo mostro sumando la mora ajena (Principio I, RT-04).
  */
-async function deudaPorUnidad(
+export async function saldoImpagoPorUnidad(
   hoy: Date,
 ): Promise<Map<string, { deuda: Decimal; vencidos: number }>> {
   const liquidaciones = await prisma.liquidacion.findMany({
@@ -211,7 +194,7 @@ export async function verMorosidad(
     async (acceso) => {
       const hoy = reloj.hoy()
       const [deudas, unidadesTotales] = await Promise.all([
-        deudaPorUnidad(hoy),
+        saldoImpagoPorUnidad(hoy),
         prisma.unidad.count(),
       ])
 

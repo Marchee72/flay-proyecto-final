@@ -53,6 +53,8 @@ const eslintConfig = [
       'pruebas/fixtures-negativas/**',
       // Lienzo de diseno: no es codigo de la aplicacion.
       'diseno/**',
+      // Pruebas de concepto desechables (§ 8.4.3): no son codigo de la aplicacion.
+      'poc/**',
     ],
   },
   ...compat.extends('next/core-web-vitals', 'next/typescript'),

@@ -26,12 +26,15 @@ export function FormularioGasto({
   rubros,
   proveedores,
   precargado,
+  extraccionId,
 }: {
   consorcioId: string
   periodos: readonly Opcion[]
   rubros: readonly Opcion[]
   proveedores: readonly Opcion[]
   precargado: Readonly<Record<string, string>>
+  /** Con extraccion, confirmar crea el gasto **y** ata el comprobante (`004-servicios` RF-06). */
+  extraccionId?: string
 }) {
   const [estado, accion, enviando] = useActionState(accionRegistrarGasto, SIN_ERROR)
   const hayError = estado.mensaje !== ''
@@ -44,6 +47,7 @@ export function FormularioGasto({
   return (
     <form action={accion} noValidate>
       <input type="hidden" name="consorcio" value={consorcioId} />
+      {extraccionId && <input type="hidden" name="extraccion" value={extraccionId} />}
 
       <div className="campo">
         <label htmlFor="periodo">Período</label>

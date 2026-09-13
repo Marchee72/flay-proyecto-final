@@ -1,0 +1,3 @@
+{
+  "crons": [{ "path": "/api/tareas/refrescar-vistas", "schedule": "0 7 * * *" }]
+}

@@ -8,6 +8,7 @@ import { prorratear, type UnidadDelPadron } from '@/dominio/liquidacion/prorrate
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
+import { habilitadosDelConsorcio, notificar } from '@/aplicacion/comunicacion/notificar'
 import { sinConsorcio } from '@/infraestructura/cliente-aislado'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 
@@ -230,38 +231,30 @@ async function encolarDocumentos(tx: Transaccion, liquidacionId: string): Promis
 }
 
 /**
- * El aviso queda **encolado, no despachado**: el despachador es de
- * `004-servicios` (`FR-015`, hallazgo 2). Lo que esta etapa garantiza es que
- * ningun aviso se pierda por no existir todavia quien lo mande.
- *
- * Destinatarios: quienes tienen habilitacion vigente sobre el consorcio. Son
- * los que pueden ver la liquidacion, asi que son los que corresponde avisar.
+ * El aviso nace con su trabajo de despacho, en la misma transaccion, por
+ * `notificar` (`004-servicios` FR-012, research R-07). Destinatarios: quienes
+ * tienen habilitacion vigente sobre el consorcio, que son los que pueden ver la
+ * liquidacion.
  */
 async function avisarALosHabilitados(
   tx: Transaccion,
   liquidacionId: string,
   periodo: { anio: number; mes: number },
 ): Promise<void> {
-  const habilitados = await tx.habilitacion.findMany({
-    where: { vigenciaHasta: null },
-    select: { usuarioId: true },
-    distinct: ['usuarioId'],
-  })
-
-  if (habilitados.length === 0) return
-
   const mes = String(periodo.mes).padStart(2, '0')
+  const habilitados = await habilitadosDelConsorcio(tx)
 
-  await tx.notificacion.createMany({
-    data: habilitados.map((habilitacion) => ({
-      usuarioId: habilitacion.usuarioId,
+  await notificar(
+    tx,
+    habilitados.map((usuarioId) => ({
+      usuarioId,
       tipo: 'liquidacion_publicada' as const,
       titulo: `Expensas de ${mes}/${periodo.anio}`,
       cuerpo: `Ya está publicada la liquidación de ${mes}/${periodo.anio}.`,
       entidadTipo: 'Liquidacion',
       entidadId: liquidacionId,
     })),
-  })
+  )
 }
 
 /**

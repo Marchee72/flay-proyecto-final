@@ -4,8 +4,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Building2,
+  CalendarCheck,
   CalendarDays,
   FileText,
+  Gauge,
+  Megaphone,
+  BookOpen,
+  MessageSquareWarning,
   Receipt,
   TriangleAlert,
   Truck,
@@ -21,6 +26,11 @@ export const SECCIONES = [
   { href: '/expensas', titulo: 'Expensas', Icono: FileText },
   { href: '/pagos', titulo: 'Pagos', Icono: Wallet },
   { href: '/morosidad', titulo: 'Morosidad', Icono: TriangleAlert },
+  { href: '/reclamos', titulo: 'Reclamos', Icono: MessageSquareWarning },
+  { href: '/reservas', titulo: 'Reservas', Icono: CalendarCheck },
+  { href: '/novedades', titulo: 'Novedades', Icono: Megaphone },
+  { href: '/documentos', titulo: 'Documentación', Icono: BookOpen },
+  { href: '/indicadores', titulo: 'Indicadores', Icono: Gauge },
   { href: '/proveedores', titulo: 'Proveedores', Icono: Truck },
   { href: '/usuarios', titulo: 'Usuarios', Icono: Users },
 ] as const

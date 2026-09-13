@@ -33,10 +33,11 @@ la cátedra del que se desprenden todos los requisitos.
 | Etapa | Estado |
 |---|---|
 | Documentación de las entregas 1 a 3 (puntos 1 a 12) | Completa |
-| Documentación de la última entrega (puntos 13 a 18) | Puntos 13, 14 y 15 al día con la iteración 2; el resto, esqueletos que se completan durante la construcción |
+| Documentación de la última entrega (puntos 13 a 18) | Completa: puntos 13 a 18 cerrados con resultados reales, manuales por rol, capacitación ejecutada y seguridad verificada |
 | Etapa 0 — andamiaje (`specs/001-andamiaje/`) | Integrada el 09/09/2026: aplicación, base, verificación única y despliegue automático, sin negocio |
 | Iteración 1 — núcleo (`specs/002-nucleo/`) | Integrada el 10/09/2026: sesión, consorcios con padrón, gastos con comprobantes, listado del consorcista y auditoría |
 | Iteración 2 — liquidación (`specs/003-liquidacion/`) | Integrada el 10/09/2026: motor de prorrateo al centavo contra las planillas del cliente, emisión, documento por unidad, pagos e intereses |
+| Iteración 3 — servicios (`specs/004-servicios/`) | Construcción cerrada: reclamos con historial y triage asistido, espacios y reservas con exclusión concurrente, comunicación y consulta documental con citas verificables, panel de indicadores y exportación abierta |
 
 Demostración: <https://flay-bamba-team.vercel.app> — se actualiza sola con cada integración verde
 a `main`; <https://flay-bamba-team.vercel.app/api/salud> dice qué versión y qué migración está

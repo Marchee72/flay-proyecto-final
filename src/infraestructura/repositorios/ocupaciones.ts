@@ -57,3 +57,37 @@ export async function ocupantesVigentes(
 
   return filas.map((fila) => fila.persona_id)
 }
+
+/** Si el usuario (por su persona) ocupa la unidad a esa fecha, con cualquier tipo. */
+export async function ocupaUnidad(
+  usuarioId: string,
+  unidadId: string,
+  fecha: Date,
+): Promise<boolean> {
+  const filas = await prismaBase.$queryRaw<{ existe: boolean }[]>`
+    SELECT EXISTS (
+      SELECT 1 FROM "Ocupacion" o
+      JOIN "Usuario" u ON u."persona_id" = o."persona_id"
+      WHERE o."unidad_id" = ${unidadId}::uuid
+        AND u."id" = ${usuarioId}::uuid
+        AND o."vigencia" @> ${fecha}::date
+    ) AS existe`
+
+  return filas[0]?.existe === true
+}
+
+/** Las unidades del consorcio que el usuario ocupa a esa fecha: lo que puede elegir en un formulario. */
+export async function unidadesOcupadasPor(
+  usuarioId: string,
+  consorcioId: string,
+  fecha: Date,
+): Promise<{ id: string; designacion: string }[]> {
+  return prismaBase.$queryRaw<{ id: string; designacion: string }[]>`
+    SELECT un."id", un."designacion" FROM "Ocupacion" o
+    JOIN "Usuario" u ON u."persona_id" = o."persona_id"
+    JOIN "Unidad" un ON un."id" = o."unidad_id"
+    WHERE u."id" = ${usuarioId}::uuid
+      AND un."consorcio_id" = ${consorcioId}::uuid
+      AND o."vigencia" @> ${fecha}::date
+    ORDER BY un."designacion"`
+}

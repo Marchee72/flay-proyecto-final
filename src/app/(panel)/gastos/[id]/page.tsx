@@ -170,6 +170,15 @@ function Comprobante({ comprobante }: { comprobante: ComprobanteDelGasto }) {
     )
   }
 
+  if (!comprobante.direccion) {
+    return (
+      <p className="aviso aviso--atencion" role="status">
+        <TriangleAlert className="icono" aria-hidden="true" />
+        <span>El comprobante no se pudo mostrar ahora. Quedó guardado; volver a intentar.</span>
+      </p>
+    )
+  }
+
   const peso = `${comprobante.tipoContenido} · ${(comprobante.bytes / MB).toFixed(1)} MB`
 
   if (comprobante.soloDescarga) {

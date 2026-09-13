@@ -10,6 +10,14 @@ export interface Invitacion {
   enlaceDeAlta: string
 }
 
+/** Un aviso de § 12.7 ya redactado: el despachador no sabe de que trata. */
+export interface Aviso {
+  destino: string
+  titulo: string
+  cuerpo: string
+}
+
 export interface Notificador {
   enviarInvitacion(invitacion: Invitacion): Promise<void>
+  enviarNotificacion(aviso: Aviso): Promise<void>
 }

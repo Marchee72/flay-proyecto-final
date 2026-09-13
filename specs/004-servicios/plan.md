@@ -5,7 +5,7 @@
 **Input**: Feature specification from `/specs/004-servicios/spec.md` (6 historias, 36 FR, 22 SC).
 La historia 1 —las dos pruebas de concepto— **ya está ejecutada y superada** antes de este plan:
 149/150 campos y 20/20 preguntas, § 14.3 decidido (`docs/entrega-final/14-codificacion.md`,
-`poc/resultados/`). Este plan cubre las historias 2 a 6 y el bloque G de cierre.
+`datos-cliente/poc-resultados/`). Este plan cubre las historias 2 a 6 y el bloque G de cierre.
 
 ## Summary
 

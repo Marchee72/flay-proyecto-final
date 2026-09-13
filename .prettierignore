@@ -18,6 +18,3 @@ datos-cliente
 # Lienzo de diseno: los .dc.html llevan el formato que entiende su editor y el
 # archivo publicado es codigo generado de dos megabytes.
 diseno
-
-# Salidas de las PoC: JSON generado, no se formatea a mano.
-poc/resultados

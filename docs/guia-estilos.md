@@ -105,45 +105,35 @@
   clic en el fondo cierran. A 390 px casi pantalla completa, sin scroll horizontal de página
   (la tabla del padrón desplaza adentro de `.tabla-desplazable`). Entrada solo
   `opacity`/`transform` 200 ms con `prefers-reduced-motion`.
-- Navegación: lateral en escritorio con las 8 secciones implementadas (Consorcios,
-  Gastos, Períodos, Expensas, Pagos, Morosidad, Proveedores, Usuarios), barra
-  inferior con las 5 principales en móvil (variante C, icono Lucide + etiqueta,
-  landmark propio) y menú `details`/`summary` como alternativa. El ejemplo
-  anticipa las 8 secciones objetivo con iteración 3 (Liquidación, Gastos, Pagos,
-  Reclamos, Reservas, Documentos, Indicadores, Notificaciones): Reclamos,
-  Reservas, Documentos, Indicadores y Notificaciones son roadmap pendiente (§8),
-   sin pantallas todavía. El consorcio activo siempre visible en la barra
-   (formulario `.selector-consorcio` con `select` nativo y Server Action
-   `elegirConsorcio`, sin guion), no como sección.
-  - Consorcio activo persistente: `elegirConsorcio` valida el id contra
-    `misConsorcios` (alcance del usuario; si no es alcanzable, no lo guarda) y
-    lo guarda en la galleta de presentación `flay_consorcio` (`httpOnly`,
-    `SameSite=Lax`, `path=/`), redirigiendo a la misma página con
-    `?consorcio=<id>` y el resto de los parámetros intactos (las direcciones
-    compartidas no cambian). Cada pantalla resuelve con
-    `resolverConsorcioActivo(parametros, consorcios, galleta)`: `?consorcio=`
-    válido > galleta válida > aviso RNF-10 (solo cuando no hay ni parámetro ni
-    galleta válidos; un parámetro inválido muestra «no está al alcance» aunque
-    haya galleta). `src/middleware.ts` espeja `?consorcio=` en la galleta
-    antes de renderizar (sin validar: no hay base en el filo), para que la
-    barra muestre el mismo consorcio que la pantalla incluso al abrir una
-    dirección compartida. La galleta nunca se confía sin validar contra los
-    alcanzables y cada operación la sigue autorizando su caso de uso (FR-002):
-    solo decide qué se dibuja.
-  - Encabezado de consorcio + Volver (componente `EncabezadoDeConsorcio`,
-    clases `.encabezado-consorcio`): obligatorio arriba de cada pantalla que
-    trabaja sobre un consorcio resuelto (`?consorcio=`, galleta recordada o
-    `consorcios/[id]`),
-    antes del `h1` (la página conserva su `h1`). Cuándo aparece: solo con
-    consorcio resuelto; sin consorcio elegido se muestra el aviso existente,
-    sin encabezado. Anatomía: izquierda, insignia lima con icono `Building2`
-    (`aria-hidden`) + nombre del consorcio como texto prominente (no `h1`,
-    `var(--t-titulo2)` 22 px peso 600; en teléfono baja a
-    `var(--t-titulo3)`);
-   derecha, `Link` `.boton--fantasma` con icono `ArrowLeft` + texto («Volver»
-   o «Volver a \<lista\>»). Destinos: el detalle y el alta vuelven a su lista
-   con `?consorcio=` preservado; las listas con consorcio vuelven a
-   `/consorcios`. La fila puede envolverse a 390 px; el botón nunca se corta.
+- Navegación (diseño `docs/superpowers/specs/2026-09-13-navegacion-por-consorcio-design.md`):
+  el consorcio es la raíz y vive en la ruta, `/consorcios/[consorcio]/<sección>`. Fuera de un
+  consorcio la barra superior lleva marca, **Consorcios** (lista con señales de `verPanel`),
+  **Bandeja** (pendientes de todos los consorcios administrados) y Salir; no hay lateral.
+  Dentro, el armazón `consorcios/[consorcio]/layout.tsx` dibuja la columna grafito
+  (`.lateral__marco`): el atajo de consorcio (`.selector-consorcio`, `select` nativo + Server
+  Action `elegirConsorcio`, que conserva la sección al saltar de edificio), el menú
+  `details`/`summary` del teléfono y el lateral (`.lateral`) con el nombre del consorcio arriba
+  (`.lateral__consorcio`, enlace al resumen) y las doce secciones en cuatro bloques con
+  encabezado `h2` (`.lateral__bloque`): Dinero (Períodos, Expensas, Gastos, Pagos, Morosidad),
+  Convivencia (Reclamos, Reservas, Espacios, Novedades), Análisis (Documentación, Indicadores) y
+  Administración (Unidades, Proveedores, Usuarios). La barra inferior del teléfono (variante C,
+  landmark propio) lleva las cinco de Dinero. La lista de secciones vive en
+  `src/app/(panel)/secciones.ts`, sin `'use client'`, para que la usen servidor y cliente.
+  - Resolución del consorcio: `conConsorcio(consorcioId, titulo)` en
+    `src/app/(panel)/con-consorcio.tsx`, único punto donde el id de la ruta se valida contra
+    `misConsorcios` (cacheado por pedido con `cache()` de React, `consorciosAlAlcance`, porque lo
+    piden el armazón y la página). Un id fuera del alcance dibuja «no está al alcance» y nada más
+    (RNF-10); cada operación la sigue autorizando su caso de uso contra la base (FR-002).
+  - La galleta `flay_consorcio` ya no es el contexto: es memoria del último usado. `/` con
+    sesión redirige (`destinoDeEntrada`): un solo consorcio va derecho a su resumen, varios al
+    último recordado o a la lista. Las direcciones anteriores al rediseño (`/gastos`,
+    `/periodos?consorcio=x`, `/pendientes`) las atiende `src/app/(panel)/[...ruta]/page.tsx` y
+    redirigen a la misma sección del consorcio pedido o recordado. No hay middleware.
+  - Volver (componente `Volver`, clase `.volver`): solo en fichas de detalle y altas, hacia su
+    lista dentro del mismo consorcio. Las listas no lo llevan: el lateral ya dice dónde se está.
+  - Resumen (`/consorcios/[consorcio]`, caso de uso `verResumenConsorcio`): fila de KPI
+    (`.fila-kpi`), avisos solo si aplican, tres listas de cinco (`.lista-simple`) y contactos
+    útiles; acciones rápidas solo para el administrador.
 - Estados vacíos (clase `.vacio`, icono `32px` en tinta apagada) con ilustración simple + texto + botón ("Sin gastos en este período. Cargar gasto").
 - Carga con esqueleto (clase `.esqueleto`, nunca pantalla en blanco); diferidos (documentos, indexación) con progreso (clase `.progreso`: barra + texto con magnitud exacta + reintento visible). Etiquetas de estado con clase `.etiqueta` + variante (`--rendido`, `--propietario`, `--pendiente`, `--vencido`).
 

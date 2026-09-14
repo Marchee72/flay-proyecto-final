@@ -1,38 +1,38 @@
 /**
- * Consorcio activo persistente (guía §3.4): qué consorcio dibuja cada pantalla.
- *
- * Prioridad: `?consorcio=` válido > galleta `flay_consorcio` válida > ninguno
- * (aviso RNF-10). Un `?consorcio=` presente pero no alcanzable NO cae a la
- * galleta: muestra «no está al alcance», porque la dirección pedía otro
- * consorcio y dibujar uno distinto confundiría.
- *
- * Solo presentación: la galleta nunca se confía sin validar contra la lista
- * de alcanzables (`misConsorcios`), y cada operación la sigue autorizando su
- * caso de uso contra la base (FR-002). Esto solo decide qué se dibuja.
+ * Memoria del ultimo consorcio usado. Ya no es el contexto —el consorcio vive
+ * en la ruta, `/consorcios/[consorcio]/...`—; solo decide a donde manda `/`
+ * y las direcciones viejas sin consorcio. Nunca se confia sin validar contra
+ * `misConsorcios`.
  */
 export const NOMBRE_GALLETA_CONSORCIO = 'flay_consorcio'
 
-export type ConsorcioAlcanzable = { id: string; nombre: string }
+export const OPCIONES_GALLETA_CONSORCIO = {
+  httpOnly: true,
+  sameSite: 'lax',
+  path: '/',
+  maxAge: 60 * 60 * 24 * 365,
+} as const
 
-export type ParametrosDeConsorcio = { consorcio?: string }
+/** Con un solo consorcio no hay nada que elegir; con varios, el recordado si sigue al alcance. */
+export function destinoDeEntrada(
+  consorcios: { id: string }[],
+  recordado: string | undefined,
+  seccion = '',
+): string {
+  if (consorcios.length === 1) return `/consorcios/${consorcios[0].id}${seccion}`
+  const ultimo = consorcios.find((c) => c.id === recordado)
+  if (ultimo) return `/consorcios/${ultimo.id}${seccion}`
+  return '/consorcios'
+}
 
-export function resolverConsorcioActivo<T extends ConsorcioAlcanzable>(
-  parametros: ParametrosDeConsorcio,
-  consorcios: T[],
-  galleta?: string | null,
-): { activo?: T; pedidoDesconocido: boolean } {
-  const pedido = parametros.consorcio
-
-  if (pedido !== undefined) {
-    const porParametro = consorcios.find((consorcio) => consorcio.id === pedido)
-    if (porParametro) return { activo: porParametro, pedidoDesconocido: false }
-    return { activo: undefined, pedidoDesconocido: true }
-  }
-
-  if (galleta) {
-    const porGalleta = consorcios.find((consorcio) => consorcio.id === galleta)
-    if (porGalleta) return { activo: porGalleta, pedidoDesconocido: false }
-  }
-
-  return { activo: undefined, pedidoDesconocido: false }
+/**
+ * A donde va el atajo de la barra: misma seccion en el otro consorcio. Las
+ * fichas de detalle (`/gastos/<id>`) no existen alla, asi que se salta a la
+ * lista de esa seccion.
+ */
+export function destinoEnOtroConsorcio(origen: string, elegido: string): string {
+  const dentro = origen.match(/^\/consorcios\/[^/?]+(\/[^?]*)?(\?.*)?$/)
+  if (!dentro) return `/consorcios/${elegido}`
+  const seccion = (dentro[1] ?? '').split('/')[1] ?? ''
+  return `/consorcios/${elegido}${seccion ? `/${seccion}` : ''}`
 }

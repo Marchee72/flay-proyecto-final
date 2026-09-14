@@ -38,7 +38,7 @@ test.afterAll(async () => {
 
 test('el consorcista ve el agregado y ningun nombre de unidad', async ({ page }) => {
   await entrar(page, consorcista.correo)
-  await page.goto(`/morosidad?consorcio=${consorcista.consorcioId}`)
+  await page.goto(`/consorcios/${consorcista.consorcioId}/morosidad`)
 
   await expect(page.locator('.kpi__rotulo')).toHaveText('Unidades con deuda vencida')
   await expect(page.locator('.kpi__cifra')).toHaveText(/2\s+de 2/)
@@ -51,7 +51,7 @@ test('el consorcista ve el agregado y ningun nombre de unidad', async ({ page })
 
 test('el administrador ve la nomina', async ({ page }) => {
   await entrar(page, administrador.correo)
-  await page.goto(`/morosidad?consorcio=${administrador.consorcioId}`)
+  await page.goto(`/consorcios/${administrador.consorcioId}/morosidad`)
 
   const tabla = page.getByRole('table')
   await expect(tabla).toBeVisible()

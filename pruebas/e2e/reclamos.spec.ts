@@ -37,7 +37,7 @@ test('del reclamo del consorcista al cierre del administrador, con historial com
   page,
 }) => {
   await entrar(page, consorcista.correo)
-  await page.goto(`/reclamos?consorcio=${consorcista.consorcioId}`)
+  await page.goto(`/consorcios/${consorcista.consorcioId}/reclamos`)
   await expect(page.getByRole('heading', { name: 'Reclamos', level: 1 })).toBeVisible()
   expect(await desbordaALoAncho(page)).toBe(false)
 

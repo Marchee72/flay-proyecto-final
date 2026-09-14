@@ -29,10 +29,13 @@ test.afterAll(async () => {
 })
 
 const PANTALLAS = [
-  { nombre: 'listado de expensas', ruta: (e: Escenario) => `/expensas?consorcio=${e.consorcioId}` },
+  {
+    nombre: 'listado de expensas',
+    ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/expensas`,
+  },
   {
     nombre: 'expensa de la unidad',
-    ruta: (e: Escenario) => `/expensas/${expensa.detallePropioId}?consorcio=${e.consorcioId}`,
+    ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/expensas/${expensa.detallePropioId}`,
   },
 ]
 

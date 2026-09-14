@@ -120,9 +120,9 @@ test('el importe mas largo que admite la columna llega intacto a la pantalla', a
   await page.getByLabel('Correo electrónico').fill(correo)
   await page.getByLabel('Contraseña').fill(CONTRASENA)
   await page.getByRole('button', { name: 'Entrar' }).click()
-  await expect(page).toHaveURL(/\/usuarios/)
+  await expect(page).toHaveURL(/\/consorcios/)
 
-  await page.goto(`/gastos/${gastoId}?consorcio=${consorcioId}`)
+  await page.goto(`/consorcios/${consorcioId}/gastos/${gastoId}`)
 
   // Exacto, digito por digito, con la agrupacion es-AR hecha sobre la cadena.
   // Si alguna capa lo hubiera pasado por el tipo numerico nativo, el ultimo

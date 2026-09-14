@@ -52,7 +52,7 @@ test.afterAll(async () => {
 
 test('reservar, chocar con otra reserva con un mensaje legible, y cancelar', async ({ page }) => {
   await entrar(page, consorcista.correo)
-  await page.goto(`/reservas?consorcio=${consorcista.consorcioId}`)
+  await page.goto(`/consorcios/${consorcista.consorcioId}/reservas`)
   await expect(page.getByRole('heading', { name: 'Reservas', level: 1 })).toBeVisible()
   expect(await desbordaALoAncho(page)).toBe(false)
 

@@ -27,6 +27,10 @@ const PERMITIDOS: Record<string, string> = {
     'el panel consolidado agrega los consorcios de la cartera: la lista sale de la habilitacion de empresa',
   'src/aplicacion/reclamos/asignar.ts':
     'lista los administradores habilitados: consulta sobre habilitaciones, la tabla que decide el aislamiento',
+  'src/aplicacion/pendientes/bandeja.ts':
+    'la bandeja cruza los consorcios que el usuario administra: el IN sale de la habilitacion, nunca de un parametro',
+  'src/aplicacion/consorcios/resumen.ts':
+    'la cabecera es el consorcio, direccionado por su propio identificador (como ver-consorcio)',
 }
 
 /** El filtro escrito a mano: `consorcioId` dentro de un `where` o un `data`. */

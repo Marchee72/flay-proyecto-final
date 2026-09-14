@@ -19,7 +19,7 @@ export async function accionIngresar(_previo: Resultado, datos: FormData): Promi
   const mensaje = await ingresar({
     correo: String(datos.get('correo') ?? ''),
     contrasena: String(datos.get('contrasena') ?? ''),
-    destino: '/usuarios',
+    destino: '/',
   })
 
   return { mensaje }

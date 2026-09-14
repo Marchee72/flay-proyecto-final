@@ -138,7 +138,7 @@ export async function entrar(page: Page, correo: string): Promise<void> {
   await page.getByLabel('Correo electrónico').fill(correo)
   await page.getByLabel('Contraseña').fill(CONTRASENA)
   await page.getByRole('button', { name: 'Entrar' }).click()
-  await page.waitForURL(/\/usuarios/)
+  await page.waitForURL(/\/consorcios/)
 }
 
 /** La pagina no se desplaza a lo ancho: la tabla lo hace dentro de su caja. */

@@ -67,6 +67,15 @@ enumera.
 | Auditoría | RF-26 | **Construido** | Reclamo, reserva y extracción se suman a las tablas auditadas por disparador (SC-021) |
 | Exportación abierta | § 5.5.4 | **Construido** | Gastos, liquidaciones y pagos en CSV por consorcio, con sesión y habilitación; `npm run exportar:verificar` cuadra los tres al centavo (SC-018) |
 
+**Navegación con el consorcio como raíz** (2026-09-14, rama `005-navegacion`): doce de las trece
+secciones del lateral ya dependían del consorcio, pero el consorcio era un contexto implícito en una
+galleta. El rediseño (`docs/superpowers/specs/2026-09-13-navegacion-por-consorcio-design.md`) lo
+lleva a la ruta —`/consorcios/[id]/gastos`—, convierte la ficha de consorcio en un **resumen**
+(período abierto y vencimiento, gastos, morosidad, reclamos, últimos movimientos, contactos útiles),
+agrega **señales** a la lista de consorcios reusando `verPanel`, funde `/pendientes` en una
+**bandeja** global de lo que espera decisión, y agrupa el lateral en cuatro bloques. Las direcciones
+anteriores redirigen. Único cambio de esquema: teléfono y correo del proveedor.
+
 ### Lo que la iteración 3 deja verificado
 
 | Criterio | Medición al 2026-09-12 |

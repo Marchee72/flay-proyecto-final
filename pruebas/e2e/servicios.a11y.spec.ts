@@ -68,42 +68,45 @@ test.afterAll(async () => {
 })
 
 const PANTALLAS = [
-  { nombre: 'bandeja de reclamos', ruta: (e: Escenario) => `/reclamos?consorcio=${e.consorcioId}` },
+  {
+    nombre: 'bandeja de reclamos',
+    ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/reclamos`,
+  },
   {
     nombre: 'detalle del reclamo',
-    ruta: (e: Escenario) => `/reclamos/${reclamoId}?consorcio=${e.consorcioId}`,
+    ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/reclamos/${reclamoId}`,
   },
-  { nombre: 'reservas', ruta: (e: Escenario) => `/reservas?consorcio=${e.consorcioId}` },
-  { nombre: 'novedades', ruta: (e: Escenario) => `/novedades?consorcio=${e.consorcioId}` },
-  { nombre: 'documentación', ruta: (e: Escenario) => `/documentos?consorcio=${e.consorcioId}` },
+  { nombre: 'reservas', ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/reservas` },
+  { nombre: 'novedades', ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/novedades` },
+  { nombre: 'documentación', ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/documentos` },
   {
     nombre: 'consulta documental',
-    ruta: (e: Escenario) => `/documentos/consultar?consorcio=${e.consorcioId}`,
+    ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/documentos/consultar`,
   },
 ]
 
 const DEL_ADMINISTRADOR = [
   {
     nombre: 'panel de indicadores',
-    ruta: (e: Escenario) => `/indicadores?consorcio=${e.consorcioId}`,
+    ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/indicadores`,
   },
   {
     nombre: 'I-1 morosidad',
-    ruta: (e: Escenario) => `/indicadores/morosidad?consorcio=${e.consorcioId}`,
+    ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/indicadores/morosidad`,
   },
   {
     nombre: 'I-2 gasto por rubro',
-    ruta: (e: Escenario) => `/indicadores/gastos?consorcio=${e.consorcioId}`,
+    ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/indicadores/gastos`,
   },
-  { nombre: 'espacios comunes', ruta: (e: Escenario) => `/espacios?consorcio=${e.consorcioId}` },
-  { nombre: 'avisos pendientes', ruta: (e: Escenario) => `/pendientes?consorcio=${e.consorcioId}` },
+  { nombre: 'espacios comunes', ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/espacios` },
+  { nombre: 'avisos pendientes', ruta: (e: Escenario) => `/bandeja` },
   {
     nombre: 'carga asistida',
-    ruta: (e: Escenario) => `/gastos/asistida?consorcio=${e.consorcioId}`,
+    ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/gastos/asistida`,
   },
   {
     nombre: 'revisión del comprobante',
-    ruta: (e: Escenario) => `/gastos/asistida/${extraccionId}?consorcio=${e.consorcioId}`,
+    ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/gastos/asistida/${extraccionId}`,
   },
 ]
 

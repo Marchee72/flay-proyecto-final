@@ -32,7 +32,7 @@ test.afterAll(async () => {
 
 test('el listado muestra el gasto con su importe y el total', async ({ page }) => {
   await entrar(page, escenario.correo)
-  await page.goto(`/gastos?consorcio=${escenario.consorcioId}`)
+  await page.goto(`/consorcios/${escenario.consorcioId}/gastos`)
 
   await expect(page.getByRole('heading', { name: 'Gastos', level: 1 })).toBeVisible()
   await expect(page.getByRole('cell', { name: 'Mantenimiento de ascensores' })).toBeVisible()
@@ -42,7 +42,7 @@ test('el listado muestra el gasto con su importe y el total', async ({ page }) =
 
 test('el listado no desborda a lo ancho: la tabla se desplaza sola (RNF-01)', async ({ page }) => {
   await entrar(page, escenario.correo)
-  await page.goto(`/gastos?consorcio=${escenario.consorcioId}`)
+  await page.goto(`/consorcios/${escenario.consorcioId}/gastos`)
 
   await expect(page.locator('.tabla-desplazable')).toBeVisible()
   expect(await desbordaALoAncho(page)).toBe(false)
@@ -50,7 +50,7 @@ test('el listado no desborda a lo ancho: la tabla se desplaza sola (RNF-01)', as
 
 test('el detalle del gasto tampoco desborda', async ({ page }) => {
   await entrar(page, escenario.correo)
-  await page.goto(`/gastos/${escenario.gastoId}?consorcio=${escenario.consorcioId}`)
+  await page.goto(`/consorcios/${escenario.consorcioId}/gastos/${escenario.gastoId}`)
 
   await expect(page.getByText('$ 184.320,75')).toBeVisible()
   expect(await desbordaALoAncho(page)).toBe(false)
@@ -58,7 +58,7 @@ test('el detalle del gasto tampoco desborda', async ({ page }) => {
 
 test('un consorcista no ve el formulario de alta de proveedor (RNF-03)', async ({ page }) => {
   await entrar(page, escenario.correo)
-  await page.goto(`/proveedores?consorcio=${escenario.consorcioId}`)
+  await page.goto(`/consorcios/${escenario.consorcioId}/proveedores`)
 
   await expect(page.getByText('Ascensores del Litoral')).toBeVisible()
   // Lo que el rol no puede hacer, la pantalla no lo ofrece.
@@ -73,7 +73,7 @@ test('el gasto de otro consorcio no aparece: «no encontrado», nunca «prohibid
   try {
     await entrar(page, escenario.correo)
     // Por identificador directo en la direccion, que es como lo probaria alguien.
-    await page.goto(`/gastos/${ajeno.gastoId}?consorcio=${escenario.consorcioId}`)
+    await page.goto(`/consorcios/${escenario.consorcioId}/gastos/${ajeno.gastoId}`)
 
     // El anunciador de rutas de Next tambien es `role=alert`: se apunta al aviso.
     await expect(page.locator('.aviso--problema')).toContainText('No encontramos lo que buscabas.')

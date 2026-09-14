@@ -59,7 +59,7 @@ test('la novedad del administrador la ve el consorcista, y el contrato no visibl
   page,
 }) => {
   await entrar(page, administrador.correo)
-  await page.goto(`/novedades?consorcio=${administrador.consorcioId}`)
+  await page.goto(`/consorcios/${administrador.consorcioId}/novedades`)
   await page.getByRole('button', { name: 'Publicar novedad' }).click()
   const dialogo = page.getByRole('dialog')
   await dialogo.getByLabel('Título').fill('Corte de agua el jueves')
@@ -69,21 +69,21 @@ test('la novedad del administrador la ve el consorcista, y el contrato no visibl
   await expect(page.getByRole('heading', { name: /Corte de agua el jueves/ })).toBeVisible()
   expect(await desbordaALoAncho(page)).toBe(false)
 
-  await page.goto(`/documentos?consorcio=${administrador.consorcioId}`)
+  await page.goto(`/consorcios/${administrador.consorcioId}/documentos`)
   await expect(page.getByRole('table')).toContainText('Contrato de limpieza')
   await expect(page.getByRole('table')).toContainText('Reglamento de copropiedad')
 
-  await page.goto(`/pendientes?consorcio=${administrador.consorcioId}`)
+  await page.goto(`/bandeja`)
   await page.getByRole('button', { name: 'Enviar avisos ahora' }).click()
   await expect(page.getByRole('status')).toContainText('Se despachó')
 
   await page.context().clearCookies()
   await entrar(page, consorcista.correo)
-  await page.goto(`/novedades?consorcio=${administrador.consorcioId}`)
+  await page.goto(`/consorcios/${administrador.consorcioId}/novedades`)
   await expect(page.getByRole('heading', { name: /Corte de agua el jueves/ })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Publicar novedad' })).toHaveCount(0)
 
-  await page.goto(`/documentos?consorcio=${administrador.consorcioId}`)
+  await page.goto(`/consorcios/${administrador.consorcioId}/documentos`)
   await expect(page.getByRole('table')).toContainText('Reglamento de copropiedad')
   await expect(page.getByText('Contrato de limpieza')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Cargar documento' })).toHaveCount(0)

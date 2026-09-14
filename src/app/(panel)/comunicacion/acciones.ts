@@ -36,8 +36,8 @@ export async function accionPublicarNovedad(
     if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
     throw error
   }
-  revalidatePath('/novedades')
-  redirect(`/novedades?consorcio=${consorcioId}&publicada=1`)
+  revalidatePath('/consorcios/[consorcio]/novedades', 'page')
+  redirect(`/consorcios/${consorcioId}/novedades?publicada=1`)
 }
 
 /** Confirmacion de la subida directa de un documento: la clave ya esta en el almacen. */
@@ -67,8 +67,8 @@ export async function accionCargarDocumento(
     if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
     throw error
   }
-  revalidatePath('/documentos')
-  return { mensaje: '', destino: `/documentos?consorcio=${consorcioId}&cargado=1` }
+  revalidatePath('/consorcios/[consorcio]/documentos', 'page')
+  return { mensaje: '', destino: `/consorcios/${consorcioId}/documentos?cargado=1` }
 }
 
 export async function accionDespachar(datos: FormData): Promise<void> {
@@ -82,12 +82,10 @@ export async function accionDespachar(datos: FormData): Promise<void> {
     await despacharNotificaciones(MANEJADORES, HABILITACIONES, RELOJ, { usuarioId, consorcioId })
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
-    redirect(
-      `/pendientes?consorcio=${consorcioId}&error=${encodeURIComponent(error.mensajeParaUsuario)}`,
-    )
+    redirect(`/bandeja?error=${encodeURIComponent(error.mensajeParaUsuario)}`)
   }
-  revalidatePath('/pendientes')
-  redirect(`/pendientes?consorcio=${consorcioId}&despachado=1`)
+  revalidatePath('/bandeja')
+  redirect('/bandeja?despachado=1')
 }
 
 export type ResultadoDeConsultaVisible =

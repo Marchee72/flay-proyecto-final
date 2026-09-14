@@ -151,7 +151,7 @@ comprensibles (RNF-10), auditoría registrada si toca datos económicos, documen
 
 ## Lo que no se adivina leyendo el código
 
-Catorce decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
+Veinte decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
 
 1. **El orden de las semillas y las pruebas.** `npm run test:integracion` **vacía** las tablas de
    negocio, semilla incluida: en una base compartida no hay forma de distinguir lo sembrado de lo
@@ -223,6 +223,16 @@ Catorce decisiones que costaron una vuelta y conviene no volver a tomar desde ce
     `extraccion_comprobante` (análisis estructurado con IA), `triage_reclamo` (clasificación de rubro y
     urgencia) y avisos de notificación, desacoplando cualquier demora o caída de servicios externos del
     ciclo de petición del usuario.
+19. **El consorcio vive en la ruta, no en la galleta.** `/consorcios/[consorcio]/<sección>`;
+    `conConsorcio(consorcioId, titulo)` es el único punto que valida el id contra el alcance, y
+    `consorciosAlAlcance` está cacheado por pedido porque lo piden el armazón y la página. La galleta
+    `flay_consorcio` solo recuerda el último usado para `/` y para las direcciones viejas
+    (`[...ruta]/page.tsx`). Las listas de secciones van en `secciones.ts` sin `'use client'`:
+    importar un valor de un módulo cliente desde un componente servidor da `undefined`.
+20. **La bandeja y el resumen están en la lista blanca de `filtro-unico.spec.ts`.** La bandeja
+    cruza consorcios con `consorcio_id IN (...)` armado desde `misConsorcios`, nunca desde un
+    parámetro; el resumen lee la cabecera del consorcio por su id, como `ver-consorcio`. Cualquier
+    otro archivo que escriba el filtro a mano rompe SC-003.
 
 
 ## Notas

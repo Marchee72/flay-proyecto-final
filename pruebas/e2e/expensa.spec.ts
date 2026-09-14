@@ -34,7 +34,7 @@ test.afterAll(async () => {
 
 test('el consorcista ve la expensa de su unidad con su total', async ({ page }) => {
   await entrar(page, escenario.correo)
-  await page.goto(`/expensas?consorcio=${escenario.consorcioId}`)
+  await page.goto(`/consorcios/${escenario.consorcioId}/expensas`)
 
   await expect(page.getByRole('heading', { name: 'Unidad 3B' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Unidad 3C' })).toHaveCount(0)
@@ -44,14 +44,14 @@ test('el consorcista ve la expensa de su unidad con su total', async ({ page }) 
 
 test('el listado no desborda a lo ancho (RNF-01)', async ({ page }) => {
   await entrar(page, escenario.correo)
-  await page.goto(`/expensas?consorcio=${escenario.consorcioId}`)
+  await page.goto(`/consorcios/${escenario.consorcioId}/expensas`)
 
   expect(await desbordaALoAncho(page)).toBe(false)
 })
 
 test('la expensa propia se abre por identificador directo', async ({ page }) => {
   await entrar(page, escenario.correo)
-  await page.goto(`/expensas/${expensa.detallePropioId}?consorcio=${escenario.consorcioId}`)
+  await page.goto(`/consorcios/${escenario.consorcioId}/expensas/${expensa.detallePropioId}`)
 
   await expect(page.getByRole('heading', { name: /unidad 3B/ })).toBeVisible()
   // El documento todavia no se genero en este escenario: la pantalla lo dice,
@@ -63,7 +63,7 @@ test('la expensa propia se abre por identificador directo', async ({ page }) => 
 /** El paso 5 del guion de demostracion: la del vecino no existe para mi. */
 test('la expensa de otra unidad responde «no encontrado», nunca «prohibido»', async ({ page }) => {
   await entrar(page, escenario.correo)
-  await page.goto(`/expensas/${expensa.detalleAjenoId}?consorcio=${escenario.consorcioId}`)
+  await page.goto(`/consorcios/${escenario.consorcioId}/expensas/${expensa.detalleAjenoId}`)
 
   // El anunciador de rutas de Next tambien es `role=alert`: se apunta al aviso.
   await expect(page.locator('p.aviso--problema')).toContainText('No encontramos')

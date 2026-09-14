@@ -358,6 +358,8 @@ model Proveedor {
   razonSocial     String   @map("razon_social") @db.Text
   cuit            String   @db.Text
   rubroHabitualId String?  @map("rubro_habitual_id") @db.Uuid
+  telefono        String?  @db.Text
+  correo          String?  @db.Text
   creadoEn        DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn   DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 

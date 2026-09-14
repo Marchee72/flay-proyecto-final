@@ -21,12 +21,12 @@ test.afterAll(async () => {
 })
 
 const PANTALLAS = [
-  { nombre: 'listado de gastos', ruta: (e: Escenario) => `/gastos?consorcio=${e.consorcioId}` },
+  { nombre: 'listado de gastos', ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/gastos` },
   {
     nombre: 'detalle del gasto',
-    ruta: (e: Escenario) => `/gastos/${e.gastoId}?consorcio=${e.consorcioId}`,
+    ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/gastos/${e.gastoId}`,
   },
-  { nombre: 'períodos', ruta: (e: Escenario) => `/periodos?consorcio=${e.consorcioId}` },
+  { nombre: 'períodos', ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/periodos` },
 ]
 
 for (const pantalla of PANTALLAS) {

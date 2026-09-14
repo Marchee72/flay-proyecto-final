@@ -95,6 +95,25 @@ El acceso a la plataforma Flay se realiza a través de un navegador web moderno 
 
 ---
 
+#### Cómo se recorre el sistema: primero el consorcio
+Todo lo que se hace en Flay se hace **parado en un consorcio**. Al ingresar:
+1. Si administra un solo edificio, el sistema abre directamente su **Resumen**.
+2. Si administra varios, abre la lista **Consorcios**: cada tarjeta muestra el último período
+   liquidado, la morosidad, los reclamos abiertos y los desvíos de gasto. Presione **Entrar** en el
+   que va a trabajar.
+3. El **Resumen** del consorcio muestra el período abierto y su vencimiento, los gastos acumulados,
+   la morosidad, los reclamos, los últimos gastos y pagos, y los contactos útiles (administración,
+   consejo y proveedores). Desde ahí, las acciones rápidas: **Cargar gasto**, **Registrar pago**,
+   **Abrir período** o **Liquidar**.
+4. El menú lateral agrupa las secciones del consorcio en **Dinero**, **Convivencia**, **Análisis**
+   y **Administración**. Para cambiar de edificio sin perder la sección, use el desplegable
+   **Cambiar de consorcio** arriba del menú.
+5. La **Bandeja** de la barra superior junta lo pendiente de todos los consorcios que administra:
+   reclamos sin resolver, períodos sin liquidar y avisos por correo sin enviar.
+
+Las direcciones de las secciones cuelgan del consorcio: `/consorcios/<id>/gastos`,
+`/consorcios/<id>/periodos`, etc. En este manual se abrevian como `/gastos`, `/periodos`.
+
 ### 16.2.2 Alta y administración del consorcio: datos, unidades y coeficientes
 
 El alta de un consorcio en Flay es una operación atómica y estructurada que previene la existencia de entidades a medio configurar en la base de datos (FR-011c). Se realiza mediante el asistente visual (*Wizard*) accesible desde el menú principal **Consorcios** (`/consorcios`) pulsando el botón **Nuevo consorcio** (`/consorcios/nuevo`).
@@ -183,8 +202,7 @@ Flay distingue conceptualmente entre una **Persona** (entidad humana con nombre,
 
 #### Invitación de usuarios al portal web (`/usuarios/invitar`)
 Para habilitar el ingreso digital de un propietario, inquilino o colega de administración:
-1. Diríjase a **Usuarios** (`/usuarios`) en la barra superior.
-2. Si administra más de un edificio, seleccione el consorcio activo en el desplegable.
+1. Dentro del consorcio, diríjase a **Usuarios** (`/usuarios`) en el bloque **Administración** del menú lateral.
 3. Presione el botón **Invitar persona** (se abre la ventana modal o la ruta `/usuarios/invitar`).
 4. Complete los campos requeridos:
    - **Nombre:** Nombre de pila del consorcista (ejemplo: *Marcela*).

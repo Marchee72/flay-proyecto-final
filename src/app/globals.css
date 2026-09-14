@@ -132,6 +132,24 @@ a {
   gap: var(--e3);
   align-items: center;
 }
+.barra__global {
+  display: flex;
+  gap: var(--e2);
+}
+.barra__global a {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  min-height: var(--toque);
+  padding: 0 var(--e3);
+  border-radius: var(--radio-chico);
+  color: var(--tinta-clara);
+  text-decoration: none;
+  font-size: var(--t-menor);
+}
+.barra__global a:hover {
+  background: var(--grafito-claro);
+}
 .marca {
   font-weight: 700;
   font-size: var(--t-titulo3);
@@ -174,6 +192,13 @@ a {
 .armazon .disposicion {
   flex: 1;
 }
+/* Pantallas sin lateral (lista de consorcios, bandeja): el contenido solo,
+   con el mismo margen que el `main` de la L. */
+main.suelto {
+  padding: var(--e4);
+  flex: 1;
+}
+
 /* Opcion 3 del prototipo: la L de grafito abraza el contenido y la esquina
    superior izquierda del contenido se curva hacia adentro. Arriba fundido
    con la barra (sin radio), abajo tarjeta redondeada. `clip` recorta
@@ -224,6 +249,39 @@ a {
   font-weight: 700;
   color: var(--lima-alto);
   background: var(--grafito-claro);
+}
+/* La columna grafito: atajo de consorcio arriba, menu en telefono, lateral. */
+.lateral__marco {
+  background: var(--grafito);
+  color: var(--tinta-clara);
+  display: flex;
+  flex-direction: column;
+  gap: var(--e2);
+  padding-top: var(--e3);
+}
+.lateral__marco .selector-consorcio {
+  margin: 0 var(--e3);
+}
+.lateral__marco .selector-consorcio select {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+.lateral__consorcio {
+  font-weight: 700;
+  font-size: var(--t-titulo3);
+  margin-bottom: var(--e2);
+}
+.lateral__consorcio .icono {
+  color: var(--lima-alto);
+}
+.lateral__bloque h2 {
+  margin: var(--e3) var(--e3) var(--e1);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lima-alto);
 }
 
 /* Menu de telefono: apertura nativa, sin guion. */
@@ -523,6 +581,49 @@ tfoot td {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--e3);
 }
+.fila-kpi {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--e3);
+  margin: 0 0 var(--e4);
+}
+.lista-simple {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.lista-simple li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--e3);
+  padding: var(--e2) 0;
+  border-bottom: 1px solid var(--linea);
+}
+.lista-simple li:last-child {
+  border-bottom: 0;
+}
+.lista-simple .cifra {
+  flex: none;
+}
+.senales {
+  list-style: none;
+  margin: var(--e3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e1);
+  font-size: var(--t-menor);
+}
+.senales li {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+}
+.senales .senal--atencion {
+  color: var(--rojo);
+  font-weight: 600;
+}
+
 .kpi {
   background: var(--grafito);
   border-radius: var(--radio);
@@ -713,8 +814,20 @@ tfoot td {
   .disposicion > main {
     border-radius: 0;
   }
-  .disposicion > .lateral {
+  .lateral__marco > .lateral {
     display: none;
+  }
+  .lateral__marco {
+    padding: var(--e3);
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .lateral__marco .selector-consorcio {
+    margin: 0;
+  }
+  main.suelto {
+    padding: 0;
   }
   .menu {
     display: block;
@@ -764,50 +877,13 @@ tfoot td {
   }
 }
 
-/* Encabezado de consorcio (guía §3.4, Navegación): insignia + nombre a la
-   izquierda, Volver a la derecha. El nombre va en título2 22px peso 600 y
-   baja a título3 en teléfono. La fila puede envolverse a 390px; el botón
-   nunca se corta (`flex: none` + sin quiebre interno). Solo tokens. */
-.encabezado-consorcio {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--e2) var(--e3);
+/* Volver a la pantalla madre dentro del mismo consorcio (el nombre del
+   consorcio ya lo pone el lateral). Solo tokens. */
+.volver {
   margin: 0 0 var(--e3);
 }
-.encabezado-consorcio__nombre {
-  display: flex;
-  align-items: center;
-  gap: var(--e2);
-  margin: 0;
-  min-width: 0;
-  flex: 1 1 auto;
-  font-size: var(--t-titulo2);
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-.encabezado-consorcio__insignia {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: var(--toque);
-  min-height: var(--toque);
-  border-radius: var(--pastilla);
-  background: var(--lima);
-  color: var(--grafito);
-  flex: none;
-}
-.encabezado-consorcio .boton {
-  flex: none;
+.volver .boton {
   white-space: nowrap;
-  max-width: 100%;
-  margin-left: auto;
-}
-@media (max-width: 760px) {
-  .encabezado-consorcio__nombre {
-    font-size: var(--t-titulo3);
-  }
 }
 
 /* Acceso: las pantallas sin panel —ingresar, invitacion— ------------------ */

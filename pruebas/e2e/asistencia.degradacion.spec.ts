@@ -44,7 +44,7 @@ test('sin asistencia, la pregunta lleva a los documentos y el reclamo se registr
 }) => {
   await entrar(page, escenario.correo)
 
-  await page.goto(`/documentos/consultar?consorcio=${escenario.consorcioId}`)
+  await page.goto(`/consorcios/${escenario.consorcioId}/documentos/consultar`)
   await page.getByLabel('Tu pregunta').fill('¿Cuántas personas entran en el salón?')
   await page.getByRole('button', { name: 'Preguntar' }).click()
   await expect(page.getByRole('status')).toContainText('no está configurado')
@@ -54,7 +54,7 @@ test('sin asistencia, la pregunta lleva a los documentos y el reclamo se registr
     await prisma.consultaDocumental.count({ where: { consorcioId: escenario.consorcioId } }),
   ).toBe(0)
 
-  await page.goto(`/reclamos?consorcio=${escenario.consorcioId}`)
+  await page.goto(`/consorcios/${escenario.consorcioId}/reclamos`)
   await page.getByRole('button', { name: 'Nuevo reclamo' }).click()
   const dialogo = page.getByRole('dialog')
   await dialogo.getByLabel('Qué pasa').fill('El ascensor quedó parado entre pisos')
@@ -71,7 +71,7 @@ test('sin asistencia, la pregunta lleva a los documentos y el reclamo se registr
   const reclamo = await prisma.reclamo.findUniqueOrThrow({ where: { id: reclamoId } })
   expect(reclamo.estado).toBe('abierto')
 
-  await page.goto(`/gastos/asistida?consorcio=${escenario.consorcioId}`)
+  await page.goto(`/consorcios/${escenario.consorcioId}/gastos/asistida`)
   await expect(page.getByRole('heading', { name: 'Carga asistida', level: 1 })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Subir y extraer' })).toBeVisible()
 })

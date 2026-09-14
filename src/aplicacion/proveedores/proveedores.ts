@@ -37,6 +37,8 @@ export async function altaProveedor(
     razonSocial: string
     cuit: string
     rubroHabitualId?: string | null
+    telefono?: string | null
+    correo?: string | null
   },
 ): Promise<{ proveedorId: string }> {
   return conAutorizacion(
@@ -61,6 +63,8 @@ export async function altaProveedor(
           razonSocial: datos.razonSocial.trim(),
           cuit,
           rubroHabitualId: datos.rubroHabitualId || null,
+          telefono: datos.telefono?.trim() || null,
+          correo: datos.correo?.trim() || null,
         }),
       })
 
@@ -78,6 +82,8 @@ export async function editarProveedor(
     proveedorId: string
     razonSocial: string
     rubroHabitualId?: string | null
+    telefono?: string | null
+    correo?: string | null
   },
 ): Promise<void> {
   await conAutorizacion(
@@ -100,6 +106,8 @@ export async function editarProveedor(
         data: {
           razonSocial: datos.razonSocial.trim(),
           rubroHabitualId: datos.rubroHabitualId || null,
+          telefono: datos.telefono?.trim() || null,
+          correo: datos.correo?.trim() || null,
         },
       })
     },

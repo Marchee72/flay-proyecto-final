@@ -83,12 +83,12 @@ test('la propuesta del comprobante se revisa y el gasto nace al confirmar (SC-01
   })
   await entrar(page, escenario.correo)
 
-  await page.goto(`/gastos/asistida?consorcio=${escenario.consorcioId}`)
+  await page.goto(`/consorcios/${escenario.consorcioId}/gastos/asistida`)
   await expect(page.getByRole('heading', { name: 'Carga asistida', level: 1 })).toBeVisible()
   await expect(page.getByRole('cell', { name: 'Propuesta lista' })).toBeVisible()
   expect(await desbordaALoAncho(page)).toBe(false)
 
-  await page.goto(`/gastos/asistida/${extraccion.id}?consorcio=${escenario.consorcioId}`)
+  await page.goto(`/consorcios/${escenario.consorcioId}/gastos/asistida/${extraccion.id}`)
   await expect(page.getByRole('heading', { name: 'Revisar comprobante', level: 1 })).toBeVisible()
   // Cada campo propuesto viene marcado; no hay gasto todavia.
   await expect(page.getByText('Precargado: revisar antes de confirmar').first()).toBeVisible()
@@ -130,7 +130,7 @@ test('sin asistencia el comprobante queda guardado y el gasto se carga a mano', 
     },
   })
   await entrar(page, escenario.correo)
-  await page.goto(`/gastos/asistida/${extraccion.id}?consorcio=${escenario.consorcioId}`)
+  await page.goto(`/consorcios/${escenario.consorcioId}/gastos/asistida/${extraccion.id}`)
   await expect(page.getByRole('status')).toContainText('La asistencia no está disponible')
   await expect(page.getByText('Precargado: revisar antes de confirmar')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Registrar gasto' })).toBeVisible()
@@ -149,7 +149,7 @@ test('la pregunta con respaldo cita el documento; la que no lo tiene, lo dice (S
   page,
 }) => {
   await entrar(page, escenario.correo)
-  await page.goto(`/documentos/consultar?consorcio=${escenario.consorcioId}`)
+  await page.goto(`/consorcios/${escenario.consorcioId}/documentos/consultar`)
   await expect(
     page.getByRole('heading', { name: 'Preguntarle a la documentación', level: 1 }),
   ).toBeVisible()
@@ -189,7 +189,7 @@ test('la sugerencia del triage se aplica a mano y no cambia el estado (FR-027)',
   page,
 }) => {
   await entrar(page, escenario.correo)
-  await page.goto(`/reclamos?consorcio=${escenario.consorcioId}`)
+  await page.goto(`/consorcios/${escenario.consorcioId}/reclamos`)
   await page.getByRole('button', { name: 'Nuevo reclamo' }).click()
   const dialogo = page.getByRole('dialog')
   await dialogo.getByLabel('Qué pasa').fill('El ascensor quedó parado entre pisos')

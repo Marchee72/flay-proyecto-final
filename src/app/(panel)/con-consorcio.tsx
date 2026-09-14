@@ -1,6 +1,6 @@
-import { cookies } from 'next/headers'
+import { cache } from 'react'
 import { redirect } from 'next/navigation'
-import { Building2, Siren } from 'lucide-react'
+import { Siren, TriangleAlert } from 'lucide-react'
 import type { ReactElement } from 'react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
@@ -8,66 +8,53 @@ import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 
-import {
-  NOMBRE_GALLETA_CONSORCIO,
-  resolverConsorcioActivo,
-  type ParametrosDeConsorcio,
-} from './consorcio-activo'
-import { AvisoConsorcioNoElegido } from './selector-consorcio'
+export type ConsorcioAlcanzable = { id: string; nombre: string; direccion: string }
 
 /**
- * Lo que toda pantalla del panel hace antes de dibujar: sesion, consorcios al
- * alcance y consorcio activo. Devuelve `salida` cuando hay que dibujar otra
- * cosa (sin sesion redirige; sin consorcio, el aviso). Solo presentacion.
+ * Los consorcios al alcance, una sola vez por pedido: el armazon de
+ * `consorcios/[consorcio]` y la pagina los piden los dos, y React los deduplica.
+ */
+export const consorciosAlAlcance = cache(
+  (usuarioId: string): Promise<ConsorcioAlcanzable[]> =>
+    misConsorcios(HABILITACIONES, RELOJ, usuarioId),
+)
+
+/**
+ * Lo que toda pantalla dentro de `/consorcios/[consorcio]` hace antes de
+ * dibujar: sesion y consorcio de la ruta validado contra el alcance. Devuelve
+ * `salida` cuando hay que dibujar otra cosa. Solo presentacion: cada caso de
+ * uso vuelve a autorizar contra la base (FR-002); esto decide que se dibuja.
  */
 export async function conConsorcio(
-  parametros: ParametrosDeConsorcio,
-  base: string,
+  consorcioId: string,
   titulo: string,
-): Promise<
-  { salida: ReactElement } | { usuarioId: string; activo: { id: string; nombre: string } }
-> {
+): Promise<{ salida: ReactElement } | { usuarioId: string; activo: ConsorcioAlcanzable }> {
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) redirect('/ingresar')
 
-  const consorcios = await misConsorcios(HABILITACIONES, RELOJ, usuarioId)
-  if (consorcios.length === 0) {
-    return {
-      salida: (
-        <>
-          <h1>{titulo}</h1>
-          <div className="vacio">
-            <Building2 aria-hidden="true" />
-            <p>Todavía no hay ningún consorcio al alcance.</p>
-          </div>
-        </>
-      ),
-    }
-  }
-
-  const galletas = await cookies()
-  const { activo, pedidoDesconocido } = resolverConsorcioActivo(
-    parametros,
-    consorcios,
-    galletas.get(NOMBRE_GALLETA_CONSORCIO)?.value,
-  )
+  const activo = (await consorciosAlAlcance(usuarioId)).find((c) => c.id === consorcioId)
   if (!activo) {
     return {
       salida: (
         <>
           <h1>{titulo}</h1>
-          <AvisoConsorcioNoElegido
-            consorcios={consorcios}
-            base={base}
-            parametros={parametros}
-            pedidoDesconocido={pedidoDesconocido}
-          />
+          <AvisoFueraDeAlcance />
         </>
       ),
     }
   }
 
   return { usuarioId, activo }
+}
+
+/** RNF-10: la direccion pedia un consorcio que no esta al alcance; no se dibuja otro. */
+export function AvisoFueraDeAlcance() {
+  return (
+    <p className="aviso aviso--atencion" role="status">
+      <TriangleAlert className="icono" aria-hidden="true" />
+      <span>Ese consorcio no está al alcance, por eso no se muestra ningún dato.</span>
+    </p>
+  )
 }
 
 /** El error de aplicacion, dicho con sus palabras (RNF-10); cualquier otro se propaga. */

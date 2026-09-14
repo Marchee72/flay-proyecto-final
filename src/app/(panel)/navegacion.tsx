@@ -2,56 +2,54 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import {
-  Building2,
-  CalendarCheck,
-  CalendarDays,
-  FileText,
-  Gauge,
-  Megaphone,
-  BookOpen,
-  MessageSquareWarning,
-  Receipt,
-  TriangleAlert,
-  Truck,
-  Users,
-  Wallet,
-} from 'lucide-react'
+import { Building2 } from 'lucide-react'
 
-/** Secciones del punto 12. El consorcio activo vive en la barra, no aca. */
-export const SECCIONES = [
-  { href: '/consorcios', titulo: 'Consorcios', Icono: Building2 },
-  { href: '/gastos', titulo: 'Gastos', Icono: Receipt },
-  { href: '/periodos', titulo: 'Períodos', Icono: CalendarDays },
-  { href: '/expensas', titulo: 'Expensas', Icono: FileText },
-  { href: '/pagos', titulo: 'Pagos', Icono: Wallet },
-  { href: '/morosidad', titulo: 'Morosidad', Icono: TriangleAlert },
-  { href: '/reclamos', titulo: 'Reclamos', Icono: MessageSquareWarning },
-  { href: '/reservas', titulo: 'Reservas', Icono: CalendarCheck },
-  { href: '/novedades', titulo: 'Novedades', Icono: Megaphone },
-  { href: '/documentos', titulo: 'Documentación', Icono: BookOpen },
-  { href: '/indicadores', titulo: 'Indicadores', Icono: Gauge },
-  { href: '/proveedores', titulo: 'Proveedores', Icono: Truck },
-  { href: '/usuarios', titulo: 'Usuarios', Icono: Users },
-] as const
+import { BLOQUES } from './secciones'
 
 /** Las 5 que entran en la barra inferior del telefono (variante C). */
-const PRINCIPALES = ['/periodos', '/gastos', '/expensas', '/pagos', '/morosidad'] as const
+const PRINCIPALES = BLOQUES[0].secciones
 
-export function Navegacion({ id, etiqueta = 'Secciones' }: { id?: string; etiqueta?: string }) {
+function activa(ruta: string, base: string, seccion: string): boolean {
+  return ruta === `${base}/${seccion}` || ruta.startsWith(`${base}/${seccion}/`)
+}
+
+export function Navegacion({
+  base,
+  nombre,
+  id,
+  etiqueta = 'Secciones',
+}: {
+  base: string
+  nombre: string
+  id?: string
+  etiqueta?: string
+}) {
   const ruta = usePathname()
 
   return (
     <nav className="lateral" aria-label={etiqueta} id={id}>
-      {SECCIONES.map((seccion) => (
-        <Link
-          key={seccion.href}
-          href={seccion.href}
-          aria-current={ruta.startsWith(seccion.href) ? 'page' : undefined}
-        >
-          <seccion.Icono className="icono" aria-hidden="true" />
-          {seccion.titulo}
-        </Link>
+      <Link
+        className="lateral__consorcio"
+        href={base}
+        aria-current={ruta === base ? 'page' : undefined}
+      >
+        <Building2 className="icono" aria-hidden="true" />
+        {nombre}
+      </Link>
+      {BLOQUES.map((bloque) => (
+        <section key={bloque.titulo} className="lateral__bloque" aria-label={bloque.titulo}>
+          <h2>{bloque.titulo}</h2>
+          {bloque.secciones.map((seccion) => (
+            <Link
+              key={seccion.ruta}
+              href={`${base}/${seccion.ruta}`}
+              aria-current={activa(ruta, base, seccion.ruta) ? 'page' : undefined}
+            >
+              <seccion.Icono className="icono" aria-hidden="true" />
+              {seccion.titulo}
+            </Link>
+          ))}
+        </section>
       ))}
     </nav>
   )
@@ -63,20 +61,17 @@ export function Navegacion({ id, etiqueta = 'Secciones' }: { id?: string; etique
  * se muestra (ahi manda el lateral). Lleva su propio nombre de landmark
  * para no duplicar el del lateral ni el del menu.
  */
-export function BarraInferior() {
+export function BarraInferior({ base }: { base: string }) {
   const ruta = usePathname()
-  const principales = SECCIONES.filter((seccion) =>
-    (PRINCIPALES as readonly string[]).includes(seccion.href),
-  )
 
   return (
     <nav className="barra-inferior" aria-label="Secciones principales">
       <ul>
-        {principales.map((seccion) => (
-          <li key={seccion.href}>
+        {PRINCIPALES.map((seccion) => (
+          <li key={seccion.ruta}>
             <Link
-              href={seccion.href}
-              aria-current={ruta.startsWith(seccion.href) ? 'page' : undefined}
+              href={`${base}/${seccion.ruta}`}
+              aria-current={activa(ruta, base, seccion.ruta) ? 'page' : undefined}
             >
               <seccion.Icono className="icono" aria-hidden="true" />
               {seccion.titulo}

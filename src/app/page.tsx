@@ -1,14 +1,29 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { LogIn } from 'lucide-react'
+
+import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+
+import { consorciosAlAlcance } from './(panel)/con-consorcio'
+import { NOMBRE_GALLETA_CONSORCIO, destinoDeEntrada } from './(panel)/consorcio-activo'
 
 export const metadata: Metadata = { title: 'Flay — Tu consorcio online' }
 
 /**
- * Portada mínima (Fase B3): propuesta de valor + una sola acción primaria,
- * Ingresar. Sin lógica de negocio: la sesión se resuelve en `/ingresar`.
+ * Con sesión, `/` es la entrada al panel (diseño 2026-09-13 § 3.1): un solo
+ * consorcio va derecho a su resumen; varios, al último usado o a la lista.
+ * Sin sesión, la portada mínima: propuesta de valor + Ingresar.
  */
-export default function Portada() {
+export default async function Portada() {
+  const usuarioId = await usuarioDeLaSesion()
+  if (usuarioId) {
+    const consorcios = await consorciosAlAlcance(usuarioId)
+    const recordado = (await cookies()).get(NOMBRE_GALLETA_CONSORCIO)?.value
+    redirect(destinoDeEntrada(consorcios, recordado))
+  }
+
   return (
     <div className="acceso">
       <div>

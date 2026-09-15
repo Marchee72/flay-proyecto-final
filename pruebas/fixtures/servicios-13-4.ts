@@ -201,6 +201,15 @@ export async function sembrarServicios(
   for (const definicion of USUARIOS) {
     const existente = await cliente.usuario.findUnique({ where: { correo: definicion.correo } })
     let usuarioId = existente?.id
+    // Con DEMO_CLAVE, la semilla es la fuente de la clave tambien para los que
+    // ya existen: si la variable cambia, cambia la clave. Solo para el juego de
+    // demostracion; la semilla de produccion no tiene esta rama.
+    if (usuarioId && opciones.claveDerivada) {
+      await cliente.usuario.update({
+        where: { id: usuarioId },
+        data: { claveDerivada: opciones.claveDerivada, estado: 'activo', bloqueadoHasta: null },
+      })
+    }
     if (!usuarioId) {
       const persona = await cliente.persona.create({
         data: {

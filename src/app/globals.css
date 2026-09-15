@@ -447,7 +447,8 @@ main.suelto {
   display: flex;
   flex-wrap: wrap;
   gap: var(--e2);
-  margin-top: var(--e4);
+  /* Aire arriba y abajo: es un `div`, no hereda el margen del parrafo. */
+  margin: var(--e4) 0;
 }
 
 .campo {
@@ -1117,7 +1118,7 @@ td select {
   max-width: none;
 }
 .modal .fila-acciones {
-  margin-top: var(--e5);
+  margin: var(--e5) 0 0;
 }
 /* El boton de envio no se pega al ultimo campo. */
 .modal form > .boton,

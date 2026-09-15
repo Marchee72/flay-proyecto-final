@@ -38,8 +38,10 @@ export interface ExtraccionVisible {
   id: string
   estado: EstadoExtraccion
   tipoContenido: string
-  /** Nula si el almacen no pudo resolverla: la revision sigue, sin visor. */
+  /** Para el visor, en linea. Nula si el almacen no pudo resolverla: la revision sigue, sin visor. */
   direccion: string | null
+  /** La misma, pero descarga: para el boton, nunca para el visor. */
+  descarga: string | null
   propuesta: {
     proveedor: string | null
     cuit: string | null
@@ -189,7 +191,10 @@ export async function verExtraccion(
         id: e.id,
         estado: e.estado,
         tipoContenido: e.tipoContenido,
-        direccion: await almacen.resolverLecturaAutorizada(e.claveObjeto, 600).catch(() => null),
+        direccion: await almacen
+          .resolverLecturaAutorizada(e.claveObjeto, 600, { enLinea: true })
+          .catch(() => null),
+        descarga: await almacen.resolverLecturaAutorizada(e.claveObjeto, 600).catch(() => null),
         propuesta: {
           proveedor: e.proveedorDetectado,
           cuit: e.cuitDetectado,

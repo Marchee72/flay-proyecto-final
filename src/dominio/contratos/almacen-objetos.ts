@@ -43,6 +43,15 @@ export interface AlmacenObjetos {
    * el tipo de contenido de un comprobante cualquiera.
    */
   guardar(clave: string, bytes: Uint8Array, tipoContenido: 'application/pdf'): Promise<void>
-  resolverLecturaAutorizada(clave: string, duracionSegundos: number): Promise<string>
+  /**
+   * Por omision la direccion **descarga** el objeto (comprobante de un gasto,
+   * documento, expensa). Con `enLinea` lo muestra en el navegador: es lo que
+   * necesita un visor incrustado, que con la otra dispara la descarga sola.
+   */
+  resolverLecturaAutorizada(
+    clave: string,
+    duracionSegundos: number,
+    opciones?: { enLinea?: boolean },
+  ): Promise<string>
   eliminar(clave: string): Promise<void>
 }

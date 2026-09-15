@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { CalendarDays, Hourglass, TriangleAlert } from 'lucide-react'
+import { CalendarDays, Download, Hourglass, TriangleAlert } from 'lucide-react'
 
 import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verExtraccion } from '@/aplicacion/gastos/extraccion'
@@ -183,11 +183,16 @@ export default async function RevisarExtraccionPage({
               />
             )}
             {extraccion.direccion && (
-              <p>
+              <div className="fila-acciones">
+                {extraccion.descarga && (
+                  <a className="boton boton--fantasma" href={extraccion.descarga} download>
+                    <Download className="icono" aria-hidden="true" /> Descargar
+                  </a>
+                )}
                 <a href={extraccion.direccion} target="_blank" rel="noreferrer">
                   Abrir en otra pestaña
                 </a>
-              </p>
+              </div>
             )}
           </div>
         </div>

@@ -83,7 +83,6 @@ test('con dos consorcios se entra a la lista, y el atajo conserva la seccion', a
 
   await page.goto(`/consorcios/${conDos.consorcioId}/gastos`)
   await page.getByLabel('Cambiar de consorcio').selectOption(segundoConsorcioId)
-  await page.getByRole('button', { name: 'Ir', exact: true }).click()
   await expect(page).toHaveURL(`/consorcios/${segundoConsorcioId}/gastos`)
 })
 

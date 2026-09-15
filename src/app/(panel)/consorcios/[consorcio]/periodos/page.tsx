@@ -4,8 +4,9 @@ import {
   BadgeCheck,
   CalendarDays,
   Circle,
+  CircleCheck,
+  CircleDot,
   Siren,
-  TriangleAlert,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -14,7 +15,7 @@ import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarPeriodos } from '@/aplicacion/periodos/periodos'
 
-import { importeParaMostrar } from '@/compartido/formato'
+import { fechaParaMostrar, importeParaMostrar } from '@/compartido/formato'
 
 import { BotonAnular, BotonCerrar, BotonLiquidar } from './acciones-de-estado'
 import { ModalPeriodo } from './modal-periodo'
@@ -23,8 +24,22 @@ import { EnlaceExportar } from '../../../exportar'
 
 export const metadata: Metadata = { title: 'Períodos — Flay' }
 
-export default async function PeriodosPage({ params }: { params: Promise<{ consorcio: string }> }) {
+/** Lo que acaba de pasar, para el aviso de arriba: las acciones redirigen aca. */
+const HECHO: Record<string, string> = {
+  cerrado: 'Período cerrado. Ya se puede liquidar.',
+  liquidado: 'Liquidación emitida. Las expensas ya están en cada unidad.',
+  anulado: 'Liquidación anulada. Los pagos aplicados quedaron como saldo a favor.',
+}
+
+export default async function PeriodosPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ consorcio: string }>
+  searchParams: Promise<{ hecho?: string }>
+}) {
   const { consorcio: consorcioId } = await params
+  const hecho = HECHO[(await searchParams).hecho ?? '']
   const pantalla = await conConsorcio(consorcioId, 'Períodos')
   if ('salida' in pantalla) return pantalla.salida
   const { usuarioId, activo } = pantalla
@@ -42,21 +57,24 @@ export default async function PeriodosPage({ params }: { params: Promise<{ conso
       <>
         <h1>Períodos</h1>
         <p className="apagado">Un período por mes.</p>
-        {roles.some((r) => r === 'administrador' || r === 'consejo') && (
-          <p>
-            <EnlaceExportar consorcioId={activo.id} tabla="liquidaciones" />
+        {hecho && (
+          <p className="aviso aviso--exito" role="status">
+            <CircleCheck className="icono" aria-hidden="true" />
+            <span>{hecho}</span>
           </p>
         )}
-
-        {administra && (
-          <p>
+        <div className="fila-acciones">
+          {administra && (
             <ModalPeriodo
               consorcioId={activo.id}
               anio={hoy.getUTCFullYear()}
               mes={hoy.getUTCMonth() + 1}
             />
-          </p>
-        )}
+          )}
+          {roles.some((r) => r === 'administrador' || r === 'consejo') && (
+            <EnlaceExportar consorcioId={activo.id} tabla="liquidaciones" />
+          )}
+        </div>
 
         {periodos.length === 0 ? (
           <div className="vacio">
@@ -98,7 +116,10 @@ export default async function PeriodosPage({ params }: { params: Promise<{ conso
                             >
                               {importeParaMostrar(periodo.liquidacion.totalGeneral)}
                             </Link>
-                            <span className="ayuda"> vence {periodo.liquidacion.vencimiento}</span>
+                            <span className="ayuda">
+                              {' '}
+                              vence {fechaParaMostrar(periodo.liquidacion.vencimiento)}
+                            </span>
                           </>
                         ) : (
                           '—'
@@ -123,7 +144,7 @@ export default async function PeriodosPage({ params }: { params: Promise<{ conso
                               liquidacionId={periodo.liquidacion.id}
                               periodoEtiqueta={etiqueta}
                               total={importeParaMostrar(periodo.liquidacion.totalGeneral)}
-                              vencimiento={formatearVencimiento(periodo.liquidacion.vencimiento)}
+                              vencimiento={fechaParaMostrar(periodo.liquidacion.vencimiento)}
                             />
                           )}
                         </td>
@@ -154,23 +175,18 @@ export default async function PeriodosPage({ params }: { params: Promise<{ conso
   }
 }
 
-/** `2026-09-10` → `10/09/2026`: solo reordena la cadena (§4, presentación). */
-function formatearVencimiento(iso: string): string {
-  const [anio, mes, dia] = iso.split('-')
-  return `${dia}/${mes}/${anio}`
-}
-
 /**
  * La base guarda `abierto`/`cerrado`/`liquidado`/`anulado` en minúsculas; en
- * pantalla van con mayúscula inicial y `.etiqueta` (guía §3.4). Abierto avisa
- * (ámbar, admite gastos), Cerrado espera (gris), Liquidado cierra (verde),
- * Anulado advierte (rojo). El icono reutiliza la escala de urgencias de la guía
+ * pantalla van con mayúscula inicial y `.etiqueta` (guía §3.4). Abierto es el
+ * estado de trabajo (ámbar, admite gastos; sin triángulo, que no es una
+ * alerta), Cerrado espera (gris), Liquidado cierra (verde), Anulado advierte
+ * (rojo). El icono reutiliza la escala de urgencias de la guía
  * §3.2 con el mismo color: color + icono + palabra, nunca color solo.
  * Solo presentación.
  */
 const ETIQUETA_ESTADO_PERIODO: Record<string, { texto: string; clase: string; Icono: LucideIcon }> =
   {
-    abierto: { texto: 'Abierto', clase: 'etiqueta--propietario', Icono: TriangleAlert },
+    abierto: { texto: 'Abierto', clase: 'etiqueta--propietario', Icono: CircleDot },
     cerrado: { texto: 'Cerrado', clase: 'etiqueta--pendiente', Icono: Circle },
     liquidado: { texto: 'Liquidado', clase: 'etiqueta--rendido', Icono: BadgeCheck },
     anulado: { texto: 'Anulado', clase: 'etiqueta--vencido', Icono: Siren },

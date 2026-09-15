@@ -71,13 +71,13 @@ export default async function ReservasPage({
         </p>
 
         {parametros.confirmada && (
-          <p className="aviso aviso--atencion" role="status">
+          <p className="aviso aviso--exito" role="status">
             <BadgeCheck className="icono" aria-hidden="true" />
             <span>Reserva confirmada. Te llega un aviso por correo.</span>
           </p>
         )}
         {parametros.cancelada && (
-          <p className="aviso aviso--atencion" role="status">
+          <p className="aviso aviso--exito" role="status">
             <BadgeCheck className="icono" aria-hidden="true" />
             <span>Reserva cancelada.</span>
           </p>

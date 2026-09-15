@@ -58,7 +58,7 @@ export default async function DocumentosPage({
           .
         </p>
         {parametros.cargado && (
-          <p className="aviso aviso--atencion" role="status">
+          <p className="aviso aviso--exito" role="status">
             <BadgeCheck className="icono" aria-hidden="true" />
             <span>
               Documento cargado. Se indexa en segundo plano; cuando diga «listo» se puede consultar.
@@ -78,7 +78,9 @@ export default async function DocumentosPage({
         ) : (
           <div className="tabla-desplazable" tabIndex={0} role="region" aria-label="Documentos">
             <table>
-              <caption className="ayuda">Los no visibles para consorcistas llevan la marca</caption>
+              <caption>
+                Los que los consorcistas no ven llevan el ojo tachado junto al título.
+              </caption>
               <thead>
                 <tr>
                   <th scope="col">Documento</th>

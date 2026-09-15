@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { FileText, Siren, TriangleAlert } from 'lucide-react'
+import { CircleCheck, FileText, Siren, TriangleAlert } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { importeParaMostrar } from '@/compartido/formato'
@@ -7,7 +7,7 @@ import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verGasto, type ComprobanteDelGasto } from '@/aplicacion/gastos/ver-gasto'
 
 import { AdjuntarComprobante } from './adjuntar'
-import { conConsorcio } from '../../../../con-consorcio'
+import { conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
 
 export const metadata: Metadata = { title: 'Gasto — Flay' }
@@ -21,7 +21,8 @@ export default async function GastoPage({
   params: Promise<{ consorcio: string; id: string }>
   searchParams: Promise<{ nuevo?: string }>
 }) {
-  const { consorcio: consorcioId, id } = await params
+  const { consorcio: consorcioId, id: crudo } = await params
+  const id = idONoEncontrado(crudo)
   const parametros = await searchParams
   const pantalla = await conConsorcio(consorcioId, 'Gasto')
   if ('salida' in pantalla) return pantalla.salida
@@ -52,8 +53,8 @@ export default async function GastoPage({
       </p>
 
       {parametros.nuevo && (
-        <p className="aviso aviso--atencion" role="status">
-          <TriangleAlert className="icono" aria-hidden="true" />
+        <p className="aviso aviso--exito" role="status">
+          <CircleCheck className="icono" aria-hidden="true" />
           <span>Gasto registrado. Si hay comprobante, adjuntarlo a continuación.</span>
         </p>
       )}

@@ -36,8 +36,9 @@ test('el consorcista ve la expensa de su unidad con su total', async ({ page }) 
   await entrar(page, escenario.correo)
   await page.goto(`/consorcios/${escenario.consorcioId}/expensas`)
 
-  await expect(page.getByRole('heading', { name: 'Unidad 3B' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Unidad 3C' })).toHaveCount(0)
+  // Una tabla con columna Unidad: la suya aparece, la del vecino no (RN-12).
+  await expect(page.getByRole('cell', { name: '3B', exact: true })).toBeVisible()
+  await expect(page.getByRole('cell', { name: '3C', exact: true })).toHaveCount(0)
   // El importe llega como cadena y se formatea en es-AR: nunca se recalcula.
   await expect(page.getByText('$ 92.160,38')).toBeVisible()
 })

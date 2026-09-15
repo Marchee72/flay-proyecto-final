@@ -7,7 +7,7 @@ import { verExtraccion } from '@/aplicacion/gastos/extraccion'
 import { listarPeriodos } from '@/aplicacion/periodos/periodos'
 import { listarProveedores, listarRubros } from '@/aplicacion/proveedores/proveedores'
 
-import { AvisoDeError, conConsorcio } from '../../../../../con-consorcio'
+import { AvisoDeError, conConsorcio, idONoEncontrado } from '../../../../../con-consorcio'
 import { Volver } from '../../../../../encabezado-consorcio'
 import { accionDescartarExtraccion } from '../../acciones'
 import { FormularioGasto } from '../../nuevo/formulario'
@@ -24,8 +24,8 @@ export default async function RevisarExtraccionPage({
 }: {
   params: Promise<{ consorcio: string; id: string }>
 }) {
-  const { id } = await params
-  const { consorcio: consorcioId } = await params
+  const { consorcio: consorcioId, id: crudo } = await params
+  const id = idONoEncontrado(crudo)
   const pantalla = await conConsorcio(consorcioId, 'Revisar comprobante')
   if ('salida' in pantalla) return pantalla.salida
   const { usuarioId, activo } = pantalla

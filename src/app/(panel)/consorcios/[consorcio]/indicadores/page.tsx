@@ -66,7 +66,7 @@ export default async function IndicadoresPage({
         </p>
 
         {parametros.actualizado && (
-          <p className="aviso aviso--atencion" role="status">
+          <p className="aviso aviso--exito" role="status">
             <BadgeCheck className="icono" aria-hidden="true" />
             <span>Indicadores actualizados.</span>
           </p>

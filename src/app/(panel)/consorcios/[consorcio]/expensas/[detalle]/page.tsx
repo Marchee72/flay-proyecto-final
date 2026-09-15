@@ -11,7 +11,7 @@ import { MEDIOS_DE_PAGO } from '@/aplicacion/pagos/registrar'
 
 import { ModalPago } from '../../pagos/modal-pago'
 
-import { conConsorcio } from '../../../../con-consorcio'
+import { conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
 
 export const metadata: Metadata = { title: 'Expensa — Flay' }
@@ -28,7 +28,8 @@ export default async function ExpensaPage({
 }: {
   params: Promise<{ consorcio: string; detalle: string }>
 }) {
-  const { consorcio: consorcioId, detalle } = await params
+  const { consorcio: consorcioId, detalle: crudo } = await params
+  const detalle = idONoEncontrado(crudo)
   const pantalla = await conConsorcio(consorcioId, 'Expensa')
   if ('salida' in pantalla) return pantalla.salida
   const { usuarioId, activo } = pantalla

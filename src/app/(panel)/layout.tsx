@@ -41,13 +41,13 @@ export default async function PanelLayout({ children }: { children: React.ReactN
         </Link>
 
         <nav className="barra__global" aria-label="Panel">
-          <Link href="/consorcios">
+          <Link href="/consorcios" aria-label="Consorcios">
             <Building2 className="icono" aria-hidden="true" />
-            Consorcios
+            <span className="barra__texto">Consorcios</span>
           </Link>
-          <Link href="/bandeja">
+          <Link href="/bandeja" aria-label="Bandeja">
             <Inbox className="icono" aria-hidden="true" />
-            Bandeja
+            <span className="barra__texto">Bandeja</span>
           </Link>
         </nav>
 

@@ -8,6 +8,8 @@ import { TIPOS_DE_UNIDAD_ASIGNABLES } from '@/aplicacion/consorcios/tipos-de-uni
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { verPanel, type PanelConsolidado } from '@/aplicacion/indicadores/indicadores'
+import { listarPeriodos } from '@/aplicacion/periodos/periodos'
+import { plural } from '@/compartido/formato'
 
 import { consorciosAlAlcance } from '../con-consorcio'
 
@@ -41,34 +43,51 @@ export default async function ConsorciosPage({
         `${consorcio.nombre} ${consorcio.direccion}`.toLowerCase().includes(busqueda),
       )
     : consorcios
+  // El ultimo periodo liquidado se lee en vivo, no de la vista materializada:
+  // recien liquidado, la tarjeta no puede decir «sin liquidaciones» hasta que
+  // alguien refresque los indicadores. Son dos o tres consultas aisladas.
+  const ultimoLiquidado = new Map(
+    await Promise.all(
+      visibles.map(async (consorcio) => {
+        const periodos = await listarPeriodos(HABILITACIONES, RELOJ, {
+          usuarioId,
+          consorcioId: consorcio.id,
+        }).catch(() => [])
+        const liquidado = periodos.find((periodo) => periodo.liquidacion)
+        return [
+          consorcio.id,
+          liquidado ? `${String(liquidado.mes).padStart(2, '0')}/${liquidado.anio}` : null,
+        ] as const
+      }),
+    ),
+  )
 
   return (
     <main className="suelto">
       <h1>Consorcios</h1>
       <p className="apagado">Los edificios que administrás. Elegí uno para trabajar sobre él.</p>
 
-      <p className="fila-acciones">
-        <BotonModal etiqueta="Nuevo consorcio" titulo="Nuevo consorcio">
-          {administradoras.length === 0 ? (
-            <div className="vacio">
-              <Building2 aria-hidden="true" />
-              <p>
-                Sin administradora al alcance. El alta de consorcios la autoriza el administrador de
-                la plataforma.
-              </p>
-            </div>
-          ) : (
-            <WizardConsorcio administradoras={administradoras} tipos={TIPOS_DE_UNIDAD_ASIGNABLES} />
-          )}
-        </BotonModal>
-      </p>
-      <noscript>
-        <p>
-          <Link className="boton boton--primario" href="/consorcios/nuevo">
-            Nuevo consorcio
-          </Link>
-        </p>
-      </noscript>
+      {/* Sin administradora al alcance no hay alta posible: el boton no se
+          dibuja, en vez de abrir un dialogo para decir que no. */}
+      {administradoras.length > 0 && (
+        <>
+          <div className="fila-acciones">
+            <BotonModal etiqueta="Nuevo consorcio" titulo="Nuevo consorcio">
+              <WizardConsorcio
+                administradoras={administradoras}
+                tipos={TIPOS_DE_UNIDAD_ASIGNABLES}
+              />
+            </BotonModal>
+          </div>
+          <noscript>
+            <p>
+              <Link className="boton boton--primario" href="/consorcios/nuevo">
+                Nuevo consorcio
+              </Link>
+            </p>
+          </noscript>
+        </>
+      )}
 
       {consorcios.length === 0 ? (
         <div className="vacio">
@@ -122,12 +141,16 @@ export default async function ConsorciosPage({
                       <p className="apagado">{consorcio.direccion}</p>
                     </div>
                   </div>
-                  <Senales senal={senales.por.get(consorcio.id)} meta={senales.meta} />
-                  <p className="fila-acciones">
+                  <Senales
+                    senal={senales.por.get(consorcio.id)}
+                    meta={senales.meta}
+                    ultimoPeriodo={ultimoLiquidado.get(consorcio.id) ?? null}
+                  />
+                  <div className="fila-acciones">
                     <Link className="boton boton--primario" href={`/consorcios/${consorcio.id}`}>
                       Entrar
                     </Link>
-                  </p>
+                  </div>
                 </article>
               ))}
             </div>
@@ -142,9 +165,11 @@ export default async function ConsorciosPage({
 function Senales({
   senal,
   meta,
+  ultimoPeriodo,
 }: {
   senal?: PanelConsolidado['consorcios'][number]
   meta: string
+  ultimoPeriodo: string | null
 }) {
   if (!senal) return null
   const morosa = senal.morosidad !== null && Number(senal.morosidad) > Number(meta)
@@ -152,7 +177,7 @@ function Senales({
     <ul className="senales" aria-label="Señales">
       <li>
         <TrendingUp className="icono" aria-hidden="true" />
-        {senal.ultimoPeriodo ? `Último período ${senal.ultimoPeriodo}` : 'Sin liquidaciones'}
+        {ultimoPeriodo ? `Último período ${ultimoPeriodo}` : 'Sin liquidaciones'}
       </li>
       {senal.morosidad !== null && (
         <li className={morosa ? 'senal--atencion' : undefined}>
@@ -164,7 +189,7 @@ function Senales({
       {senal.reclamosAbiertos > 0 && (
         <li className={senal.reclamosCriticos > 0 ? 'senal--atencion' : undefined}>
           <MessageSquareWarning className="icono" aria-hidden="true" />
-          {senal.reclamosAbiertos} reclamos abiertos
+          {plural(senal.reclamosAbiertos, 'reclamo abierto', 'reclamos abiertos')}
           {senal.reclamosCriticos > 0 && `, ${senal.reclamosCriticos} críticos`}
         </li>
       )}

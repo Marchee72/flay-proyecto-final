@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { TriangleAlert } from 'lucide-react'
+import { CircleCheck } from 'lucide-react'
 
 import { BotonModal } from '../../../modal'
 import { FormularioPeriodo } from './formulario'
@@ -38,8 +38,8 @@ export function ModalPeriodo({
         )}
       </BotonModal>
       {confirmado !== '' && (
-        <p className="aviso aviso--atencion" role="status">
-          <TriangleAlert className="icono" aria-hidden="true" />
+        <p className="aviso aviso--exito" role="status">
+          <CircleCheck className="icono" aria-hidden="true" />
           <span>{confirmado}</span>
         </p>
       )}

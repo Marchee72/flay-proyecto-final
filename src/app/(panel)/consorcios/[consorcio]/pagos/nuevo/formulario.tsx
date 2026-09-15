@@ -54,8 +54,8 @@ export function FormularioPago({
           aria-describedby={hayError ? 'error-pago ayuda-importe' : 'ayuda-importe'}
         />
         <p className="ayuda" id="ayuda-importe">
-          Con punto decimal y hasta dos decimales. Se imputa a lo más viejo primero; lo que sobre
-          queda a favor de la unidad.
+          Con coma o punto decimal y hasta dos decimales. Se imputa a lo más viejo primero; lo que
+          sobre queda a favor de la unidad.
         </p>
       </div>
 

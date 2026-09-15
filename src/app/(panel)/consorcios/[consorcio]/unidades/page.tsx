@@ -10,7 +10,6 @@ import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 
 import { CargadorDePadron } from './cargador'
-import { Volver } from '../../../encabezado-consorcio'
 
 export const metadata: Metadata = { title: 'Unidades — Flay' }
 
@@ -35,8 +34,8 @@ export default async function UnidadesPage({ params }: { params: Promise<{ conso
 
   return (
     <>
-      <Volver href={`/consorcios/${consorcio.id}`} texto="Volver al consorcio" />
-      <h1>Unidades de {consorcio.nombre}</h1>
+      <h1>Unidades</h1>
+      <p className="apagado">El padrón vigente: designación, tipo y coeficiente de cada unidad.</p>
 
       {consorcio.unidades.length === 0 ? (
         <>

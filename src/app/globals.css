@@ -228,15 +228,20 @@ main.suelto {
   background: var(--grafito);
   padding: var(--e3);
   font-size: var(--t-cuerpo);
-  /* Pegado y de alto completo: ya no flota a mitad de pagina. */
+  /* Pegado y de alto completo: ya no flota a mitad de pagina. Si el menu es
+     mas alto que la pantalla, se desplaza solo, sin arrastrar la pagina. */
   position: sticky;
   top: 0;
+  max-height: 100dvh;
+  overflow-y: auto;
 }
 .lateral a {
   display: flex;
   align-items: center;
   gap: var(--e3);
-  min-height: var(--toque);
+  /* En escritorio se apunta con el raton: 36 px hacen entrar las 16
+     secciones en 900 px. El alto de toque vuelve en telefono (abajo). */
+  min-height: 36px;
   padding: 0 var(--e3);
   border-radius: var(--radio-chico);
   color: var(--tinta-clara);
@@ -265,7 +270,7 @@ main.suelto {
 .lateral__marco .selector-consorcio select {
   flex: 1;
   min-width: 0;
-  max-width: 100%;
+  max-width: none;
 }
 .lateral__consorcio {
   font-weight: 700;
@@ -308,6 +313,9 @@ main.suelto {
   left: var(--e4);
   right: var(--e4);
   z-index: 2;
+}
+.menu[open] .lateral a {
+  min-height: var(--toque);
 }
 
 /* Variante C del prototipo: barra inferior solo en telefono; en escritorio
@@ -412,19 +420,7 @@ main.suelto {
 }
 
 /* Confirmación en dos pasos (RN-06, RN-14): el resumen con la magnitud exacta
-   antes del clic final. Solo tokens; la fila de acciones envuelve a 390px.
-   Sin animaciones, así que no pide `prefers-reduced-motion`. */
-.confirmacion {
-  border: 1px solid var(--linea-control);
-  border-left: 4px solid var(--rojo);
-  border-radius: var(--radio-chico);
-  background: var(--superficie);
-  padding: var(--e4);
-  margin-top: var(--e3);
-}
-.confirmacion--liquidar {
-  border-left-color: var(--verde);
-}
+   antes del clic final, en el mismo `.modal` del resto del panel. */
 .resumen {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -435,6 +431,8 @@ main.suelto {
   background: var(--gris-palido);
   border-radius: var(--radio-chico);
   padding: var(--e3) var(--e4);
+  display: grid;
+  gap: var(--e1);
 }
 .resumen__rotulo {
   font-size: var(--t-ayuda);
@@ -449,7 +447,8 @@ main.suelto {
   display: flex;
   flex-wrap: wrap;
   gap: var(--e2);
-  margin-top: var(--e4);
+  /* Aire arriba y abajo: es un `div`, no hereda el margen del parrafo. */
+  margin: var(--e4) 0;
 }
 
 .campo {
@@ -481,6 +480,22 @@ main.suelto {
 .campo textarea {
   padding: var(--e2) var(--e3);
   resize: vertical;
+}
+/* La casilla no es un campo de texto: ni ancho completo ni alto de toque; va
+   en linea con su etiqueta. */
+.campo input[type='checkbox'] {
+  width: auto;
+  min-height: 0;
+  margin: 0;
+}
+.campo label:has(input[type='checkbox']) {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+}
+/* La pregunta o el buscador merecen el ancho entero. */
+.campo--ancho {
+  max-width: none;
 }
 .campo input[aria-invalid='true'],
 .campo select[aria-invalid='true'],
@@ -514,6 +529,12 @@ main.suelto {
   border: 1px solid var(--rojo-borde);
   border-left: 4px solid var(--rojo);
 }
+/* Algo que salio bien no es una advertencia: verde, con tilde. */
+.aviso--exito {
+  background: var(--verde-palido);
+  border: 1px solid var(--verde);
+  border-left-width: 4px;
+}
 /* El icono acompaña al texto; nunca es la unica señal (§3.2). */
 .aviso svg {
   margin-top: 2px;
@@ -534,6 +555,14 @@ table {
   width: 100%;
   border-collapse: collapse;
   min-width: 560px;
+}
+/* El titulo de la tabla se lee: a la izquierda, con aire, dentro del marco. */
+caption {
+  caption-side: top;
+  text-align: left;
+  padding: var(--e2) var(--e4);
+  font-size: var(--t-menor);
+  color: var(--tinta-apagada);
 }
 th,
 td {
@@ -578,7 +607,7 @@ tfoot td {
 /* Rejilla de KPI: una hero por pantalla para la metrica que manda (§3.4). */
 .rejilla {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: var(--e3);
 }
 .fila-kpi {
@@ -604,6 +633,20 @@ tfoot td {
 }
 .lista-simple .cifra {
   flex: none;
+}
+/* Lo primero (titulo, nombre) toma el ancho; lo ultimo (fecha, cifra) va a
+   la derecha. Sin `min-width: 0` un correo largo desborda la tarjeta. */
+.lista-simple li > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+.lista-simple a {
+  overflow-wrap: anywhere;
+}
+.lista-simple--apilada li {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
 }
 .senales {
   list-style: none;
@@ -832,8 +875,13 @@ tfoot td {
   .menu {
     display: block;
   }
+  /* Una sola fila: Consorcios y Bandeja quedan como icono (el nombre sigue
+     en `aria-label`), y «Salir» no cae a una segunda linea. */
   .barra {
-    flex-wrap: wrap;
+    padding: var(--e2) var(--e4);
+  }
+  .barra__global a .barra__texto {
+    display: none;
   }
   h1 {
     font-size: var(--t-titulo2);
@@ -1070,7 +1118,12 @@ td select {
   max-width: none;
 }
 .modal .fila-acciones {
-  margin-top: var(--e5);
+  margin: var(--e5) 0 0;
+}
+/* El boton de envio no se pega al ultimo campo. */
+.modal form > .boton,
+.modal form > p:has(> .boton) {
+  margin-top: var(--e4);
 }
 /* Sin esto, lo ancho —la tabla del padron, de 560px minimo— estira la pista
    de la grilla y el dialogo desborda a 390px (igual que `.disposicion > *`).

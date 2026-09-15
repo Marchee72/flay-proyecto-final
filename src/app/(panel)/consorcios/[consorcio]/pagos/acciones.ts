@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { importeDesdeEntrada } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { medioDesdeFormulario, registrarPago } from '@/aplicacion/pagos/registrar'
@@ -25,7 +26,7 @@ export async function accionRegistrarPago(_previo: Resultado, datos: FormData): 
       usuarioId,
       consorcioId,
       unidadId: String(datos.get('unidad') ?? ''),
-      importe: String(datos.get('importe') ?? '').trim(),
+      importe: importeDesdeEntrada(String(datos.get('importe') ?? '')),
       fechaPago: new Date(`${String(datos.get('fecha') ?? '')}T00:00:00Z`),
       medio: medioDesdeFormulario(datos.get('medio')),
       referencia: String(datos.get('referencia') ?? '').trim() || null,

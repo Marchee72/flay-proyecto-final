@@ -86,3 +86,20 @@ export function momentoParaMostrar(iso: string): string {
   const de = (tipo: string) => partes.find((p) => p.type === tipo)?.value ?? ''
   return `${de('day')}/${de('month')}/${de('year')} ${de('hour')}:${de('minute')}`
 }
+
+/** `1 gasto`, `2 gastos`: el numero con la palabra que le corresponde. */
+export function plural(cantidad: number, singular: string, plural: string): string {
+  return `${cantidad} ${cantidad === 1 ? singular : plural}`
+}
+
+/**
+ * Lo que la persona escribe en un campo de importe → la cadena que valida el
+ * caso de uso (`12000.50`). Acepta la coma decimal, que es la de acá, y el
+ * punto de miles si viene con coma (`12.000,50`). Sin aritmetica: solo texto.
+ * Lo que no es un importe sale igual que entro y lo rechaza la validacion.
+ */
+export function importeDesdeEntrada(texto: string): string {
+  const limpio = texto.trim()
+  if (!limpio.includes(',')) return limpio
+  return limpio.replace(/\./g, '').replace(',', '.')
+}

@@ -10,7 +10,7 @@ import { listarProveedores, listarRubros } from '@/aplicacion/proveedores/provee
 import { posiblesResponsables } from '@/aplicacion/reclamos/asignar'
 import { verReclamo } from '@/aplicacion/reclamos/consultar'
 
-import { conConsorcio } from '../../../../con-consorcio'
+import { conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
 import { EstadoDeReclamo, UrgenciaDeReclamo } from '../etiquetas'
 import { AccionesDeReclamo } from './acciones-de-reclamo'
@@ -26,7 +26,8 @@ export default async function ReclamoPage({
   params: Promise<{ consorcio: string; id: string }>
   searchParams: Promise<{ registrado?: string }>
 }) {
-  const { consorcio: consorcioId, id } = await params
+  const { consorcio: consorcioId, id: crudo } = await params
+  const id = idONoEncontrado(crudo)
   const parametros = await searchParams
   const pantalla = await conConsorcio(consorcioId, 'Reclamo')
   if ('salida' in pantalla) return pantalla.salida
@@ -55,7 +56,7 @@ export default async function ReclamoPage({
         </p>
 
         {parametros.registrado && (
-          <p className="aviso aviso--atencion" role="status">
+          <p className="aviso aviso--exito" role="status">
             <BadgeCheck className="icono" aria-hidden="true" />
             <span>Reclamo registrado. La administración lo va a asignar.</span>
           </p>

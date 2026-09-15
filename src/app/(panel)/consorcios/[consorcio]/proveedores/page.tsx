@@ -8,6 +8,7 @@ import { listarProveedores, listarRubros } from '@/aplicacion/proveedores/provee
 
 import { FormularioProveedor } from './formulario'
 import { conConsorcio } from '../../../con-consorcio'
+import { BotonModal } from '../../../modal'
 
 export const metadata: Metadata = { title: 'Proveedores — Flay' }
 
@@ -30,14 +31,16 @@ export default async function ProveedoresPage({
     return (
       <>
         <h1>Proveedores</h1>
+        <p className="apagado">Quiénes le facturan al consorcio y en qué rubro suelen hacerlo.</p>
 
         {roles.includes('administrador') && (
-          <div className="tarjeta">
-            <h2>Nuevo proveedor</h2>
-            <FormularioProveedor
-              consorcioId={activo.id}
-              rubros={rubros.map((rubro) => ({ id: rubro.id, etiqueta: rubro.nombre }))}
-            />
+          <div className="fila-acciones">
+            <BotonModal etiqueta="Nuevo proveedor" titulo="Nuevo proveedor">
+              <FormularioProveedor
+                consorcioId={activo.id}
+                rubros={rubros.map((rubro) => ({ id: rubro.id, etiqueta: rubro.nombre }))}
+              />
+            </BotonModal>
           </div>
         )}
 

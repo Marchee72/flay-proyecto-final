@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { importeDesdeEntrada } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { confirmarComprobante } from '@/aplicacion/gastos/comprobantes'
 import {
@@ -44,7 +45,7 @@ export async function accionRegistrarGasto(
     periodoId: String(datos.get('periodo') ?? ''),
     rubroId: String(datos.get('rubro') ?? ''),
     proveedorId: String(datos.get('proveedor') ?? '') || null,
-    importe: String(datos.get('importe') ?? ''),
+    importe: importeDesdeEntrada(String(datos.get('importe') ?? '')),
     fecha: fecha ? new Date(`${fecha}T00:00:00Z`) : RELOJ.hoy(),
     descripcion: String(datos.get('descripcion') ?? ''),
   }

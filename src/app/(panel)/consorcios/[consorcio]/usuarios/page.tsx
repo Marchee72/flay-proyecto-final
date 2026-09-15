@@ -68,13 +68,13 @@ export default async function UsuariosPage({
         </p>
       ) : (
         <>
-          <p>
+          <div className="fila-acciones">
             <ModalInvitar
               consorcioId={activo.id}
               roles={ROLES_ASIGNABLES}
               hoy={RELOJ.hoy().toISOString().slice(0, 10)}
             />
-          </p>
+          </div>
 
           <Tabla usuarios={usuarios} consorcioId={activo.id} />
         </>

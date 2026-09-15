@@ -44,7 +44,7 @@ export async function accionAbrirPeriodo(_previo: Resultado, datos: FormData): P
  * convertido en «hubo un error» (RNF-10, SC-004).
  */
 export async function accionCerrarPeriodo(_previo: Resultado, datos: FormData): Promise<Resultado> {
-  return conSesion(datos, (usuarioId, consorcioId) =>
+  return conSesion(datos, 'cerrado', (usuarioId, consorcioId) =>
     cerrarPeriodo(HABILITACIONES, RELOJ, {
       usuarioId,
       consorcioId,
@@ -57,7 +57,7 @@ export async function accionLiquidarPeriodo(
   _previo: Resultado,
   datos: FormData,
 ): Promise<Resultado> {
-  return conSesion(datos, (usuarioId, consorcioId) =>
+  return conSesion(datos, 'liquidado', (usuarioId, consorcioId) =>
     liquidarPeriodo(HABILITACIONES, RELOJ, {
       usuarioId,
       consorcioId,
@@ -70,7 +70,7 @@ export async function accionAnularLiquidacion(
   _previo: Resultado,
   datos: FormData,
 ): Promise<Resultado> {
-  return conSesion(datos, (usuarioId, consorcioId) =>
+  return conSesion(datos, 'anulado', (usuarioId, consorcioId) =>
     anularLiquidacion(HABILITACIONES, RELOJ, {
       usuarioId,
       consorcioId,
@@ -110,20 +110,27 @@ export async function accionGenerarDocumentos(
   }
 }
 
+/**
+ * Con exito vuelve a la lista con `?hecho=`, que la pagina traduce al aviso
+ * verde de arriba: la fila que disparo la accion cambia de botones al
+ * re-dibujarse, asi que un mensaje en la fila no sobreviviria.
+ */
 async function conSesion(
   datos: FormData,
+  hecho: 'cerrado' | 'liquidado' | 'anulado',
   trabajo: (usuarioId: string, consorcioId: string) => Promise<unknown>,
 ): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) redirect('/ingresar')
+  const consorcioId = String(datos.get('consorcio') ?? '')
 
   try {
-    await trabajo(usuarioId, String(datos.get('consorcio') ?? ''))
+    await trabajo(usuarioId, consorcioId)
   } catch (error) {
     if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
     throw error
   }
 
   revalidatePath('/consorcios/[consorcio]/periodos', 'page')
-  return { mensaje: '' }
+  redirect(`/consorcios/${consorcioId}/periodos?hecho=${hecho}`)
 }

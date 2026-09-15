@@ -6,7 +6,6 @@ import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarEspacios } from '@/aplicacion/reservas/espacios'
 
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
-import { Volver } from '../../../encabezado-consorcio'
 import { accionBajaEspacio } from '../reservas/acciones'
 import { ModalEspacio } from './modal-espacio'
 
@@ -35,14 +34,13 @@ export default async function EspaciosPage({
 
     return (
       <>
-        <Volver href={`/consorcios/${activo.id}/reservas`} texto="Volver a reservas" />
         <h1>Espacios comunes</h1>
         <p className="apagado">
           Las reglas del reglamento interno, en datos: lo que el sistema aplica al reservar.
         </p>
 
         {(parametros.guardado || parametros.baja) && (
-          <p className="aviso aviso--atencion" role="status">
+          <p className="aviso aviso--exito" role="status">
             <BadgeCheck className="icono" aria-hidden="true" />
             <span>
               {parametros.baja

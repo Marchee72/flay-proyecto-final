@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 import { Menu } from 'lucide-react'
 
+import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
+import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 
 import { AvisoFueraDeAlcance, consorciosAlAlcance } from '../../con-consorcio'
@@ -37,6 +39,7 @@ export default async function ConsorcioLayout({
   }
 
   const base = `/consorcios/${activo.id}`
+  const roles = await rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id)
 
   return (
     <>
@@ -48,9 +51,14 @@ export default async function ConsorcioLayout({
               <Menu className="icono" aria-hidden="true" />
               Secciones
             </summary>
-            <Navegacion base={base} nombre={activo.nombre} etiqueta="Todas las secciones" />
+            <Navegacion
+              base={base}
+              nombre={activo.nombre}
+              roles={roles}
+              etiqueta="Todas las secciones"
+            />
           </details>
-          <Navegacion base={base} nombre={activo.nombre} />
+          <Navegacion base={base} nombre={activo.nombre} roles={roles} />
         </div>
         <main>{children}</main>
       </div>

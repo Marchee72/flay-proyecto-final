@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Building2 } from 'lucide-react'
 
-import { BLOQUES } from './secciones'
+import { BLOQUES, bloquesPara } from './secciones'
 
 /** Las 5 que entran en la barra inferior del telefono (variante C). */
 const PRINCIPALES = BLOQUES[0].secciones
@@ -16,11 +16,13 @@ function activa(ruta: string, base: string, seccion: string): boolean {
 export function Navegacion({
   base,
   nombre,
+  roles,
   id,
   etiqueta = 'Secciones',
 }: {
   base: string
   nombre: string
+  roles: readonly string[]
   id?: string
   etiqueta?: string
 }) {
@@ -36,7 +38,7 @@ export function Navegacion({
         <Building2 className="icono" aria-hidden="true" />
         {nombre}
       </Link>
-      {BLOQUES.map((bloque) => (
+      {bloquesPara(roles).map((bloque) => (
         <section key={bloque.titulo} className="lateral__bloque" aria-label={bloque.titulo}>
           <h2>{bloque.titulo}</h2>
           {bloque.secciones.map((seccion) => (

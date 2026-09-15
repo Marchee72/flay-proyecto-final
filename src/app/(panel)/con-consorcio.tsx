@@ -1,5 +1,5 @@
 import { cache } from 'react'
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { Siren, TriangleAlert } from 'lucide-react'
 import type { ReactElement } from 'react'
 
@@ -45,6 +45,18 @@ export async function conConsorcio(
   }
 
   return { usuarioId, activo }
+}
+
+const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i
+
+/**
+ * El segmento `[id]` de la ruta, o 404. Con cualquier otra cosa el ORM no
+ * devuelve «no encontrado»: tira un error de tipo antes de consultar, y la
+ * pantalla se cae con una traza (RNF-10). Se filtra una vez, aca.
+ */
+export function idONoEncontrado(id: string): string {
+  if (!UUID.test(id)) notFound()
+  return id
 }
 
 /** RNF-10: la direccion pedia un consorcio que no esta al alcance; no se dibuja otro. */

@@ -1,3 +1,5 @@
+'use client'
+
 import { Building2 } from 'lucide-react'
 
 import { elegirConsorcio } from './acciones'
@@ -8,6 +10,9 @@ export type ConsorcioOpcion = { id: string; nombre: string }
  * Atajo de la barra para saltar a otro consorcio conservando la seccion
  * (`/consorcios/A/gastos` -> `/consorcios/B/gastos`). El contexto es la
  * ruta; esto solo la reescribe. Con un solo consorcio no hay nada que elegir.
+ *
+ * Elegir ya navega: el boton «Ir» queda solo para cuando no hay JavaScript,
+ * oculto a la vista pero enviable.
  */
 export function SelectorDeConsorcio({
   consorcios,
@@ -29,6 +34,7 @@ export function SelectorDeConsorcio({
         name="consorcio"
         aria-label="Cambiar de consorcio"
         defaultValue={activoId ?? ''}
+        onChange={(evento) => evento.currentTarget.form?.requestSubmit()}
       >
         {!activoId && <option value="">Elegir consorcio</option>}
         {consorcios.map((consorcio) => (
@@ -37,7 +43,7 @@ export function SelectorDeConsorcio({
           </option>
         ))}
       </select>
-      <button className="boton boton--fantasma" type="submit">
+      <button className="oculto" type="submit">
         Ir
       </button>
     </form>

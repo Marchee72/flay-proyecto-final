@@ -1,6 +1,7 @@
-import { head } from '@vercel/blob'
+import { BlobNotFoundError, head } from '@vercel/blob'
 import { generateClientTokenFromReadWriteToken } from '@vercel/blob/client'
 
+import { NoEncontrado } from '@/compartido/errores'
 import type {
   AlmacenObjetos,
   PermisoDeSubida,
@@ -69,7 +70,12 @@ export const almacenBlob: AlmacenObjetos = {
    * recien cuando alguien con habilitacion vigente lo pide (FR-018).
    */
   async resolverLecturaAutorizada(clave: string): Promise<string> {
-    const objeto = await head(clave, { token: token() })
+    // Un objeto registrado pero ausente del almacen (semilla sin token, baja
+    // manual) es un «no encontrado» para quien mira, no una traza en pantalla.
+    const objeto = await head(clave, { token: token() }).catch((error: unknown) => {
+      if (error instanceof BlobNotFoundError) throw new NoEncontrado('FR-018')
+      throw error
+    })
     // ponytail: la direccion que devuelve el almacenamiento no vence. Quien
     // pide pasa antes por la habilitacion vigente, pero una direccion filtrada
     // sigue sirviendo. Cerrarlo del todo es almacen privado con direccion

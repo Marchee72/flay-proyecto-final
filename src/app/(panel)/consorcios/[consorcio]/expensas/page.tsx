@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { FileText, Siren, Users } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { importeParaMostrar } from '@/compartido/formato'
+import { fechaParaMostrar, importeParaMostrar, plural } from '@/compartido/formato'
 import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { misExpensas } from '@/aplicacion/liquidacion/ver-expensa'
 
@@ -27,68 +27,71 @@ export default async function ExpensasPage({ params }: { params: Promise<{ conso
       usuarioId,
       consorcioId: activo.id,
     })
+    // Una sola tabla: doce tarjetas con una fila cada una es mucho desplazamiento
+    // para poco dato, y en el consorcio de 96 no se puede leer.
+    const filas = unidades.flatMap((unidad) =>
+      unidad.expensas.map((expensa) => ({ unidad, expensa })),
+    )
 
     return (
       <>
         <h1>Expensas</h1>
+        <p className="apagado">Las liquidaciones emitidas, por unidad.</p>
 
-        {unidades.length === 0 && (
+        {unidades.length === 0 ? (
           <div className="vacio">
             <Users aria-hidden="true" />
             <p>No hay unidades a tu nombre en este consorcio.</p>
           </div>
+        ) : filas.length === 0 ? (
+          <div className="vacio">
+            <FileText aria-hidden="true" />
+            <p>Todavía no hay liquidaciones emitidas.</p>
+          </div>
+        ) : (
+          <div className="tabla-desplazable">
+            <table>
+              <caption>
+                {plural(filas.length, 'liquidación', 'liquidaciones')} en{' '}
+                {plural(unidades.length, 'unidad', 'unidades')}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Unidad</th>
+                  <th scope="col">Período</th>
+                  <th scope="col">Vence</th>
+                  <th scope="col" className="numero">
+                    Total
+                  </th>
+                  <th scope="col">Documento</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filas.map(({ unidad, expensa }) => (
+                  <tr key={expensa.detalleId}>
+                    <td>{unidad.designacion}</td>
+                    <td>
+                      <Link href={`/consorcios/${activo.id}/expensas/${expensa.detalleId}`}>
+                        {expensa.periodo}
+                      </Link>
+                    </td>
+                    <td>{fechaParaMostrar(expensa.vencimiento)}</td>
+                    <td className="numero cifra">{importeParaMostrar(expensa.totalUnidad)}</td>
+                    <td>
+                      {expensa.direccion ? (
+                        <a href={expensa.direccion} download>
+                          Descargar
+                        </a>
+                      ) : (
+                        <span className="ayuda">En generación</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-
-        {unidades.map((unidad) => (
-          <section key={unidad.unidadId} className="tarjeta">
-            <h2>Unidad {unidad.designacion}</h2>
-
-            {unidad.expensas.length === 0 ? (
-              <div className="vacio">
-                <FileText aria-hidden="true" />
-                <p>Todavía no hay liquidaciones emitidas.</p>
-              </div>
-            ) : (
-              <div className="tabla-desplazable">
-                <table>
-                  <caption className="ayuda">Liquidaciones de la unidad</caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Período</th>
-                      <th scope="col">Vence</th>
-                      <th scope="col" className="numero">
-                        Total
-                      </th>
-                      <th scope="col">Documento</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {unidad.expensas.map((expensa) => (
-                      <tr key={expensa.detalleId}>
-                        <td>
-                          <Link href={`/consorcios/${activo.id}/expensas/${expensa.detalleId}`}>
-                            {expensa.periodo}
-                          </Link>
-                        </td>
-                        <td>{expensa.vencimiento}</td>
-                        <td className="numero cifra">{importeParaMostrar(expensa.totalUnidad)}</td>
-                        <td>
-                          {expensa.direccion ? (
-                            <a href={expensa.direccion} download>
-                              Descargar
-                            </a>
-                          ) : (
-                            <span className="ayuda">En generación</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-        ))}
       </>
     )
   } catch (error) {

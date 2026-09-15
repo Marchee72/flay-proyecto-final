@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { BadgeCheck, Inbox, Send } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { fechaParaMostrar } from '@/compartido/formato'
+import { fechaParaMostrar, plural } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { verBandeja } from '@/aplicacion/pendientes/bandeja'
@@ -43,7 +43,7 @@ export default async function BandejaPage({
       </p>
 
       {parametros.despachado && (
-        <p className="aviso aviso--atencion" role="status">
+        <p className="aviso aviso--exito" role="status">
           <BadgeCheck className="icono" aria-hidden="true" />
           <span>Se despachó lo que había pendiente.</span>
         </p>
@@ -99,12 +99,14 @@ export default async function BandejaPage({
               <ul className="lista-simple">
                 {c.reclamos.map((r) => (
                   <li key={r.id}>
-                    <span
-                      className={`etiqueta etiqueta--${r.urgencia === 'critica' ? 'vencido' : 'pendiente'}`}
-                    >
-                      {r.urgencia}
-                    </span>{' '}
-                    <Link href={`/consorcios/${c.id}/reclamos/${r.id}`}>{r.titulo}</Link>{' '}
+                    <span>
+                      <span
+                        className={`etiqueta etiqueta--${r.urgencia === 'critica' ? 'vencido' : 'pendiente'}`}
+                      >
+                        {r.urgencia}
+                      </span>{' '}
+                      <Link href={`/consorcios/${c.id}/reclamos/${r.id}`}>{r.titulo}</Link>
+                    </span>
                     <span className="apagado">desde {fechaParaMostrar(r.fechaApertura)}</span>
                   </li>
                 ))}
@@ -128,8 +130,9 @@ export default async function BandejaPage({
               <div className="kpi__rotulo">Avisos sin enviar</div>
               <div className="kpi__cifra cifra">{bandeja.cola.avisosSinEnviar}</div>
               <div className="kpi__detalle">
-                {bandeja.cola.pendientes} trabajos pendientes · {bandeja.cola.agotados} agotados ·{' '}
-                {bandeja.cola.despachados} despachados
+                {plural(bandeja.cola.pendientes, 'trabajo pendiente', 'trabajos pendientes')} ·{' '}
+                {plural(bandeja.cola.agotados, 'agotado', 'agotados')} ·{' '}
+                {plural(bandeja.cola.despachados, 'despachado', 'despachados')}
               </div>
             </div>
           </div>

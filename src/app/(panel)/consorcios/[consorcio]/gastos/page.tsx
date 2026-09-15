@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { ChevronLeft, ChevronRight, Receipt, Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { importeParaMostrar } from '@/compartido/formato'
+import { importeParaMostrar, plural } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarGastos } from '@/aplicacion/gastos/listar-gastos'
@@ -68,8 +68,9 @@ export default async function GastosPage({
     return (
       <>
         <h1>Gastos</h1>
+        <p className="apagado">Lo que el consorcio pagó, por período y rubro.</p>
 
-        <p>
+        <div className="fila-acciones">
           <ModalGasto
             consorcioId={activo.id}
             periodos={abiertos.map((periodo) => ({
@@ -82,14 +83,14 @@ export default async function GastosPage({
               etiqueta: proveedor.razonSocial,
             }))}
             precargado={precargado}
-          />{' '}
+          />
           <Link className="boton boton--fantasma" href={`/consorcios/${activo.id}/gastos/asistida`}>
             Cargar comprobante con asistencia
-          </Link>{' '}
+          </Link>
           {roles.some((r) => r === 'administrador' || r === 'consejo') && (
             <EnlaceExportar consorcioId={activo.id} tabla="gastos" />
           )}
-        </p>
+        </div>
 
         <form method="get" className="fila-de-filtros">
           <div className="campo">
@@ -151,7 +152,8 @@ export default async function GastosPage({
             >
               <table>
                 <caption className="ayuda">
-                  {listado.cantidad} gastos · página {listado.pagina} de {listado.paginas}
+                  {plural(listado.cantidad, 'gasto', 'gastos')} · página {listado.pagina} de{' '}
+                  {listado.paginas}
                 </caption>
                 <thead>
                   <tr>

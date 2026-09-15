@@ -1,6 +1,7 @@
 'use client'
 
-import { useId, useRef, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
 /**
@@ -11,6 +12,12 @@ import { X } from 'lucide-react'
  * abrio. El clic en el fondo (fuera del cuadro) tambien cierra. Sin
  * librerias: solo presentacion, el formulario y la Server Action los pone
  * quien lo usa.
+ *
+ * El dialogo se monta en `body` con un portal: el boton vive donde lo pongan
+ * (una fila de acciones, un estado vacio) y el `<dialog>`, con su titulo y
+ * su formulario, no puede heredar un `<p>` como ancestro sin que React avise
+ * de HTML invalido en cada pagina. Sin JavaScript no hay dialogo de todos
+ * modos: `showModal()` lo necesita.
  */
 export function BotonModal({
   etiqueta,
@@ -27,6 +34,8 @@ export function BotonModal({
   const disparador = useRef<HTMLButtonElement | null>(null)
   const tituloRef = useRef<HTMLHeadingElement | null>(null)
   const tituloId = useId()
+  const [montado, setMontado] = useState(false)
+  useEffect(() => setMontado(true), [])
 
   const abrir = () => {
     if (!dialogo.current || dialogo.current.open) return
@@ -41,33 +50,37 @@ export function BotonModal({
       <button ref={disparador} type="button" className={`boton ${variante}`} onClick={abrir}>
         {etiqueta}
       </button>
-      <dialog
-        ref={dialogo}
-        className="modal"
-        aria-labelledby={tituloId}
-        onClick={(evento) => {
-          if (evento.target === dialogo.current) cerrar()
-        }}
-        onClose={() => disparador.current?.focus()}
-      >
-        <div className="modal__interior">
-          <div className="modal__encabezado">
-            <h2 ref={tituloRef} id={tituloId} tabIndex={-1} className="modal__titulo">
-              {titulo}
-            </h2>
-            <button
-              type="button"
-              className="boton boton--fantasma"
-              onClick={cerrar}
-              aria-label="Cerrar diálogo"
-            >
-              <X className="icono" aria-hidden="true" />
-              Cerrar
-            </button>
-          </div>
-          {typeof children === 'function' ? children(cerrar) : children}
-        </div>
-      </dialog>
+      {montado &&
+        createPortal(
+          <dialog
+            ref={dialogo}
+            className="modal"
+            aria-labelledby={tituloId}
+            onClick={(evento) => {
+              if (evento.target === dialogo.current) cerrar()
+            }}
+            onClose={() => disparador.current?.focus()}
+          >
+            <div className="modal__interior">
+              <div className="modal__encabezado">
+                <h2 ref={tituloRef} id={tituloId} tabIndex={-1} className="modal__titulo">
+                  {titulo}
+                </h2>
+                <button
+                  type="button"
+                  className="boton boton--fantasma"
+                  onClick={cerrar}
+                  aria-label="Cerrar diálogo"
+                >
+                  <X className="icono" aria-hidden="true" />
+                  Cerrar
+                </button>
+              </div>
+              {typeof children === 'function' ? children(cerrar) : children}
+            </div>
+          </dialog>,
+          document.body,
+        )}
     </>
   )
 }

@@ -49,7 +49,7 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
       <p className="apagado">{activo.direccion}</p>
 
       {administra && (
-        <p className="fila-acciones">
+        <div className="fila-acciones">
           <Link className="boton boton--primario" href={`${base}/gastos/nuevo`}>
             <Receipt className="icono" aria-hidden="true" />
             Cargar gasto
@@ -62,7 +62,7 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
             <CalendarDays className="icono" aria-hidden="true" />
             {resumen.periodoAbierto ? 'Liquidar' : 'Abrir período'}
           </Link>
-        </p>
+        </div>
       )}
 
       <div className="fila-kpi">
@@ -216,12 +216,13 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
           <h2>
             <Phone className="icono" aria-hidden="true" /> Contactos útiles
           </h2>
-          <ul className="lista-simple">
+          {/* Apilado (nombre, rol, contacto): en una tarjeta angosta dos
+              columnas parten el nombre y el correo desborda. */}
+          <ul className="lista-simple lista-simple--apilada">
             {resumen.contactos.map((c) => (
               <li key={`${c.rol}-${c.correo}`}>
-                <span>
-                  <strong>{c.nombre}</strong> · {c.rol}
-                </span>
+                <strong>{c.nombre}</strong>
+                <span className="apagado">{c.rol}</span>
                 <span>
                   {c.telefono ?? ''} {c.correo && <a href={`mailto:${c.correo}`}>{c.correo}</a>}
                 </span>
@@ -229,10 +230,8 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
             ))}
             {resumen.proveedores.map((p) => (
               <li key={p.id}>
-                <span>
-                  <strong>{p.razonSocial}</strong>
-                  {p.rubro && ` · ${p.rubro}`}
-                </span>
+                <strong>{p.razonSocial}</strong>
+                {p.rubro && <span className="apagado">{p.rubro}</span>}
                 <span>
                   {p.telefono ?? ''} {p.correo && <a href={`mailto:${p.correo}`}>{p.correo}</a>}
                   {!p.telefono && !p.correo && <span className="apagado">sin contacto</span>}

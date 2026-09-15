@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { verDocumento } from '@/aplicacion/comunicacion/documentos'
 import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 
-import { AvisoDeError, conConsorcio } from '../../../../con-consorcio'
+import { AvisoDeError, conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
 
 export const metadata: Metadata = { title: 'Documento — Flay' }
@@ -14,8 +14,8 @@ export default async function DocumentoPage({
 }: {
   params: Promise<{ consorcio: string; id: string }>
 }) {
-  const { id } = await params
-  const { consorcio: consorcioId } = await params
+  const { consorcio: consorcioId, id: crudo } = await params
+  const id = idONoEncontrado(crudo)
   const pantalla = await conConsorcio(consorcioId, 'Documento')
   if ('salida' in pantalla) return pantalla.salida
   const { usuarioId, activo } = pantalla

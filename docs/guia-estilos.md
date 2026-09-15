@@ -104,7 +104,28 @@
   si no se avanza (RNF-10 por paso) y de vuelta al disparador al cerrar. Escape nativo y
   clic en el fondo cierran. A 390 px casi pantalla completa, sin scroll horizontal de página
   (la tabla del padrón desplaza adentro de `.tabla-desplazable`). Entrada solo
-  `opacity`/`transform` 200 ms con `prefers-reduced-motion`.
+  `opacity`/`transform` 200 ms con `prefers-reduced-motion`. El `<dialog>` se monta en
+  `body` con un portal: el disparador vive donde lo pongan (una fila de acciones, un estado
+  vacío) sin que el diálogo herede un ancestro inválido. La confirmación en dos pasos de
+  liquidar y anular (`acciones-de-estado.tsx`) usa el mismo `.modal`: el primer clic abre
+  el diálogo con el resumen de la magnitud exacta; el segundo envía. Nunca un panel dentro
+  de la celda de la tabla.
+- Fila de acciones (`.fila-acciones`, un `<div>`): una sola por pantalla, debajo del título y
+  la bajada, con el primario primero y los secundarios (exportar, cargar con asistencia)
+  después. Nunca dos filas ni botones sueltos en `<p>`: la alineación vertical de
+  `inline-flex` dentro de un párrafo depende de la línea de base y se ve torcida.
+- Encabezado de pantalla: `h1` corto (el consorcio ya está en el lateral; «Unidades», no
+  «Unidades de Mitre 456») más una bajada `.apagado` de una línea, siempre. «Volver» solo en
+  pantallas de detalle (un reclamo, un gasto, una liquidación), nunca en una sección del
+  lateral.
+- Avisos (`.aviso`): `--exito` (verde, `circle-check`) para lo que salió bien —«Período
+  cerrado», «Pago registrado»—, `--atencion` (ámbar, `triangle-alert`) para lo que hay que
+  mirar, `--problema` (rojo, `siren`) para lo que falló. Un éxito en ámbar es un error de
+  semántica, no de gusto. Las acciones sobre el período redirigen con `?hecho=` porque la fila
+  que las disparó cambia de botones al re-dibujarse.
+- Tablas largas por unidad (expensas, estado de cuenta): una sola tabla con columna Unidad,
+  no una tarjeta por unidad; el detalle de una unidad se abre aparte (`?unidad=`). El
+  `<caption>` va a la izquierda, dentro del marco, en `--t-menor`, y cuenta con `plural()`.
 - Navegación (diseño `docs/superpowers/specs/2026-09-13-navegacion-por-consorcio-design.md`):
   el consorcio es la raíz y vive en la ruta, `/consorcios/[consorcio]/<sección>`. Fuera de un
   consorcio la barra superior lleva marca, **Consorcios** (lista con señales de `verPanel`),

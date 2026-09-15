@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState, useEffect, useRef, useState } from 'react'
+import { useActionState, useRef } from 'react'
+import { X } from 'lucide-react'
 
 import {
   accionAnularLiquidacion,
@@ -183,11 +184,12 @@ function Boton({
 /**
  * Disparo en dos pasos para las acciones que tocan dinero (RN-06, RN-14).
  *
- * El primer botón es `type="button"`: solo abre el resumen y mueve el foco al
- * panel (`tabIndex={-1}` + `aria-labelledby`), operable por teclado sin
- * librerías. El envío real ocurre recién en «Confirmar…». «Cancelar» o
- * `Escape` cierran y devuelven el foco al botón inicial. Solo Anular viste
- * `.boton--peligro`; Liquidar confirma con `.boton--primario`.
+ * El primer botón es `type="button"`: solo abre el diálogo con el resumen. Es
+ * el mismo `<dialog>` nativo del resto del panel (`modal.tsx`): `showModal()`
+ * atrapa el foco, Escape cierra y al cerrar el foco vuelve al botón inicial.
+ * Antes era un panel dentro de la celda, y la tabla se deformaba para
+ * hacerle lugar. El envío real ocurre recién en «Confirmar…». Solo Anular
+ * viste `.boton--peligro`; Liquidar confirma con `.boton--primario`.
  */
 function ConfirmacionEnDosPasos({
   accion,
@@ -216,53 +218,55 @@ function ConfirmacionEnDosPasos({
   etiquetaConfirmar: string
   trabajando: string
 }) {
-  const [confirmando, setConfirmando] = useState(false)
   const [estado, enviar, enCurso] = useActionState(accion, SIN_ERROR)
   const inicialRef = useRef<HTMLButtonElement>(null)
-  const panelRef = useRef<HTMLDivElement>(null)
-  const panelId = `confirmar-${variante}-${valor}`
-  const tituloId = `${panelId}-titulo`
+  const dialogo = useRef<HTMLDialogElement>(null)
+  const tituloRef = useRef<HTMLHeadingElement>(null)
+  const tituloId = `confirmar-${variante}-${valor}-titulo`
 
-  useEffect(() => {
-    if (confirmando) panelRef.current?.focus()
-  }, [confirmando])
-
-  const cerrar = () => {
-    setConfirmando(false)
-    inicialRef.current?.focus()
+  const abrir = () => {
+    if (!dialogo.current || dialogo.current.open) return
+    dialogo.current.showModal()
+    tituloRef.current?.focus()
   }
+  const cerrar = () => dialogo.current?.close()
 
-  const claseInicial = peligro ? 'boton--peligro' : 'boton--primario'
-  const claseConfirmar = peligro ? 'boton--peligro' : 'boton--primario'
+  const clase = peligro ? 'boton--peligro' : 'boton--primario'
 
   return (
-    <form action={enviar}>
-      <input type="hidden" name="consorcio" value={consorcioId} />
-      <input type="hidden" name={campo} value={valor} />
-
-      <button
-        ref={inicialRef}
-        className={`boton ${claseInicial}`}
-        type="button"
-        aria-expanded={confirmando}
-        aria-controls={panelId}
-        onClick={() => setConfirmando((abierto) => !abierto)}
-      >
+    <>
+      <button ref={inicialRef} className={`boton ${clase}`} type="button" onClick={abrir}>
         {etiquetaInicial}
       </button>
 
-      {confirmando && (
-        <div
-          ref={panelRef}
-          id={panelId}
-          className={`confirmacion${variante === 'liquidar' ? ' confirmacion--liquidar' : ''}`}
-          tabIndex={-1}
-          aria-labelledby={tituloId}
-          onKeyDown={(evento) => {
-            if (evento.key === 'Escape') cerrar()
-          }}
-        >
-          <h3 id={tituloId}>{titulo}</h3>
+      <dialog
+        ref={dialogo}
+        className="modal"
+        aria-labelledby={tituloId}
+        onClick={(evento) => {
+          if (evento.target === dialogo.current) cerrar()
+        }}
+        onClose={() => inicialRef.current?.focus()}
+      >
+        <form action={enviar} className="modal__interior">
+          <input type="hidden" name="consorcio" value={consorcioId} />
+          <input type="hidden" name={campo} value={valor} />
+
+          <div className="modal__encabezado">
+            <h2 ref={tituloRef} id={tituloId} tabIndex={-1} className="modal__titulo">
+              {titulo}
+            </h2>
+            <button
+              type="button"
+              className="boton boton--fantasma"
+              onClick={cerrar}
+              aria-label="Cerrar diálogo"
+            >
+              <X className="icono" aria-hidden="true" />
+              Cerrar
+            </button>
+          </div>
+
           <p className="apagado">{descripcion}</p>
 
           <div className="resumen">
@@ -274,22 +278,22 @@ function ConfirmacionEnDosPasos({
             ))}
           </div>
 
+          {estado.mensaje && (
+            <p className="error" role="alert">
+              {estado.mensaje}
+            </p>
+          )}
+
           <div className="fila-acciones">
-            <button className={`boton ${claseConfirmar}`} type="submit" disabled={enCurso}>
+            <button className={`boton ${clase}`} type="submit" disabled={enCurso}>
               {enCurso ? trabajando : etiquetaConfirmar}
             </button>
             <button className="boton boton--fantasma" type="button" onClick={cerrar}>
               Cancelar
             </button>
           </div>
-
-          {estado.mensaje && (
-            <p className="error" role="alert">
-              {estado.mensaje}
-            </p>
-          )}
-        </div>
-      )}
-    </form>
+        </form>
+      </dialog>
+    </>
   )
 }

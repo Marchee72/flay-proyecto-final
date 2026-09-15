@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { TriangleAlert } from 'lucide-react'
+import { Gauge, TriangleAlert } from 'lucide-react'
 
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verResolucionReclamos } from '@/aplicacion/indicadores/indicadores'
@@ -49,6 +49,7 @@ export default async function ReclamosIndicadorPage({
         <Alertas alertas={alertas} />
         {filas.length === 0 ? (
           <div className="vacio">
+            <Gauge aria-hidden="true" />
             <p>Sin reclamos resueltos todavía, o sin actualizar los indicadores.</p>
           </div>
         ) : (

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Siren, TriangleAlert } from 'lucide-react'
+import { BadgeCheck, Siren, TriangleAlert } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { importeParaMostrar } from '@/compartido/formato'
@@ -32,6 +32,7 @@ export default async function MorosidadPage({
     return (
       <>
         <h1>Morosidad</h1>
+        <p className="apagado">Deuda vencida a hoy.</p>
 
         <div className="kpi">
           <span className="kpi__icono">
@@ -49,7 +50,12 @@ export default async function MorosidadPage({
           </div>
         </div>
 
-        {morosidad.nominada ? (
+        {morosidad.nominada && morosidad.deudores.length === 0 ? (
+          <div className="vacio">
+            <BadgeCheck aria-hidden="true" />
+            <p>Ninguna unidad con deuda vencida.</p>
+          </div>
+        ) : morosidad.nominada ? (
           <div className="tabla-desplazable">
             <table>
               <caption className="ayuda">Nómina de deudores</caption>

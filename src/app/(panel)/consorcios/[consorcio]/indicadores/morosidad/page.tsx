@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Gauge } from 'lucide-react'
 import Link from 'next/link'
 
 import { importeParaMostrar } from '@/compartido/formato'
@@ -44,6 +45,7 @@ export default async function MorosidadPage({
         <Alertas alertas={alertas} />
         {serie.length === 0 ? (
           <div className="vacio">
+            <Gauge aria-hidden="true" />
             <p>Sin períodos liquidados todavía, o sin actualizar los indicadores.</p>
           </div>
         ) : (

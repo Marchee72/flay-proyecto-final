@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Gauge } from 'lucide-react'
 
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verCargaAdministrativa } from '@/aplicacion/indicadores/indicadores'
@@ -39,6 +40,7 @@ export default async function CargaPage({ params }: { params: Promise<{ consorci
         </p>
         {serie.length === 0 ? (
           <div className="vacio">
+            <Gauge aria-hidden="true" />
             <p>
               Sin períodos liquidados ni extracciones todavía, o sin actualizar los indicadores.
             </p>

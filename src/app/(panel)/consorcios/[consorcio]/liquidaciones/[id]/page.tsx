@@ -2,13 +2,13 @@ import type { Metadata } from 'next'
 import { Siren, TriangleAlert } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { coeficienteParaMostrar, importeParaMostrar } from '@/compartido/formato'
+import { coeficienteParaMostrar, fechaParaMostrar, importeParaMostrar } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verLiquidacion } from '@/aplicacion/liquidacion/ver-liquidacion'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 
 import { BotonGenerarDocumentos } from '../../periodos/acciones-de-estado'
-import { conConsorcio } from '../../../../con-consorcio'
+import { conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
 
 export const metadata: Metadata = { title: 'Liquidación — Flay' }
@@ -24,7 +24,8 @@ export default async function LiquidacionPage({
 }: {
   params: Promise<{ consorcio: string; id: string }>
 }) {
-  const { consorcio: consorcioId, id } = await params
+  const { consorcio: consorcioId, id: crudo } = await params
+  const id = idONoEncontrado(crudo)
   const pantalla = await conConsorcio(consorcioId, 'Liquidación')
   if ('salida' in pantalla) return pantalla.salida
   const { usuarioId, activo } = pantalla
@@ -43,7 +44,7 @@ export default async function LiquidacionPage({
         <h1>Liquidación {liquidacion.periodo}</h1>
         <p className="apagado">
           <EstadoDeLaLiquidacion estado={liquidacion.estado} /> · vence{' '}
-          {formatearVencimiento(liquidacion.vencimiento)}
+          {fechaParaMostrar(liquidacion.vencimiento)}
         </p>
 
         {liquidacion.estado === 'anulada' && (
@@ -164,12 +165,6 @@ export default async function LiquidacionPage({
       </p>
     )
   }
-}
-
-/** `2026-09-10` → `10/09/2026`: solo reordena la cadena (§4, presentación). */
-function formatearVencimiento(iso: string): string {
-  const [anio, mes, dia] = iso.split('-')
-  return `${dia}/${mes}/${anio}`
 }
 
 /**

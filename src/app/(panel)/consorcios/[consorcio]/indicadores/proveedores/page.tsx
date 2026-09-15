@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Gauge } from 'lucide-react'
 
 import { importeParaMostrar } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
@@ -63,6 +64,7 @@ export default async function ProveedoresPage({
         </form>
         {filas.length === 0 ? (
           <div className="vacio">
+            <Gauge aria-hidden="true" />
             <p>Sin gastos con proveedor todavía, o sin actualizar los indicadores.</p>
           </div>
         ) : (

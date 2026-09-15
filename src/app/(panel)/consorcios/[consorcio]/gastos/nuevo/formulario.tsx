@@ -123,7 +123,7 @@ export function FormularioGasto({
           aria-describedby={hayError ? 'error-gasto ayuda-importe' : 'ayuda-importe'}
         />
         <p className="ayuda" id="ayuda-importe">
-          Con punto decimal y hasta dos decimales. Sin separador de miles.
+          Con coma o punto decimal y hasta dos decimales, por ejemplo 12500,50.
         </p>
       </div>
 

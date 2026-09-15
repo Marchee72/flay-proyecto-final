@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { TriangleAlert } from 'lucide-react'
+import { Gauge, TriangleAlert } from 'lucide-react'
 
 import { importeParaMostrar } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
@@ -47,6 +47,7 @@ export default async function GastosPage({ params }: { params: Promise<{ consorc
         <Alertas alertas={alertas} />
         {filas.length === 0 ? (
           <div className="vacio">
+            <Gauge aria-hidden="true" />
             <p>Sin gastos por período todavía, o sin actualizar los indicadores.</p>
           </div>
         ) : (

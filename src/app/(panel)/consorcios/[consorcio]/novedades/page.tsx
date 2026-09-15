@@ -36,7 +36,7 @@ export default async function NovedadesPage({
         <h1>Novedades</h1>
         <p className="apagado">Lo que la administración le dice al consorcio.</p>
         {parametros.publicada && (
-          <p className="aviso aviso--atencion" role="status">
+          <p className="aviso aviso--exito" role="status">
             <BadgeCheck className="icono" aria-hidden="true" />
             <span>Novedad publicada y avisada.</span>
           </p>

@@ -13,6 +13,7 @@ export function CargadorDeComprobante({ consorcioId }: { consorcioId: string }) 
       etiquetaArchivo="Comprobante (PDF o foto)"
       etiquetaBoton="Subir y extraer"
       confirmar={accionIniciarCargaAsistida}
+      exito="Comprobante subido. La extracción corre en segundo plano; podés subir el siguiente."
     />
   )
 }

@@ -7,6 +7,7 @@ import {
   confirmarExtraccion,
   descartarExtraccion,
   iniciarCargaAsistida,
+  listarExtracciones,
   manejadorExtraccion,
   verExtraccion,
 } from '@/aplicacion/gastos/extraccion'
@@ -85,6 +86,32 @@ async function subirYExtraer(asistencia = asistenciaDeterminista) {
 }
 
 describe('extraccion y confirmacion', () => {
+  it('la lista dice donde esta el proceso: en cola antes de drenar, y lo listo primero', async () => {
+    const lista = (id: string) =>
+      listarExtracciones(repo, RELOJ, { usuarioId: administrador, consorcioId }).then((filas) =>
+        filas.find((f) => f.id === id),
+      )
+    const { extraccionId: lista_ } = await subirYExtraer()
+    const clave = `extracciones/${consorcioId}/${crypto.randomUUID()}/C01.pdf`
+    const { extraccionId: enCola } = await iniciarCargaAsistida(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      clave,
+      tipoContenido: 'application/pdf',
+    })
+
+    expect(await lista(enCola)).toMatchObject({ estado: 'pendiente', proceso: 'en_cola' })
+    expect(await lista(lista_)).toMatchObject({ estado: 'propuesta', proceso: null })
+
+    // Un drenaje reclamo el trabajo pero no lo termino: «extrayendo».
+    await drenar({})
+    expect(await lista(enCola)).toMatchObject({ estado: 'pendiente', proceso: 'extrayendo' })
+
+    // La mas nueva sigue en proceso, pero la que espera a la persona va primero.
+    const filas = await listarExtracciones(repo, RELOJ, { usuarioId: administrador, consorcioId })
+    expect(filas.map((f) => f.id)).toEqual([lista_, enCola])
+  })
+
   it('propone los cinco campos como cadena y el gasto nace al confirmar, con lo corregido anotado', async () => {
     const { extraccionId, almacen } = await subirYExtraer()
     const vista = await verExtraccion(almacen, repo, RELOJ, {

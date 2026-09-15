@@ -92,19 +92,25 @@ export async function accionConfirmarComprobante(datos: {
  * Confirmacion de la subida directa del comprobante suelto (`RF-06`, CU-06):
  * crea la extraccion y encola el trabajo; la propuesta se revisa en su pantalla.
  */
+/**
+ * Encola la extraccion y **se queda en la lista**: la fila nueva aparece «en
+ * cola» y la persona sube el siguiente mientras esta corre. Sin `destino`,
+ * `SubidaDirecta` refresca la pagina.
+ */
 export async function accionIniciarCargaAsistida(
   datos: FormData,
 ): Promise<{ mensaje: string; destino?: string }> {
   const usuarioId = await quienOpera()
   const consorcioId = String(datos.get('consorcio') ?? '')
   try {
-    const { extraccionId } = await iniciarCargaAsistida(HABILITACIONES, RELOJ, {
+    await iniciarCargaAsistida(HABILITACIONES, RELOJ, {
       usuarioId,
       consorcioId,
       clave: String(datos.get('clave') ?? ''),
       tipoContenido: String(datos.get('tipoContenido') ?? ''),
     })
-    return { mensaje: '', destino: `/consorcios/${consorcioId}/gastos/asistida/${extraccionId}` }
+    revalidatePath('/consorcios/[consorcio]/gastos/asistida', 'page')
+    return { mensaje: '' }
   } catch (error) {
     if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
     throw error

@@ -151,7 +151,7 @@ comprensibles (RNF-10), auditoría registrada si toca datos económicos, documen
 
 ## Lo que no se adivina leyendo el código
 
-Veinte decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
+Veintiuna decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
 
 1. **El orden de las semillas y las pruebas.** `npm run test:integracion` **vacía** las tablas de
    negocio, semilla incluida: en una base compartida no hay forma de distinguir lo sembrado de lo
@@ -233,6 +233,11 @@ Veinte decisiones que costaron una vuelta y conviene no volver a tomar desde cer
     cruza consorcios con `consorcio_id IN (...)` armado desde `misConsorcios`, nunca desde un
     parámetro; el resumen lee la cabecera del consorcio por su id, como `ver-consorcio`. Cualquier
     otro archivo que escriba el filtro a mano rompe SC-003.
+21. **El sondeo de la carga asistida es también el motor.** `EnVivo` (`src/app/(panel)/en-vivo.tsx`)
+    hace `router.refresh()` cada 3 s mientras hay extracciones `pendiente`; cada refresco pasa por
+    el armazón del panel, cuyo `after()` drena la cola. Sin una pestaña abierta, la extracción
+    espera al próximo pedido de cualquier usuario o al botón de la bandeja. No hay cron ni proceso
+    aparte, y no hace falta: el que mira es el que empuja.
 
 
 ## Notas

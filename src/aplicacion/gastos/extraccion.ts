@@ -346,20 +346,34 @@ export async function descartarExtraccion(
   )
 }
 
-/** Las extracciones que esperan revision, para la bandeja. */
+/**
+ * Donde esta el trabajo de una extraccion `pendiente`, leido de la cola:
+ * en cola (nadie lo tomo), extrayendo (un drenaje lo reclamo) o agotado. El
+ * adaptador del proveedor nunca lanza (`gemini.ts`), asi que «agotado» solo
+ * aparece por fallas de infraestructura y se revive desde la bandeja.
+ */
+export type ProcesoDeExtraccion = 'en_cola' | 'extrayendo' | 'agotado'
+
+export interface ExtraccionEnLista {
+  id: string
+  estado: EstadoExtraccion
+  /** Nulo cuando la extraccion ya no esta `pendiente`. */
+  proceso: ProcesoDeExtraccion | null
+  proveedor: string | null
+  importe: string | null
+  creadoEn: string
+}
+
+/**
+ * Las extracciones que esperan revision o todavia corren. Lo que exige accion
+ * humana va primero: una propuesta lista no queda enterrada bajo lo que sigue
+ * en proceso.
+ */
 export async function listarExtracciones(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
   datos: { usuarioId: string; consorcioId: string },
-): Promise<
-  {
-    id: string
-    estado: EstadoExtraccion
-    proveedor: string | null
-    importe: string | null
-    creadoEn: string
-  }[]
-> {
+): Promise<ExtraccionEnLista[]> {
   return conAutorizacion(
     repositorio,
     reloj,
@@ -370,17 +384,39 @@ export async function listarExtracciones(
       accion: 'ver las extracciones',
     },
     async () => {
-      const filas = await prisma.extraccionComprobante.findMany({
-        where: { estado: { in: ['pendiente', 'propuesta', 'no_disponible'] } },
-        orderBy: { creadoEn: 'desc' },
-      })
-      return filas.map((e) => ({
-        id: e.id,
-        estado: e.estado,
-        proveedor: e.proveedorDetectado,
-        importe: e.importeDetectado?.toFixed(2) ?? null,
-        creadoEn: e.creadoEn.toISOString(),
-      }))
+      const [filas, trabajos] = await Promise.all([
+        prisma.extraccionComprobante.findMany({
+          where: { estado: { in: ['pendiente', 'propuesta', 'no_disponible'] } },
+          orderBy: { creadoEn: 'desc' },
+        }),
+        // Los no despachados son pocos: se cruzan en memoria, sin filtrar el JSON.
+        prismaBase.trabajoPendiente.findMany({
+          where: { tipo: 'extraccion_comprobante', estado: { in: ['pendiente', 'agotado'] } },
+          select: { carga: true, estado: true, intentos: true },
+        }),
+      ])
+      const trabajoDe = new Map(
+        trabajos.flatMap((t) => {
+          const carga = CARGA.safeParse(t.carga)
+          return carga.success ? [[carga.data.extraccionId, t] as const] : []
+        }),
+      )
+      const procesoDe = (id: string): ProcesoDeExtraccion => {
+        const trabajo = trabajoDe.get(id)
+        if (!trabajo) return 'extrayendo' // huerfana: el trabajo ya se despacho y la fila esta por cambiar
+        if (trabajo.estado === 'agotado') return 'agotado'
+        return trabajo.intentos === 0 ? 'en_cola' : 'extrayendo'
+      }
+      return filas
+        .map((e) => ({
+          id: e.id,
+          estado: e.estado,
+          proceso: e.estado === 'pendiente' ? procesoDe(e.id) : null,
+          proveedor: e.proveedorDetectado,
+          importe: e.importeDetectado?.toFixed(2) ?? null,
+          creadoEn: e.creadoEn.toISOString(),
+        }))
+        .sort((a, b) => Number(a.estado === 'pendiente') - Number(b.estado === 'pendiente'))
     },
   )
 }

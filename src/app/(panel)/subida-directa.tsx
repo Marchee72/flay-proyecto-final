@@ -3,7 +3,7 @@
 import { put } from '@vercel/blob/client'
 import { useRouter } from 'next/navigation'
 import { useState, type ReactNode } from 'react'
-import { TriangleAlert } from 'lucide-react'
+import { BadgeCheck, TriangleAlert } from 'lucide-react'
 
 /**
  * Subida directa reutilizable (guia § 3.4): el archivo va del navegador al
@@ -20,6 +20,7 @@ export function SubidaDirecta({
   etiquetaBoton,
   children,
   confirmar,
+  exito,
 }: {
   consorcioId: string
   prefijo: 'documentos' | 'extracciones'
@@ -29,14 +30,19 @@ export function SubidaDirecta({
   /** Campos adicionales del formulario, que viajan a `confirmar` junto con la clave. */
   children?: ReactNode
   confirmar: (datos: FormData) => Promise<{ mensaje: string; destino?: string }>
+  /** Si la confirmacion no navega, esto se anuncia y el formulario queda listo para el siguiente. */
+  exito?: string
 }) {
   const [mensaje, setMensaje] = useState('')
+  const [logrado, setLogrado] = useState(false)
   const [subiendo, setSubiendo] = useState(false)
   const router = useRouter()
 
   async function subir(evento: React.FormEvent<HTMLFormElement>) {
     evento.preventDefault()
-    const formulario = new FormData(evento.currentTarget)
+    // `currentTarget` no sobrevive al primer `await`: se retiene para el reset.
+    const elemento = evento.currentTarget
+    const formulario = new FormData(elemento)
     const archivo = formulario.get('archivo')
     if (!(archivo instanceof File) || archivo.size === 0) {
       setMensaje('Falta el archivo.')
@@ -44,6 +50,7 @@ export function SubidaDirecta({
     }
     setSubiendo(true)
     setMensaje('')
+    setLogrado(false)
     try {
       const respuesta = await fetch('/api/objetos/permiso', {
         method: 'POST',
@@ -75,8 +82,14 @@ export function SubidaDirecta({
         setMensaje(resultado.mensaje)
         return
       }
-      if (resultado.destino) router.push(resultado.destino)
-      else router.refresh()
+      if (resultado.destino) {
+        router.push(resultado.destino)
+        return
+      }
+      // El selector queda vacio: `formulario.delete` limpio el FormData, no el <input>.
+      elemento.reset()
+      setLogrado(true)
+      router.refresh()
     } catch {
       setMensaje('La subida no terminó. Revisá la conexión y probá de nuevo.')
     } finally {
@@ -94,6 +107,12 @@ export function SubidaDirecta({
       {mensaje && (
         <p className="error" role="alert">
           <TriangleAlert className="icono" aria-hidden="true" /> {mensaje}
+        </p>
+      )}
+      {logrado && exito && (
+        <p className="aviso aviso--exito" role="status">
+          <BadgeCheck className="icono" aria-hidden="true" />
+          <span>{exito}</span>
         </p>
       )}
       <button className="boton boton--primario" type="submit" disabled={subiendo}>

@@ -741,6 +741,16 @@ tfoot td {
   vertical-align: -4px;
   margin-right: var(--e1);
 }
+/* Algo corre en segundo plano: late como el esqueleto, y se queda quieto si
+   la persona pidió menos movimiento. */
+.etiqueta--en-curso {
+  animation: latir 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .etiqueta--en-curso {
+    animation: none;
+  }
+}
 
 /* Escala de urgencias: color + icono Lucide + palabra, igual en reclamos,
    reservas y avisos (§3.2). */

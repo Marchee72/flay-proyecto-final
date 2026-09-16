@@ -184,7 +184,7 @@ export function SubidaDirecta({
           {!subiendo && (
             <button
               type="button"
-              className="boton boton--fantasma boton--icono"
+              className="boton boton--cerrar"
               onClick={quitar}
               aria-label="Quitar el archivo"
             >

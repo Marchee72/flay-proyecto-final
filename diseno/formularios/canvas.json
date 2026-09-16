@@ -1,0 +1,32 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Gastos — modal «Nuevo gasto»", "x": 0, "y": 0, "w": 1440, "h": 900 },
+    { "file": "CargaAsistida.dc.html", "title": "Carga asistida — escritorio", "x": 1560, "y": 0, "w": 1440, "h": 900 },
+    { "file": "Telefono.dc.html", "title": "Carga asistida — teléfono 390", "x": 3120, "y": 0, "w": 390, "h": 844 },
+    { "file": "Anatomia.dc.html", "title": "Anatomía de formulario", "x": 3630, "y": 0, "w": 1200, "h": 640 }
+  ],
+  "annotations": [
+    {
+      "id": "diagnostico-modales",
+      "x": 0,
+      "y": -220,
+      "w": 620,
+      "text": "Qué cambia y por qué\n\n1. Ninguna pantalla es «solo un formulario»: /gastos/nuevo, /pagos/nuevo y /usuarios/invitar desaparecen; el Resumen y los estados vacíos abren el modal que ya existe.\n2. Cerrar es un círculo gris de 44×44 con la cruz, sin borde ni texto, arriba a la derecha; Escape y clic afuera siguen cerrando.\n3. Dentro del modal los campos van a lo ancho; rubro/proveedor e importe/fecha en dos columnas; un solo pie de acciones separado por una línea. Si hay dos acciones (registrar/descartar) van al lado, nunca una abajo de la otra."
+    },
+    {
+      "id": "diagnostico-carga",
+      "x": 1560,
+      "y": -220,
+      "w": 620,
+      "text": "Carga asistida\n\n4. El selector nativo se reemplaza por una zona de arrastre: soltar o elegir, formatos y tope de 25 MB a la vista.\n5. El archivo elegido se ve (nombre, tamaño, quitar) antes de subir, y la subida muestra la barra con la magnitud exacta.\n6. La lista de comprobantes es una fila viva: el estado es la primera columna y late mientras extrae; «Revisar» sólo cuando hay propuesta. La tabla y sus textos quedan (las e2e los leen)."
+    },
+    {
+      "id": "diagnostico-aire",
+      "x": 3630,
+      "y": -220,
+      "w": 620,
+      "text": "Aire\n\n7. Hoy el botón de envío se pega al último campo fuera del modal y la ayuda hereda el margen del párrafo. Se fija una vez en globals.css: pie a 16 px, ayuda y error a 4 px.\n8. Los botones sueltos dentro de un <p> (estados vacíos) pasan a .fila-acciones.\n9. En teléfono la zona de arrastre invita a la cámara y la tabla pierde la columna «Cargado» para entrar en 390 sin desplazar."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

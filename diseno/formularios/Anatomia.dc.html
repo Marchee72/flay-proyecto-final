@@ -1,0 +1,138 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+  <style>
+    /* Hoja de anatomia: cada bloque es la regla que va a globals.css. */
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f4f6f4; color: #1a1d21; font: 15px/1.5 Poppins, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+    a { color: #1a1d21; text-decoration: none; }
+    a:hover { color: #2e7d32; }
+    h2 { margin: 0; font-weight: 600; font-size: 22px; }
+    .rotulo { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #4a5158; }
+    .regla { font-size: 12px; color: #4a5158; font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; }
+    .cifra { font-variant-numeric: tabular-nums; }
+    .apagado { color: #4a5158; }
+    .ayuda { font-size: 12px; color: #4a5158; margin: 4px 0 0; }
+    .error { font-size: 13px; color: #b3261e; font-weight: 600; margin: 4px 0 0; }
+    .icono { width: 20px; height: 20px; flex: none; }
+    .boton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 24px; border-radius: 999px; font: 700 15px/1 inherit; border: 2px solid transparent; cursor: pointer; text-decoration: none; }
+    .boton--primario { background: #7cb342; color: #23272e; }
+    .boton--fantasma { background: #ffffff; border-color: #23272e; color: #23272e; }
+    .boton--icono { padding: 0; min-width: 44px; }
+    .campo label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .control { display: flex; align-items: center; width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid #767e76; border-radius: 8px; background: #ffffff; font-size: 15px; color: #1a1d21; }
+    .control--error { border: 2px solid #b3261e; }
+    .precargado { display: inline-block; font-size: 12px; font-weight: 700; color: #8a5f14; background: #fdf3d7; border: 1px solid #8a5f14; border-radius: 999px; padding: 0 8px; margin-bottom: 4px; }
+    .bloque { background: #ffffff; border: 1px solid #e2e6ea; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+    .zona { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 16px; min-height: 96px; border: 2px dashed #767e76; border-radius: 10px; background: #ffffff; text-align: center; font-size: 13px; font-weight: 600; }
+    .etiqueta--en-curso { animation: latir 1.4s ease-in-out infinite; }
+    @keyframes latir { 50% { opacity: 0.45; } }
+    @media (prefers-reduced-motion: reduce) { .etiqueta--en-curso { animation: none; } }
+  </style>
+</helmet>
+
+<div style="width: 1200px; height: 640px; overflow: hidden; background: #f4f6f4; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+  <div style="display: flex; align-items: baseline; gap: 16px">
+    <h2>Anatomía de formulario</h2>
+    <span class="apagado" style="font-size: 13px">Lo que cambia en globals.css, en un solo lugar, para todas las pantallas.</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; flex: 1; min-height: 0">
+
+    <!-- 1. Campo -->
+    <div class="bloque">
+      <span class="rotulo">1 · Campo, ayuda y error</span>
+      <div class="campo">
+        <label>Importe</label>
+        <div class="control cifra">12500,50</div>
+        <p class="ayuda">Con coma o punto decimal y hasta dos decimales.</p>
+      </div>
+      <div class="campo">
+        <label>Fecha</label>
+        <div class="control control--error">31/02/2026</div>
+        <p class="error">La fecha no existe. Revisá el día.</p>
+      </div>
+      <div class="campo">
+        <label>Proveedor</label>
+        <span class="precargado">Precargado: revisar antes de confirmar</span>
+        <div class="control">Edesur</div>
+      </div>
+      <span class="regla">.campo + 16px · label 4px · ayuda/error 4px explícitos (hoy heredan 1em del p)</span>
+    </div>
+
+    <!-- 2. Botonera y cerrar -->
+    <div class="bloque">
+      <span class="rotulo">2 · Pie de formulario</span>
+      <div style="display: flex; flex-direction: column; gap: 0">
+        <div class="campo">
+          <label>Descripción</label>
+          <div class="control apagado">Servicio mensual</div>
+        </div>
+        <div style="display: flex; flex-wrap: nowrap; gap: 8px; margin-top: 16px">
+          <span class="boton boton--primario" style="flex: 1 1 0; padding: 0 16px">Registrar</span>
+          <span class="boton boton--fantasma" style="flex: 1 1 0; padding: 0 16px">Descartar</span>
+        </div>
+      </div>
+      <span class="regla">form > .fila-acciones { margin-top: 16px } · siempre al lado, nunca uno abajo del otro (sin wrap; en teléfono cada uno toma la mitad) · el verbo solo: «Registrar», «Descartar», «Subir», «Volver»; el objeto ya lo dice el título</span>
+
+      <span class="rotulo" style="margin-top: 8px">3 · Cerrar un diálogo</span>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start">
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <span class="boton boton--fantasma" style="opacity: 0.5; text-decoration: line-through">
+            <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+            Cerrar
+          </span>
+          <span class="regla">antes</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <span class="boton boton--icono" aria-label="Cerrar diálogo" style="background: #ecefec; color: #23272e; border-radius: 999px">
+            <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+          </span>
+          <span class="regla">.boton--cerrar: círculo 44×44 gris pálido sin borde · aria-label «Cerrar diálogo»</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Zona de arrastre -->
+    <div class="bloque">
+      <span class="rotulo">4 · Zona de arrastre, cuatro estados</span>
+
+      <div class="zona">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a5158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13v8"></path><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path><path d="m8 17 4-4 4 4"></path></svg>
+        <span>Arrastrá el comprobante acá o <span style="color: #2e7d32; text-decoration: underline">elegí un archivo</span></span>
+        <span class="regla" style="font-weight: 400">reposo · borde 2px dashed #767e76</span>
+      </div>
+
+      <div class="zona" style="border-style: solid; border-color: #7cb342; background: #f1f8f1">
+        <span style="color: #2e7d32">Soltá para elegirlo</span>
+        <span class="regla" style="font-weight: 400">arrastrando encima · .zona-soltar--activa</span>
+      </div>
+
+      <div style="display: grid; gap: 8px; padding: 12px 16px; border: 1px solid #c9cfc9; border-radius: 8px; background: #ffffff">
+        <div style="display: flex; align-items: center; gap: 12px; font-size: 13px">
+          <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600">factura-edesur-0925.pdf</span>
+          <span class="cifra apagado">412 KB</span>
+        </div>
+        <div style="height: 8px; border-radius: 999px; background: #ecefec; border: 1px solid #c9cfc9; overflow: hidden">
+          <div style="height: 100%; width: 62%; background: #7cb342; border-radius: 999px"></div>
+        </div>
+        <span class="regla">subiendo · .progreso con onUploadProgress · 62 %</span>
+      </div>
+
+      <div style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-radius: 8px; background: #fdecea; border: 1px solid #8f1d16; border-left: 4px solid #b3261e; font-size: 13px">
+        <svg class="icono" style="color: #b3261e; margin-top: 2px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 12a5 5 0 0 1 5-5"></path><path d="M10 3a9 9 0 0 1 11 8.9 6 6 0 0 1-5.2 5.9"></path><path d="M2 2l20 20"></path><path d="M4.7 4.7A9 9 0 0 0 3 12a9 9 0 0 0 11.8 8.6"></path></svg>
+        <span>El archivo pesa 31,2 MB y el máximo son 25 MB. <span class="regla" style="display: block">error · .aviso--problema con role="alert", el mismo mensaje del servidor</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

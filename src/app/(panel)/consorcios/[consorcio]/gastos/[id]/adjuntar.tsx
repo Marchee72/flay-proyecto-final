@@ -115,7 +115,7 @@ export function AdjuntarComprobante({
         ))}
 
       <button className="boton boton--primario" type="submit" disabled={subiendo}>
-        {subiendo ? 'Subiendo…' : 'Subir comprobante'}
+        {subiendo ? 'Subiendo…' : 'Subir'}
       </button>
     </form>
   )

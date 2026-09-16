@@ -6,6 +6,7 @@ import {
   importeDesdeEntrada,
   importeParaMostrar,
   importeSerializado,
+  pesoParaMostrar,
   plural,
 } from '@/compartido/formato'
 
@@ -55,5 +56,14 @@ describe('plural', () => {
     expect(plural(1, 'gasto', 'gastos')).toBe('1 gasto')
     expect(plural(0, 'gasto', 'gastos')).toBe('0 gastos')
     expect(plural(12, 'unidad', 'unidades')).toBe('12 unidades')
+  })
+})
+
+describe('pesoParaMostrar', () => {
+  it('muestra KB enteros y MB con un decimal, con coma', () => {
+    expect(pesoParaMostrar(500)).toBe('1 KB')
+    expect(pesoParaMostrar(412 * 1024)).toBe('412 KB')
+    expect(pesoParaMostrar(2.8 * 1024 * 1024)).toBe('2,8 MB')
+    expect(pesoParaMostrar(25 * 1024 * 1024)).toBe('25 MB')
   })
 })

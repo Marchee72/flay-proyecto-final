@@ -102,7 +102,7 @@ test('la propuesta del comprobante se revisa y el gasto nace al confirmar (SC-01
   // La persona corrige el importe y confirma: ahora si existe el gasto, atado
   // a la extraccion y con la correccion registrada.
   await page.getByLabel('Importe').fill('15450.00')
-  await page.getByRole('button', { name: 'Registrar gasto' }).click()
+  await page.getByRole('button', { name: 'Registrar', exact: true }).click()
   await expect(page).toHaveURL(/\/gastos\/[0-9a-f-]+\?.*nuevo=1/)
   await expect(page.getByRole('status').first()).toContainText('Gasto registrado')
 
@@ -184,9 +184,9 @@ test('sin asistencia el comprobante queda guardado y el gasto se carga a mano', 
   await page.goto(`/consorcios/${escenario.consorcioId}/gastos/asistida/${extraccion.id}`)
   await expect(page.getByRole('status')).toContainText('La asistencia no está disponible')
   await expect(page.getByText('Precargado: revisar antes de confirmar')).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Registrar gasto' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Registrar', exact: true })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Descartar comprobante' }).click()
+  await page.getByRole('button', { name: 'Descartar', exact: true }).click()
   await expect(page).toHaveURL(/\/gastos\/asistida\?.*descartada=1/)
   await expect(page.getByRole('status')).toContainText('Extracción descartada')
   const descartada = await prisma.extraccionComprobante.findUniqueOrThrow({
@@ -247,7 +247,7 @@ test('la sugerencia del triage se aplica a mano y no cambia el estado (FR-027)',
   await dialogo
     .getByLabel('Detalle')
     .fill('Hay una persona atrapada en el ascensor: el mantenimiento no responde.')
-  await dialogo.getByRole('button', { name: 'Registrar reclamo' }).click()
+  await dialogo.getByRole('button', { name: 'Registrar', exact: true }).click()
   await expect(page).toHaveURL(/\/reclamos\/[0-9a-f-]+/)
 
   // La cola se drena con el pedido siguiente (`after` del panel): recargar

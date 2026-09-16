@@ -10,8 +10,9 @@ export function CargadorDeComprobante({ consorcioId }: { consorcioId: string }) 
       consorcioId={consorcioId}
       prefijo="extracciones"
       accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/tiff"
-      etiquetaArchivo="Comprobante (PDF o foto)"
-      etiquetaBoton="Subir y extraer"
+      objeto="el comprobante"
+      ayuda="PDF o foto (JPG, PNG, WEBP, HEIC, TIFF) · hasta 25 MB"
+      etiquetaBoton="Subir"
       confirmar={accionIniciarCargaAsistida}
       exito="Comprobante subido. La extracción corre en segundo plano; podés subir el siguiente."
     />

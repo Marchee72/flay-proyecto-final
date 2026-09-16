@@ -23,11 +23,14 @@ export function BotonModal({
   etiqueta,
   titulo,
   variante = 'boton--primario',
+  abrirAlMontar = false,
   children,
 }: {
   etiqueta: ReactNode
   titulo: string
   variante?: 'boton--primario' | 'boton--fantasma' | 'boton--peligro'
+  /** Abierto de entrada: el Resumen manda a `/gastos?abrir=1` y el modal ya esta ahi. */
+  abrirAlMontar?: boolean
   children: ReactNode | ((cerrar: () => void) => ReactNode)
 }) {
   const dialogo = useRef<HTMLDialogElement | null>(null)
@@ -42,6 +45,10 @@ export function BotonModal({
     dialogo.current.showModal()
     tituloRef.current?.focus()
   }
+  // El portal recien existe con `montado`; abrir antes no encuentra el dialogo.
+  useEffect(() => {
+    if (montado && abrirAlMontar) abrir()
+  }, [montado, abrirAlMontar])
 
   const cerrar = () => dialogo.current?.close()
 
@@ -68,12 +75,11 @@ export function BotonModal({
                 </h2>
                 <button
                   type="button"
-                  className="boton boton--fantasma"
+                  className="boton boton--cerrar"
                   onClick={cerrar}
                   aria-label="Cerrar diálogo"
                 >
                   <X className="icono" aria-hidden="true" />
-                  Cerrar
                 </button>
               </div>
               {typeof children === 'function' ? children(cerrar) : children}

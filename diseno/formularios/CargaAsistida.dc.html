@@ -1,0 +1,179 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+  <style>
+    /* Valores literales de src/app/globals.css: nada inventado. */
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f4f6f4; color: #1a1d21; font: 15px/1.5 Poppins, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+    a { color: #1a1d21; text-decoration: none; }
+    a:hover { color: #2e7d32; }
+    h1, h2 { margin: 0; font-weight: 600; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 22px; }
+    .cifra { font-variant-numeric: tabular-nums; }
+    .apagado { color: #4a5158; }
+    .ayuda { font-size: 12px; color: #4a5158; margin: 4px 0 0; }
+    .icono { width: 20px; height: 20px; flex: none; }
+    .boton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 24px; border-radius: 999px; font: 700 15px/1 inherit; border: 2px solid transparent; cursor: pointer; text-decoration: none; }
+    .boton--primario { background: #7cb342; color: #23272e; }
+    .boton--fantasma { background: #ffffff; border-color: #23272e; color: #23272e; }
+    .boton--icono { padding: 0; min-width: 44px; }
+    .etiqueta { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+    .etiqueta .icono { width: 16px; height: 16px; }
+    .etiqueta--rendido { color: #2e7d32; background: #f1f8f1; }
+    .etiqueta--pendiente { color: #4a5158; background: #ecefec; }
+    .etiqueta--vencido { color: #b3261e; background: #fdecea; }
+    .etiqueta--en-curso { animation: latir 1.4s ease-in-out infinite; }
+    @keyframes latir { 50% { opacity: 0.45; } }
+    .girar { animation: girar 1s linear infinite; }
+    @keyframes girar { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .etiqueta--en-curso, .girar { animation: none; } }
+    .lateral a { display: flex; align-items: center; gap: 12px; min-height: 36px; padding: 0 12px; border-radius: 8px; color: #e8eaed; font-size: 15px; }
+    .lateral a.activa { font-weight: 700; color: #9ccc65; background: #2e333b; }
+    .lateral h2 { margin: 12px 12px 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #9ccc65; }
+    th { text-align: left; padding: 12px 16px; background: #ecefec; color: #4a5158; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #e2e6ea; height: 44px; }
+    td { text-align: left; padding: 12px 16px; border-bottom: 1px solid #e2e6ea; font-size: 15px; height: 44px; vertical-align: middle; }
+    tr:last-child td { border-bottom: 0; }
+    .numero { text-align: right; }
+  </style>
+</helmet>
+
+<div style="position: relative; width: 1440px; height: 900px; overflow: hidden; background: #f4f6f4; display: flex; flex-direction: column">
+
+  <div style="display: flex; align-items: center; gap: 12px; background: #23272e; color: #e8eaed; padding: 12px 24px; flex: none">
+    <span style="font-weight: 700; font-size: 18px; letter-spacing: 0.04em; color: #e8eaed">FLAY</span>
+    <div style="display: flex; gap: 8px">
+      <a style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: 8px; color: #e8eaed; font-size: 13px">
+        <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
+        Consorcios
+      </a>
+      <a style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: 8px; color: #e8eaed; font-size: 13px">
+        <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>
+        Bandeja
+      </a>
+    </div>
+    <span class="boton boton--fantasma" style="margin-left: auto">Salir</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 220px 1fr; flex: 1; min-height: 0; background: #23272e; padding: 0 24px 24px 0">
+    <div class="lateral" style="padding: 12px; display: flex; flex-direction: column; gap: 4px">
+      <a style="font-weight: 700; font-size: 18px; margin-bottom: 8px; min-height: 44px">
+        <svg class="icono" style="color: #9ccc65" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path></svg>
+        Mitre 456
+      </a>
+      <h2>Dinero</h2>
+      <a>Períodos</a>
+      <a>Expensas</a>
+      <a class="activa">Gastos</a>
+      <a>Pagos</a>
+      <a>Morosidad</a>
+      <h2>Convivencia</h2>
+      <a>Reclamos</a>
+      <a>Reservas</a>
+      <a>Espacios</a>
+      <a>Novedades</a>
+      <h2>Análisis</h2>
+      <a>Documentación</a>
+      <a>Indicadores</a>
+      <h2>Administración</h2>
+      <a>Unidades</a>
+      <a>Proveedores</a>
+      <a>Usuarios</a>
+    </div>
+
+    <div style="background: #f4f6f4; border-top-left-radius: 10px; padding: 16px; min-width: 0; overflow: auto; display: flex; flex-direction: column; gap: 16px">
+
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <div style="margin-bottom: 8px">
+          <span class="boton boton--fantasma">
+            <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
+            Volver
+          </span>
+        </div>
+        <h1>Carga asistida</h1>
+        <p class="apagado" style="margin: 0">Subí el comprobante y el sistema propone proveedor, fecha, importe y rubro. El gasto se crea recién cuando lo revisás y confirmás.</p>
+      </div>
+
+      <!-- Zona de arrastre: reemplaza al <input type=file> nativo. El input
+           sigue existiendo, oculto, y este bloque es su <label>. -->
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <label style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 24px; min-height: 144px; border: 2px dashed #767e76; border-radius: 10px; background: #ffffff; text-align: center; cursor: pointer">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4a5158" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13v8"></path><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path><path d="m8 17 4-4 4 4"></path></svg>
+          <span style="font-weight: 600">Arrastrá el comprobante acá o <span style="color: #2e7d32; text-decoration: underline">elegí un archivo</span></span>
+          <span class="ayuda" style="margin: 0">PDF o foto (JPG, PNG, WEBP, HEIC, TIFF) · hasta 25 MB</span>
+        </label>
+
+        <!-- Archivo elegido, todavia sin subir: nombre, tamaño y quitar -->
+        <div style="display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border: 1px solid #c9cfc9; border-radius: 8px; background: #ffffff; max-width: 560px">
+          <svg class="icono" style="color: #4a5158" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>
+          <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600">factura-edesur-0925.pdf</span>
+          <span class="cifra apagado" style="font-size: 13px; flex: none">412 KB</span>
+          <button class="boton boton--fantasma boton--icono" aria-label="Quitar el archivo" style="min-height: 36px; min-width: 36px; border-width: 1px; border-color: #c9cfc9">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+          </button>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px">
+          <span class="boton boton--primario">Subir</span>
+        </div>
+      </div>
+
+      <!-- Comprobantes cargados: la fila avanza sola -->
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap">
+          <h2>Comprobantes cargados</h2>
+          <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #4a5158">
+            <span class="etiqueta--en-curso" style="width: 8px; height: 8px; border-radius: 999px; background: #7cb342; display: inline-block"></span>
+            2 en proceso · 1 para revisar · la lista se actualiza sola
+          </span>
+        </div>
+
+        <div style="border: 1px solid #c9cfc9; border-radius: 10px; background: #ffffff; overflow: hidden">
+          <table style="width: 100%; border-collapse: collapse">
+            <thead><tr><th>Estado</th><th>Cargado</th><th>Proveedor detectado</th><th class="numero">Importe</th><th style="width: 240px"></th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="etiqueta etiqueta--rendido"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"></path><path d="m9 12 2 2 4-4"></path></svg>Para revisar</span></td>
+                <td class="apagado">hoy 10:42</td>
+                <td>Limpiezas del Sur SRL</td>
+                <td class="numero cifra">184.320,75</td>
+                <td class="numero"><span class="boton boton--primario">Revisar</span></td>
+              </tr>
+              <tr>
+                <td><span class="etiqueta etiqueta--pendiente"><svg class="icono girar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>Extrayendo…</span></td>
+                <td class="apagado">hoy 10:45</td>
+                <td class="apagado">—</td>
+                <td class="numero apagado">—</td>
+                <td class="numero apagado" style="font-size: 13px">unos segundos</td>
+              </tr>
+              <tr>
+                <td><span class="etiqueta etiqueta--pendiente"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>En cola</span></td>
+                <td class="apagado">hoy 10:46</td>
+                <td class="apagado">—</td>
+                <td class="numero apagado">—</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td><span class="etiqueta etiqueta--vencido"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>No se pudo procesar</span></td>
+                <td class="apagado">ayer 18:02</td>
+                <td class="apagado">—</td>
+                <td class="numero apagado">—</td>
+                <td class="numero"><a style="text-decoration: underline; font-size: 13px">Reintentar</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

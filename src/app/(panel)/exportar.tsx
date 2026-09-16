@@ -16,7 +16,7 @@ export function EnlaceExportar({
       href={`/api/exportar/${consorcioId}/${tabla}.csv`}
       download
     >
-      <Download className="icono" aria-hidden="true" /> Exportar CSV
+      <Download className="icono" aria-hidden="true" /> Exportar
     </a>
   )
 }

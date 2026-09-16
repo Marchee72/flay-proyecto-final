@@ -1,0 +1,32 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Opción A — el consorcio encabeza el lateral", "x": 0, "y": 0, "w": 1440, "h": 720 },
+    { "file": "TelefonoA.dc.html", "title": "Opción A — teléfono", "x": 1520, "y": 0, "w": 390, "h": 844 },
+    { "file": "Barra.dc.html", "title": "Opción B — el consorcio en la barra", "x": 0, "y": 1000, "w": 1440, "h": 720 },
+    { "file": "TelefonoB.dc.html", "title": "Opción B — teléfono", "x": 1520, "y": 1000, "w": 390, "h": 844 }
+  ],
+  "annotations": [
+    {
+      "id": "diagnostico",
+      "x": 0,
+      "y": -260,
+      "w": 700,
+      "text": "Qué pasa hoy\n\n1. La página entera se desplaza: la barra se va, y el lateral (sticky, con su propio scroll) y el contenido comparten el scroll del documento. Las dos opciones fijan el armazón a la altura de la ventana: barra quieta, lateral con su scroll, contenido con el suyo.\n\n2. El nombre del consorcio aparece hasta tres veces en la misma columna: el selector «Cambiar de consorcio» (si tenés 2 o más), el título en negrita que enlaza al Resumen, y en el Resumen el h1 vuelve a ser el nombre. En las dos opciones queda un solo control que nombra y cambia el consorcio, y «Resumen» pasa a ser la primera sección del menú."
+    },
+    {
+      "id": "opcion-a",
+      "x": 760,
+      "y": -260,
+      "w": 680,
+      "text": "Opción A — el consorcio encabeza el lateral\n\nEl título del lateral es el conmutador: nombre en negrita, ícono lima y una flecha doble que dice «se puede cambiar». Con un solo consorcio, sin flecha. A favor: el lateral sigue siendo «todo lo de este edificio»; la barra queda global (FLAY, Consorcios, Bandeja, Salir). En contra: en teléfono el conmutador comparte fila con «Secciones» y el h1 baja un renglón."
+    },
+    {
+      "id": "opcion-b",
+      "x": 0,
+      "y": 780,
+      "w": 700,
+      "text": "Opción B — el consorcio en la barra\n\nEl conmutador vive al lado de FLAY, como en el canvas de navegabilidad: se ve en todas las pantallas, también en la lista de consorcios y la bandeja, y el lateral arranca directo en «Resumen». A favor: un solo lugar en toda la app y el lateral gana 60 px. En contra: en teléfono la barra queda cargada (marca, conmutador, dos íconos, Salir), y mezcla lo global con lo del consorcio."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

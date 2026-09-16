@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { Users, UserPlus } from 'lucide-react'
+import { Users } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
@@ -94,16 +93,7 @@ function Tabla({
     return (
       <div className="vacio">
         <Users aria-hidden="true" />
-        <p>Todavía no hay nadie habilitado en este consorcio.</p>
-        <p>
-          <Link
-            className="boton boton--primario"
-            href={`/consorcios/${consorcioId}/usuarios/invitar`}
-          >
-            <UserPlus className="icono" aria-hidden="true" />
-            Invitar persona
-          </Link>
-        </p>
+        <p>Todavía no hay nadie habilitado en este consorcio: «Invitar persona», arriba.</p>
       </div>
     )
   }

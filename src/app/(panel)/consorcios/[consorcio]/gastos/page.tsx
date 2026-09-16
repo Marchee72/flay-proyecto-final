@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, Receipt, Siren } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Receipt, ScanSearch, Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { importeParaMostrar, plural } from '@/compartido/formato'
@@ -20,6 +20,8 @@ type Parametros = {
   periodo?: string
   rubro?: string
   pagina?: string
+  /** `?abrir=1` (desde el Resumen) llega con el modal de alta ya abierto. */
+  abrir?: string
 }
 
 /**
@@ -83,9 +85,11 @@ export default async function GastosPage({
               etiqueta: proveedor.razonSocial,
             }))}
             precargado={precargado}
+            abrir={parametros.abrir === '1' || Object.keys(precargado).length > 0}
           />
           <Link className="boton boton--fantasma" href={`/consorcios/${activo.id}/gastos/asistida`}>
-            Cargar comprobante con asistencia
+            <ScanSearch className="icono" aria-hidden="true" />
+            Carga asistida
           </Link>
           {roles.some((r) => r === 'administrador' || r === 'consejo') && (
             <EnlaceExportar consorcioId={activo.id} tabla="gastos" />
@@ -126,7 +130,7 @@ export default async function GastosPage({
           <div className="vacio">
             <Receipt aria-hidden="true" />
             <p>No hay gastos que coincidan con el filtro.</p>
-            <p>
+            <div className="fila-acciones">
               <ModalGasto
                 consorcioId={activo.id}
                 periodos={abiertos.map((periodo) => ({
@@ -140,7 +144,7 @@ export default async function GastosPage({
                 }))}
                 precargado={precargado}
               />
-            </p>
+            </div>
           </div>
         ) : (
           <>

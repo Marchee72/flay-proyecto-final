@@ -11,7 +11,7 @@ import { AvisoDeError, conConsorcio, idONoEncontrado } from '../../../../../con-
 import { EnVivo } from '../../../../../en-vivo'
 import { Volver } from '../../../../../encabezado-consorcio'
 import { accionDescartarExtraccion } from '../../acciones'
-import { FormularioGasto } from '../../nuevo/formulario'
+import { FormularioGasto } from '../../formulario'
 
 export const metadata: Metadata = { title: 'Revisar comprobante — Flay' }
 
@@ -39,7 +39,7 @@ export default async function RevisarExtraccionPage({
       extraccionId: id,
     })
 
-    const encabezado = <Volver href={volver} texto="Volver a carga asistida" />
+    const encabezado = <Volver href={volver} />
 
     if (extraccion.estado === 'pendiente') {
       return (
@@ -142,6 +142,15 @@ export default async function RevisarExtraccionPage({
                   No hay ningún período abierto. Abrir el mes en{' '}
                   <Link href={`/consorcios/${activo.id}/periodos`}>Períodos</Link> y volver.
                 </p>
+                <div className="fila-acciones">
+                  <button
+                    className="boton boton--fantasma"
+                    type="submit"
+                    form="descartar-extraccion"
+                  >
+                    Descartar
+                  </button>
+                </div>
               </div>
             ) : (
               <FormularioGasto
@@ -154,14 +163,21 @@ export default async function RevisarExtraccionPage({
                 rubros={rubros.map((r) => ({ id: r.id, etiqueta: r.nombre }))}
                 proveedores={proveedores.map((p) => ({ id: p.id, etiqueta: p.razonSocial }))}
                 precargado={precargado}
+                accionesExtra={
+                  <button
+                    className="boton boton--fantasma"
+                    type="submit"
+                    form="descartar-extraccion"
+                  >
+                    Descartar
+                  </button>
+                }
               />
             )}
-            <form action={accionDescartarExtraccion} className="fila-acciones">
+            {/* El formulario de descartar vive aparte; su boton, en el pie del otro (`form=`). */}
+            <form id="descartar-extraccion" action={accionDescartarExtraccion}>
               <input type="hidden" name="consorcio" value={activo.id} />
               <input type="hidden" name="extraccion" value={extraccion.id} />
-              <button className="boton boton--fantasma" type="submit">
-                Descartar comprobante
-              </button>
             </form>
           </div>
           <div className="tarjeta">

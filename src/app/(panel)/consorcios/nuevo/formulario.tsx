@@ -89,7 +89,7 @@ export function FormularioConsorcio({
       )}
 
       <button className="boton boton--primario" type="submit" disabled={enviando}>
-        {enviando ? 'Creando…' : 'Crear consorcio'}
+        {enviando ? 'Creando…' : 'Crear'}
       </button>
     </form>
   )

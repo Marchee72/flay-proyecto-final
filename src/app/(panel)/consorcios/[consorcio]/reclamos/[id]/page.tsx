@@ -48,7 +48,7 @@ export default async function ReclamoPage({
 
     return (
       <>
-        <Volver href={`/consorcios/${activo.id}/reclamos`} texto="Volver a reclamos" />
+        <Volver href={`/consorcios/${activo.id}/reclamos`} />
         <h1>{reclamo.titulo}</h1>
         <p className="fila-acciones">
           <EstadoDeReclamo estado={reclamo.estado} />

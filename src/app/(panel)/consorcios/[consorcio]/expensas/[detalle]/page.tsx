@@ -46,7 +46,7 @@ export default async function ExpensaPage({
 
     return (
       <>
-        <Volver href={`/consorcios/${activo.id}/expensas`} texto="Volver a expensas" />
+        <Volver href={`/consorcios/${activo.id}/expensas`} />
         <h1>
           Expensa {expensa.periodo} · unidad {expensa.designacion}
         </h1>
@@ -59,14 +59,14 @@ export default async function ExpensaPage({
           </p>
 
           {consorcio && (
-            <p>
+            <div className="fila-acciones">
               <ModalPago
                 consorcioId={activo.id}
                 unidades={consorcio.unidades}
                 medios={MEDIOS_DE_PAGO}
                 hoy={RELOJ.hoy().toISOString().slice(0, 10)}
               />
-            </p>
+            </div>
           )}
 
           {expensa.direccion ? (

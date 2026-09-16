@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react'
 
-import { accionRegistrarPago, type Resultado } from '../acciones'
+import { accionRegistrarPago, type Resultado } from './acciones'
 
 const SIN_ERROR: Resultado = { mensaje: '' }
 
@@ -107,7 +107,7 @@ export function FormularioPago({
       )}
 
       <button className="boton boton--primario" type="submit" disabled={enviando}>
-        {enviando ? 'Registrando…' : 'Registrar pago'}
+        {enviando ? 'Registrando…' : 'Registrar'}
       </button>
     </form>
   )

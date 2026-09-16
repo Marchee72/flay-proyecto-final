@@ -26,7 +26,7 @@ export default async function PagosPage({
   searchParams,
 }: {
   params: Promise<{ consorcio: string }>
-  searchParams: Promise<{ registrado?: string; unidad?: string }>
+  searchParams: Promise<{ registrado?: string; unidad?: string; abrir?: string }>
 }) {
   const { consorcio: consorcioId } = await params
   const parametros = await searchParams
@@ -69,6 +69,7 @@ export default async function PagosPage({
               }))}
               medios={MEDIOS_DE_PAGO}
               hoy={RELOJ.hoy().toISOString().slice(0, 10)}
+              abrir={parametros.abrir === '1'}
             />
           )}
           {roles.some((r) => r === 'administrador' || r === 'consejo') && (

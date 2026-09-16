@@ -63,7 +63,7 @@ test('reservar, chocar con otra reserva con un mensaje legible, y cancelar', asy
     await dialogo.getByLabel('Desde').fill(enHoras(desde))
     await dialogo.getByLabel('Hasta').fill(enHoras(hasta))
     await dialogo.getByLabel('Cantidad de personas').fill('12')
-    await dialogo.getByRole('button', { name: 'Confirmar reserva' }).click()
+    await dialogo.getByRole('button', { name: 'Confirmar', exact: true }).click()
   }
 
   await reservarDesde(72, 76)

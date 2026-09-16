@@ -47,7 +47,7 @@ test('del reclamo del consorcista al cierre del administrador, con historial com
   await dialogo.getByLabel('Detalle').fill('Desde el domingo gotea agua del techo de la cocina.')
   await dialogo.getByLabel('Unidad').selectOption({ label: '3B' })
   await dialogo.getByLabel('Urgencia').selectOption('alta')
-  await dialogo.getByRole('button', { name: 'Registrar reclamo' }).click()
+  await dialogo.getByRole('button', { name: 'Registrar', exact: true }).click()
 
   await expect(page).toHaveURL(/\/reclamos\/[0-9a-f-]+/)
   await expect(

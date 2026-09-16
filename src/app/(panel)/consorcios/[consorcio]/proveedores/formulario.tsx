@@ -86,7 +86,7 @@ export function FormularioProveedor({
       )}
 
       <button className="boton boton--primario" type="submit" disabled={enviando}>
-        {enviando ? 'Guardando…' : 'Agregar proveedor'}
+        {enviando ? 'Guardando…' : 'Agregar'}
       </button>
     </form>
   )

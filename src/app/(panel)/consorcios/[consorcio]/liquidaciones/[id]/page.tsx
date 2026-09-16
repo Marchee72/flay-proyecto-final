@@ -40,7 +40,7 @@ export default async function LiquidacionPage({
 
     return (
       <>
-        <Volver href={`/consorcios/${activo.id}/periodos`} texto="Volver a períodos" />
+        <Volver href={`/consorcios/${activo.id}/periodos`} />
         <h1>Liquidación {liquidacion.periodo}</h1>
         <p className="apagado">
           <EstadoDeLaLiquidacion estado={liquidacion.estado} /> · vence{' '}

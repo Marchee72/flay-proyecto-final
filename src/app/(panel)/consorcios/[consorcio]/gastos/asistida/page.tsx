@@ -44,8 +44,8 @@ function Estado({ e }: { e: ExtraccionEnLista }) {
       </span>
     )
   return (
-    <span className="etiqueta etiqueta--pendiente etiqueta--en-curso">
-      <LoaderCircle className="icono" aria-hidden="true" />
+    <span className="etiqueta etiqueta--pendiente">
+      <LoaderCircle className="icono icono--girando" aria-hidden="true" />
       Extrayendo…
     </span>
   )
@@ -80,7 +80,7 @@ export default async function CargaAsistidaPage({
     return (
       <>
         {enProceso > 0 && <EnVivo />}
-        <Volver href={`/consorcios/${activo.id}/gastos`} texto="Volver a gastos" />
+        <Volver href={`/consorcios/${activo.id}/gastos`} />
         <h1>Carga asistida</h1>
         <p className="apagado">
           Subí el comprobante y el sistema propone proveedor, fecha, importe y rubro. El gasto se
@@ -92,22 +92,18 @@ export default async function CargaAsistidaPage({
             <span>Extracción descartada. No se creó ningún gasto.</span>
           </p>
         )}
-        <div className="tarjeta">
-          <CargadorDeComprobante consorcioId={activo.id} />
-        </div>
+        <CargadorDeComprobante consorcioId={activo.id} />
 
-        <h2>Comprobantes cargados</h2>
-        {enProceso > 0 && (
-          <p className="aviso aviso--atencion" role="status">
-            <LoaderCircle className="icono" aria-hidden="true" />
-            <span>
-              {enProceso === 1
-                ? '1 comprobante en proceso'
-                : `${enProceso} comprobantes en proceso`}
-              {paraRevisar > 0 && ` · ${paraRevisar} para revisar`}. La lista se actualiza sola.
+        <div className="encabezado-lista">
+          <h2>Comprobantes cargados</h2>
+          {enProceso > 0 && (
+            <span className="ayuda en-curso" role="status">
+              <span className="en-curso__punto" aria-hidden="true" />
+              {enProceso === 1 ? '1 en proceso' : `${enProceso} en proceso`}
+              {paraRevisar > 0 && ` · ${paraRevisar} para revisar`} · la lista se actualiza sola
             </span>
-          </p>
-        )}
+          )}
+        </div>
         {extracciones.length === 0 ? (
           <div className="vacio">
             <ScanSearch aria-hidden="true" />
@@ -118,23 +114,29 @@ export default async function CargaAsistidaPage({
             <table>
               <thead>
                 <tr>
-                  <th scope="col">Cargado</th>
-                  <th scope="col">Proveedor detectado</th>
-                  <th scope="col">Importe</th>
                   <th scope="col">Estado</th>
-                  <th scope="col">Acción</th>
+                  <th scope="col" className="solo-escritorio">
+                    Cargado
+                  </th>
+                  <th scope="col">Proveedor detectado</th>
+                  <th scope="col" className="numero">
+                    Importe
+                  </th>
+                  <th scope="col">
+                    <span className="oculto">Acción</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {extracciones.map((e) => (
                   <tr key={e.id}>
-                    <td>{momentoParaMostrar(e.creadoEn)}</td>
-                    <td>{e.proveedor ?? '—'}</td>
-                    <td className="numero">{e.importe ?? '—'}</td>
                     <td>
                       <Estado e={e} />
                     </td>
-                    <td>
+                    <td className="solo-escritorio apagado">{momentoParaMostrar(e.creadoEn)}</td>
+                    <td>{e.proveedor ?? '—'}</td>
+                    <td className="numero cifra">{e.importe ?? '—'}</td>
+                    <td className="numero">
                       {e.estado !== 'pendiente' ? (
                         <Link
                           className="boton boton--primario"
@@ -143,7 +145,7 @@ export default async function CargaAsistidaPage({
                           Revisar
                         </Link>
                       ) : e.proceso === 'agotado' ? (
-                        <Link href="/bandeja">Reintentar desde la bandeja</Link>
+                        <Link href="/bandeja">Reintentar</Link>
                       ) : (
                         '—'
                       )}

@@ -19,7 +19,7 @@ export default async function ConsultarPage({
 
   return (
     <>
-      <Volver href={`/consorcios/${activo.id}/documentos`} texto="Volver a documentación" />
+      <Volver href={`/consorcios/${activo.id}/documentos`} />
       <h1>Preguntarle a la documentación</h1>
       <p className="apagado">
         Reglamento, actas y contratos del consorcio. Toda respuesta cita el documento y el

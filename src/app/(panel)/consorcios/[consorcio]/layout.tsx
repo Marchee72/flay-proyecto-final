@@ -51,14 +51,9 @@ export default async function ConsorcioLayout({
               <Menu className="icono" aria-hidden="true" />
               Secciones
             </summary>
-            <Navegacion
-              base={base}
-              nombre={activo.nombre}
-              roles={roles}
-              etiqueta="Todas las secciones"
-            />
+            <Navegacion base={base} roles={roles} etiqueta="Todas las secciones" />
           </details>
-          <Navegacion base={base} nombre={activo.nombre} roles={roles} />
+          <Navegacion base={base} roles={roles} />
         </div>
         <main>{children}</main>
       </div>

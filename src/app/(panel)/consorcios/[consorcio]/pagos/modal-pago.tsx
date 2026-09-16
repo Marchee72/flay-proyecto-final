@@ -1,7 +1,7 @@
 'use client'
 
 import { BotonModal } from '../../../modal'
-import { FormularioPago } from './nuevo/formulario'
+import { FormularioPago } from './formulario'
 
 /**
  * Alta de pago en modal (guia §3.4, patron «Modal»). Reutiliza el formulario
@@ -14,15 +14,17 @@ export function ModalPago({
   medios,
   hoy,
   etiqueta = 'Registrar un pago',
+  abrir = false,
 }: {
   consorcioId: string
   unidades: readonly { id: string; designacion: string }[]
   medios: readonly { valor: string; etiqueta: string }[]
   hoy: string
   etiqueta?: string
+  abrir?: boolean
 }) {
   return (
-    <BotonModal etiqueta={etiqueta} titulo="Registrar un pago">
+    <BotonModal etiqueta={etiqueta} titulo="Registrar un pago" abrirAlMontar={abrir}>
       <FormularioPago consorcioId={consorcioId} unidades={unidades} medios={medios} hoy={hoy} />
     </BotonModal>
   )

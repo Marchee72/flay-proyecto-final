@@ -62,7 +62,7 @@ test('un consorcista no ve el formulario de alta de proveedor (RNF-03)', async (
 
   await expect(page.getByText('Ascensores del Litoral')).toBeVisible()
   // Lo que el rol no puede hacer, la pantalla no lo ofrece.
-  await expect(page.getByRole('button', { name: 'Agregar proveedor' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Agregar', exact: true })).toHaveCount(0)
 })
 
 test('el gasto de otro consorcio no aparece: «no encontrado», nunca «prohibido»', async ({

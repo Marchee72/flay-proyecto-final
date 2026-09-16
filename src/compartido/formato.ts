@@ -87,6 +87,12 @@ export function momentoParaMostrar(iso: string): string {
   return `${de('day')}/${de('month')}/${de('year')} ${de('hour')}:${de('minute')}`
 }
 
+/** Peso de un archivo legible: `412 KB`, `2,8 MB`. Bytes, no dinero. */
+export function pesoParaMostrar(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`
+  return `${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 1 }).format(bytes / (1024 * 1024))} MB`
+}
+
 /** `1 gasto`, `2 gastos`: el numero con la palabra que le corresponde. */
 export function plural(cantidad: number, singular: string, plural: string): string {
   return `${cantidad} ${cantidad === 1 ? singular : plural}`

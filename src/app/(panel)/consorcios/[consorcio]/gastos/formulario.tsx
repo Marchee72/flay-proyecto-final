@@ -1,8 +1,8 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, type ReactNode } from 'react'
 
-import { accionRegistrarGasto } from '../acciones'
+import { accionRegistrarGasto } from './acciones'
 
 const SIN_ERROR = { mensaje: '' }
 
@@ -27,6 +27,7 @@ export function FormularioGasto({
   proveedores,
   precargado,
   extraccionId,
+  accionesExtra,
 }: {
   consorcioId: string
   periodos: readonly Opcion[]
@@ -35,6 +36,8 @@ export function FormularioGasto({
   precargado: Readonly<Record<string, string>>
   /** Con extraccion, confirmar crea el gasto **y** ata el comprobante (`004-servicios` RF-06). */
   extraccionId?: string
+  /** Otras acciones del mismo pie (descartar la extraccion): al lado de registrar, nunca abajo. */
+  accionesExtra?: ReactNode
 }) {
   const [estado, accion, enviando] = useActionState(accionRegistrarGasto, SIN_ERROR)
   const hayError = estado.mensaje !== ''
@@ -159,9 +162,12 @@ export function FormularioGasto({
         </p>
       )}
 
-      <button className="boton boton--primario" type="submit" disabled={enviando}>
-        {enviando ? 'Registrando…' : 'Registrar gasto'}
-      </button>
+      <div className="fila-acciones">
+        <button className="boton boton--primario" type="submit" disabled={enviando}>
+          {enviando ? 'Registrando…' : 'Registrar'}
+        </button>
+        {accionesExtra}
+      </div>
     </form>
   )
 }

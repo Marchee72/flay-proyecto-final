@@ -97,7 +97,7 @@ export function FormularioReclamo({
       )}
 
       <button className="boton boton--primario" type="submit" disabled={enviando}>
-        {enviando ? 'Registrando…' : 'Registrar reclamo'}
+        {enviando ? 'Registrando…' : 'Registrar'}
       </button>
     </form>
   )

@@ -172,10 +172,11 @@ a {
   font-family: inherit;
 }
 
-/* Armazon a alto completo: la columna flex empuja la grilla hasta abajo y
-   el lateral estira con ella (align-items: stretch de .disposicion). */
+/* Armazon a la altura exacta de la ventana: la barra no se mueve, y el
+   lateral y el contenido se desplazan cada uno por su cuenta (`min-height: 0`
+   en cada nivel para que el flex deje encoger a los hijos). */
 .armazon {
-  min-height: 100dvh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -185,18 +186,22 @@ a {
   max-width: none;
   padding: 0 var(--e5) var(--e5) 0;
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   width: 100%;
 }
 .armazon .disposicion {
   flex: 1;
+  min-height: 0;
 }
 /* Pantallas sin lateral (lista de consorcios, bandeja): el contenido solo,
    con el mismo margen que el `main` de la L. */
 main.suelto {
   padding: var(--e4);
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* Opcion 3 del prototipo: la L de grafito abraza el contenido y la esquina
@@ -217,23 +222,23 @@ main.suelto {
 .disposicion > * {
   min-width: 0;
 }
-/* El contenido como cuadrado redondeado sobre el grafito. */
+/* El contenido como cuadrado redondeado sobre el grafito, con su scroll. */
 .disposicion > main {
   background: var(--fondo);
   border-top-left-radius: var(--radio);
   padding: var(--e4);
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .lateral {
   background: var(--grafito);
   padding: var(--e3);
   font-size: var(--t-cuerpo);
-  /* Pegado y de alto completo: ya no flota a mitad de pagina. Si el menu es
-     mas alto que la pantalla, se desplaza solo, sin arrastrar la pagina. */
-  position: sticky;
-  top: 0;
-  max-height: 100dvh;
+  /* Si el menu es mas alto que la ventana, se desplaza solo. */
+  min-height: 0;
   overflow-y: auto;
+  scrollbar-color: var(--tinta-apagada) var(--grafito);
 }
 .lateral a {
   display: flex;
@@ -255,7 +260,8 @@ main.suelto {
   color: var(--lima-alto);
   background: var(--grafito-claro);
 }
-/* La columna grafito: atajo de consorcio arriba, menu en telefono, lateral. */
+/* La columna grafito: el conmutador de consorcio arriba, menu en telefono,
+   lateral. `min-height: 0` deja que el lateral encoja y desplace adentro. */
 .lateral__marco {
   background: var(--grafito);
   color: var(--tinta-clara);
@@ -263,22 +269,10 @@ main.suelto {
   flex-direction: column;
   gap: var(--e2);
   padding-top: var(--e3);
+  min-height: 0;
 }
 .lateral__marco .selector-consorcio {
   margin: 0 var(--e3);
-}
-.lateral__marco .selector-consorcio select {
-  flex: 1;
-  min-width: 0;
-  max-width: none;
-}
-.lateral__consorcio {
-  font-weight: 700;
-  font-size: var(--t-titulo3);
-  margin-bottom: var(--e2);
-}
-.lateral__consorcio .icono {
-  color: var(--lima-alto);
 }
 .lateral__bloque h2 {
   margin: var(--e3) var(--e3) var(--e1);
@@ -313,6 +307,8 @@ main.suelto {
   left: var(--e4);
   right: var(--e4);
   z-index: 2;
+  /* El armazon ya no crece con la pagina: el menu desplegado desplaza adentro. */
+  max-height: 70dvh;
 }
 .menu[open] .lateral a {
   min-height: var(--toque);
@@ -413,10 +409,34 @@ main.suelto {
   opacity: 0.5;
   cursor: not-allowed;
 }
-/* Boton solo-icono (tachos, cerrar): cuadrado tactil sin relleno lateral. */
+/* Boton solo-icono (tachos, quitar): cuadrado tactil sin relleno lateral. */
 .boton--icono {
   padding: 0;
   min-width: var(--toque);
+}
+/* Cerrar un dialogo: un circulo gris con la cruz, sin borde ni texto; el
+   nombre lo lleva `aria-label`. */
+.boton--cerrar {
+  padding: 0;
+  min-width: var(--toque);
+  background: var(--gris-palido);
+  color: var(--grafito);
+}
+/* Un formulario termina en su fila de acciones, nunca pegada al ultimo
+   campo. Con dos acciones (registrar / descartar) van al lado: en telefono
+   se reparten el ancho antes que caer una abajo de la otra. */
+form > .boton,
+form > .fila-acciones {
+  margin-top: var(--e4);
+}
+form > .fila-acciones {
+  flex-wrap: nowrap;
+}
+@media (max-width: 480px) {
+  form > .fila-acciones > .boton {
+    flex: 1 1 0;
+    padding: 0 var(--e4);
+  }
 }
 
 /* Confirmación en dos pasos (RN-06, RN-14): el resumen con la magnitud exacta
@@ -503,11 +523,15 @@ main.suelto {
   border-color: var(--rojo);
   border-width: 2px;
 }
+/* Ayuda y error a un paso del control, sin heredar el margen del parrafo. */
+.campo .ayuda,
+.error {
+  margin: var(--e1) 0 0;
+}
 .error {
   font-size: var(--t-menor);
   color: var(--rojo);
   font-weight: 600;
-  margin-top: var(--e1);
 }
 
 .aviso {
@@ -878,6 +902,7 @@ tfoot td {
   }
   .lateral__marco .selector-consorcio {
     margin: 0;
+    flex: 1;
   }
   main.suelto {
     padding: 0;
@@ -996,35 +1021,58 @@ fieldset > legend {
   margin-left: auto;
 }
 
-/* Selector global de consorcio en la barra (§3.4): el mismo control que en
-   los filtros, sin guion (GET a la misma dirección). En teléfono la barra
-   envuelve y el selector baja a su propia fila, sin desplazar a lo ancho. */
+/* Conmutador de consorcio (§3.4): encabeza el lateral y es el titulo. El
+   `<select>` va sin apariencia nativa, en negrita como titulo, y la flecha
+   doble dice que se puede cambiar; con un solo consorcio es el nombre solo.
+   Sin guion (GET a la misma dirección). */
 .selector-consorcio {
-  margin-left: auto;
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--e2);
+  gap: var(--e3);
+  min-height: var(--toque);
   min-width: 0;
+  padding: 0 var(--e3);
+  border-radius: var(--radio-chico);
+  font-weight: 700;
+  font-size: var(--t-titulo3);
 }
-.selector-consorcio + .salida {
-  margin-left: 0;
+.selector-consorcio:has(select):hover {
+  background: var(--grafito-claro);
 }
 .selector-consorcio .icono {
   color: var(--lima-alto);
 }
+.selector-consorcio select,
+.selector-consorcio__nombre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .selector-consorcio select {
+  appearance: none;
   min-height: var(--toque);
-  max-width: 40vw;
-  border: 1px solid var(--tinta-apagada);
-  border-radius: var(--radio-chico);
+  /* Deja lugar a la flecha, que se dibuja aparte. */
+  padding: 0 var(--e5) 0 0;
+  border: 0;
   background: transparent;
   color: var(--tinta-clara);
-  font-family: var(--tipografia);
-  font-size: var(--t-menor);
-  padding: 0 var(--e2);
+  font: inherit;
+  cursor: pointer;
 }
 .selector-consorcio select option {
   color: var(--tinta);
+  font-weight: 400;
+}
+.selector-consorcio__flecha {
+  position: absolute;
+  right: var(--e3);
+  width: 16px;
+  height: 16px;
+  color: var(--linea-control);
+  pointer-events: none;
 }
 
 /* Campos dentro de una tabla: el mismo control, sin repetir la envoltura. */
@@ -1127,13 +1175,9 @@ td select {
 .modal .campo {
   max-width: none;
 }
-.modal .fila-acciones {
+.modal .fila-acciones,
+.modal form > .boton {
   margin: var(--e5) 0 0;
-}
-/* El boton de envio no se pega al ultimo campo. */
-.modal form > .boton,
-.modal form > p:has(> .boton) {
-  margin-top: var(--e4);
 }
 /* Sin esto, lo ancho —la tabla del padron, de 560px minimo— estira la pista
    de la grilla y el dialogo desborda a 390px (igual que `.disposicion > *`).
@@ -1306,4 +1350,109 @@ td select {
   border: 1px solid var(--linea-suave);
   border-radius: var(--radio);
   background: var(--superficie);
+}
+
+/* Zona de arrastre (`SubidaDirecta`): la etiqueta grande es el destino del
+   arrastre y el clic; el `<input type=file>` sigue adentro, oculto, asi que
+   la etiqueta queda asociada y el teclado llega igual. */
+.zona-soltar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e2);
+  padding: var(--e5);
+  min-height: 144px;
+  border: 2px dashed var(--linea-control);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  text-align: center;
+  font-weight: 600;
+  cursor: pointer;
+}
+.zona-soltar:has(:focus-visible) {
+  outline: 3px solid var(--verde);
+  outline-offset: 2px;
+}
+.zona-soltar svg {
+  width: var(--e6);
+  height: var(--e6);
+  color: var(--tinta-apagada);
+}
+.zona-soltar u {
+  color: var(--verde);
+}
+.zona-soltar--activa {
+  border-style: solid;
+  border-color: var(--lima);
+  background: var(--verde-palido);
+}
+/* El archivo elegido, antes de subir: nombre, peso y quitar. */
+.archivo-elegido {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  padding: var(--e2) var(--e2) var(--e2) var(--e4);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-chico);
+  background: var(--superficie);
+  margin-top: var(--e3);
+}
+.archivo-elegido__nombre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+/* Titulo de una lista con su resumen a la derecha («2 en proceso»). */
+.encabezado-lista {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--e2) var(--e3);
+  margin: var(--e5) 0 var(--e3);
+}
+/* Un punto lima que late resume que la lista se mueve sola. */
+.en-curso {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+}
+.en-curso__punto {
+  width: var(--e2);
+  height: var(--e2);
+  border-radius: var(--pastilla);
+  background: var(--lima);
+  animation: latir 1.4s ease-in-out infinite;
+}
+/* Algo esta corriendo ahora (extraccion en curso): el icono gira. */
+.icono--girando {
+  animation: girar 1s linear infinite;
+}
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .icono--girando,
+  .en-curso__punto {
+    animation: none;
+  }
+}
+/* Lo que solo tiene sentido en uno de los dos (la hora de carga en la tabla,
+   «arrastrá» en la zona de soltar). */
+.solo-telefono {
+  display: none;
+}
+@media (max-width: 760px) {
+  .solo-escritorio {
+    display: none;
+  }
+  .solo-telefono {
+    display: inline;
+  }
 }

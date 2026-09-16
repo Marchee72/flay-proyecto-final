@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Plus, TriangleAlert } from 'lucide-react'
 
 import { BotonModal } from '../../../modal'
-import { FormularioGasto, type Opcion } from './nuevo/formulario'
+import { FormularioGasto, type Opcion } from './formulario'
 
 /**
  * Alta de gasto en modal (guia §3.4, patron «Modal»). Reutiliza el formulario
@@ -17,12 +17,14 @@ export function ModalGasto({
   rubros,
   proveedores,
   precargado,
+  abrir = false,
 }: {
   consorcioId: string
   periodos: readonly Opcion[]
   rubros: readonly Opcion[]
   proveedores: readonly Opcion[]
   precargado: Readonly<Record<string, string>>
+  abrir?: boolean
 }) {
   return (
     <BotonModal
@@ -33,6 +35,7 @@ export function ModalGasto({
         </>
       }
       titulo="Nuevo gasto"
+      abrirAlMontar={abrir}
     >
       {periodos.length === 0 ? (
         <p className="aviso aviso--atencion" role="status">

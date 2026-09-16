@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react'
 
-import { accionInvitar } from '../acciones'
+import { accionInvitar } from './acciones'
 
 const SIN_ERROR = { mensaje: '' }
 

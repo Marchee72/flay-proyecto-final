@@ -8,6 +8,7 @@ import { verProveedores } from '@/aplicacion/indicadores/indicadores'
 import { AvisoDeError, conConsorcio } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
 import { DispersionDeProveedores } from '../graficos'
+import { Filtros } from '../../../../filtros'
 
 export const metadata: Metadata = { title: 'I-3 Proveedores — Flay' }
 
@@ -48,20 +49,22 @@ export default async function ProveedoresPage({
           medio entre asignación y resolución de los reclamos que atendió. Sin reclamos, la columna
           queda vacía: cero sería resolución instantánea.
         </p>
-        <form className="fila-de-filtros" aria-label="Ordenar">
-          <input type="hidden" name="consorcio" value={activo.id} />
-          <div className="campo">
-            <label htmlFor="orden">Ordenar por</label>
-            <select id="orden" name="orden" defaultValue={orden}>
-              <option value="nombre">Proveedor</option>
-              <option value="costo">Costo acumulado</option>
-              <option value="horas">Horas de resolución</option>
-            </select>
-          </div>
-          <button className="boton boton--fantasma" type="submit">
-            Ordenar
-          </button>
-        </form>
+        <Filtros>
+          <form className="fila-de-filtros" aria-label="Ordenar">
+            <input type="hidden" name="consorcio" value={activo.id} />
+            <div className="campo">
+              <label htmlFor="orden">Ordenar por</label>
+              <select id="orden" name="orden" defaultValue={orden}>
+                <option value="nombre">Proveedor</option>
+                <option value="costo">Costo acumulado</option>
+                <option value="horas">Horas de resolución</option>
+              </select>
+            </div>
+            <button className="boton boton--fantasma" type="submit">
+              Ordenar
+            </button>
+          </form>
+        </Filtros>
         {filas.length === 0 ? (
           <div className="vacio">
             <Gauge aria-hidden="true" />

@@ -12,6 +12,7 @@ import { listarReservas, unidadesParaReservar } from '@/aplicacion/reservas/rese
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
 import { accionCancelarReserva } from './acciones'
 import { ModalReserva } from './modal-reserva'
+import { Filtros } from '../../../filtros'
 
 export const metadata: Metadata = { title: 'Reservas — Flay' }
 
@@ -110,23 +111,25 @@ export default async function ReservasPage({
           </div>
         )}
 
-        <form className="fila-de-filtros" role="search" aria-label="Filtrar por espacio">
-          <input type="hidden" name="consorcio" value={activo.id} />
-          <div className="campo">
-            <label htmlFor="espacio-filtro">Espacio</label>
-            <select id="espacio-filtro" name="espacio" defaultValue={parametros.espacio ?? ''}>
-              <option value="">Todos</option>
-              {espacios.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-          <button className="boton boton--fantasma" type="submit">
-            Filtrar
-          </button>
-        </form>
+        <Filtros>
+          <form className="fila-de-filtros" role="search" aria-label="Filtrar por espacio">
+            <input type="hidden" name="consorcio" value={activo.id} />
+            <div className="campo">
+              <label htmlFor="espacio-filtro">Espacio</label>
+              <select id="espacio-filtro" name="espacio" defaultValue={parametros.espacio ?? ''}>
+                <option value="">Todos</option>
+                {espacios.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button className="boton boton--fantasma" type="submit">
+              Filtrar
+            </button>
+          </form>
+        </Filtros>
 
         {reservas.length === 0 ? (
           <div className="vacio">

@@ -11,6 +11,7 @@ import { verBandeja } from '@/aplicacion/pendientes/bandeja'
 
 import { accionDespachar } from '../comunicacion/acciones'
 import { AvisoDeError } from '../con-consorcio'
+import { Filtros } from '../filtros'
 
 export const metadata: Metadata = { title: 'Bandeja — Flay' }
 
@@ -53,22 +54,24 @@ export default async function BandejaPage({
       )}
 
       {bandeja.consorcios.length > 1 && (
-        <form method="get" className="fila-de-filtros">
-          <div className="campo">
-            <label htmlFor="consorcio">Consorcio</label>
-            <select id="consorcio" name="consorcio" defaultValue={parametros.consorcio ?? ''}>
-              <option value="">Todos</option>
-              {bandeja.consorcios.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-          <button className="boton boton--fantasma" type="submit">
-            Filtrar
-          </button>
-        </form>
+        <Filtros>
+          <form method="get" className="fila-de-filtros">
+            <div className="campo">
+              <label htmlFor="consorcio">Consorcio</label>
+              <select id="consorcio" name="consorcio" defaultValue={parametros.consorcio ?? ''}>
+                <option value="">Todos</option>
+                {bandeja.consorcios.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button className="boton boton--fantasma" type="submit">
+              Filtrar
+            </button>
+          </form>
+        </Filtros>
       )}
 
       {!hayAlgo && (

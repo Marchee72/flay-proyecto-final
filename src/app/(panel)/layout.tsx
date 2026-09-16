@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { after } from 'next/server'
-import { Building2, Inbox } from 'lucide-react'
+import { Building2, Inbox, LogOut } from 'lucide-react'
 
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { drenar } from '@/aplicacion/pendientes/drenar'
@@ -52,8 +52,8 @@ export default async function PanelLayout({ children }: { children: React.ReactN
         </nav>
 
         <form action={salir} className="salida">
-          <button className="boton boton--fantasma" type="submit">
-            Salir
+          <button className="boton boton--fantasma boton--icono" type="submit" aria-label="Salir">
+            <LogOut className="icono" aria-hidden="true" />
           </button>
         </form>
       </header>

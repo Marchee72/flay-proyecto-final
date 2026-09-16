@@ -224,7 +224,8 @@ en pie y la decisión pasa a depender de las dos pruebas de concepto de § 8.4.3
 ### Decisión y justificación
 
 **Se elige Google — Gemini API, en su capa paga**, para las cuatro interfaces del punto 12.8.2:
-`gemini-3.5-flash` (o el `flash` vigente) como `ExtractorDocumental` y `ClasificadorTexto`,
+`gemini-3.5-flash-lite` (o el `flash` vigente; el grande devolvía 503 por demanda y tardaba de
+25 s a minutos, PI-07) como `ExtractorDocumental` y `ClasificadorTexto`,
 `gemini-embedding-001` como `GeneradorVectores` y el mismo modelo de texto como
 `GeneradorRespuesta`. El fundamento no es la tabla sola sino las dos pruebas de concepto de § 8.4.3,
 ejecutadas el 11 de septiembre de 2026 contra los juegos de `datos-cliente/` y cuyo detalle por

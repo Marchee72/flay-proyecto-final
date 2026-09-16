@@ -128,7 +128,10 @@ a {
   background: var(--grafito);
   color: var(--tinta-clara);
   padding: var(--e3) var(--e5);
-  display: flex;
+  /* Tres columnas: la navegacion global centrada de verdad (1fr auto 1fr),
+     la marca a la izquierda y la salida a la derecha. */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   gap: var(--e3);
   align-items: center;
 }
@@ -152,7 +155,7 @@ a {
 }
 .marca {
   font-weight: 700;
-  font-size: var(--t-titulo3);
+  font-size: var(--t-titulo1);
   letter-spacing: 0.04em;
   color: var(--tinta-clara);
   text-decoration: none;
@@ -181,10 +184,10 @@ a {
   flex-direction: column;
 }
 .envoltorio {
-  /* A filo izquierdo: el menu siempre pegado al borde de la pantalla. */
+  /* A filo: el menu pegado al borde izquierdo y hasta abajo de la ventana. */
   margin: 0;
   max-width: none;
-  padding: 0 var(--e5) var(--e5) 0;
+  padding: 0;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -238,7 +241,9 @@ main.suelto {
   /* Si el menu es mas alto que la ventana, se desplaza solo. */
   min-height: 0;
   overflow-y: auto;
-  scrollbar-color: var(--tinta-apagada) var(--grafito);
+  /* Fino y sin pista: solo el pulgar sobre el grafito. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--tinta-apagada) transparent;
 }
 .lateral a {
   display: flex;
@@ -421,6 +426,30 @@ main.suelto {
   min-width: var(--toque);
   background: var(--gris-palido);
   color: var(--grafito);
+}
+/* Chip: boton pastilla chico, para abrir los filtros en telefono. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  min-height: var(--toque);
+  padding: 0 var(--e4);
+  border-radius: var(--pastilla);
+  border: 1px solid var(--linea-control);
+  background: var(--superficie);
+  font-size: var(--t-menor);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.chip::-webkit-details-marker {
+  display: none;
+}
+/* Filtros: en escritorio el formulario va en linea y el chip no existe; en
+   telefono (abajo) el chip abre una hoja inferior. */
+.filtros > summary,
+.filtros__encabezado {
+  display: none;
 }
 /* Un formulario termina en su fila de acciones, nunca pegada al ultimo
    campo. Con dos acciones (registrar / descartar) van al lado: en telefono
@@ -881,10 +910,13 @@ tfoot td {
 
 @media (max-width: 760px) {
   .envoltorio {
-    padding: var(--e4);
+    padding: 0;
   }
   .disposicion {
     grid-template-columns: 1fr;
+    /* La fila del consorcio mide lo suyo y el contenido se queda con el
+       resto: sin esto las dos filas `auto` se reparten el alto sobrante. */
+    grid-template-rows: auto minmax(0, 1fr);
     /* Sin lateral no hay L: el contenido ocupa todo y no muestra grafito. */
     background: transparent;
   }
@@ -918,8 +950,167 @@ tfoot td {
   .barra__global a .barra__texto {
     display: none;
   }
+  .marca {
+    font-size: var(--t-titulo2);
+  }
   h1 {
     font-size: var(--t-titulo2);
+  }
+  /* Las tablas se vuelven listas: una fila por registro y nada desplaza a lo
+     ancho (RNF-01). La primera celda manda, las `.numero` van a la derecha y
+     el resto queda en una segunda linea apagada separada por puntos medios.
+     La cabecera sigue ahi para el lector de pantalla; el pie es la ultima
+     fila. Las celdas con controles (el padron) se reparten el ancho. */
+  .tabla-desplazable {
+    overflow-x: visible;
+  }
+  table {
+    display: block;
+    min-width: 0;
+  }
+  caption {
+    display: block;
+  }
+  thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  tbody,
+  tfoot,
+  td {
+    display: block;
+  }
+  tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 var(--e2);
+    padding: var(--e2) var(--e4);
+    min-height: 60px;
+    border-bottom: 1px solid var(--linea-suave);
+  }
+  tbody tr:last-child {
+    border-bottom: 0;
+  }
+  tr::after {
+    content: '';
+    order: 2;
+    flex-basis: 100%;
+    height: 0;
+  }
+  td {
+    padding: 0;
+    border: 0;
+    height: auto;
+  }
+  td:empty {
+    display: none;
+  }
+  td:first-child,
+  td.principal {
+    order: 0;
+    flex: 1 1 0;
+    min-width: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  td.numero {
+    order: 1;
+    flex: none;
+    font-weight: 600;
+  }
+  td:not(:first-child):not(.numero):not(.principal),
+  tr:has(td.principal) > td:first-child:not(.principal) {
+    order: 3;
+    flex: 0 1 auto;
+    min-width: 0;
+    font-size: var(--t-menor);
+    font-weight: 400;
+    color: var(--tinta-apagada);
+  }
+  td:not(:first-child):not(.numero) ~ td:not(.numero):not(.principal)::before {
+    content: '· ';
+  }
+  td:has(input, select, .boton, .etiqueta)::before {
+    content: none;
+  }
+  td:not(.numero):has(input, select) {
+    flex: 1 1 45%;
+    min-width: 0;
+  }
+  td.numero:has(input) {
+    flex: 0 1 120px;
+  }
+  tfoot tr {
+    background: var(--gris-palido);
+    border-top: 2px solid var(--linea);
+  }
+  /* Acciones de pantalla: la primaria a todo el ancho, las demas se reparten
+     la fila de abajo. Las de un formulario se resuelven aparte (480px). */
+  .fila-acciones:not(form > *) > .boton {
+    flex: 1 1 auto;
+    padding: 0 var(--e4);
+    white-space: nowrap;
+  }
+  .fila-acciones:not(form > *) > .boton--primario:first-child {
+    flex: 1 1 100%;
+  }
+  /* Filtros: cerrados detras del chip; abiertos, una hoja inferior. */
+  .filtros > summary {
+    display: inline-flex;
+  }
+  .filtros[open]::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 3;
+    background: var(--grafito);
+    opacity: 0.55;
+  }
+  .filtros__hoja {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 4;
+    max-height: 80dvh;
+    overflow-y: auto;
+    background: var(--superficie);
+    border-radius: 16px 16px 0 0;
+    padding: var(--e4);
+  }
+  .filtros__hoja::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: var(--e1);
+    margin: 0 auto var(--e2);
+    border-radius: var(--pastilla);
+    background: var(--linea);
+  }
+  .filtros__encabezado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--e2);
+    padding-bottom: var(--e3);
+    border-bottom: 1px solid var(--linea-suave);
+  }
+  .filtros__hoja .fila-de-filtros {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filtros__hoja .fila-de-filtros .campo {
+    max-width: none;
+  }
+  /* En la hoja, aplicar es la accion primaria. */
+  .filtros__hoja .boton--fantasma {
+    background: var(--lima);
+    border-color: var(--lima);
   }
   /* Las 5 principales al alcance del pulgar: icono + etiqueta corta, cada
      destino tactil (alto de toque mas una fila de etiqueta) y siempre a la
@@ -1016,9 +1207,14 @@ fieldset > legend {
   margin-top: 0;
 }
 
-/* La salida cierra la barra por derecha, como el selector de consorcio. */
+/* La salida cierra la barra por derecha: solo el icono, el nombre en `aria-label`. */
 .salida {
-  margin-left: auto;
+  justify-self: end;
+}
+.salida .boton {
+  border-color: var(--tinta-clara);
+  color: var(--tinta-clara);
+  background: transparent;
 }
 
 /* Conmutador de consorcio (§3.4): encabeza el lateral y es el titulo. El
@@ -1258,17 +1454,41 @@ td select {
    (RNF-01): lo que no entra —la tabla del padron— desplaza adentro de
    `.tabla-desplazable`. */
 @media (max-width: 480px) {
+  /* Hoja inferior: pegada abajo, a todo el ancho, con asa; las acciones
+     quedan fijas al pie mientras el formulario se desplaza adentro. */
   .modal {
-    width: calc(100vw - 2 * var(--e2));
-    max-height: calc(100dvh - 2 * var(--e2));
+    width: 100%;
+    max-width: none;
+    max-height: 92dvh;
+    margin: auto 0 0;
+    border-bottom: 0;
+    border-radius: 16px 16px 0 0;
   }
-  /* Pastillas compactas: entran las 3 en 390 px sin achicar el dialogo. */
+  .modal::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: var(--e1);
+    margin: var(--e2) auto 0;
+    border-radius: var(--pastilla);
+    background: var(--linea);
+  }
+  .modal__interior {
+    padding: var(--e4);
+  }
+  .modal .fila-acciones,
+  .modal form > .boton {
+    position: sticky;
+    bottom: 0;
+    margin: var(--e4) calc(-1 * var(--e4)) calc(-1 * var(--e4));
+    padding: var(--e3) var(--e4) var(--e4);
+    background: var(--superficie);
+    border-top: 1px solid var(--linea-suave);
+  }
+  /* Las pastillas de pasos no entran sin desplazar a lo ancho; el titulo del
+     paso («Paso 1 de 3 · Datos del consorcio») ya dice donde se esta. */
   .modal__pasos {
-    font-size: var(--t-ayuda);
-  }
-  .modal__pasos li::before {
-    min-width: var(--e6);
-    min-height: var(--e6);
+    display: none;
   }
 }
 

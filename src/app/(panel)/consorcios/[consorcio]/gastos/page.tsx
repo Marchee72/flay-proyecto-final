@@ -13,6 +13,7 @@ import { listarProveedores, listarRubros } from '@/aplicacion/proveedores/provee
 import { conConsorcio } from '../../../con-consorcio'
 import { ModalGasto } from './modal-gasto'
 import { EnlaceExportar } from '../../../exportar'
+import { Filtros } from '../../../filtros'
 
 export const metadata: Metadata = { title: 'Gastos — Flay' }
 
@@ -96,35 +97,37 @@ export default async function GastosPage({
           )}
         </div>
 
-        <form method="get" className="fila-de-filtros">
-          <div className="campo">
-            <label htmlFor="periodo">Período</label>
-            <select id="periodo" name="periodo" defaultValue={parametros.periodo ?? ''}>
-              <option value="">Todos</option>
-              {periodos.map((periodo) => (
-                <option key={periodo.id} value={periodo.id}>
-                  {String(periodo.mes).padStart(2, '0')}/{periodo.anio}
-                </option>
-              ))}
-            </select>
-          </div>
+        <Filtros>
+          <form method="get" className="fila-de-filtros">
+            <div className="campo">
+              <label htmlFor="periodo">Período</label>
+              <select id="periodo" name="periodo" defaultValue={parametros.periodo ?? ''}>
+                <option value="">Todos</option>
+                {periodos.map((periodo) => (
+                  <option key={periodo.id} value={periodo.id}>
+                    {String(periodo.mes).padStart(2, '0')}/{periodo.anio}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div className="campo">
-            <label htmlFor="rubro">Rubro</label>
-            <select id="rubro" name="rubro" defaultValue={parametros.rubro ?? ''}>
-              <option value="">Todos</option>
-              {rubros.map((rubro) => (
-                <option key={rubro.id} value={rubro.id}>
-                  {rubro.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
+            <div className="campo">
+              <label htmlFor="rubro">Rubro</label>
+              <select id="rubro" name="rubro" defaultValue={parametros.rubro ?? ''}>
+                <option value="">Todos</option>
+                {rubros.map((rubro) => (
+                  <option key={rubro.id} value={rubro.id}>
+                    {rubro.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <button className="boton boton--fantasma" type="submit">
-            Filtrar
-          </button>
-        </form>
+            <button className="boton boton--fantasma" type="submit">
+              Filtrar
+            </button>
+          </form>
+        </Filtros>
 
         {listado.cantidad === 0 ? (
           <div className="vacio">
@@ -176,7 +179,7 @@ export default async function GastosPage({
                       <td>{formatearFecha(gasto.fecha)}</td>
                       <td>{gasto.rubro}</td>
                       <td>{gasto.proveedor ?? '—'}</td>
-                      <td>
+                      <td className="principal">
                         <Link href={`/consorcios/${activo.id}/gastos/${gasto.id}`}>
                           {gasto.descripcion || 'Ver detalle'}
                         </Link>

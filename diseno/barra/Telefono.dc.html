@@ -1,0 +1,107 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f4f6f4; color: #1a1d21; font: 15px/1.5 Poppins, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+    a { color: #1a1d21; text-decoration: none; }
+    a:hover { color: #2e7d32; }
+    h1, h2 { margin: 0; font-weight: 600; }
+    h1 { font-size: 28px; }
+    .cifra { font-variant-numeric: tabular-nums; }
+    .apagado { color: #4a5158; }
+    .icono { width: 20px; height: 20px; flex: none; }
+    .boton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 24px; border-radius: 999px; font: 700 15px/1 inherit; border: 2px solid transparent; cursor: pointer; text-decoration: none; }
+    .boton--primario { background: #7cb342; color: #23272e; }
+    .boton--fantasma { background: #ffffff; border-color: #23272e; color: #23272e; }
+    .barra__global a { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: 8px; color: #e8eaed; font-size: 13px; }
+    /* Scroll del lateral: fino, oscuro y sin pista; solo el pulgar sobre el grafito. */
+    .lateral { scrollbar-width: thin; scrollbar-color: #4a5158 transparent; }
+    .lateral a { display: flex; align-items: center; gap: 12px; min-height: 36px; padding: 0 12px; border-radius: 8px; color: #e8eaed; font-size: 15px; }
+    .lateral a.activa { font-weight: 700; color: #9ccc65; background: #2e333b; }
+    .lateral h2 { margin: 12px 12px 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #9ccc65; }
+    .campo label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .control { display: flex; align-items: center; width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid #767e76; border-radius: 8px; background: #ffffff; font-size: 15px; }
+    th { text-align: left; padding: 12px 16px; background: #ecefec; color: #4a5158; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #e2e6ea; height: 44px; position: sticky; top: 0; }
+    td { text-align: left; padding: 12px 16px; border-bottom: 1px solid #e2e6ea; font-size: 15px; height: 44px; }
+    .numero { text-align: right; }
+    /* El conmutador de consorcio: un solo control, con el nombre como titulo. */
+    .conmutador { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 8px; color: #e8eaed; font-weight: 700; font-size: 18px; cursor: pointer; }
+    .conmutador .icono { color: #9ccc65; }
+    .conmutador .flecha { color: #767e76; margin-left: auto; width: 16px; height: 16px; }
+    .conmutador--barra { font-size: 15px; border: 1px solid #4a5158; min-height: 44px; padding: 0 12px; gap: 8px; }
+    .conmutador--barra .flecha { margin-left: 0; }
+    /* Telefono: la tabla se vuelve lista (una fila por registro, sin scroll a lo ancho). */
+    .fila { display: grid; grid-template-columns: minmax(0, 1fr) auto 20px; align-items: center; gap: 12px; min-height: 60px; padding: 8px 16px; border-bottom: 1px solid #e2e6ea; color: #1a1d21; }
+    .fila:last-child { border-bottom: 0; }
+    .fila__principal { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fila__secundaria { font-size: 13px; color: #4a5158; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fila__cifra { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 15px; text-align: right; }
+    .fila .flecha { color: #767e76; }
+    .etiqueta { display: inline-block; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+    .etiqueta--vencido { color: #b3261e; background: #fdecea; }
+    .etiqueta--pendiente { color: #4a5158; background: #ecefec; }
+    .chip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px 0 16px; border-radius: 999px; border: 1px solid #767e76; background: #ffffff; font-size: 13px; font-weight: 600; }
+    .chip .icono { width: 16px; height: 16px; }
+    .definiciones { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 12px 0 0; }
+    .definiciones dt { font-weight: 600; color: #4a5158; }
+    .definiciones dd { margin: 0; }
+    .campo { margin-top: 12px; }
+    .inferior a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 56px; padding: 4px; color: #e8eaed; font-size: 12px; font-weight: 600; text-align: center; }
+    .inferior a.activa { color: #9ccc65; box-shadow: inset 0 4px 0 #9ccc65; }
+  </style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: #f4f6f4; display: flex; flex-direction: column">
+  <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; background: #23272e; color: #e8eaed; padding: 8px 16px; flex: none">
+    <div style="display: flex; align-items: center; gap: 12px"><span style="font-weight: 700; font-size: 22px; letter-spacing: 0.04em">FLAY</span></div>
+    <div class="barra__global" style="display: flex; gap: 8px"><a><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg><span></span></a><a><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg><span></span></a></div>
+    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 16px"><span class="boton boton--fantasma" role="button" aria-label="Salir" style="padding: 0; min-width: 44px; border-radius: 999px"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" x2="9" y1="12" y2="12"></line></svg></span></div>
+  </div>
+  <div style="display: flex; align-items: center; gap: 12px; background: #23272e; color: #e8eaed; padding: 12px 16px; flex: none"><span style="display: flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; border: 1px solid #4a5158; border-radius: 8px"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path></svg></span><div class="conmutador conmutador--barra" role="button" aria-label="Cambiar de consorcio"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg><span>Mitre 456</span><svg class="icono" class="icono flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5"></path><path d="m7 9 5-5 5 5"></path></svg></div></div>
+  <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 4px">
+    <h1>Gastos</h1>
+    <p class="apagado" style="margin: 0">Lo que el consorcio pagó, por período y rubro.</p>
+    <!-- Una accion primaria a todo el ancho; las secundarias (carga asistida, exportar) detras de «Mas». -->
+    <div style="display: flex; gap: 8px; margin: 16px 0 12px">
+      <span class="boton boton--primario" style="flex: 1">Nuevo gasto</span>
+      <span class="boton" role="button" aria-label="Más acciones" style="padding: 0; min-width: 44px; border-radius: 999px; background: #ffffff; border-color: #23272e; color: #23272e"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg></span>
+    </div>
+    <!-- Filtros: un boton que abre la hoja, y lo aplicado como chip que se quita con la cruz. -->
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px">
+      <span class="chip" role="button"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" x2="14" y1="4" y2="4"></line><line x1="10" x2="3" y1="4" y2="4"></line><line x1="21" x2="12" y1="12" y2="12"></line><line x1="8" x2="3" y1="12" y2="12"></line><line x1="21" x2="16" y1="20" y2="20"></line><line x1="12" x2="3" y1="20" y2="20"></line><line x1="14" x2="14" y1="2" y2="6"></line><line x1="8" x2="8" y1="10" y2="14"></line><line x1="16" x2="16" y1="18" y2="22"></line></svg>Filtros</span>
+      <span class="chip" role="button" aria-label="Quitar filtro Septiembre 2026" style="border-color: #23272e; background: #ecefec">Septiembre 2026 <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></span>
+    </div>
+    <div style="border: 1px solid #c9cfc9; border-radius: 10px; background: #ffffff; overflow: hidden">
+      <div style="padding: 8px 16px; font-size: 13px; color: #4a5158; border-bottom: 1px solid #e2e6ea">12 gastos · página 1 de 2</div>
+      <div style="display: flex; flex-direction: column">
+        <a class="fila" href="#"><span style="display: grid; gap: 2px; min-width: 0"><span class="fila__principal">Servicio mensual</span><span class="fila__secundaria">05/09 · Limpieza · Limpiezas del Sur SRL</span></span><span class="fila__cifra cifra">$ 184.320,75</span><svg class="icono" class="icono flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></a>
+        <a class="fila" href="#"><span style="display: grid; gap: 2px; min-width: 0"><span class="fila__principal">Factura 0925</span><span class="fila__secundaria">03/09 · Energía · Edesur</span></span><span class="fila__cifra cifra">$ 62.410,00</span><svg class="icono" class="icono flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></a>
+        <a class="fila" href="#"><span style="display: grid; gap: 2px; min-width: 0"><span class="fila__principal">Abono</span><span class="fila__secundaria">01/09 · Ascensor · Ascensores Rosario</span></span><span class="fila__cifra cifra">$ 98.000,00</span><svg class="icono" class="icono flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></a>
+        <a class="fila" href="#"><span style="display: grid; gap: 2px; min-width: 0"><span class="fila__principal">Póliza integral</span><span class="fila__secundaria">28/08 · Seguro · La Segunda</span></span><span class="fila__cifra cifra">$ 41.250,30</span><svg class="icono" class="icono flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></a>
+        <a class="fila" href="#"><span style="display: grid; gap: 2px; min-width: 0"><span class="fila__principal">Consumo agosto</span><span class="fila__secundaria">26/08 · Agua · Aguas Santafesinas</span></span><span class="fila__cifra cifra">$ 23.980,00</span><svg class="icono" class="icono flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></a>
+        <a class="fila" href="#"><span style="display: grid; gap: 2px; min-width: 0"><span class="fila__principal">Consumo agosto</span><span class="fila__secundaria">20/08 · Gas · Litoral Gas</span></span><span class="fila__cifra cifra">$ 15.400,20</span><svg class="icono" class="icono flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></a>
+        <a class="fila" href="#"><span style="display: grid; gap: 2px; min-width: 0"><span class="fila__principal">Arreglo tanque</span><span class="fila__secundaria">14/08 · Mantenimiento · Plomería Ruiz</span></span><span class="fila__cifra cifra">$ 78.000,00</span><svg class="icono" class="icono flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></a>
+        <a class="fila" href="#"><span style="display: grid; gap: 2px; min-width: 0"><span class="fila__principal">Administración agosto</span><span class="fila__secundaria">11/08 · Honorarios · Grupo Delta SRL</span></span><span class="fila__cifra cifra">$ 120.000,00</span><svg class="icono" class="icono flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></a>
+        <a class="fila" href="#"><span style="display: grid; gap: 2px; min-width: 0"><span class="fila__principal">Servicio mensual</span><span class="fila__secundaria">08/08 · Limpieza · Limpiezas del Sur SRL</span></span><span class="fila__cifra cifra">$ 184.320,75</span><svg class="icono" class="icono flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></a>
+      </div>
+      <div style="display: flex; justify-content: space-between; gap: 12px; padding: 12px 16px; background: #ecefec; border-top: 2px solid #c9cfc9; font-weight: 700"><span>Total del filtro</span><span class="cifra">$ 1.006.802,40</span></div>
+    </div>
+    <div style="display: flex; justify-content: center; gap: 8px; margin: 16px 0">
+      <span class="boton boton--fantasma" role="button" aria-label="Anterior" style="padding: 0; min-width: 44px; border-radius: 8px; border-width: 1px; border-color: #767e76; opacity: 0.5"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></span>
+      <span class="boton" style="min-width: 44px; padding: 0 12px; border-radius: 8px; background: #23272e; color: #e8eaed; font-size: 13px">1</span>
+      <span class="boton boton--fantasma" style="min-width: 44px; padding: 0 12px; border-radius: 8px; border-width: 1px; border-color: #767e76; font-size: 13px">2</span>
+      <span class="boton boton--fantasma" role="button" aria-label="Siguiente" style="padding: 0; min-width: 44px; border-radius: 8px; border-width: 1px; border-color: #767e76"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></span>
+    </div>
+  </div>
+  <div class="inferior" style="flex: none; background: #23272e; border-top: 1px solid #4a5158; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr))"><a><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>Períodos</a><a><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>Expensas</a><a class="activa"><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"></path><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path></svg>Gastos</a><a><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path></svg>Pagos</a><a><svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>Morosidad</a></div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -103,8 +103,9 @@
   formulario existente adentro y Server Action existente (el éxito redirige con `?nuevo=1` /
   `?registrado=1` / `?invitado=1` donde ya hay `role="status"`, o cierra y lo muestra). Foco: al título al abrir, al primer error
   si no se avanza (RNF-10 por paso) y de vuelta al disparador al cerrar. Escape nativo y
-  clic en el fondo cierran. A 390 px casi pantalla completa, sin scroll horizontal de página
-  (la tabla del padrón desplaza adentro de `.tabla-desplazable`). Entrada solo
+  clic en el fondo cierran. A 390 px es una hoja inferior: pegada abajo, a todo el ancho,
+  con asa, y las acciones fijas al pie mientras el formulario se desplaza adentro; el
+  indicador de pasos no se muestra (el título del paso ya dice dónde se está). Entrada solo
   `opacity`/`transform` 200 ms con `prefers-reduced-motion`. El `<dialog>` se monta en
   `body` con un portal: el disparador vive donde lo pongan (una fila de acciones, un estado
   vacío) sin que el diálogo herede un ancestro inválido. La confirmación en dos pasos de
@@ -195,9 +196,16 @@
   se define una vez y nunca se quita. Orden lógico, todo operable por teclado; imágenes con
   alternativo. Lo que parece accionable es un `a` o un `button` de verdad: nada de texto subrayado
   que simule un enlace, porque no recibe foco y no existe para un lector de pantalla.
-- Ninguna página desplaza en horizontal. Lo que no entra —una tabla financiera— se desplaza dentro
-  de su propio contenedor, alcanzable por teclado (`tabindex="0"` con `role="region"` y nombre).
-  En una retícula, el hijo lleva `min-width: 0` o el contenido la estira y desborda igual.
+- Ninguna página desplaza en horizontal, y en teléfono tampoco las tablas: a 760 px o menos
+  cada `tr` se vuelve una fila de lista (`globals.css`, una sola regla para las veinte
+  pantallas): la primera celda —o la que lleve `.principal`— manda en negrita, las `.numero`
+  van a la derecha y el resto queda en una segunda línea apagada separada por puntos medios;
+  la cabecera sigue ahí para el lector de pantalla. Los filtros de un listado van dentro de
+  `<Filtros>` (`src/app/(panel)/filtros.tsx`): en línea en escritorio, detrás de un chip que
+  abre una hoja inferior en teléfono. La acción primaria de una pantalla ocupa todo el ancho
+  y las secundarias se reparten la fila de abajo. En escritorio, una tabla ancha se desplaza
+  dentro de `.tabla-desplazable`, alcanzable por teclado (`tabindex="0"` con `role="region"` y
+  nombre). En una retícula, el hijo lleva `min-width: 0` o el contenido la estira y desborda igual.
 - El menú de teléfono es `details`/`summary` nativo: sin guion, operable por teclado desde el día 1.
   Esconder la navegación sin reemplazarla la deja inalcanzable.
 - `test:a11y` (axe) con 0 infracciones A/AA en pantallas del consorcista; Playwright 390×844

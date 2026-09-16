@@ -16,6 +16,7 @@ import { unidadesParaReclamar, URGENCIAS } from '@/aplicacion/reclamos/registrar
 import { conConsorcio } from '../../../con-consorcio'
 import { EstadoDeReclamo, UrgenciaDeReclamo } from './etiquetas'
 import { ModalReclamo } from './modal-reclamo'
+import { Filtros } from '../../../filtros'
 
 export const metadata: Metadata = { title: 'Reclamos — Flay' }
 
@@ -54,23 +55,25 @@ export default async function ReclamosPage({
           <ModalReclamo consorcioId={activo.id} unidades={unidades} urgencias={URGENCIAS} />
         </div>
 
-        <form className="fila-de-filtros" role="search" aria-label="Filtrar reclamos">
-          <input type="hidden" name="consorcio" value={activo.id} />
-          <div className="campo">
-            <label htmlFor="estado">Estado</label>
-            <select id="estado" name="estado" defaultValue={estado ?? ''}>
-              <option value="">Todos</option>
-              {ESTADOS_RECLAMO.map((valor) => (
-                <option key={valor} value={valor}>
-                  {ETIQUETAS_ESTADO[valor]}
-                </option>
-              ))}
-            </select>
-          </div>
-          <button className="boton boton--fantasma" type="submit">
-            Filtrar
-          </button>
-        </form>
+        <Filtros>
+          <form className="fila-de-filtros" role="search" aria-label="Filtrar reclamos">
+            <input type="hidden" name="consorcio" value={activo.id} />
+            <div className="campo">
+              <label htmlFor="estado">Estado</label>
+              <select id="estado" name="estado" defaultValue={estado ?? ''}>
+                <option value="">Todos</option>
+                {ESTADOS_RECLAMO.map((valor) => (
+                  <option key={valor} value={valor}>
+                    {ETIQUETAS_ESTADO[valor]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button className="boton boton--fantasma" type="submit">
+              Filtrar
+            </button>
+          </form>
+        </Filtros>
 
         {reclamos.length === 0 ? (
           <div className="vacio">

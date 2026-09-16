@@ -147,15 +147,22 @@
   consorcio la barra superior lleva marca, **Consorcios** (lista con señales de `verPanel`),
   **Bandeja** (pendientes de todos los consorcios administrados) y Salir; no hay lateral.
   Dentro, el armazón `consorcios/[consorcio]/layout.tsx` dibuja la columna grafito
-  (`.lateral__marco`): el atajo de consorcio (`.selector-consorcio`, `select` nativo + Server
-  Action `elegirConsorcio`, que conserva la sección al saltar de edificio), el menú
-  `details`/`summary` del teléfono y el lateral (`.lateral`) con el nombre del consorcio arriba
-  (`.lateral__consorcio`, enlace al resumen) y las doce secciones en cuatro bloques con
-  encabezado `h2` (`.lateral__bloque`): Dinero (Períodos, Expensas, Gastos, Pagos, Morosidad),
+  (`.lateral__marco`): el conmutador de consorcio arriba (`.selector-consorcio`, un `select`
+  nativo sin apariencia, en negrita como título, con flecha doble; con un solo consorcio es el
+  nombre solo; la Server Action `elegirConsorcio` conserva la sección al saltar de edificio), el
+  menú `details`/`summary` del teléfono y el lateral (`.lateral`) con **Resumen** como primera
+  sección y las doce restantes en cuatro bloques con encabezado `h2` (`.lateral__bloque`): Dinero
+  (Períodos, Expensas, Gastos, Pagos, Morosidad),
   Convivencia (Reclamos, Reservas, Espacios, Novedades), Análisis (Documentación, Indicadores) y
   Administración (Unidades, Proveedores, Usuarios). La barra inferior del teléfono (variante C,
   landmark propio) lleva las cinco de Dinero. La lista de secciones vive en
   `src/app/(panel)/secciones.ts`, sin `'use client'`, para que la usen servidor y cliente.
+  El nombre del consorcio aparece una sola vez: en el conmutador. Ni el lateral lo repite como
+  título ni el Resumen lo usa de `h1` (el `h1` es «Resumen»).
+  - Dos scrolls: el armazón mide exactamente la ventana (`.armazon { height: 100dvh }`), la
+    barra no se mueve, y el lateral y el `main` se desplazan cada uno por su cuenta
+    (`overflow-y: auto` + `min-height: 0` en cada nivel del flex). En teléfono el menú
+    desplegado desplaza adentro (`max-height: 70dvh`).
   - Resolución del consorcio: `conConsorcio(consorcioId, titulo)` en
     `src/app/(panel)/con-consorcio.tsx`, único punto donde el id de la ruta se valida contra
     `misConsorcios` (cacheado por pedido con `cache()` de React, `consorciosAlAlcance`, porque lo

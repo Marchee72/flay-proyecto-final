@@ -45,7 +45,8 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
 
   return (
     <>
-      <h1>{activo.nombre}</h1>
+      {/* El nombre ya encabeza el lateral: el h1 es la seccion, como en el resto. */}
+      <h1>Resumen</h1>
       <p className="apagado">{activo.direccion}</p>
 
       {administra && (

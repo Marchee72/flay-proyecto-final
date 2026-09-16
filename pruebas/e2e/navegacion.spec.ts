@@ -56,7 +56,7 @@ test.afterAll(async () => {
 test('con un solo consorcio se entra derecho al resumen', async ({ page }) => {
   await entrar(page, unico.correo)
   await expect(page).toHaveURL(`/consorcios/${unico.consorcioId}`)
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Mitre 456')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Resumen')
   await expect(page.locator('.kpi__rotulo').first()).toHaveText('Período abierto')
   // El lateral agrupado, con sus cuatro bloques; en telefono vive en el menu.
   if (test.info().project.name === 'telefono') {

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Building2 } from 'lucide-react'
+import { House } from 'lucide-react'
 
 import { BLOQUES, bloquesPara } from './secciones'
 
@@ -15,13 +15,11 @@ function activa(ruta: string, base: string, seccion: string): boolean {
 
 export function Navegacion({
   base,
-  nombre,
   roles,
   id,
   etiqueta = 'Secciones',
 }: {
   base: string
-  nombre: string
   roles: readonly string[]
   id?: string
   etiqueta?: string
@@ -30,13 +28,10 @@ export function Navegacion({
 
   return (
     <nav className="lateral" aria-label={etiqueta} id={id}>
-      <Link
-        className="lateral__consorcio"
-        href={base}
-        aria-current={ruta === base ? 'page' : undefined}
-      >
-        <Building2 className="icono" aria-hidden="true" />
-        {nombre}
+      {/* El nombre del consorcio ya lo pone el conmutador de arriba: aca va la seccion. */}
+      <Link href={base} aria-current={ruta === base ? 'page' : undefined}>
+        <House className="icono" aria-hidden="true" />
+        Resumen
       </Link>
       {bloquesPara(roles).map((bloque) => (
         <section key={bloque.titulo} className="lateral__bloque" aria-label={bloque.titulo}>

@@ -1,15 +1,16 @@
 'use client'
 
-import { Building2 } from 'lucide-react'
+import { Building2, ChevronsUpDown } from 'lucide-react'
 
 import { elegirConsorcio } from './acciones'
 
 export type ConsorcioOpcion = { id: string; nombre: string }
 
 /**
- * Atajo de la barra para saltar a otro consorcio conservando la seccion
- * (`/consorcios/A/gastos` -> `/consorcios/B/gastos`). El contexto es la
- * ruta; esto solo la reescribe. Con un solo consorcio no hay nada que elegir.
+ * El consorcio activo encabeza el lateral y es, a la vez, el atajo para
+ * saltar a otro conservando la seccion (`/consorcios/A/gastos` ->
+ * `/consorcios/B/gastos`). Un solo control nombra y cambia: nada de repetir
+ * el nombre en un titulo aparte. Con un solo consorcio es solo el nombre.
  *
  * Elegir ya navega: el boton «Ir» queda solo para cuando no hay JavaScript,
  * oculto a la vista pero enviable.
@@ -19,9 +20,17 @@ export function SelectorDeConsorcio({
   activoId,
 }: {
   consorcios: ConsorcioOpcion[]
-  activoId?: string
+  activoId: string
 }) {
-  if (consorcios.length < 2) return null
+  const activo = consorcios.find((c) => c.id === activoId)
+
+  if (consorcios.length < 2)
+    return (
+      <p className="selector-consorcio">
+        <Building2 className="icono" aria-hidden="true" />
+        <span className="selector-consorcio__nombre">{activo?.nombre}</span>
+      </p>
+    )
 
   return (
     <form action={elegirConsorcio} className="selector-consorcio">
@@ -33,16 +42,16 @@ export function SelectorDeConsorcio({
         id="consorcio-activo"
         name="consorcio"
         aria-label="Cambiar de consorcio"
-        defaultValue={activoId ?? ''}
+        defaultValue={activoId}
         onChange={(evento) => evento.currentTarget.form?.requestSubmit()}
       >
-        {!activoId && <option value="">Elegir consorcio</option>}
         {consorcios.map((consorcio) => (
           <option key={consorcio.id} value={consorcio.id}>
             {consorcio.nombre}
           </option>
         ))}
       </select>
+      <ChevronsUpDown className="icono selector-consorcio__flecha" aria-hidden="true" />
       <button className="oculto" type="submit">
         Ir
       </button>

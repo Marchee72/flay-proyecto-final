@@ -561,6 +561,8 @@ El registro de erogaciones es la base económica que nutre la liquidación mensu
 flowchart TD
     Factura["Factura o Comprobante fisico (PDF / JPG / PNG)"] --> Subida["Subida a Carga Asistida (/gastos/asistida)"]
     Subida --> Cola["Encolado de Extraccion en segundo plano"]
+    Subida -. "sube el siguiente mientras tanto" .-> Subida
+    Cola --> Tabla["Tabla en vivo: En cola / Extrayendo / Para revisar"]
     
     Cola --> OCR["Motor de Extraccion Documental (IA)"]
     OCR --> Evaluacion{"Confianza >= 0.50?"}
@@ -589,8 +591,8 @@ flowchart TD
 #### Modalidad 1: Carga asistida por IA (`/gastos/asistida`)
 1. Ingrese a **Gastos** → **Carga asistida** (`/gastos/asistida`).
 2. En el área de carga, arrastre o seleccione el archivo del comprobante (formatos admitidos: PDF, JPG, PNG; tamaño máximo 15 MB).
-3. El comprobante sube directamente al repositorio seguro de objetos y se encola la tarea de extracción. La tabla muestra el estado: `Extrayendo…`.
-4. Una vez procesado (habitualmente entre 5 y 10 segundos), el estado cambia a `Propuesta lista`. Haga clic en el enlace para abrir la pantalla de revisión (`/gastos/asistida/[id]`).
+3. El comprobante sube directamente al repositorio seguro de objetos y se encola la tarea de extracción. El operador **permanece en la misma pantalla**: el selector queda vacío para subir el siguiente comprobante mientras el anterior se procesa en segundo plano. La tabla «Comprobantes cargados» muestra cada uno con su estado: `En cola` → `Extrayendo…`.
+4. La tabla se actualiza sola, sin recargar. Una vez procesado (habitualmente entre 5 y 10 segundos), el estado cambia a `Para revisar` y la fila sube al principio de la tabla con el botón **Revisar**, que abre la pantalla de revisión (`/gastos/asistida/[id]`). Un aviso sobre la tabla resume cuántos comprobantes están en proceso y cuántos esperan revisión.
 5. **Interfaz de doble columna y principio IV (RN-14):**
    - **Columna derecha (Visor):** Exhibe el documento original digitalizado con herramientas de ampliación de imagen o lectura de PDF integrado.
    - **Columna izquierda (Formulario):** Presenta los campos sugeridos por la IA: Período, Rubro propuesto, Proveedor emparejado por CUIT, Importe leído, Fecha del comprobante y Descripción.

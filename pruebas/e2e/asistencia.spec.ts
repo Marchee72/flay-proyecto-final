@@ -85,7 +85,7 @@ test('la propuesta del comprobante se revisa y el gasto nace al confirmar (SC-01
 
   await page.goto(`/consorcios/${escenario.consorcioId}/gastos/asistida`)
   await expect(page.getByRole('heading', { name: 'Carga asistida', level: 1 })).toBeVisible()
-  await expect(page.getByRole('cell', { name: 'Propuesta lista' })).toBeVisible()
+  await expect(page.getByRole('cell', { name: 'Para revisar', exact: true })).toBeVisible()
   expect(await desbordaALoAncho(page)).toBe(false)
 
   await page.goto(`/consorcios/${escenario.consorcioId}/gastos/asistida/${extraccion.id}`)
@@ -114,6 +114,57 @@ test('la propuesta del comprobante se revisa y el gasto nace al confirmar (SC-01
   expect(revisada.gastoId).not.toBeNull()
   const gasto = await prisma.gasto.findUniqueOrThrow({ where: { id: revisada.gastoId! } })
   expect(gasto.importe.toFixed(2)).toBe('15450.00')
+})
+
+test('la lista avanza sola de «Extrayendo…» a «Para revisar» sin recargar', async ({ page }) => {
+  // Pendiente y sin fila de trabajo: el drenaje real del panel no la toca, y
+  // la prueba hace de cola cambiando el estado por detras.
+  const extraccion = await prisma.extraccionComprobante.create({
+    data: {
+      consorcioId: escenario.consorcioId,
+      claveObjeto: `extracciones/${escenario.consorcioId}/e2e/en-vivo.pdf`,
+      tipoContenido: 'application/pdf',
+      cargadoPor: escenario.usuarioId,
+    },
+  })
+  // Otra con su trabajo en la cola y un objeto que no existe: el drenaje que
+  // dispara cada refresco la lleva solo a «sin asistencia» (CLAUDE.md § 21).
+  const huerfana = await prisma.extraccionComprobante.create({
+    data: {
+      consorcioId: escenario.consorcioId,
+      claveObjeto: `extracciones/${escenario.consorcioId}/e2e/no-existe.pdf`,
+      tipoContenido: 'application/pdf',
+      cargadoPor: escenario.usuarioId,
+    },
+  })
+  await prisma.$executeRaw`
+    INSERT INTO "TrabajoPendiente" (tipo, carga)
+    VALUES ('extraccion_comprobante'::"TipoTrabajo", jsonb_build_object('extraccionId', ${huerfana.id}::text))`
+
+  await entrar(page, escenario.correo)
+  await page.goto(`/consorcios/${escenario.consorcioId}/gastos/asistida`)
+  const fila = page.getByRole('row').filter({ has: page.getByText('Extrayendo…') })
+  await expect(fila).toBeVisible()
+  await expect(page.getByRole('status').filter({ hasText: 'en proceso' })).toBeVisible()
+  expect(await desbordaALoAncho(page)).toBe(false)
+
+  await expect(page.getByRole('cell', { name: 'Para revisar (sin asistencia)' })).toBeVisible({
+    timeout: 15_000,
+  })
+
+  await prisma.extraccionComprobante.update({
+    where: { id: extraccion.id },
+    data: { estado: 'propuesta', proveedorDetectado: 'Vidrieria Norte', procesadoEn: new Date() },
+  })
+  // Sin navegar: el sondeo la trae en el proximo refresco.
+  await expect(page.getByRole('cell', { name: 'Para revisar', exact: true })).toBeVisible({
+    timeout: 15_000,
+  })
+  await expect(
+    page.getByRole('link', { name: 'Revisar' }).and(page.locator(`[href$="${extraccion.id}"]`)),
+  ).toBeVisible()
+  expect(page.url()).toContain('/gastos/asistida')
+  await expect(page.getByRole('status').filter({ hasText: 'en proceso' })).toHaveCount(0)
 })
 
 test('sin asistencia el comprobante queda guardado y el gasto se carga a mano', async ({

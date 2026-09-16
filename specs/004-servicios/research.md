@@ -8,7 +8,7 @@ imponer» que `002` y `003` ya siguen.
 ## R-01 — Proveedor: Gemini API en capa paga, por su SDK oficial, con tres modelos fijados por configuración
 
 **Decisión**: `@google/genai` (SDK oficial, una dependencia nueva) contra la capa **paga** de Gemini
-API. Modelos por variable de entorno con estos valores por defecto: `gemini-3.5-flash` para
+API. Modelos por variable de entorno con estos valores por defecto: `gemini-3.5-flash-lite` para
 `ExtractorDocumental`, `ClasificadorTexto` y `GeneradorRespuesta`; `gemini-embedding-001` con
 `outputDimensionality: 768` para `GeneradorVectores`. La clave `GEMINI_API_KEY` es la única
 configuración obligatoria; sin ella, el punto de composición elige la implementación nula (R-02).

@@ -69,7 +69,11 @@ export const almacenBlob: AlmacenObjetos = {
    * Lectura autorizada. El comprobante no es publico: la direccion se resuelve
    * recien cuando alguien con habilitacion vigente lo pide (FR-018).
    */
-  async resolverLecturaAutorizada(clave: string): Promise<string> {
+  async resolverLecturaAutorizada(
+    clave: string,
+    _duracionSegundos: number,
+    opciones?: { enLinea?: boolean },
+  ): Promise<string> {
     // Un objeto registrado pero ausente del almacen (semilla sin token, baja
     // manual) es un «no encontrado» para quien mira, no una traza en pantalla.
     const objeto = await head(clave, { token: token() }).catch((error: unknown) => {
@@ -80,7 +84,8 @@ export const almacenBlob: AlmacenObjetos = {
     // pide pasa antes por la habilitacion vigente, pero una direccion filtrada
     // sigue sirviendo. Cerrarlo del todo es almacen privado con direccion
     // firmada (`presignUrl`), que necesita el flujo de credencial delegada.
-    return objeto.downloadUrl
+    // `downloadUrl` lleva `Content-Disposition: attachment`; `url` se muestra en linea.
+    return opciones?.enLinea ? objeto.url : objeto.downloadUrl
   },
 
   async eliminar(clave: string): Promise<void> {

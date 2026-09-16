@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { CalendarDays, Hourglass, TriangleAlert } from 'lucide-react'
+import { CalendarDays, Download, Hourglass, TriangleAlert } from 'lucide-react'
 
 import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verExtraccion } from '@/aplicacion/gastos/extraccion'
@@ -8,6 +8,7 @@ import { listarPeriodos } from '@/aplicacion/periodos/periodos'
 import { listarProveedores, listarRubros } from '@/aplicacion/proveedores/proveedores'
 
 import { AvisoDeError, conConsorcio, idONoEncontrado } from '../../../../../con-consorcio'
+import { EnVivo } from '../../../../../en-vivo'
 import { Volver } from '../../../../../encabezado-consorcio'
 import { accionDescartarExtraccion } from '../../acciones'
 import { FormularioGasto } from '../../nuevo/formulario'
@@ -43,13 +44,14 @@ export default async function RevisarExtraccionPage({
     if (extraccion.estado === 'pendiente') {
       return (
         <>
+          <EnVivo />
           {encabezado}
           <h1>Revisar comprobante</h1>
           <p className="aviso aviso--atencion" role="status">
             <Hourglass className="icono" aria-hidden="true" />
             <span>
-              Extrayendo los datos del comprobante… Tarda unos segundos.{' '}
-              <Link href={`/consorcios/${activo.id}/gastos/asistida/${id}`}>Actualizar</Link>.
+              Extrayendo los datos del comprobante… Tarda unos segundos y esta pantalla se actualiza
+              sola.
             </span>
           </p>
         </>
@@ -181,11 +183,16 @@ export default async function RevisarExtraccionPage({
               />
             )}
             {extraccion.direccion && (
-              <p>
+              <div className="fila-acciones">
+                {extraccion.descarga && (
+                  <a className="boton boton--fantasma" href={extraccion.descarga} download>
+                    <Download className="icono" aria-hidden="true" /> Descargar
+                  </a>
+                )}
                 <a href={extraccion.direccion} target="_blank" rel="noreferrer">
                   Abrir en otra pestaña
                 </a>
-              </p>
+              </div>
             )}
           </div>
         </div>

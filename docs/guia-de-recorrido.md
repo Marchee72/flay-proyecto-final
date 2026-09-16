@@ -129,10 +129,12 @@ que entra la carga asistida.
 
 ### 3.6 Carga asistida — `/gastos/asistida` y `/gastos/asistida/[id]`
 
-**Muestra**: cargador de comprobante suelto y tabla «En revisión» con fecha de carga, proveedor
-detectado, importe y estado (`Extrayendo…`, `Propuesta lista`, `Confirmada`, `Confirmada con
-correcciones`, `Descartada`, `Sin asistencia: cargar a mano`). La revisión muestra el comprobante al
-lado del formulario de gasto precargado con la propuesta y su confianza.
+**Muestra**: cargador de comprobante suelto y tabla «Comprobantes cargados» con fecha de carga,
+proveedor detectado, importe, estado (`En cola`, `Extrayendo…`, `Para revisar`, `Para revisar (sin
+asistencia)`, `No se pudo procesar`) y botón «Revisar». Tras subir, la persona se queda en la lista
+y puede subir el siguiente; mientras haya algo en proceso la tabla se refresca sola cada 3 s (y ese
+refresco es lo que drena la cola). La revisión muestra el comprobante al lado del formulario de
+gasto precargado con la propuesta y su confianza.
 **Quién**: administrador (todas las acciones, incluida ver).
 **Reglas**: RN-14. El comprobante vive en `ExtraccionComprobante`; el `Gasto` y el `Comprobante`
 nacen en una única transacción **al confirmar**, y `campos_corregidos` se calcula por diferencia con

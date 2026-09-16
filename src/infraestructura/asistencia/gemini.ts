@@ -19,7 +19,10 @@ import {
  * nunca una excepcion (RNF-14).
  */
 
-const MODELO_TEXTO = process.env.GEMINI_MODELO ?? 'gemini-3.5-flash'
+// `-lite` y no `gemini-3.5-flash`: el grande devuelve 503 por demanda y, cuando
+// responde, tarda de 25 s a minutos; el chico resuelve el mismo comprobante en
+// ~1,5 s (PI-07, 15-pruebas.md). Se cambia por variable sin tocar codigo.
+const MODELO_TEXTO = process.env.GEMINI_MODELO ?? 'gemini-3.5-flash-lite'
 const MODELO_VECTORES = process.env.GEMINI_MODELO_VECTORES ?? 'gemini-embedding-001'
 const LOTE_DE_VECTORES = 20
 
@@ -32,6 +35,8 @@ async function conReintento<T>(fn: () => Promise<T>): Promise<Resultado<T>> {
       return disponible(await fn())
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : String(error)
+      // La pantalla dice «no disponible»; el motivo real queda en el log del servidor.
+      console.error(`[asistencia] ${MODELO_TEXTO} intento ${intento + 1}: ${mensaje.slice(0, 500)}`)
       const transitorio = /\b(429|503|overloaded|quota|RESOURCE_EXHAUSTED|UNAVAILABLE)\b/i.test(
         mensaje,
       )

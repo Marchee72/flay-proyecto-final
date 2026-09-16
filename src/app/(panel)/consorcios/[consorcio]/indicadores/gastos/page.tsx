@@ -37,7 +37,7 @@ export default async function GastosPage({ params }: { params: Promise<{ consorc
 
     return (
       <>
-        <Volver href={`/consorcios/${activo.id}/indicadores`} texto="Volver a indicadores" />
+        <Volver href={`/consorcios/${activo.id}/indicadores`} />
         <h1>I-2 · Gasto por rubro</h1>
         <p className="apagado">
           Cada período contra el promedio móvil de los doce anteriores del mismo consorcio, nunca

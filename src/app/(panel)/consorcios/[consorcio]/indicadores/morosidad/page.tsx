@@ -36,7 +36,7 @@ export default async function MorosidadPage({
 
     return (
       <>
-        <Volver href={`/consorcios/${activo.id}/indicadores`} texto="Volver a indicadores" />
+        <Volver href={`/consorcios/${activo.id}/indicadores`} />
         <h1>I-1 · Morosidad</h1>
         <p className="apagado">
           Deuda vencida sobre lo liquidado en cada período. Meta: {meta} %. La nómina de unidades en

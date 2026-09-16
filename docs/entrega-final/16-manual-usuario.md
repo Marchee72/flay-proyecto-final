@@ -200,10 +200,10 @@ Flay distingue conceptualmente entre una **Persona** (entidad humana con nombre,
    - **Vigencia hasta:** En contratos de alquiler, complete la fecha de vencimiento; en propietarios, deje el campo abierto.
 4. **Regla de integridad RN-09:** El motor de base de datos ejecuta una restricción de exclusión (`EXCLUDE USING gist`) que impide que una unidad tenga dos ocupaciones vigentes del mismo tipo en un mismo rango de fechas. Si se intenta cargar un segundo inquilino superpuesto, el sistema rechaza el formulario indicando el conflicto de fechas.
 
-#### Invitación de usuarios al portal web (`/usuarios/invitar`)
+#### Invitación de usuarios al portal web (`/usuarios`)
 Para habilitar el ingreso digital de un propietario, inquilino o colega de administración:
 1. Dentro del consorcio, diríjase a **Usuarios** (`/usuarios`) en el bloque **Administración** del menú lateral.
-3. Presione el botón **Invitar persona** (se abre la ventana modal o la ruta `/usuarios/invitar`).
+3. Presione el botón **Invitar persona** (se abre la ventana modal).
 4. Complete los campos requeridos:
    - **Nombre:** Nombre de pila del consorcista (ejemplo: *Marcela*).
    - **Apellido:** Apellido de la persona (ejemplo: *Gómez*).

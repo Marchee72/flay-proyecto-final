@@ -46,7 +46,7 @@ test('sin sesión 401, otro consorcio 404, el propio baja el CSV', async ({ page
 
   // El boton esta en el listado.
   await page.goto(`/consorcios/${escenario.consorcioId}/gastos`)
-  await expect(page.getByRole('link', { name: 'Exportar CSV' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: 'Exportar', exact: true })).toHaveAttribute(
     'href',
     `/api/exportar/${escenario.consorcioId}/gastos.csv`,
   )

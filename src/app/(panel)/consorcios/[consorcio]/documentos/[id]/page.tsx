@@ -28,7 +28,7 @@ export default async function DocumentoPage({
     })
     return (
       <>
-        <Volver href={`/consorcios/${activo.id}/documentos`} texto="Volver a documentación" />
+        <Volver href={`/consorcios/${activo.id}/documentos`} />
         <h1>{documento.titulo}</h1>
         <p>
           <a className="boton boton--fantasma" href={documento.direccion} download>

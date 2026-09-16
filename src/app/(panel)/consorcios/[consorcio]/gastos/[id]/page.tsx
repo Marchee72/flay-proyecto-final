@@ -46,7 +46,7 @@ export default async function GastoPage({
 
   return (
     <>
-      <Volver href={`/consorcios/${activo.id}/gastos`} texto="Volver a gastos" />
+      <Volver href={`/consorcios/${activo.id}/gastos`} />
       <h1>Gasto de {gasto.rubro}</h1>
       <p className="apagado">
         {gasto.periodo} · {conMayuscula(gasto.clasificacion)} · {gasto.proveedor ?? 'sin proveedor'}

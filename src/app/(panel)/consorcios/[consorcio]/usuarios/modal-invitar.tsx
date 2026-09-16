@@ -3,7 +3,7 @@
 import { UserPlus } from 'lucide-react'
 
 import { BotonModal } from '../../../modal'
-import { FormularioInvitar } from './invitar/formulario'
+import { FormularioInvitar } from './formulario'
 
 /**
  * Invitacion en modal (guia §3.4, patron «Modal»). Reutiliza el formulario y

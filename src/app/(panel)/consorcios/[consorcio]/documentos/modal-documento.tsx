@@ -18,7 +18,8 @@ export function ModalDocumento({
         consorcioId={consorcioId}
         prefijo="documentos"
         accept="application/pdf"
-        etiquetaArchivo="Archivo PDF"
+        objeto="el documento"
+        ayuda="PDF · hasta 25 MB"
         etiquetaBoton="Cargar"
         confirmar={accionCargarDocumento}
       >

@@ -39,7 +39,7 @@ export default async function ReclamosIndicadorPage({
 
     return (
       <>
-        <Volver href={`/consorcios/${activo.id}/indicadores`} texto="Volver a indicadores" />
+        <Volver href={`/consorcios/${activo.id}/indicadores`} />
         <h1>I-4 · Tiempo de resolución de reclamos</h1>
         <p className="apagado">
           Mediana y percentil 90 de las horas entre apertura y resolución, por rubro y urgencia.

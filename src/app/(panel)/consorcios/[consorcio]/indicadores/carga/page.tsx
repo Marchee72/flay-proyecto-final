@@ -31,7 +31,7 @@ export default async function CargaPage({ params }: { params: Promise<{ consorci
 
     return (
       <>
-        <Volver href={`/consorcios/${activo.id}/indicadores`} texto="Volver a indicadores" />
+        <Volver href={`/consorcios/${activo.id}/indicadores`} />
         <h1>I-5 · Carga administrativa</h1>
         <p className="apagado">
           Horas entre la apertura del período y su liquidación, contra la línea de base de{' '}

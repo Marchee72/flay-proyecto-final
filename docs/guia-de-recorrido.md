@@ -107,7 +107,7 @@ y descarga del PDF (o «En generación»). El detalle muestra el total y el bot�
 administrador y consejo, todas. Pedir por URL la expensa de otra unidad responde «no encontrado».
 **Acciones**: descargar el PDF (todos); «Registrar pago» desde el detalle (*administrador*).
 
-### 3.5 Gastos — `/gastos`, `/gastos/nuevo`, `/gastos/[id]`
+### 3.5 Gastos — `/gastos` y `/gastos/[id]`
 
 **Muestra**: tabla paginada (fecha, rubro, proveedor, detalle, importe, cantidad de comprobantes) con
 filtros por período y rubro y fila de total del filtro. El detalle muestra el gasto, su clasificación
@@ -117,14 +117,14 @@ y los comprobantes (visor de PDF/imagen; HEIC y TIFF sólo descarga).
 
 | Acción | Rol | Regla |
 |---|---|---|
-| Nuevo gasto (modal o `/gastos/nuevo`: período, rubro, proveedor, importe, fecha, descripción) | Administrador | El período tiene que estar **abierto** (RN-03). La clasificación ordinario/extraordinario se **congela** en el gasto al copiarla del rubro (RN-04). Importe como cadena, mayor a cero. Si no hay período abierto, la pantalla manda a Períodos. |
+| Nuevo gasto (modal: período, rubro, proveedor, importe, fecha, descripción; `/gastos?abrir=1` lo abre de entrada, desde el Resumen) | Administrador | El período tiene que estar **abierto** (RN-03). La clasificación ordinario/extraordinario se **congela** en el gasto al copiarla del rubro (RN-04). Importe como cadena, mayor a cero. Si no hay período abierto, la pantalla manda a Períodos. |
 | Adjuntar comprobante al gasto | Administrador | Sólo con el período abierto. PDF, JPEG, PNG, WebP, HEIC o TIFF; hasta 25 MB. La subida va directa al almacén y el estado «no confirmado» se reintenta solo. |
 | Exportar CSV de gastos | Administrador, consejo | |
 
-Los parámetros de la URL **precargan** el formulario y se marcan como tales: es la costura por la
-que entra la carga asistida.
+Los parámetros de la URL **precargan** el formulario, lo abren y se marcan como tales: es la
+costura por la que entra la carga asistida.
 
-> Observación: los botones «Nuevo gasto», «Cargar comprobante con asistencia» y «Adjuntar» se dibujan
+> Observación: los botones «Nuevo gasto», «Carga asistida» y «Adjuntar» se dibujan
 > para todos los roles; para consejo y consorcista el caso de uso rechaza con `RolInsuficiente`.
 
 ### 3.6 Carga asistida — `/gastos/asistida` y `/gastos/asistida/[id]`
@@ -142,14 +142,14 @@ la propuesta. Descartar no deja rastro económico. El proveedor propuesto se ata
 razón social; si no está, queda vacío. Sin servicio de IA, el estado es «Sin asistencia» y el
 comprobante queda guardado para cargarlo a mano.
 
-### 3.7 Pagos — `/pagos` y `/pagos/nuevo`
+### 3.7 Pagos — `/pagos`
 
 **Muestra**: estado de cuenta por unidad (saldo, saldo a favor, último movimiento) y, al elegir una,
 sus movimientos (expensas como deuda, pagos imputados como crédito, saldo corrido). Con una sola
 unidad —el consorcista— se abre sola.
 **Quién ve qué**: el consorcista, sus unidades; administrador y consejo, todas.
-**Acciones**: «Registrar pago» (*administrador*; `/pagos/nuevo` redirige a Pagos a quien no
-administra): unidad, importe, fecha, medio (transferencia, efectivo, depósito, débito automático),
+**Acciones**: «Registrar un pago» (modal, *administrador*; `/pagos?abrir=1` lo abre de entrada,
+desde el Resumen): unidad, importe, fecha, medio (transferencia, efectivo, depósito, débito automático),
 referencia. Exportar CSV de pagos (*administrador, consejo*).
 **Reglas**: RN-08 — el pago se imputa de la deuda más vieja a la más nueva, en una sola transacción
 con sus imputaciones. Lo que sobra es **saldo a favor**, que la próxima liquidación aplica después del
@@ -285,13 +285,13 @@ pantalla todavía.
 **Acciones**: nuevo (razón social, CUIT, rubro habitual, teléfono, correo) y editar —
 *administrador*. Ver: todos (el consorcista los ve como contactos útiles).
 
-### 3.17 Usuarios — `/usuarios` y `/usuarios/invitar`
+### 3.17 Usuarios — `/usuarios`
 
 **Muestra**: persona, correo, roles, estado (`Invitado`, `Activo`, `Suspendido`, más `Bloqueado`) y
 el estado de la invitación en la cola («Correo en cola», «Correo enviado; todavía no la usó», «No se
 pudo enviar en n intentos»).
 **Quién**: administrador. A los demás la pantalla les muestra el error del caso de uso.
-**Acciones**: invitar (nombre, apellido, correo, rol, habilitado desde) y reenviar invitación.
+**Acciones**: invitar (modal: nombre, apellido, correo, rol, habilitado desde) y reenviar invitación.
 **Reglas**: el correo no puede estar ya registrado. El invitado fija su propia contraseña; el
 administrador nunca la conoce. El envío se **encola** siempre: la falla del correo no voltea el alta.
 La vinculación de un consorcista a su unidad (ocupación, RN-09) no se hace desde acá.

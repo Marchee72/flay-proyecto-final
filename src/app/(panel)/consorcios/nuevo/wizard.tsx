@@ -250,7 +250,7 @@ export function WizardConsorcio({
 
         <p className="fila-acciones">
           <button className="boton boton--primario" type="button" onClick={continuarDesdeDatos}>
-            Continuar al padrón
+            Continuar
           </button>
         </p>
       </div>
@@ -422,7 +422,7 @@ export function WizardConsorcio({
               setPaso(0)
             }}
           >
-            Volver a los datos
+            Volver
           </button>
           <button
             className="boton boton--fantasma"
@@ -432,7 +432,7 @@ export function WizardConsorcio({
             Agregar fila
           </button>
           <button className="boton boton--primario" type="button" onClick={continuarDesdePadron}>
-            Revisar el alta
+            Revisar
           </button>
         </p>
       </div>
@@ -480,7 +480,7 @@ export function WizardConsorcio({
               setPaso(1)
             }}
           >
-            Volver al padrón
+            Volver
           </button>
           <button className="boton boton--primario" type="submit" disabled={enviando}>
             {enviando ? 'Creando…' : `Confirmar el alta de ${cargadas.length} unidades`}

@@ -258,12 +258,11 @@ function ConfirmacionEnDosPasos({
             </h2>
             <button
               type="button"
-              className="boton boton--fantasma"
+              className="boton boton--cerrar"
               onClick={cerrar}
               aria-label="Cerrar diálogo"
             >
               <X className="icono" aria-hidden="true" />
-              Cerrar
             </button>
           </div>
 

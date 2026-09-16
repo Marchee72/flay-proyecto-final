@@ -97,10 +97,11 @@
   Cuándo sí: crear o confirmar en ≤ 3 pasos (Nuevo consorcio en 3 pasos con indicador
   `ol` + `aria-current="step"`; Pago nuevo, Gasto nuevo, Invitar persona y Abrir período
   en 1 pantalla + revisión). Cuándo no: lectura, detalle y flujos largos (van en página;
-  `/consorcios/nuevo` queda como alternativa sin guion). Anatomía: título `h2` con
-  `aria-labelledby`, botón Cerrar siempre visible, formulario existente adentro y Server
-  Action existente (el éxito redirige con `?nuevo=1` / `?registrado=1` / `?invitado=1` donde
-  ya hay `role="status"`, o cierra y lo muestra). Foco: al título al abrir, al primer error
+  `/consorcios/nuevo` queda como alternativa sin guion; no hay otras páginas-formulario: el
+  Resumen abre el modal con `?abrir=1`). Anatomía: título `h2` con `aria-labelledby`, Cerrar
+  como un círculo gris con la cruz (`.boton--cerrar`, sin texto, `aria-label="Cerrar diálogo"`),
+  formulario existente adentro y Server Action existente (el éxito redirige con `?nuevo=1` /
+  `?registrado=1` / `?invitado=1` donde ya hay `role="status"`, o cierra y lo muestra). Foco: al título al abrir, al primer error
   si no se avanza (RNF-10 por paso) y de vuelta al disparador al cerrar. Escape nativo y
   clic en el fondo cierran. A 390 px casi pantalla completa, sin scroll horizontal de página
   (la tabla del padrón desplaza adentro de `.tabla-desplazable`). Entrada solo
@@ -111,9 +112,24 @@
   el diálogo con el resumen de la magnitud exacta; el segundo envía. Nunca un panel dentro
   de la celda de la tabla.
 - Fila de acciones (`.fila-acciones`, un `<div>`): una sola por pantalla, debajo del título y
-  la bajada, con el primario primero y los secundarios (exportar, cargar con asistencia)
+  la bajada, con el primario primero y los secundarios (exportar, carga asistida)
   después. Nunca dos filas ni botones sueltos en `<p>`: la alineación vertical de
   `inline-flex` dentro de un párrafo depende de la línea de base y se ve torcida.
+- Pie de formulario: el envío nunca se pega al último campo (`form > .boton` y
+  `form > .fila-acciones` llevan 16 px arriba, 24 px dentro del modal; ayuda y error a 4 px del
+  control). Con dos acciones (registrar / descartar) van **al lado**, nunca una abajo de la
+  otra: la fila no envuelve y en teléfono cada botón toma la mitad. Un botón de otro
+  formulario entra al mismo pie con `form="id"` (`FormularioGasto.accionesExtra`).
+- Etiquetas de botón: el verbo solo —«Registrar», «Descartar», «Subir», «Volver»,
+  «Exportar»—; el objeto ya lo dice el título de la pantalla o del modal. La excepción es la
+  magnitud que hay que leer antes del clic («Cargar 12 unidades»).
+- Zona de arrastre (`SubidaDirecta`, clase `.zona-soltar`): la etiqueta grande es el destino
+  del arrastre y del clic; el `<input type=file>` sigue adentro con `.oculto`, así que queda
+  asociado y el teclado llega igual. Dice formatos y tope («hasta 25 MB»), muestra el archivo
+  elegido (nombre, peso, quitar) antes de subir, y la subida usa `.progreso` con la magnitud
+  exacta («1,7 de 2,8 MB», `onUploadProgress`). En teléfono no dice «arrastrá»: el selector
+  nativo ya ofrece la cámara. Mientras algo corre, el ícono gira (`.icono--girando`) y el
+  resumen de la lista late (`.en-curso__punto`); ambos se apagan con `prefers-reduced-motion`.
 - Encabezado de pantalla: `h1` corto (el consorcio ya está en el lateral; «Unidades», no
   «Unidades de Mitre 456») más una bajada `.apagado` de una línea, siempre. «Volver» solo en
   pantallas de detalle (un reclamo, un gasto, una liquidación), nunca en una sección del

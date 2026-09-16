@@ -50,11 +50,11 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
 
       {administra && (
         <div className="fila-acciones">
-          <Link className="boton boton--primario" href={`${base}/gastos/nuevo`}>
+          <Link className="boton boton--primario" href={`${base}/gastos?abrir=1`}>
             <Receipt className="icono" aria-hidden="true" />
             Cargar gasto
           </Link>
-          <Link className="boton boton--fantasma" href={`${base}/pagos/nuevo`}>
+          <Link className="boton boton--fantasma" href={`${base}/pagos?abrir=1`}>
             <Wallet className="icono" aria-hidden="true" />
             Registrar pago
           </Link>

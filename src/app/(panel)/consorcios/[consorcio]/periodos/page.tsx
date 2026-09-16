@@ -159,7 +159,7 @@ export default async function PeriodosPage({
 
         {administra && (
           <p>
-            <Link href={`/consorcios/${activo.id}/gastos/nuevo`}>Cargar un gasto</Link>
+            <Link href={`/consorcios/${activo.id}/gastos?abrir=1`}>Cargar un gasto</Link>
           </p>
         )}
       </>

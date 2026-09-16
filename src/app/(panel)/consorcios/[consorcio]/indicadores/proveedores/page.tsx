@@ -41,7 +41,7 @@ export default async function ProveedoresPage({
 
     return (
       <>
-        <Volver href={`/consorcios/${activo.id}/indicadores`} texto="Volver a indicadores" />
+        <Volver href={`/consorcios/${activo.id}/indicadores`} />
         <h1>I-3 · Desempeño y costo por proveedor</h1>
         <p className="apagado">
           A quién contratar para cada tipo de trabajo: costo acumulado, contrataciones y tiempo

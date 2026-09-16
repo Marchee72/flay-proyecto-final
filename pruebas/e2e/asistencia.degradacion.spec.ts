@@ -59,7 +59,7 @@ test('sin asistencia, la pregunta lleva a los documentos y el reclamo se registr
   const dialogo = page.getByRole('dialog')
   await dialogo.getByLabel('Qué pasa').fill('El ascensor quedó parado entre pisos')
   await dialogo.getByLabel('Detalle').fill('Hay una persona atrapada en el ascensor.')
-  await dialogo.getByRole('button', { name: 'Registrar reclamo' }).click()
+  await dialogo.getByRole('button', { name: 'Registrar', exact: true }).click()
   await expect(page).toHaveURL(/\/reclamos\/[0-9a-f-]+/)
   await expect(page.getByRole('status')).toContainText('Reclamo registrado')
   const reclamoId = page.url().split('/reclamos/')[1].split('?')[0]
@@ -73,5 +73,5 @@ test('sin asistencia, la pregunta lleva a los documentos y el reclamo se registr
 
   await page.goto(`/consorcios/${escenario.consorcioId}/gastos/asistida`)
   await expect(page.getByRole('heading', { name: 'Carga asistida', level: 1 })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Subir y extraer' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Subir', exact: true })).toBeVisible()
 })

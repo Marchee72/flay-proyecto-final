@@ -89,7 +89,7 @@ export function FormularioPeriodo({
       )}
 
       <button className="boton boton--primario" type="submit" disabled={enviando}>
-        {enviando ? 'Abriendo…' : 'Abrir período'}
+        {enviando ? 'Abriendo…' : 'Abrir'}
       </button>
     </form>
   )

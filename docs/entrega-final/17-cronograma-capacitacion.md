@@ -109,7 +109,7 @@ Cada sesión combinó una exposición conceptual breve (20 % del tiempo) con pr�
 
 ### Sesión 3 · Gestión de gastos y comprobantes asistidos (2 horas)
 - **Destinatarios:** Responsable contable y administrativa.
-- **Rutas de la aplicación:** `/(panel)/gastos`, `/(panel)/gastos/nuevo`, `/(panel)/gastos/asistida`, `/(panel)/gastos/asistida/[id]`.
+- **Rutas de la aplicación:** `/(panel)/gastos`, `/(panel)/gastos/asistida`, `/(panel)/gastos/asistida/[id]`.
 - **Contenido impartido:**
   1. Carga manual tradicional: rubro, subrubro, tipo de gasto (ordinario A, ordinario B, extraordinario según Ley 27.551), proveedor con CUIT validado, forma de pago y fecha de vencimiento.
   2. Carga asistida inteligente (CU-13, RF-06): arrastre de facturas en PDF o imagen, procesamiento asincrónico con modelo multimodal Gemini y generación del registro `ExtraccionComprobante`.
@@ -129,7 +129,7 @@ Cada sesión combinó una exposición conceptual breve (20 % del tiempo) con pr�
 
 ### Sesión 5 · Cobranzas, imputación de pagos y morosidad (2 horas)
 - **Destinatarios:** Responsable contable y administrativa.
-- **Rutas de la aplicación:** `/(panel)/pagos`, `/(panel)/pagos/nuevo`, `/(panel)/morosidad`.
+- **Rutas de la aplicación:** `/(panel)/pagos`, `/(panel)/morosidad`.
 - **Contenido impartido:**
   1. Registro de transferencias y depósitos bancarios: carga de número de operación, fecha de acreditación, monto y comprobante de respaldo.
   2. Regla legal de imputación por antigüedad (RN-08): asignación automática del pago prioritariamente a intereses acumulados y luego a expensas devengadas más antiguas (art. 900 CCyC).

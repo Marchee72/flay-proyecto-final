@@ -413,10 +413,34 @@ main.suelto {
   opacity: 0.5;
   cursor: not-allowed;
 }
-/* Boton solo-icono (tachos, cerrar): cuadrado tactil sin relleno lateral. */
+/* Boton solo-icono (tachos, quitar): cuadrado tactil sin relleno lateral. */
 .boton--icono {
   padding: 0;
   min-width: var(--toque);
+}
+/* Cerrar un dialogo: un circulo gris con la cruz, sin borde ni texto; el
+   nombre lo lleva `aria-label`. */
+.boton--cerrar {
+  padding: 0;
+  min-width: var(--toque);
+  background: var(--gris-palido);
+  color: var(--grafito);
+}
+/* Un formulario termina en su fila de acciones, nunca pegada al ultimo
+   campo. Con dos acciones (registrar / descartar) van al lado: en telefono
+   se reparten el ancho antes que caer una abajo de la otra. */
+form > .boton,
+form > .fila-acciones {
+  margin-top: var(--e4);
+}
+form > .fila-acciones {
+  flex-wrap: nowrap;
+}
+@media (max-width: 480px) {
+  form > .fila-acciones > .boton {
+    flex: 1 1 0;
+    padding: 0 var(--e4);
+  }
 }
 
 /* Confirmación en dos pasos (RN-06, RN-14): el resumen con la magnitud exacta
@@ -503,11 +527,15 @@ main.suelto {
   border-color: var(--rojo);
   border-width: 2px;
 }
+/* Ayuda y error a un paso del control, sin heredar el margen del parrafo. */
+.campo .ayuda,
+.error {
+  margin: var(--e1) 0 0;
+}
 .error {
   font-size: var(--t-menor);
   color: var(--rojo);
   font-weight: 600;
-  margin-top: var(--e1);
 }
 
 .aviso {
@@ -1127,13 +1155,9 @@ td select {
 .modal .campo {
   max-width: none;
 }
-.modal .fila-acciones {
+.modal .fila-acciones,
+.modal form > .boton {
   margin: var(--e5) 0 0;
-}
-/* El boton de envio no se pega al ultimo campo. */
-.modal form > .boton,
-.modal form > p:has(> .boton) {
-  margin-top: var(--e4);
 }
 /* Sin esto, lo ancho —la tabla del padron, de 560px minimo— estira la pista
    de la grilla y el dialogo desborda a 390px (igual que `.disposicion > *`).
@@ -1306,4 +1330,109 @@ td select {
   border: 1px solid var(--linea-suave);
   border-radius: var(--radio);
   background: var(--superficie);
+}
+
+/* Zona de arrastre (`SubidaDirecta`): la etiqueta grande es el destino del
+   arrastre y el clic; el `<input type=file>` sigue adentro, oculto, asi que
+   la etiqueta queda asociada y el teclado llega igual. */
+.zona-soltar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e2);
+  padding: var(--e5);
+  min-height: 144px;
+  border: 2px dashed var(--linea-control);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  text-align: center;
+  font-weight: 600;
+  cursor: pointer;
+}
+.zona-soltar:has(:focus-visible) {
+  outline: 3px solid var(--verde);
+  outline-offset: 2px;
+}
+.zona-soltar svg {
+  width: var(--e6);
+  height: var(--e6);
+  color: var(--tinta-apagada);
+}
+.zona-soltar u {
+  color: var(--verde);
+}
+.zona-soltar--activa {
+  border-style: solid;
+  border-color: var(--lima);
+  background: var(--verde-palido);
+}
+/* El archivo elegido, antes de subir: nombre, peso y quitar. */
+.archivo-elegido {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  padding: var(--e2) var(--e2) var(--e2) var(--e4);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-chico);
+  background: var(--superficie);
+  margin-top: var(--e3);
+}
+.archivo-elegido__nombre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+/* Titulo de una lista con su resumen a la derecha («2 en proceso»). */
+.encabezado-lista {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--e2) var(--e3);
+  margin: var(--e5) 0 var(--e3);
+}
+/* Un punto lima que late resume que la lista se mueve sola. */
+.en-curso {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+}
+.en-curso__punto {
+  width: var(--e2);
+  height: var(--e2);
+  border-radius: var(--pastilla);
+  background: var(--lima);
+  animation: latir 1.4s ease-in-out infinite;
+}
+/* Algo esta corriendo ahora (extraccion en curso): el icono gira. */
+.icono--girando {
+  animation: girar 1s linear infinite;
+}
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .icono--girando,
+  .en-curso__punto {
+    animation: none;
+  }
+}
+/* Lo que solo tiene sentido en uno de los dos (la hora de carga en la tabla,
+   «arrastrá» en la zona de soltar). */
+.solo-telefono {
+  display: none;
+}
+@media (max-width: 760px) {
+  .solo-escritorio {
+    display: none;
+  }
+  .solo-telefono {
+    display: inline;
+  }
 }

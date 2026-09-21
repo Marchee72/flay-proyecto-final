@@ -10,6 +10,9 @@ const alias = { '@': fileURLToPath(new URL('./src', import.meta.url)) }
  * en el primer minuto (FR-014, SC-002).
  */
 export default defineConfig({
+  // En la raiz tambien: `vite-node --config vitest.config.ts` (la semilla) lo
+  // lee de aca, los proyectos de abajo lo llevan cada uno.
+  resolve: { alias },
   test: {
     /**
      * El unico umbral de cobertura del repositorio, y es del 100 % de ramas

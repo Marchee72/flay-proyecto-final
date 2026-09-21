@@ -110,8 +110,13 @@ export default async function RevisarExtraccionPage({
           <p className="aviso aviso--atencion" role="status">
             <TriangleAlert className="icono" aria-hidden="true" />
             <span>
-              La asistencia no está disponible. El comprobante quedó guardado: cargá los datos a
-              mano mirándolo.
+              {/* El motivo lo escribio el manejador (falta de clave, proveedor
+                  saturado): sin verlo, «no disponible» parece un defecto. */}
+              La asistencia no está disponible
+              {propuesta.confianzaPorCampo.motivo
+                ? `: ${propuesta.confianzaPorCampo.motivo}`
+                : '.'}{' '}
+              El comprobante quedó guardado: cargá los datos a mano mirándolo.
             </span>
           </p>
         ) : Object.keys(precargado).length === 0 ? (

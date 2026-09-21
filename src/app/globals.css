@@ -135,8 +135,17 @@ a {
   gap: var(--e3);
   align-items: center;
 }
-.barra__global {
+/* Los tres bloques miden lo mismo (un toque) y centran adentro: asi el logo,
+   los enlaces y Salir quedan a la misma altura aunque cambie la tipografia. */
+.barra > * {
   display: flex;
+  align-items: center;
+  min-height: var(--toque);
+}
+.barra .icono {
+  display: block;
+}
+.barra__global {
   gap: var(--e2);
 }
 .barra__global a {
@@ -947,7 +956,7 @@ tfoot td {
   .barra {
     padding: var(--e2) var(--e4);
   }
-  .barra__global a .barra__texto {
+  .barra .barra__texto {
     display: none;
   }
   .marca {
@@ -1210,8 +1219,16 @@ fieldset > legend {
 /* La salida cierra la barra por derecha: solo el icono, el nombre en `aria-label`. */
 .salida {
   justify-self: end;
+  gap: var(--e3);
+}
+.salida__nombre {
+  font-size: var(--t-menor);
+  white-space: nowrap;
 }
 .salida .boton {
+  /* Es hijo directo de un <form>, y `form > .boton` le pone margen arriba:
+     era lo que bajaba el icono ocho pixeles respecto del resto de la barra. */
+  margin-top: 0;
   border-color: var(--tinta-clara);
   color: var(--tinta-clara);
   background: transparent;

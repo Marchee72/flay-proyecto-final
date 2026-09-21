@@ -330,6 +330,23 @@ export async function sembrarServicios(
     })
     if (existente) {
       documentoId = existente.id
+      // Registrado sin archivo (una corrida sin token del almacen): con el
+      // token a mano se sube ahora y se vuelve a encolar la indexacion.
+      if (existente.estadoIndexacion === 'error' && opciones.guardar) {
+        await opciones.guardar(
+          existente.claveAlmacenamiento,
+          opciones.reglamento.contenido,
+          opciones.reglamento.tipoContenido,
+        )
+        await cliente.documentoConsorcio.update({
+          where: { id: existente.id },
+          data: { estadoIndexacion: 'pendiente', errorIndexacion: null },
+        })
+        await cliente.$executeRaw`
+          INSERT INTO "TrabajoPendiente" (tipo, carga)
+          VALUES ('indexar_documento'::"TipoTrabajo", jsonb_build_object('documentoId', ${existente.id}::text))
+        `
+      }
     } else {
       const id = crypto.randomUUID()
       const clave = `documentos/${consorcioId}/${id}`

@@ -4,6 +4,7 @@ import { z } from 'zod'
 
 import { CredencialesInvalidas, iniciarSesion } from '@/aplicacion/identidad/iniciar-sesion'
 import { argon2id } from '@/infraestructura/contrasenas/argon2'
+import { prismaBase } from '@/infraestructura/prisma'
 import { relojDelSistema } from '@/infraestructura/reloj'
 
 /**
@@ -90,6 +91,15 @@ function origenDe(pedido: Request): string {
 export async function usuarioDeLaSesion(): Promise<string | null> {
   const sesion = await auth()
   return sesion?.user?.id ?? null
+}
+
+/** Nombre y apellido para la barra: quien esta adentro tiene que verse. */
+export async function nombreDelUsuario(usuarioId: string): Promise<string> {
+  const usuario = await prismaBase.usuario.findUnique({
+    where: { id: usuarioId },
+    select: { persona: { select: { nombre: true, apellido: true } } },
+  })
+  return usuario ? `${usuario.persona.nombre} ${usuario.persona.apellido}` : ''
 }
 
 /**

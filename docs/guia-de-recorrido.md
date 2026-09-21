@@ -392,18 +392,26 @@ cada pedido; el administrador puede empujarla desde la bandeja.
 
 ## 6. Recorrido sugerido
 
-Con `DEMO_CLAVE` definida, `npm run semilla` deja siete usuarios activos con esa clave sobre dos
-consorcios: **Mitre 456** (C-A, 12 unidades) y **San Martin 7890** (C-B, 96 unidades).
+Con `DEMO_CLAVE` definida, `npm run semilla` deja once usuarios activos con esa clave sobre cuatro
+consorcios: **Mitre 456** (C-A, 12 unidades) y **San Martin 7890** (C-B, 96 unidades), que son el
+juego de § 13.4, más **Pellegrini 1234** (C-C, 24) y **Corrientes 950** (C-D, 40), que agrega la
+semilla de demostración con seis meses de gastos liquidados (marzo a julio; agosto queda abierto),
+pagos con morosos fijos (3B y 2C en C-A, 3A/7D/11H en C-B, 3B/5C en C-C, 2C/8A/9B en C-D),
+proveedores, reclamos con recorrido, reservas en los próximos sábados y novedades.
 
 | Correo | Rol | Unidad |
 |---|---|---|
-| `admin1@flay.demo` | Administrador de C-A y C-B | — |
+| `admin1@flay.demo` | Administrador de los cuatro | — |
 | `consejo1@flay.demo` | Consejo + consorcista en C-A | 2A |
 | `vecino1a@flay.demo` | Consorcista en C-A | 1A |
 | `moroso3b@flay.demo` | Consorcista en C-A, con deuda vencida | 3B |
 | `inquilino1c@flay.demo` | Consorcista (inquilina) en C-A | 1C |
 | `operador1@flay.demo` | Administrador sólo de C-B | — |
 | `vecinob010@flay.demo` | Consorcista en C-B | 2B |
+| `vecinoc1a@flay.demo` | Consorcista en C-C | 1A |
+| `vecinoc3b@flay.demo` | Consorcista en C-C, con deuda vencida | 3B |
+| `vecinod2c@flay.demo` | Consorcista en C-D, con deuda vencida | 2C |
+| `vecinod5a@flay.demo` | Consorcista en C-D | 5A |
 
 1. **Como `admin1`**: `/consorcios` muestra las dos tarjetas con señales. Entrar a Mitre 456.
    Resumen → Períodos: abrir el mes, cargar dos gastos (uno manual, uno por carga asistida), cerrar,

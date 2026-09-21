@@ -5,7 +5,7 @@ import { anularLiquidacion } from '@/aplicacion/liquidacion/anular'
 import { liquidarPeriodo, PeriodoNoCerrado } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
 import { cambiarCoeficiente, cargarPadron } from '@/aplicacion/consorcios/unidades'
-import { abrirPeriodo } from '@/aplicacion/periodos/periodos'
+import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
@@ -67,7 +67,7 @@ afterEach(async () => {
 })
 
 async function periodoConGasto(mes: number, importeGasto = '1000.00') {
-  const { periodoId } = await abrirPeriodo(repo, RELOJ, {
+  const { periodoId } = await periodoPara(repo, RELOJ, {
     usuarioId: administrador,
     consorcioId,
     anio: 2026,
@@ -114,7 +114,7 @@ describe('emision de la liquidacion', () => {
   })
 
   it('un periodo que no esta cerrado no se liquida', async () => {
-    const { periodoId } = await abrirPeriodo(repo, RELOJ, {
+    const { periodoId } = await periodoPara(repo, RELOJ, {
       usuarioId: administrador,
       consorcioId,
       anio: 2026,

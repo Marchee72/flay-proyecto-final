@@ -7,7 +7,9 @@ import { consorciosAlAlcance } from '../con-consorcio'
 import { NOMBRE_GALLETA_CONSORCIO, destinoDeEntrada } from '../consorcio-activo'
 import { BLOQUES } from '../secciones'
 
-const SECCIONES = new Set(BLOQUES.flatMap((b) => b.secciones.map((s) => s.ruta)))
+// `periodos` ya no esta en el lateral pero la pagina sigue: la direccion vieja
+// tiene que seguir andando.
+const SECCIONES = new Set([...BLOQUES.flatMap((b) => b.secciones.map((s) => s.ruta)), 'periodos'])
 
 /**
  * Las direcciones de antes del rediseno (`/gastos`, `/periodos?consorcio=x`)

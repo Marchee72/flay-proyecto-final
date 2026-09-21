@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { RolInsuficiente } from '@/compartido/errores'
 import { PeriodoNoAdmiteGastos } from '@/dominio/periodos/estado'
 import { ImporteInvalido, registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
-import { abrirPeriodo, listarPeriodos, PeriodoRepetido } from '@/aplicacion/periodos/periodos'
+import { periodoPara, listarPeriodos } from '@/aplicacion/periodos/periodos'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
 
@@ -68,7 +68,7 @@ beforeEach(async () => {
   ).id
 
   periodoId = (
-    await abrirPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, anio: 2026, mes: 9 })
+    await periodoPara(repo, RELOJ, { usuarioId: administrador, consorcioId, anio: 2026, mes: 9 })
   ).periodoId
 })
 
@@ -78,20 +78,21 @@ afterEach(async () => {
   await limpiar()
 })
 
-describe('apertura de periodos (FR-024)', () => {
-  it('no deja abrir dos veces el mismo mes, y lo dice', async () => {
-    await expect(
-      abrirPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, anio: 2026, mes: 9 }),
-    ).rejects.toBeInstanceOf(PeriodoRepetido)
-
-    await expect(
-      abrirPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, anio: 2026, mes: 9 }),
-    ).rejects.toThrow(/9\/2026/)
+describe('resolucion de periodos (FR-024)', () => {
+  it('el mismo mes dos veces devuelve el mismo periodo, sin duplicar', async () => {
+    const otraVez = await periodoPara(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      anio: 2026,
+      mes: 9,
+    })
+    expect(otraVez.periodoId).toBe(periodoId)
+    expect(await prismaBase.periodo.count({ where: { consorcioId, anio: 2026, mes: 9 } })).toBe(1)
   })
 
   it('un consorcista no abre periodos (SC-002b)', async () => {
     await expect(
-      abrirPeriodo(repo, RELOJ, { usuarioId: consorcista, consorcioId, anio: 2026, mes: 10 }),
+      periodoPara(repo, RELOJ, { usuarioId: consorcista, consorcioId, anio: 2026, mes: 10 }),
     ).rejects.toBeInstanceOf(RolInsuficiente)
   })
 

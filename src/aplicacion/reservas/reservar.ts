@@ -1,4 +1,5 @@
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
+import { momentoParaMostrar } from '@/compartido/formato'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
@@ -150,7 +151,7 @@ export async function reservar(
               usuarioId: datos.usuarioId,
               tipo: 'reserva_confirmada',
               titulo: `Reserva confirmada: ${espacio.nombre}`,
-              cuerpo: `Tenés ${espacio.nombre} reservado para la unidad ${unidad.designacion} desde ${datos.desde.toISOString()} hasta ${datos.hasta.toISOString()}.`,
+              cuerpo: `Tenés ${espacio.nombre} reservado para la unidad ${unidad.designacion} desde ${momentoParaMostrar(datos.desde.toISOString())} hasta ${momentoParaMostrar(datos.hasta.toISOString())}.`,
               entidadTipo: 'Reserva',
               entidadId: reserva.id,
             },
@@ -197,7 +198,7 @@ export async function cancelarReserva(
             usuarioId: reserva.solicitadaPor,
             tipo: 'reserva_rechazada',
             titulo: `Reserva cancelada: ${reserva.espacio.nombre}`,
-            cuerpo: `La reserva de ${reserva.espacio.nombre} del ${reserva.desde.toISOString()} quedó cancelada.`,
+            cuerpo: `La reserva de ${reserva.espacio.nombre} del ${momentoParaMostrar(reserva.desde.toISOString())} quedó cancelada.`,
             entidadTipo: 'Reserva',
             entidadId: reserva.id,
           },

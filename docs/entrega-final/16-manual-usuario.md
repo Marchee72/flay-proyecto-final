@@ -103,8 +103,9 @@ Todo lo que se hace en Flay se hace **parado en un consorcio**. Al ingresar:
    que va a trabajar.
 3. El **Resumen** del consorcio muestra el período abierto y su vencimiento, los gastos acumulados,
    la morosidad, los reclamos, los últimos gastos y pagos, y los contactos útiles (administración,
-   consejo y proveedores). Desde ahí, las acciones rápidas: **Cargar gasto**, **Registrar pago**,
-   **Abrir período** o **Liquidar**.
+   consejo y proveedores). Desde ahí, las acciones rápidas: **Cargar gasto**, **Registrar pago**
+   y, cuando hay un período abierto, **Liquidar**. Los períodos no se abren a mano: el mes se
+   crea con el primer gasto que se le imputa.
 4. El menú lateral agrupa las secciones del consorcio en **Dinero**, **Convivencia**, **Análisis**
    y **Administración**. Para cambiar de edificio sin perder la sección, use el desplegable
    **Cambiar de consorcio** arriba del menú.

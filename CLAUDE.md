@@ -31,7 +31,7 @@ el primer minuto.
 | `npm run test:e2e` / `test:a11y` | Playwright escritorio + teléfono 390×844 / axe A/AA |
 | `npm run db:deploy` / `db:drift` | Migraciones y detección de deriva |
 | `npm run semilla:arranque` | Único administrador inicial, con la clave en variable de entorno |
-| `npm run semilla` | Rubros y el juego de § 13.4: dos consorcios de 12 y 96 unidades |
+| `npm run semilla` | Rubros, el juego de § 13.4 (dos consorcios de 12 y 96 unidades) y la demo: dos edificios más, proveedores, seis meses liquidados con pagos, reclamos, reservas y novedades. Corre con `vite-node` porque usa los casos de uso reales |
 | `npm run semilla:volumen` | 10.800 gastos anuales para medir con datos de verdad |
 | `npm run medir:p95 [ruta]` | Arnés de RNF-06; entra por el formulario si la ruta es del panel |
 | `npm run medir:liquidacion` | RNF-07: liquidación de 100 unidades, cinco corridas bajo 30 s |
@@ -151,7 +151,7 @@ comprensibles (RNF-10), auditoría registrada si toca datos económicos, documen
 
 ## Lo que no se adivina leyendo el código
 
-Veintiuna decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
+Veintidós decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
 
 1. **El orden de las semillas y las pruebas.** `npm run test:integracion` **vacía** las tablas de
    negocio, semilla incluida: en una base compartida no hay forma de distinguir lo sembrado de lo
@@ -238,6 +238,10 @@ Veintiuna decisiones que costaron una vuelta y conviene no volver a tomar desde 
     el armazón del panel, cuyo `after()` drena la cola. Sin una pestaña abierta, la extracción
     espera al próximo pedido de cualquier usuario o al botón de la bandeja. No hay cron ni proceso
     aparte, y no hace falta: el que mira es el que empuja.
+22. **El período no se abre a mano.** Nace con el primer gasto que se le imputa: el alta de gasto
+    lleva un `<input type="month">` y la acción resuelve `periodoPara(anio, mes)`, que devuelve el
+    existente o lo crea. Cerrar, liquidar y anular siguen siendo explícitos. Un mes ya cerrado o
+    liquidado rechaza el gasto (RN-03) igual que antes.
 
 
 ## Notas

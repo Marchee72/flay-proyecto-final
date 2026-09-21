@@ -5,7 +5,7 @@ import { anularLiquidacion } from '@/aplicacion/liquidacion/anular'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
-import { abrirPeriodo } from '@/aplicacion/periodos/periodos'
+import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
@@ -62,7 +62,7 @@ beforeAll(async () => {
   })
 
   periodoId = (
-    await abrirPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, anio: 2026, mes: 8 })
+    await periodoPara(repo, RELOJ, { usuarioId: administrador, consorcioId, anio: 2026, mes: 8 })
   ).periodoId
 
   // Doce gastos, como un mes normal.

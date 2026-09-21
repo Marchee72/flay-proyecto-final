@@ -25,7 +25,7 @@ export interface ExpensaParaDocumento {
   consorcio: { nombre: string; direccion: string; localidad: string }
   /** `08/2026`: el periodo liquidado. */
   periodo: string
-  /** `2026-09-10`, en fecha ISO: el generador no interpreta calendarios. */
+  /** `10/09/2026`, ya en formato de pantalla: el generador no interpreta calendarios. */
   vencimiento: string
   unidad: { designacion: string; tipo: string }
   coeficienteAplicado: string

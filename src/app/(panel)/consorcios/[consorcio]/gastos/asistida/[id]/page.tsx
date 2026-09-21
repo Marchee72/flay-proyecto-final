@@ -1,10 +1,8 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { CalendarDays, Download, Hourglass, TriangleAlert } from 'lucide-react'
+import { Download, Hourglass, TriangleAlert } from 'lucide-react'
 
 import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verExtraccion } from '@/aplicacion/gastos/extraccion'
-import { listarPeriodos } from '@/aplicacion/periodos/periodos'
 import { listarProveedores, listarRubros } from '@/aplicacion/proveedores/proveedores'
 
 import { AvisoDeError, conConsorcio, idONoEncontrado } from '../../../../../con-consorcio'
@@ -77,12 +75,10 @@ export default async function RevisarExtraccionPage({
       )
     }
 
-    const [periodos, rubros, proveedores] = await Promise.all([
-      listarPeriodos(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
+    const [rubros, proveedores] = await Promise.all([
       listarRubros(),
       listarProveedores(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
     ])
-    const abiertos = periodos.filter((p) => p.estado === 'abierto')
     const { propuesta } = extraccion
     // El proveedor propuesto se ata al padron del consorcio por CUIT o razon
     // social; si no esta, queda vacio y la persona lo elige.
@@ -110,8 +106,13 @@ export default async function RevisarExtraccionPage({
           <p className="aviso aviso--atencion" role="status">
             <TriangleAlert className="icono" aria-hidden="true" />
             <span>
-              La asistencia no está disponible. El comprobante quedó guardado: cargá los datos a
-              mano mirándolo.
+              {/* El motivo lo escribio el manejador (falta de clave, proveedor
+                  saturado): sin verlo, «no disponible» parece un defecto. */}
+              La asistencia no está disponible
+              {propuesta.confianzaPorCampo.motivo
+                ? `: ${propuesta.confianzaPorCampo.motivo}`
+                : '.'}{' '}
+              El comprobante quedó guardado: cargá los datos a mano mirándolo.
             </span>
           </p>
         ) : Object.keys(precargado).length === 0 ? (
@@ -135,45 +136,19 @@ export default async function RevisarExtraccionPage({
 
         <div className="dos-columnas">
           <div className="tarjeta">
-            {abiertos.length === 0 ? (
-              <div className="vacio">
-                <CalendarDays aria-hidden="true" />
-                <p>
-                  No hay ningún período abierto. Abrir el mes en{' '}
-                  <Link href={`/consorcios/${activo.id}/periodos`}>Períodos</Link> y volver.
-                </p>
-                <div className="fila-acciones">
-                  <button
-                    className="boton boton--fantasma"
-                    type="submit"
-                    form="descartar-extraccion"
-                  >
-                    Descartar
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <FormularioGasto
-                consorcioId={activo.id}
-                extraccionId={extraccion.id}
-                periodos={abiertos.map((p) => ({
-                  id: p.id,
-                  etiqueta: `${String(p.mes).padStart(2, '0')}/${p.anio}`,
-                }))}
-                rubros={rubros.map((r) => ({ id: r.id, etiqueta: r.nombre }))}
-                proveedores={proveedores.map((p) => ({ id: p.id, etiqueta: p.razonSocial }))}
-                precargado={precargado}
-                accionesExtra={
-                  <button
-                    className="boton boton--fantasma"
-                    type="submit"
-                    form="descartar-extraccion"
-                  >
-                    Descartar
-                  </button>
-                }
-              />
-            )}
+            <FormularioGasto
+              consorcioId={activo.id}
+              extraccionId={extraccion.id}
+              mesActual={RELOJ.hoy().toISOString().slice(0, 7)}
+              rubros={rubros.map((r) => ({ id: r.id, etiqueta: r.nombre }))}
+              proveedores={proveedores.map((p) => ({ id: p.id, etiqueta: p.razonSocial }))}
+              precargado={precargado}
+              accionesExtra={
+                <button className="boton boton--fantasma" type="submit" form="descartar-extraccion">
+                  Descartar
+                </button>
+              }
+            />
             {/* El formulario de descartar vive aparte; su boton, en el pie del otro (`form=`). */}
             <form id="descartar-extraccion" action={accionDescartarExtraccion}>
               <input type="hidden" name="consorcio" value={activo.id} />

@@ -6,7 +6,6 @@ import { redirect } from 'next/navigation'
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
-import { abrirPeriodo } from '@/aplicacion/periodos/periodos'
 import { anularLiquidacion } from '@/aplicacion/liquidacion/anular'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
@@ -15,26 +14,6 @@ import { MANEJADORES } from '@/aplicacion/pendientes/manejadores'
 
 /** Un archivo «use server» solo exporta funciones asincronicas. */
 export type Resultado = { mensaje: string }
-
-export async function accionAbrirPeriodo(_previo: Resultado, datos: FormData): Promise<Resultado> {
-  const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
-
-  try {
-    await abrirPeriodo(HABILITACIONES, RELOJ, {
-      usuarioId,
-      consorcioId: String(datos.get('consorcio') ?? ''),
-      anio: Number(datos.get('anio') ?? 0),
-      mes: Number(datos.get('mes') ?? 0),
-    })
-  } catch (error) {
-    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
-    throw error
-  }
-
-  revalidatePath('/consorcios/[consorcio]/periodos', 'page')
-  return { mensaje: '' }
-}
 
 /**
  * Cerrar, liquidar y anular (`003-liquidacion` US2).

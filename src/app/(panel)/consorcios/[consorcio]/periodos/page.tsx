@@ -18,7 +18,6 @@ import { listarPeriodos } from '@/aplicacion/periodos/periodos'
 import { fechaParaMostrar, importeParaMostrar } from '@/compartido/formato'
 
 import { BotonAnular, BotonCerrar, BotonLiquidar } from './acciones-de-estado'
-import { ModalPeriodo } from './modal-periodo'
 import { conConsorcio } from '../../../con-consorcio'
 import { EnlaceExportar } from '../../../exportar'
 
@@ -43,7 +42,6 @@ export default async function PeriodosPage({
   const pantalla = await conConsorcio(consorcioId, 'Períodos')
   if ('salida' in pantalla) return pantalla.salida
   const { usuarioId, activo } = pantalla
-  const hoy = RELOJ.hoy()
 
   try {
     const [periodos, roles] = await Promise.all([
@@ -56,7 +54,7 @@ export default async function PeriodosPage({
     return (
       <>
         <h1>Períodos</h1>
-        <p className="apagado">Un período por mes.</p>
+        <p className="apagado">Un período por mes; aparece al cargar el primer gasto.</p>
         {hecho && (
           <p className="aviso aviso--exito" role="status">
             <CircleCheck className="icono" aria-hidden="true" />
@@ -64,13 +62,6 @@ export default async function PeriodosPage({
           </p>
         )}
         <div className="fila-acciones">
-          {administra && (
-            <ModalPeriodo
-              consorcioId={activo.id}
-              anio={hoy.getUTCFullYear()}
-              mes={hoy.getUTCMonth() + 1}
-            />
-          )}
           {roles.some((r) => r === 'administrador' || r === 'consejo') && (
             <EnlaceExportar consorcioId={activo.id} tabla="liquidaciones" />
           )}
@@ -79,7 +70,7 @@ export default async function PeriodosPage({
         {periodos.length === 0 ? (
           <div className="vacio">
             <CalendarDays aria-hidden="true" />
-            <p>Todavía no hay períodos abiertos.</p>
+            <p>Todavía no hay períodos: se crean al cargar el primer gasto del mes.</p>
           </div>
         ) : (
           <div className="tabla-desplazable">

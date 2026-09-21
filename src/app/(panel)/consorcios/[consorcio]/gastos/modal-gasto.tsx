@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { Plus, TriangleAlert } from 'lucide-react'
 
 import { BotonModal } from '../../../modal'
@@ -13,14 +12,14 @@ import { FormularioGasto, type Opcion } from './formulario'
  */
 export function ModalGasto({
   consorcioId,
-  periodos,
+  mesActual,
   rubros,
   proveedores,
   precargado,
   abrir = false,
 }: {
   consorcioId: string
-  periodos: readonly Opcion[]
+  mesActual: string
   rubros: readonly Opcion[]
   proveedores: readonly Opcion[]
   precargado: Readonly<Record<string, string>>
@@ -37,34 +36,22 @@ export function ModalGasto({
       titulo="Nuevo gasto"
       abrirAlMontar={abrir}
     >
-      {periodos.length === 0 ? (
+      {Object.keys(precargado).length > 0 && (
         <p className="aviso aviso--atencion" role="status">
           <TriangleAlert className="icono" aria-hidden="true" />
           <span>
-            No hay ningún período abierto. Abrir el mes en{' '}
-            <Link href={`/consorcios/${consorcioId}/periodos`}>Períodos</Link> y volver.
+            Hay campos precargados. Revisar antes de confirmar: el gasto se crea recién al
+            confirmar.
           </span>
         </p>
-      ) : (
-        <>
-          {Object.keys(precargado).length > 0 && (
-            <p className="aviso aviso--atencion" role="status">
-              <TriangleAlert className="icono" aria-hidden="true" />
-              <span>
-                Hay campos precargados. Revisar antes de confirmar: el gasto se crea recién al
-                confirmar.
-              </span>
-            </p>
-          )}
-          <FormularioGasto
-            consorcioId={consorcioId}
-            periodos={periodos}
-            rubros={rubros}
-            proveedores={proveedores}
-            precargado={precargado}
-          />
-        </>
       )}
+      <FormularioGasto
+        consorcioId={consorcioId}
+        mesActual={mesActual}
+        rubros={rubros}
+        proveedores={proveedores}
+        precargado={precargado}
+      />
     </BotonModal>
   )
 }

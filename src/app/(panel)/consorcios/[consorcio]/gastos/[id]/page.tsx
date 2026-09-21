@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import { CircleCheck, FileText, Siren, TriangleAlert } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { importeParaMostrar } from '@/compartido/formato'
+import { fechaParaMostrar, importeParaMostrar } from '@/compartido/formato'
+import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verGasto, type ComprobanteDelGasto } from '@/aplicacion/gastos/ver-gasto'
 
@@ -44,6 +45,11 @@ export default async function GastoPage({
     )
   }
 
+  // Adjuntar es del administrador (RNF-03): sin permiso no hay boton.
+  const administra = (await rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id)).includes(
+    'administrador',
+  )
+
   return (
     <>
       <Volver href={`/consorcios/${activo.id}/gastos`} />
@@ -64,7 +70,7 @@ export default async function GastoPage({
           Importe <strong className="cifra">{importeParaMostrar(gasto.importe)}</strong>
         </p>
         <p className="apagado">
-          Fecha {formatearFecha(gasto.fecha)}
+          Fecha {fechaParaMostrar(gasto.fecha)}
           {gasto.descripcion ? ` · ${gasto.descripcion}` : ''}
         </p>
       </div>
@@ -82,22 +88,13 @@ export default async function GastoPage({
         ))
       )}
 
-      {gasto.periodoAbierto && (
+      {administra && gasto.periodoAbierto && (
         <div className="tarjeta">
           <AdjuntarComprobante consorcioId={activo.id} gastoId={gasto.id} />
         </div>
       )}
     </>
   )
-}
-
-/**
- * `2026-09-05` → `05/09/2026`: solo reordena la cadena (§4, presentación).
- * La fecha no es dinero: se muestra sin `.cifra`.
- */
-function formatearFecha(iso: string): string {
-  const [anio, mes, dia] = iso.split('-')
-  return `${dia}/${mes}/${anio}`
 }
 
 /** La base guarda `ordinario`/`extraordinario` en minúsculas; en pantalla va

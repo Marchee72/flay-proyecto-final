@@ -10,7 +10,7 @@ import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
 import { verExpensa } from '@/aplicacion/liquidacion/ver-expensa'
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
 import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
-import { abrirPeriodo } from '@/aplicacion/periodos/periodos'
+import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
 
@@ -83,7 +83,7 @@ afterEach(async () => {
 async function emitirSobre(unidades: readonly { designacion: string; coeficiente: string }[]) {
   await cargarPadron(repo, RELOJ, { usuarioId: administrador, consorcioId, unidades })
 
-  const { periodoId } = await abrirPeriodo(repo, RELOJ, {
+  const { periodoId } = await periodoPara(repo, RELOJ, {
     usuarioId: administrador,
     consorcioId,
     anio: 2026,
@@ -208,7 +208,7 @@ describe('el renderizador real', () => {
     const bytes = await generadorPdf.expensa({
       consorcio: { nombre: 'Mitre 456', direccion: 'Mitre 456', localidad: 'Rosario' },
       periodo: '07/2026',
-      vencimiento: '2026-08-10',
+      vencimiento: '10/08/2026',
       unidad: { designacion: '1A', tipo: 'departamento' },
       coeficienteAplicado: '12.50000000',
       importeOrdinario: '150000.00',

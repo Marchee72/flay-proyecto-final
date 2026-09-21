@@ -43,14 +43,31 @@ const doceUnidades = () =>
  * noventa y cinco sumas de 1,04166667 no dan 98,95833365 y la semilla no
  * cargaria, porque el disparador de la base la rechazaria (Principio II).
  */
-const noventaYSeisUnidades = () => {
-  const comun = new Decimal('1.04166667')
-  const ultima = new Decimal(100).minus(comun.times(95))
+const noventaYSeisUnidades = () => unidadesIguales(96, 8)
 
-  return Array.from({ length: 96 }, (_, i) => ({
-    designacion: designacion(i, 8),
-    coeficiente: (i === 95 ? ultima : comun).toFixed(DECIMALES),
+/**
+ * `n` unidades iguales y la ultima se lleva el resto, para que la suma de
+ * `100.00000000` exacto: el patron de C-B, reutilizable por la semilla de
+ * demostracion.
+ */
+export const unidadesIguales = (n: number, porPiso: number) => {
+  const comun = new Decimal(100).dividedBy(n).toDecimalPlaces(DECIMALES)
+  const ultima = new Decimal(100).minus(comun.times(n - 1))
+
+  return Array.from({ length: n }, (_, i) => ({
+    designacion: designacion(i, porPiso),
+    coeficiente: (i === n - 1 ? ultima : comun).toFixed(DECIMALES),
   }))
+}
+
+export interface DefinicionConsorcio {
+  nombre: string
+  direccion: string
+  localidad: string
+  cuit: string
+  diaVencimiento: number
+  tasaMoraMensual: string
+  unidades: readonly { designacion: string; coeficiente: string }[]
 }
 
 export const JUEGO = {
@@ -90,6 +107,7 @@ export interface JuegoSembrado {
 export async function sembrarJuego(
   cliente: PrismaClient,
   hoy = new Date('2026-01-01'),
+  definiciones: readonly DefinicionConsorcio[] = JUEGO.consorcios,
 ): Promise<JuegoSembrado> {
   const administradora = await cliente.administradora.upsert({
     where: { cuit: JUEGO.administradora.cuit },
@@ -99,7 +117,7 @@ export async function sembrarJuego(
 
   const consorcios = []
 
-  for (const definicion of JUEGO.consorcios) {
+  for (const definicion of definiciones) {
     const existente = await cliente.consorcio.findUnique({ where: { cuit: definicion.cuit } })
 
     const consorcio =

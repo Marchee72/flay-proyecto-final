@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { verResumenConsorcio } from '@/aplicacion/consorcios/resumen'
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
-import { abrirPeriodo } from '@/aplicacion/periodos/periodos'
+import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { altaProveedor } from '@/aplicacion/proveedores/proveedores'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
@@ -62,7 +62,7 @@ describe('resumen del consorcio', () => {
         { designacion: '1B', coeficiente: '50.00000000' },
       ],
     })
-    const { periodoId } = await abrirPeriodo(repo, RELOJ, {
+    const { periodoId } = await periodoPara(repo, RELOJ, {
       usuarioId: administrador,
       consorcioId,
       anio: 2026,
@@ -85,7 +85,7 @@ describe('resumen del consorcio', () => {
       })
     }
     // Un gasto del otro consorcio: no se cuela (RT-04).
-    const { periodoId: ajeno } = await abrirPeriodo(repo, RELOJ, {
+    const { periodoId: ajeno } = await periodoPara(repo, RELOJ, {
       usuarioId: administrador,
       consorcioId: otroConsorcioId,
       anio: 2026,

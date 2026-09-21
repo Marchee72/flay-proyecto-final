@@ -12,7 +12,7 @@ import {
   verExtraccion,
 } from '@/aplicacion/gastos/extraccion'
 import { drenar } from '@/aplicacion/pendientes/drenar'
-import { abrirPeriodo } from '@/aplicacion/periodos/periodos'
+import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { asistenciaDeterminista } from '@/infraestructura/asistencia/determinista'
 import { asistenciaNula } from '@/infraestructura/asistencia/nula'
 import { prismaBase } from '@/infraestructura/prisma'
@@ -59,7 +59,7 @@ beforeEach(async () => {
     create: { nombre: 'Energia electrica', clasificacion: 'ordinario' },
   })
   periodoId = (
-    await abrirPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, anio: 2026, mes: 9 })
+    await periodoPara(repo, RELOJ, { usuarioId: administrador, consorcioId, anio: 2026, mes: 9 })
   ).periodoId
 })
 

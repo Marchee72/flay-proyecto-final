@@ -1,7 +1,6 @@
 import {
   Building2,
   CalendarCheck,
-  CalendarDays,
   DoorOpen,
   FileText,
   Gauge,
@@ -21,6 +20,9 @@ type Bloque = { titulo: string; secciones: Seccion[] }
 /**
  * Las secciones de un consorcio, en cuatro bloques (diseno 2026-09-13 § 3.3).
  * Solo existen dentro de `/consorcios/[consorcio]`: afuera no hay lateral.
+ * `periodos` no figura: es la pantalla de trabajo del administrador (cerrar,
+ * liquidar, anular) y se llega desde el Resumen y la Bandeja; el consorcista
+ * filtra por periodo en Expensas y Gastos.
  * `roles` copia lo que exige el caso de uso que abre la pantalla; sin el
  * campo, la ve cualquier rol. Esto solo decide que se dibuja (RNF-03).
  */
@@ -28,7 +30,6 @@ export const BLOQUES: Bloque[] = [
   {
     titulo: 'Dinero',
     secciones: [
-      { ruta: 'periodos', titulo: 'Períodos', Icono: CalendarDays },
       { ruta: 'expensas', titulo: 'Expensas', Icono: FileText },
       { ruta: 'gastos', titulo: 'Gastos', Icono: Receipt },
       { ruta: 'pagos', titulo: 'Pagos', Icono: Wallet },

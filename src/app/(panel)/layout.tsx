@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { after } from 'next/server'
 import { Building2, Inbox, LogOut } from 'lucide-react'
 
-import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { nombreDelUsuario, usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { drenar } from '@/aplicacion/pendientes/drenar'
 import { MANEJADORES } from '@/aplicacion/pendientes/manejadores'
 
@@ -26,6 +26,7 @@ import { salir } from './acciones'
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) redirect('/ingresar')
+  const nombre = await nombreDelUsuario(usuarioId)
 
   after(async () => {
     // Cada historia agrega su manejador; lo que no tiene ninguno queda
@@ -52,6 +53,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
         </nav>
 
         <form action={salir} className="salida">
+          <span className="barra__texto salida__nombre">{nombre}</span>
           <button className="boton boton--fantasma boton--icono" type="submit" aria-label="Salir">
             <LogOut className="icono" aria-hidden="true" />
           </button>

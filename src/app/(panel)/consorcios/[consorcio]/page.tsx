@@ -61,7 +61,7 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
           </Link>
           <Link className="boton boton--fantasma" href={`${base}/periodos`}>
             <CalendarDays className="icono" aria-hidden="true" />
-            {resumen.periodoAbierto ? 'Liquidar' : 'Abrir período'}
+            {resumen.periodoAbierto ? 'Liquidar' : 'Períodos'}
           </Link>
         </div>
       )}

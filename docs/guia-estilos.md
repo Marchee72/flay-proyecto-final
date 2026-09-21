@@ -95,7 +95,7 @@
 - Diálogo modal (patrón «Modal», componente `BotonModal` en `src/app/(panel)/modal.tsx`,
   clases `.modal` en `globals.css`): `<dialog>` nativo con `showModal()`, sin librerías.
   Cuándo sí: crear o confirmar en ≤ 3 pasos (Nuevo consorcio en 3 pasos con indicador
-  `ol` + `aria-current="step"`; Pago nuevo, Gasto nuevo, Invitar persona y Abrir período
+  `ol` + `aria-current="step"`; Pago nuevo, Gasto nuevo e Invitar persona
   en 1 pantalla + revisión). Cuándo no: lectura, detalle y flujos largos (van en página;
   `/consorcios/nuevo` queda como alternativa sin guion; no hay otras páginas-formulario: el
   Resumen abre el modal con `?abrir=1`). Anatomía: título `h2` con `aria-labelledby`, Cerrar

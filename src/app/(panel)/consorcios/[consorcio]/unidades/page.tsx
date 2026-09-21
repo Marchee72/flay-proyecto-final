@@ -4,6 +4,7 @@ import { Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { coeficienteParaMostrar } from '@/compartido/formato'
+import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { TIPOS_DE_UNIDAD_ASIGNABLES } from '@/aplicacion/consorcios/tipos-de-unidad'
 import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
@@ -38,13 +39,18 @@ export default async function UnidadesPage({ params }: { params: Promise<{ conso
       <p className="apagado">El padrón vigente: designación, tipo y coeficiente de cada unidad.</p>
 
       {consorcio.unidades.length === 0 ? (
-        <>
-          <p className="apagado">
-            El padrón se carga entero de una vez: unidad por unidad la suma nunca daría 100 y cada
-            alta sería un rechazo.
-          </p>
-          <CargadorDePadron consorcioId={consorcio.id} tipos={TIPOS_DE_UNIDAD_ASIGNABLES} />
-        </>
+        // El consejo ve el padron pero no lo carga (RNF-03): sin permiso no hay cargador.
+        (await rolesEn(HABILITACIONES, RELOJ, usuarioId, id)).includes('administrador') ? (
+          <>
+            <p className="apagado">
+              El padrón se carga entero de una vez: unidad por unidad la suma nunca daría 100 y cada
+              alta sería un rechazo.
+            </p>
+            <CargadorDePadron consorcioId={consorcio.id} tipos={TIPOS_DE_UNIDAD_ASIGNABLES} />
+          </>
+        ) : (
+          <p className="apagado">El administrador todavía no cargó el padrón.</p>
+        )
       ) : (
         <div className="tabla-desplazable">
           <table>

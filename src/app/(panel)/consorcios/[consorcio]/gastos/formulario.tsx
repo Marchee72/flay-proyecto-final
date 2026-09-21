@@ -22,7 +22,7 @@ export interface Opcion {
  */
 export function FormularioGasto({
   consorcioId,
-  periodos,
+  mesActual,
   rubros,
   proveedores,
   precargado,
@@ -30,7 +30,8 @@ export function FormularioGasto({
   accionesExtra,
 }: {
   consorcioId: string
-  periodos: readonly Opcion[]
+  /** `YYYY-MM` de hoy: el mes al que se imputa si nadie elige otro. */
+  mesActual: string
   rubros: readonly Opcion[]
   proveedores: readonly Opcion[]
   precargado: Readonly<Record<string, string>>
@@ -54,22 +55,17 @@ export function FormularioGasto({
 
       <div className="campo">
         <label htmlFor="periodo">Período</label>
-        <select
+        <input
           id="periodo"
           name="periodo"
-          defaultValue={precargado.periodo ?? ''}
+          type="month"
+          defaultValue={precargado.periodo ?? mesActual}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-gasto ayuda-periodo' : 'ayuda-periodo'}
-        >
-          {periodos.map((periodo) => (
-            <option key={periodo.id} value={periodo.id}>
-              {periodo.etiqueta}
-            </option>
-          ))}
-        </select>
+        />
         <p className="ayuda" id="ayuda-periodo">
-          Sólo se listan los períodos abiertos: el resto no admite gastos.
+          El mes de expensas al que se imputa. Si todavía no existe, se crea con este gasto.
         </p>
       </div>
 

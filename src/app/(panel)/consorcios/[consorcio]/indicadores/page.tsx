@@ -4,6 +4,7 @@ import { BadgeCheck, Gauge, RefreshCw, TriangleAlert } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { momentoParaMostrar } from '@/compartido/formato'
+import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verPanel } from '@/aplicacion/indicadores/indicadores'
 
@@ -12,6 +13,7 @@ import { accionRefrescar } from './acciones'
 
 export const metadata: Metadata = { title: 'Indicadores — Flay' }
 
+/** `soloAdministrador` copia el `rolesPermitidos` del caso de uso de cada pagina (RNF-03). */
 const PAGINAS = [
   {
     href: 'morosidad',
@@ -23,7 +25,12 @@ const PAGINAS = [
     titulo: 'I-2 Gasto por rubro',
     texto: 'Desvíos contra el promedio de doce períodos',
   },
-  { href: 'proveedores', titulo: 'I-3 Proveedores', texto: 'Costo y tiempo de resolución' },
+  {
+    href: 'proveedores',
+    titulo: 'I-3 Proveedores',
+    texto: 'Costo y tiempo de resolución',
+    soloAdministrador: true,
+  },
   {
     href: 'reclamos',
     titulo: 'I-4 Reclamos',
@@ -33,8 +40,9 @@ const PAGINAS = [
     href: 'carga',
     titulo: 'I-5 Carga administrativa',
     texto: 'Horas de apertura a liquidación y precisión de la asistencia',
+    soloAdministrador: true,
   },
-] as const
+]
 
 /**
  * Panel consolidado de la cartera, I-6 (`RF-21`, `CU-11`): dónde poner la
@@ -55,6 +63,20 @@ export default async function IndicadoresPage({
   const { usuarioId, activo } = pantalla
 
   try {
+    // El panel de cartera y el refresco son del administrador; el consejo
+    // llega a sus tres indicadores sin pasar por ahi (RNF-03). Cualquier otro
+    // rol sigue de largo y `verPanel` le dice que no puede.
+    const roles = await rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id)
+    if (!roles.includes('administrador') && roles.includes('consejo')) {
+      return (
+        <>
+          <h1>Indicadores</h1>
+          <p className="apagado">Los indicadores del consorcio, sobre datos del propio sistema.</p>
+          <PorIndicador consorcioId={activo.id} administra={false} />
+        </>
+      )
+    }
+
     const panel = await verPanel(HABILITACIONES, RELOJ, { usuarioId })
 
     return (
@@ -153,20 +175,28 @@ export default async function IndicadoresPage({
           </table>
         </div>
 
-        <h2>Por indicador</h2>
-        <div className="rejilla">
-          {PAGINAS.map((p) => (
-            <article className="tarjeta" key={p.href}>
-              <h3>
-                <Link href={`/consorcios/${activo.id}/indicadores/${p.href}`}>{p.titulo}</Link>
-              </h3>
-              <p className="apagado">{p.texto}</p>
-            </article>
-          ))}
-        </div>
+        <PorIndicador consorcioId={activo.id} administra />
       </>
     )
   } catch (error) {
     return <AvisoDeError error={error} />
   }
+}
+
+function PorIndicador({ consorcioId, administra }: { consorcioId: string; administra: boolean }) {
+  return (
+    <>
+      <h2>Por indicador</h2>
+      <div className="rejilla">
+        {PAGINAS.filter((p) => administra || !p.soloAdministrador).map((p) => (
+          <article className="tarjeta" key={p.href}>
+            <h3>
+              <Link href={`/consorcios/${consorcioId}/indicadores/${p.href}`}>{p.titulo}</Link>
+            </h3>
+            <p className="apagado">{p.texto}</p>
+          </article>
+        ))}
+      </div>
+    </>
+  )
 }

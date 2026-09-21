@@ -8,6 +8,7 @@ import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { misExpensas } from '@/aplicacion/liquidacion/ver-expensa'
 
 import { conConsorcio } from '../../../con-consorcio'
+import { Filtros } from '../../../filtros'
 
 export const metadata: Metadata = { title: 'Expensas — Flay' }
 
@@ -17,8 +18,15 @@ export const metadata: Metadata = { title: 'Expensas — Flay' }
  * El consorcista ve las suyas; administrador y consejo, todas. Que sea asi lo
  * decide el caso de uso, no esta pantalla: aca solo se muestra lo que llega.
  */
-export default async function ExpensasPage({ params }: { params: Promise<{ consorcio: string }> }) {
+export default async function ExpensasPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ consorcio: string }>
+  searchParams: Promise<{ periodo?: string }>
+}) {
   const { consorcio: consorcioId } = await params
+  const { periodo } = await searchParams
   const pantalla = await conConsorcio(consorcioId, 'Expensas')
   if ('salida' in pantalla) return pantalla.salida
   const { usuarioId, activo } = pantalla
@@ -29,14 +37,39 @@ export default async function ExpensasPage({ params }: { params: Promise<{ conso
     })
     // Una sola tabla: doce tarjetas con una fila cada una es mucho desplazamiento
     // para poco dato, y en el consorcio de 96 no se puede leer.
-    const filas = unidades.flatMap((unidad) =>
+    const todas = unidades.flatMap((unidad) =>
       unidad.expensas.map((expensa) => ({ unidad, expensa })),
     )
+    // El filtro se aplica sobre lo ya cargado: son las expensas que el usuario
+    // puede ver, y son pocas por unidad.
+    const periodos = [...new Map(todas.map((f) => [f.expensa.periodoId, f.expensa.periodo]))]
+    const filas = periodo ? todas.filter((f) => f.expensa.periodoId === periodo) : todas
 
     return (
       <>
         <h1>Expensas</h1>
         <p className="apagado">Las liquidaciones emitidas, por unidad.</p>
+
+        {todas.length > 0 && (
+          <Filtros>
+            <form method="get" className="fila-de-filtros">
+              <div className="campo">
+                <label htmlFor="periodo">Período</label>
+                <select id="periodo" name="periodo" defaultValue={periodo ?? ''}>
+                  <option value="">Todos</option>
+                  {periodos.map(([id, etiqueta]) => (
+                    <option key={id} value={id}>
+                      {etiqueta}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button className="boton boton--fantasma" type="submit">
+                Filtrar
+              </button>
+            </form>
+          </Filtros>
+        )}
 
         {unidades.length === 0 ? (
           <div className="vacio">
@@ -46,7 +79,11 @@ export default async function ExpensasPage({ params }: { params: Promise<{ conso
         ) : filas.length === 0 ? (
           <div className="vacio">
             <FileText aria-hidden="true" />
-            <p>Todavía no hay liquidaciones emitidas.</p>
+            <p>
+              {todas.length === 0
+                ? 'Todavía no hay liquidaciones emitidas.'
+                : 'No hay expensas de ese período.'}
+            </p>
           </div>
         ) : (
           <div className="tabla-desplazable">
@@ -64,6 +101,7 @@ export default async function ExpensasPage({ params }: { params: Promise<{ conso
                     Total
                   </th>
                   <th scope="col">Documento</th>
+                  <th scope="col">Gastos</th>
                 </tr>
               </thead>
               <tbody>
@@ -85,6 +123,11 @@ export default async function ExpensasPage({ params }: { params: Promise<{ conso
                       ) : (
                         <span className="ayuda">En generación</span>
                       )}
+                    </td>
+                    <td>
+                      <Link href={`/consorcios/${activo.id}/gastos?periodo=${expensa.periodoId}`}>
+                        Ver gastos
+                      </Link>
                     </td>
                   </tr>
                 ))}

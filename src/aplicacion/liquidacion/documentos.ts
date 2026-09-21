@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { importeSerializado } from '@/compartido/formato'
+import { fechaParaMostrar, importeSerializado } from '@/compartido/formato'
 import type { AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
 import type { ExpensaParaDocumento, GeneradorDeDocumentos } from '@/dominio/contratos/documentos'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
@@ -68,7 +68,7 @@ export function manejadorDocumentoExpensa(
     const datos: ExpensaParaDocumento = {
       consorcio: detalle.liquidacion.consorcio,
       periodo: periodoDe(detalle.liquidacion.periodo),
-      vencimiento: detalle.liquidacion.vencimiento.toISOString().slice(0, 10),
+      vencimiento: fechaParaMostrar(detalle.liquidacion.vencimiento.toISOString()),
       unidad: detalle.unidad,
       coeficienteAplicado: detalle.coeficienteAplicado.toFixed(8),
       importeOrdinario: importeSerializado(detalle.importeOrdinario),

@@ -12,7 +12,7 @@ import {
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { registrarPago } from '@/aplicacion/pagos/registrar'
-import { abrirPeriodo } from '@/aplicacion/periodos/periodos'
+import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { enConsorcio } from '@/infraestructura/cliente-aislado'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
@@ -99,7 +99,7 @@ afterEach(async () => {
 
 /** Un mes con `importe` de gasto en un consorcio, emitido. */
 async function emitirMes(enConsorcioId: string, mes: number, importe: string) {
-  const { periodoId } = await abrirPeriodo(repo, RELOJ, {
+  const { periodoId } = await periodoPara(repo, RELOJ, {
     usuarioId: administrador,
     consorcioId: enConsorcioId,
     anio: 2026,

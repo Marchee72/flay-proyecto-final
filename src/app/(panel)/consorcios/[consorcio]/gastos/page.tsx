@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { ChevronLeft, ChevronRight, Receipt, ScanSearch, Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { importeParaMostrar, plural } from '@/compartido/formato'
+import { fechaParaMostrar, importeParaMostrar, plural } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarGastos } from '@/aplicacion/gastos/listar-gastos'
@@ -58,7 +58,8 @@ export default async function GastosPage({
       rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id),
     ])
 
-    const abiertos = periodos.filter((periodo) => periodo.estado === 'abierto')
+    const administra = roles.includes('administrador')
+    const mesActual = RELOJ.hoy().toISOString().slice(0, 7)
     const precargado = Object.fromEntries(
       (['rubro', 'proveedor', 'importe', 'fecha', 'descripcion', 'periodo'] as const)
         .filter((campo) => (parametros as Record<string, string | undefined>)[campo])
@@ -73,25 +74,31 @@ export default async function GastosPage({
         <h1>Gastos</h1>
         <p className="apagado">Lo que el consorcio pagó, por período y rubro.</p>
 
+        {/* Solo se dibuja lo que el rol puede disparar (RNF-03): registrar y la
+            carga asistida son del administrador. */}
         <div className="fila-acciones">
-          <ModalGasto
-            consorcioId={activo.id}
-            periodos={abiertos.map((periodo) => ({
-              id: periodo.id,
-              etiqueta: `${String(periodo.mes).padStart(2, '0')}/${periodo.anio}`,
-            }))}
-            rubros={rubros.map((rubro) => ({ id: rubro.id, etiqueta: rubro.nombre }))}
-            proveedores={proveedores.map((proveedor) => ({
-              id: proveedor.id,
-              etiqueta: proveedor.razonSocial,
-            }))}
-            precargado={precargado}
-            abrir={parametros.abrir === '1' || Object.keys(precargado).length > 0}
-          />
-          <Link className="boton boton--fantasma" href={`/consorcios/${activo.id}/gastos/asistida`}>
-            <ScanSearch className="icono" aria-hidden="true" />
-            Carga asistida
-          </Link>
+          {administra && (
+            <>
+              <ModalGasto
+                consorcioId={activo.id}
+                mesActual={mesActual}
+                rubros={rubros.map((rubro) => ({ id: rubro.id, etiqueta: rubro.nombre }))}
+                proveedores={proveedores.map((proveedor) => ({
+                  id: proveedor.id,
+                  etiqueta: proveedor.razonSocial,
+                }))}
+                precargado={precargado}
+                abrir={parametros.abrir === '1' || Object.keys(precargado).length > 0}
+              />
+              <Link
+                className="boton boton--fantasma"
+                href={`/consorcios/${activo.id}/gastos/asistida`}
+              >
+                <ScanSearch className="icono" aria-hidden="true" />
+                Carga asistida
+              </Link>
+            </>
+          )}
           {roles.some((r) => r === 'administrador' || r === 'consejo') && (
             <EnlaceExportar consorcioId={activo.id} tabla="gastos" />
           )}
@@ -133,21 +140,20 @@ export default async function GastosPage({
           <div className="vacio">
             <Receipt aria-hidden="true" />
             <p>No hay gastos que coincidan con el filtro.</p>
-            <div className="fila-acciones">
-              <ModalGasto
-                consorcioId={activo.id}
-                periodos={abiertos.map((periodo) => ({
-                  id: periodo.id,
-                  etiqueta: `${String(periodo.mes).padStart(2, '0')}/${periodo.anio}`,
-                }))}
-                rubros={rubros.map((rubro) => ({ id: rubro.id, etiqueta: rubro.nombre }))}
-                proveedores={proveedores.map((proveedor) => ({
-                  id: proveedor.id,
-                  etiqueta: proveedor.razonSocial,
-                }))}
-                precargado={precargado}
-              />
-            </div>
+            {administra && (
+              <div className="fila-acciones">
+                <ModalGasto
+                  consorcioId={activo.id}
+                  mesActual={mesActual}
+                  rubros={rubros.map((rubro) => ({ id: rubro.id, etiqueta: rubro.nombre }))}
+                  proveedores={proveedores.map((proveedor) => ({
+                    id: proveedor.id,
+                    etiqueta: proveedor.razonSocial,
+                  }))}
+                  precargado={precargado}
+                />
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -176,7 +182,7 @@ export default async function GastosPage({
                 <tbody>
                   {listado.gastos.map((gasto) => (
                     <tr key={gasto.id}>
-                      <td>{formatearFecha(gasto.fecha)}</td>
+                      <td>{fechaParaMostrar(gasto.fecha)}</td>
                       <td>{gasto.rubro}</td>
                       <td>{gasto.proveedor ?? '—'}</td>
                       <td className="principal">
@@ -275,15 +281,6 @@ function Paginado({
       </ul>
     </nav>
   )
-}
-
-/**
- * `2026-09-05` → `05/09/2026`: solo reordena la cadena (§4, presentación).
- * La fecha no es dinero: se muestra sin `.cifra`.
- */
-function formatearFecha(iso: string): string {
-  const [anio, mes, dia] = iso.split('-')
-  return `${dia}/${mes}/${anio}`
 }
 
 /**

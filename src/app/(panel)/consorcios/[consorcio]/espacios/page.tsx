@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { BadgeCheck, DoorOpen } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarEspacios } from '@/aplicacion/reservas/espacios'
 
@@ -11,7 +12,7 @@ import { ModalEspacio } from './modal-espacio'
 
 export const metadata: Metadata = { title: 'Espacios comunes — Flay' }
 
-/** ABM de espacios comunes y sus reglas (`RF-15`, `FR-009`). Solo el administrador; la baja es logica. */
+/** Espacios comunes y sus reglas (`RF-15`, `FR-009`). Los ve todo el consorcio; el ABM es del administrador y la baja es logica. */
 export default async function EspaciosPage({
   params,
   searchParams,
@@ -26,11 +27,16 @@ export default async function EspaciosPage({
   const { usuarioId, activo } = pantalla
 
   try {
-    const espacios = await listarEspacios(HABILITACIONES, RELOJ, {
-      usuarioId,
-      consorcioId: activo.id,
-      incluirInactivos: true,
-    })
+    const [espacios, roles] = await Promise.all([
+      listarEspacios(HABILITACIONES, RELOJ, {
+        usuarioId,
+        consorcioId: activo.id,
+        incluirInactivos: true,
+      }),
+      rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id),
+    ])
+    // Solo se dibuja lo que el rol puede disparar (RNF-03).
+    const administra = roles.includes('administrador')
 
     return (
       <>
@@ -53,9 +59,11 @@ export default async function EspaciosPage({
           <AvisoDeError error={new ErrorDeAplicacion(parametros.error, 'RF-15')} />
         )}
 
-        <div className="fila-acciones">
-          <ModalEspacio consorcioId={activo.id} />
-        </div>
+        {administra && (
+          <div className="fila-acciones">
+            <ModalEspacio consorcioId={activo.id} />
+          </div>
+        )}
 
         {espacios.length === 0 ? (
           <div className="vacio">
@@ -80,7 +88,7 @@ export default async function EspaciosPage({
                   <dt>Por mes y unidad</dt>
                   <dd>{e.reservasMaxMesUnidad}</dd>
                 </dl>
-                {e.activo && (
+                {administra && e.activo && (
                   <div className="fila-acciones">
                     <ModalEspacio consorcioId={activo.id} espacio={e} />
                     <form action={accionBajaEspacio}>

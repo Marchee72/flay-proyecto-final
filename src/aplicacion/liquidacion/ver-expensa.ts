@@ -20,6 +20,7 @@ const SEGUNDOS_DE_LECTURA = 600
 export interface ExpensaVisible {
   detalleId: string
   designacion: string
+  periodoId: string
   periodo: string
   vencimiento: string
   totalUnidad: string
@@ -156,6 +157,7 @@ async function aVisible(
   return {
     detalleId: detalle.id,
     designacion: detalle.unidad.designacion,
+    periodoId: periodo.id,
     periodo: `${String(periodo.mes).padStart(2, '0')}/${periodo.anio}`,
     vencimiento: detalle.liquidacion.vencimiento.toISOString().slice(0, 10),
     totalUnidad: importeSerializado(detalle.totalUnidad),

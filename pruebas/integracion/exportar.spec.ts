@@ -9,7 +9,7 @@ import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
 import { registrarPago } from '@/aplicacion/pagos/registrar'
-import { abrirPeriodo } from '@/aplicacion/periodos/periodos'
+import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
 
@@ -59,7 +59,7 @@ beforeEach(async () => {
       { designacion: '1C', coeficiente: '33.33333334' },
     ],
   })
-  const { periodoId } = await abrirPeriodo(repo, RELOJ, {
+  const { periodoId } = await periodoPara(repo, RELOJ, {
     usuarioId: administrador,
     consorcioId,
     anio: 2026,

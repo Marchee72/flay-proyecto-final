@@ -11,7 +11,7 @@ import {
   verComprobante,
 } from '@/aplicacion/gastos/comprobantes'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
-import { abrirPeriodo } from '@/aplicacion/periodos/periodos'
+import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
 
@@ -73,7 +73,7 @@ beforeEach(async () => {
     create: { nombre: 'Rubro de prueba', clasificacion: 'ordinario' },
   })
 
-  const { periodoId } = await abrirPeriodo(repo, RELOJ, {
+  const { periodoId } = await periodoPara(repo, RELOJ, {
     usuarioId: administrador,
     consorcioId,
     anio: 2026,

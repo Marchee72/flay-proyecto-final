@@ -3,7 +3,7 @@ import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
 import { registrarPago } from '@/aplicacion/pagos/registrar'
-import { abrirPeriodo } from '@/aplicacion/periodos/periodos'
+import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { altaProveedor } from '@/aplicacion/proveedores/proveedores'
 import { registrarReclamo } from '@/aplicacion/reclamos/registrar'
 import { transicionar } from '@/aplicacion/reclamos/transicionar'
@@ -423,7 +423,7 @@ export async function sembrarDemo(
         where: { consorcioId_anio_mes: { consorcioId, anio: ANIO, mes } },
       })
       if (!periodo) {
-        const { periodoId } = await abrirPeriodo(repo, relojEn(ANIO, mes, 1), {
+        const { periodoId } = await periodoPara(repo, relojEn(ANIO, mes, 1), {
           ...comun,
           anio: ANIO,
           mes,

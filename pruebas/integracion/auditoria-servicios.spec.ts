@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
 import { confirmarExtraccion, iniciarCargaAsistida } from '@/aplicacion/gastos/extraccion'
-import { abrirPeriodo } from '@/aplicacion/periodos/periodos'
+import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { registrarReclamo } from '@/aplicacion/reclamos/registrar'
 import { transicionar } from '@/aplicacion/reclamos/transicionar'
 import { altaEspacio } from '@/aplicacion/reservas/espacios'
@@ -130,7 +130,7 @@ describe('auditoria de servicios (SC-021)', () => {
       update: {},
       create: { nombre: 'Rubro de prueba', clasificacion: 'ordinario' },
     })
-    const { periodoId } = await abrirPeriodo(repo, RELOJ, {
+    const { periodoId } = await periodoPara(repo, RELOJ, {
       usuarioId: administrador,
       consorcioId,
       anio: 2026,

@@ -8,7 +8,7 @@ import { verEstadoDeCuenta, verMorosidad } from '@/aplicacion/pagos/estado-de-cu
 import { registrarPago } from '@/aplicacion/pagos/registrar'
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
 import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
-import { abrirPeriodo } from '@/aplicacion/periodos/periodos'
+import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
@@ -80,7 +80,7 @@ afterEach(async () => {
 
 /** Un mes con 1000 de gasto, emitido: cada unidad debe 500. */
 async function emitirMes(mes: number) {
-  const { periodoId } = await abrirPeriodo(repo, RELOJ, {
+  const { periodoId } = await periodoPara(repo, RELOJ, {
     usuarioId: administrador,
     consorcioId,
     anio: 2026,
@@ -231,7 +231,7 @@ describe('morosidad por rol (FR-029, SC-015)', () => {
       consorcioId: otro.id,
       unidades: [{ designacion: 'PB', coeficiente: '100.00000000' }],
     })
-    const { periodoId } = await abrirPeriodo(repo, RELOJ, {
+    const { periodoId } = await periodoPara(repo, RELOJ, {
       usuarioId: administrador,
       consorcioId: otro.id,
       anio: 2026,

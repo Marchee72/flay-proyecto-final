@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { Siren, TriangleAlert } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { importeParaMostrar } from '@/compartido/formato'
+import { fechaParaMostrar, importeParaMostrar } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
 import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
@@ -50,12 +51,17 @@ export default async function ExpensaPage({
         <h1>
           Expensa {expensa.periodo} · unidad {expensa.designacion}
         </h1>
-        <p className="apagado">Vence {expensa.vencimiento}</p>
+        <p className="apagado">Vence {fechaParaMostrar(expensa.vencimiento)}</p>
 
         <div className="tarjeta">
           <p>
             Total a pagar{' '}
             <strong className="cifra">{importeParaMostrar(expensa.totalUnidad)}</strong>
+          </p>
+          <p>
+            <Link href={`/consorcios/${activo.id}/gastos?periodo=${expensa.periodoId}`}>
+              Ver los gastos del período
+            </Link>
           </p>
 
           {consorcio && (

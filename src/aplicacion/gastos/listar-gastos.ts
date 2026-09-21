@@ -17,7 +17,7 @@ import { prisma } from '@/infraestructura/prisma'
  * un total que cambia al pasar de pagina no es un total.
  */
 
-export const POR_PAGINA = 50
+export const POR_PAGINA = 10
 
 export interface GastoDelListado {
   id: string

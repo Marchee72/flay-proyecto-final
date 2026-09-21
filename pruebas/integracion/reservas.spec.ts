@@ -5,7 +5,7 @@ import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
-import { abrirPeriodo } from '@/aplicacion/periodos/periodos'
+import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { altaEspacio, bajaEspacio } from '@/aplicacion/reservas/espacios'
 import { cancelarReserva, listarReservas, reservar } from '@/aplicacion/reservas/reservar'
 import { prismaBase } from '@/infraestructura/prisma'
@@ -162,7 +162,7 @@ describe('deuda vencida (SC-006) y reglas del espacio', () => {
         create: { nombre: 'Rubro de prueba', clasificacion: 'ordinario' },
       })
     ).id
-    const { periodoId } = await abrirPeriodo(repo, RELOJ, {
+    const { periodoId } = await periodoPara(repo, RELOJ, {
       usuarioId: administrador,
       consorcioId,
       anio: 2026,

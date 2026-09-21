@@ -49,7 +49,7 @@ puede abrirla. Un bloque sin secciones no se dibuja.
 
 | Bloque | Secciones | Roles que la ven en el lateral |
 |---|---|---|
-| Dinero | Períodos, Expensas, Gastos, Pagos, Morosidad | Todos |
+| Dinero | Expensas, Gastos, Pagos, Morosidad | Todos (Períodos no va en el lateral: se llega desde el Resumen y la Bandeja) |
 | Convivencia | Reclamos, Reservas, Espacios, Novedades | Todos (Espacios: la pantalla rechaza a quien no administra) |
 | Análisis | Documentación | Todos |
 | Análisis | Indicadores | Administrador, consejo |
@@ -69,8 +69,8 @@ Cada ficha: qué muestra, qué se puede hacer (con el rol entre paréntesis), re
 morosidad «n de m unidades» con deuda vencida, reclamos abiertos y críticos); avisos sólo si aplican
 (padrón que no cierra, padrón vacío); tarjetas de últimos gastos, últimos pagos, reclamos sin
 resolver y contactos útiles (administración y proveedores).
-**Acciones**: «Cargar gasto», «Registrar pago», «Liquidar» / «Abrir período» (*administrador*; los
-botones no se dibujan para los demás).
+**Acciones**: «Cargar gasto», «Registrar pago» y, si hay período abierto, «Liquidar»
+(*administrador*; los botones no se dibujan para los demás).
 **Reglas**: la morosidad del KPI es agregada para todos; la nómina está en Morosidad (RN-13).
 
 ### 3.2 Períodos — `/periodos`
@@ -83,7 +83,7 @@ gastos y total de la liquidación vigente con su vencimiento (enlace al detalle)
 
 | Acción | Rol | Regla |
 |---|---|---|
-| Abrir período (modal mes/año) | Administrador | Un período por mes; mes 1–12; no puede repetirse. |
+| Período | Administrador | No se abre a mano: nace con el primer gasto que se imputa a ese mes (campo «Período» del alta de gasto). Un período por mes. |
 | Cerrar | Administrador | Desde acá no entran más gastos (RN-03). Se puede reabrir mientras no esté liquidado. |
 | Liquidar | Administrador | Sólo un período cerrado. Ver § 4.1 para el cálculo. Todo en una transacción: cálculo, detalles, estado, cola de documentos y avisos. |
 | Anular liquidación | Administrador | Se anula **la liquidación**, no el período (RN-06). Las imputaciones de pagos se marcan como revertidas —no se borran— y el importe queda como saldo a favor. Una reemisión encuentra el período `liquidado`; el candado contra la emisión doble es un índice único parcial sobre `estado = 'vigente'`. |
@@ -306,7 +306,7 @@ La vinculación de un consorcista a su unidad (ocupación, RN-09) no se hace des
 |---|---|---|---|---|
 | Dar de alta administradora / consorcio | ✔ | — | — | — |
 | Ver la bandeja con pendientes | — | ✔ | — | — |
-| Abrir, cerrar, reabrir período | — | ✔ | — | — |
+| Cerrar, reabrir período (abrir es implícito) | — | ✔ | — | — |
 | Liquidar, anular, generar documentos | — | ✔ | — | — |
 | Ver liquidación completa (detalle por unidad) | — | ✔ | ✔ | — |
 | Ver expensas | — | todas | todas | las propias |

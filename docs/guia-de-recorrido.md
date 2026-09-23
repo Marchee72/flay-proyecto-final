@@ -38,7 +38,7 @@ Reglas transversales:
 | `/ingresar` | Correo + contraseña. Cinco fallos seguidos bloquean la cuenta 15 minutos; el mensaje no distingue «clave incorrecta» de «bloqueada». | Todos |
 | `/invitacion/[credencial]` | El invitado fija su propia contraseña. La credencial vale **72 horas** y no se valida al abrir la pantalla (si estuviera vencida se diría recién al enviar). | Invitados |
 | `/consorcios` | Lista de consorcios al alcance, con buscador y señales del que administra (último período, morosidad, reclamos abiertos, desvíos de gasto). Botón «Nuevo consorcio» sólo si hay una administradora al alcance. | Todos con sesión |
-| `/consorcios/nuevo` | Alta de consorcio sin JavaScript (el wizard va en modal desde la lista). | Superadministrador |
+| `/consorcios/nuevo` | Alta de consorcio sin JavaScript (el wizard va en modal desde la lista). | Superadministrador, o administrador de la administradora (sólo en la suya) |
 | `/bandeja` | Lo pendiente de **todos** los consorcios que se administran: períodos sin liquidar, reclamos abiertos, cola de avisos con «Enviar avisos ahora» y «Reintentar los agotados». Sin lateral. | Administrador (a los demás les dice que no hay nada que decidir) |
 | `/consorcios/[consorcio]/…` | El panel del consorcio, con lateral. El consorcio vive en la ruta; `conConsorcio` valida el id contra el alcance. | Según sección |
 | `/gastos`, `/periodos?consorcio=x` (direcciones viejas) | Redirigen a la misma sección del consorcio pedido, recordado o único. | — |
@@ -71,7 +71,9 @@ morosidad «n de m unidades» con deuda vencida, reclamos abiertos y críticos);
 resolver y contactos útiles (administración y proveedores).
 **Acciones**: «Cargar gasto», «Registrar pago» y, si hay período abierto, «Liquidar»
 (*administrador*; los botones no se dibujan para los demás).
-**Reglas**: la morosidad del KPI es agregada para todos; la nómina está en Morosidad (RN-13).
+**Reglas**: la morosidad del KPI es agregada para todos; la nómina está en Morosidad (RN-13). El
+consorcista ve en las tarjetas sólo los pagos de las unidades que ocupa y los reclamos propios o
+generales, igual que en cada sección (RN-12).
 
 ### 3.2 Períodos — `/periodos`
 
@@ -102,7 +104,9 @@ en hasta 20 s; el drenaje oportunista de la cola sigue generando mientras alguie
 ### 3.4 Expensas — `/expensas` y `/expensas/[detalle]`
 
 **Muestra**: una tabla con las liquidaciones emitidas por unidad: unidad, período, vencimiento, total
-y descarga del PDF (o «En generación»). El detalle muestra el total y el botón de descarga.
+y descarga del PDF (o «En generación»). El detalle muestra el total y el botón de descarga. El PDF
+lista los gastos del consorcio en el período, ordinarios y extraordinarios, por rubro con su
+subtotal y el total de la liquidación, y después la parte de la unidad según su coeficiente.
 **Quién ve qué** (lo decide el caso de uso, no la pantalla): el consorcista, las unidades que ocupa;
 administrador y consejo, todas. Pedir por URL la expensa de otra unidad responde «no encontrado».
 **Acciones**: descargar el PDF (todos); «Registrar pago» desde el detalle (*administrador*).
@@ -157,8 +161,9 @@ interés. `suma(imputaciones) + sobrante = importe`, tolerancia cero.
 
 ### 3.8 Morosidad — `/morosidad`
 
-**Muestra**: KPI de unidades con deuda vencida sobre el total y deuda total; y la nómina (unidad,
-períodos vencidos, deuda).
+**Muestra**: KPI de unidades con deuda vencida sobre el total y deuda total; y la nómina: unidad
+(enlace a su estado de cuenta en Pagos), ocupantes vigentes con teléfono y correo, períodos vencidos
+desplegables con el saldo de cada uno, y deuda.
 **Quién**: todos ven el agregado. La nómina la ven **administrador y consejo** (RN-13). No es que la
 pantalla oculte nombres: son dos consultas distintas y la del consorcista no trae ninguno.
 

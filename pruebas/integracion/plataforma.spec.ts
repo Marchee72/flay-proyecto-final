@@ -18,9 +18,10 @@ import {
 } from './ayudas'
 
 /**
- * SC-002c: el alta de administradoras y de consorcios es de plataforma. Son las
- * dos operaciones que trabajan por encima del aislamiento, asi que el rol tiene
- * que ser escaso y verificado.
+ * SC-002c: el alta de administradoras es de plataforma; la de consorcios, de
+ * plataforma o de la administradora dueña. Son las dos operaciones que
+ * trabajan por encima del aislamiento, asi que el rol tiene que ser escaso y
+ * verificado.
  */
 
 const RELOJ = relojFijo('2026-09-09T12:00:00Z')
@@ -97,6 +98,23 @@ describe('alta de consorcio', () => {
 
     await expect(
       altaConsorcio(repositorioHabilitaciones, RELOJ, datosConsorcio(comun, delta)),
+    ).rejects.toBeInstanceOf(RolInsuficiente)
+  })
+
+  it('quien tiene habilitacion de empresa lo crea en su administradora, no en otra', async () => {
+    await habilitarEnAdministradora(comun, delta)
+
+    const { consorcioId } = await altaConsorcio(
+      repositorioHabilitaciones,
+      RELOJ,
+      datosConsorcio(comun, delta),
+    )
+    const consorcio = await prismaBase.consorcio.findUniqueOrThrow({ where: { id: consorcioId } })
+    expect(consorcio.administradoraId).toBe(delta)
+
+    const ajena = (await crearAdministradora('Otra SRL')).id
+    await expect(
+      altaConsorcio(repositorioHabilitaciones, RELOJ, datosConsorcio(comun, ajena)),
     ).rejects.toBeInstanceOf(RolInsuficiente)
   })
 

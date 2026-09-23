@@ -66,3 +66,26 @@ export async function conAutorizacionDePlataforma<T>(
 
   return trabajo()
 }
+
+/**
+ * Autorizacion sobre una administradora (FR-007b, FR-009): el super
+ * administrador en cualquiera, y quien tiene habilitacion de empresa solo en
+ * la suya. Es lo que permite que la administradora de de alta sus propios
+ * consorcios sin pasar por la plataforma.
+ */
+export async function conAutorizacionDeAdministradora<T>(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  contexto: { usuarioId: string; administradoraId: string; accion: string },
+  trabajo: () => Promise<T>,
+): Promise<T> {
+  const hoy = reloj.hoy()
+  const habilitado =
+    (await repositorio.esSuperAdministrador(contexto.usuarioId, hoy)) ||
+    (await repositorio.administradorasDe(contexto.usuarioId, hoy)).includes(
+      contexto.administradoraId,
+    )
+  if (!habilitado) throw new RolInsuficiente(contexto.accion)
+
+  return trabajo()
+}

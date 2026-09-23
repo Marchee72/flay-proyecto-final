@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
-import type { GeneradorDeDocumentos } from '@/dominio/contratos/documentos'
+import type { ExpensaParaDocumento, GeneradorDeDocumentos } from '@/dominio/contratos/documentos'
 import { NoEncontrado } from '@/compartido/errores'
 import { generarDocumentos, manejadorDocumentoExpensa } from '@/aplicacion/liquidacion/documentos'
 import { generadorPdf } from '@/infraestructura/documentos/expensa'
@@ -9,6 +9,7 @@ import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
 import { verExpensa } from '@/aplicacion/liquidacion/ver-expensa'
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
+import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { prismaBase } from '@/infraestructura/prisma'
@@ -150,6 +151,98 @@ describe('generacion diferida (SC-007)', () => {
   })
 })
 
+describe('los gastos del periodo en el documento (FR-017)', () => {
+  it('llegan agrupados por rubro, con subtotal y el total de la liquidacion', async () => {
+    await cargarPadron(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidades: [
+        { designacion: '1A', coeficiente: '50.00000000' },
+        { designacion: '1B', coeficiente: '50.00000000' },
+      ],
+    })
+    const { periodoId } = await periodoPara(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      anio: 2026,
+      mes: 8,
+    })
+    const rubro = await prismaBase.rubroGasto.upsert({
+      where: { nombre: 'Rubro de prueba' },
+      update: {},
+      create: { nombre: 'Rubro de prueba', clasificacion: 'ordinario' },
+    })
+    for (const [importe, dia] of [
+      ['1000.10', '2026-08-03'],
+      ['250.25', '2026-08-20'],
+    ] as const) {
+      await registrarGasto(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        periodoId,
+        rubroId: rubro.id,
+        importe,
+        fecha: new Date(dia),
+        descripcion: `Gasto de ${importe}`,
+      })
+    }
+    await cerrarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
+    const { liquidacionId } = await liquidarPeriodo(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId,
+    })
+
+    const recibidos: ExpensaParaDocumento[] = []
+    await generarDocumentos(
+      manejadorDocumentoExpensa(
+        {
+          async expensa(datos) {
+            recibidos.push(datos)
+            return new Uint8Array([37, 80, 68, 70])
+          },
+        },
+        almacenDoble,
+      ),
+      repo,
+      RELOJ,
+      { usuarioId: administrador, consorcioId, liquidacionId },
+    )
+
+    const liquidacion = await prismaBase.liquidacion.findUniqueOrThrow({
+      where: { id: liquidacionId },
+    })
+    expect(recibidos).toHaveLength(2)
+    expect(recibidos[0].gastos).toEqual([
+      {
+        clasificacion: 'ordinario',
+        total: liquidacion.totalOrdinario.toFixed(2),
+        rubros: [
+          {
+            rubro: 'Rubro de prueba',
+            subtotal: '1250.35',
+            lineas: [
+              {
+                fecha: '03/08/2026',
+                proveedor: null,
+                descripcion: 'Gasto de 1000.10',
+                importe: '1000.10',
+              },
+              {
+                fecha: '20/08/2026',
+                proveedor: null,
+                descripcion: 'Gasto de 250.25',
+                importe: '250.25',
+              },
+            ],
+          },
+        ],
+      },
+    ])
+    expect(liquidacion.totalOrdinario.toFixed(2)).toBe('1250.35')
+  })
+})
+
 describe('quien ve que (FR-018, SC-008)', () => {
   it('el consorcista ve la de su unidad y otra responde «no encontrado»', async () => {
     const emitida = await emitirSobre(JUEGO.consorcios[0].unidades)
@@ -211,6 +304,26 @@ describe('el renderizador real', () => {
       vencimiento: '10/08/2026',
       unidad: { designacion: '1A', tipo: 'departamento' },
       coeficienteAplicado: '12.50000000',
+      gastos: [
+        {
+          clasificacion: 'ordinario',
+          rubros: [
+            {
+              rubro: 'Limpieza',
+              subtotal: '1200000.00',
+              lineas: [
+                {
+                  fecha: '05/07/2026',
+                  proveedor: 'Limpiezas del Sur',
+                  descripcion: 'Abono mensual',
+                  importe: '1200000.00',
+                },
+              ],
+            },
+          ],
+          total: '1200000.00',
+        },
+      ],
       importeOrdinario: '150000.00',
       importeExtraordinario: '0.00',
       deudaAnterior: '500.00',

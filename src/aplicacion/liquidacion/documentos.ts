@@ -1,8 +1,13 @@
 import { z } from 'zod'
 
+import { Decimal, importe } from '@/compartido/dinero'
 import { fechaParaMostrar, importeSerializado } from '@/compartido/formato'
 import type { AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
-import type { ExpensaParaDocumento, GeneradorDeDocumentos } from '@/dominio/contratos/documentos'
+import type {
+  ExpensaParaDocumento,
+  GastosDeClasificacion,
+  GeneradorDeDocumentos,
+} from '@/dominio/contratos/documentos'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
@@ -65,12 +70,31 @@ export function manejadorDocumentoExpensa(
     // consorcista es la vigente, y la cola puede traer trabajos viejos.
     if (detalle.liquidacion.estado !== 'vigente') return
 
+    // Fuera del contexto de aislamiento: el periodo de la liquidacion es de un
+    // solo consorcio, y alcanza para no traer gastos ajenos (SC-003).
+    const gastos = await prismaBase.gasto.findMany({
+      where: { periodoId: detalle.liquidacion.periodoId },
+      select: {
+        clasificacion: true,
+        fecha: true,
+        descripcion: true,
+        importe: true,
+        rubro: { select: { nombre: true } },
+        proveedor: { select: { razonSocial: true } },
+      },
+      orderBy: [{ clasificacion: 'asc' }, { rubro: { nombre: 'asc' } }, { fecha: 'asc' }],
+    })
+
     const datos: ExpensaParaDocumento = {
       consorcio: detalle.liquidacion.consorcio,
       periodo: periodoDe(detalle.liquidacion.periodo),
       vencimiento: fechaParaMostrar(detalle.liquidacion.vencimiento.toISOString()),
       unidad: detalle.unidad,
       coeficienteAplicado: detalle.coeficienteAplicado.toFixed(8),
+      gastos: agruparGastos(gastos, {
+        ordinario: importeSerializado(detalle.liquidacion.totalOrdinario),
+        extraordinario: importeSerializado(detalle.liquidacion.totalExtraordinario),
+      }),
       importeOrdinario: importeSerializado(detalle.importeOrdinario),
       importeExtraordinario: importeSerializado(detalle.importeExtraordinario),
       deudaAnterior: importeSerializado(detalle.deudaAnterior),
@@ -96,6 +120,56 @@ export function manejadorDocumentoExpensa(
       data: { claveDocumento: clave },
     })
   }
+}
+
+/**
+ * Clasificacion → rubro → gasto, en el orden en que llegan. El subtotal por
+ * rubro se suma aca, en decimal; el total por clasificacion es el que la
+ * liquidacion guardo, no una suma nueva (medida 3 de § 14.1).
+ */
+function agruparGastos(
+  gastos: {
+    clasificacion: GastosDeClasificacion['clasificacion']
+    fecha: Date
+    descripcion: string
+    importe: { toFixed(decimales: number): string }
+    rubro: { nombre: string }
+    proveedor: { razonSocial: string } | null
+  }[],
+  totales: Record<GastosDeClasificacion['clasificacion'], string>,
+): GastosDeClasificacion[] {
+  const grupos: GastosDeClasificacion[] = []
+
+  for (const gasto of gastos) {
+    let grupo = grupos.at(-1)
+    if (grupo?.clasificacion !== gasto.clasificacion) {
+      grupo = {
+        clasificacion: gasto.clasificacion,
+        rubros: [],
+        total: totales[gasto.clasificacion],
+      }
+      grupos.push(grupo)
+    }
+    let rubro = grupo.rubros.at(-1)
+    if (rubro?.rubro !== gasto.rubro.nombre) {
+      rubro = { rubro: gasto.rubro.nombre, subtotal: '', lineas: [] }
+      grupo.rubros.push(rubro)
+    }
+    rubro.lineas.push({
+      fecha: fechaParaMostrar(gasto.fecha.toISOString()),
+      proveedor: gasto.proveedor?.razonSocial ?? null,
+      descripcion: gasto.descripcion,
+      importe: importeSerializado(gasto.importe.toFixed(2)),
+    })
+  }
+
+  for (const rubro of grupos.flatMap((grupo) => grupo.rubros)) {
+    rubro.subtotal = rubro.lineas
+      .reduce((total, linea) => total.plus(importe(linea.importe)), new Decimal(0))
+      .toFixed(2)
+  }
+
+  return grupos
 }
 
 /** Como maximo por disparo: un pedido web no puede durar minutos. */

@@ -6,6 +6,7 @@ import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
 import { verMorosidad } from '@/aplicacion/pagos/estado-de-cuenta'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
+import { unidadesOcupadasPor } from '@/infraestructura/repositorios/ocupaciones'
 
 export interface ResumenConsorcio {
   roles: string[]
@@ -45,6 +46,10 @@ const etiqueta = (p: { anio: number; mes: number }) => `${String(p.mes).padStart
  * puede ver vuelve como null, no como error: el resumen es de todos los roles,
  * cada uno con lo suyo. Las «ultimas cosas» salen de las entidades, no de la
  * bitacora, que guarda los importes como numero JSON.
+ *
+ * El consorcista ve lo mismo que en cada seccion y nada mas (RN-12): los
+ * pagos de las unidades que ocupa y los reclamos propios o generales, con el
+ * mismo filtro de fila que `listarReclamos`.
  */
 export async function verResumenConsorcio(
   repositorio: RepositorioHabilitaciones,
@@ -61,6 +66,13 @@ export async function verResumenConsorcio(
           if (error instanceof RolInsuficiente) return null
           throw error
         })
+
+      const privilegiado = acceso.roles.some((r) => r === 'administrador' || r === 'consejo')
+      const propias = privilegiado
+        ? null
+        : (await unidadesOcupadasPor(datos.usuarioId, datos.consorcioId, reloj.hoy())).map(
+            (unidad) => unidad.id,
+          )
 
       const [
         consorcio,
@@ -83,7 +95,12 @@ export async function verResumenConsorcio(
           select: { id: true, anio: true, mes: true },
         }),
         prisma.reclamo.findMany({
-          where: { estado: { in: ['abierto', 'asignado', 'en_curso'] } },
+          where: {
+            estado: { in: ['abierto', 'asignado', 'en_curso'] },
+            ...(privilegiado
+              ? {}
+              : { OR: [{ creadoPor: datos.usuarioId }, { alcance: 'general' as const }] }),
+          },
           select: { id: true, titulo: true, urgencia: true, fechaApertura: true },
           orderBy: [{ urgencia: 'desc' }, { fechaApertura: 'asc' }],
         }),
@@ -99,6 +116,7 @@ export async function verResumenConsorcio(
           },
         }),
         prisma.pago.findMany({
+          where: propias ? { unidadId: { in: propias } } : {},
           take: 5,
           orderBy: [{ creadoEn: 'desc' }],
           select: {

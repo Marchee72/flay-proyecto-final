@@ -42,6 +42,7 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
   }
 
   const administra = resumen.roles.includes('administrador')
+  const soloLoPropio = !resumen.roles.some((r) => r === 'administrador' || r === 'consejo')
 
   return (
     <>
@@ -170,7 +171,7 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
         </section>
 
         <section className="tarjeta">
-          <h2>Últimos pagos</h2>
+          <h2>{soloLoPropio ? 'Mis últimos pagos' : 'Últimos pagos'}</h2>
           {resumen.ultimosPagos.length === 0 ? (
             <p className="apagado">Sin pagos registrados.</p>
           ) : (

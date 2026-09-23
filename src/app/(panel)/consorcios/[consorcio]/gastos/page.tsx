@@ -21,7 +21,10 @@ type Parametros = {
   periodo?: string
   rubro?: string
   pagina?: string
-  /** `?abrir=1` (desde el Resumen) llega con el modal de alta ya abierto. */
+  /**
+   * `?abrir=1` (desde el Resumen) llega con el modal de alta ya abierto. Es lo
+   * unico que lo abre: `periodo` y `rubro` son del filtro, no del alta.
+   */
   abrir?: string
 }
 
@@ -60,14 +63,6 @@ export default async function GastosPage({
 
     const administra = roles.includes('administrador')
     const mesActual = RELOJ.hoy().toISOString().slice(0, 7)
-    const precargado = Object.fromEntries(
-      (['rubro', 'proveedor', 'importe', 'fecha', 'descripcion', 'periodo'] as const)
-        .filter((campo) => (parametros as Record<string, string | undefined>)[campo])
-        .map((campo) => [
-          campo,
-          (parametros as Record<string, string | undefined>)[campo] as string,
-        ]),
-    )
 
     return (
       <>
@@ -87,8 +82,7 @@ export default async function GastosPage({
                   id: proveedor.id,
                   etiqueta: proveedor.razonSocial,
                 }))}
-                precargado={precargado}
-                abrir={parametros.abrir === '1' || Object.keys(precargado).length > 0}
+                abrir={parametros.abrir === '1'}
               />
               <Link
                 className="boton boton--fantasma"
@@ -150,7 +144,6 @@ export default async function GastosPage({
                     id: proveedor.id,
                     etiqueta: proveedor.razonSocial,
                   }))}
-                  precargado={precargado}
                 />
               </div>
             )}

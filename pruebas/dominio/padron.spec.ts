@@ -88,6 +88,38 @@ describe('padron generado por pisos', () => {
     expect(padronPorPisos(0, 3, CIEN)).toEqual([])
     expect(padronPorPisos(3, 0, CIEN)).toEqual([])
   })
+
+  it('las cocheras se reparten parejo su porcentaje y los departamentos el resto', () => {
+    // 92 % entre doce departamentos pide tres decimales, y las cocheras van con los mismos.
+    const filas = padronPorPisos(4, 3, CIEN, { cantidad: 4, porcentaje: importe('8') })
+    expect(filas).toHaveLength(16)
+    const cocheras = filas.filter((fila) => fila.tipo === 'cochera')
+    expect(cocheras.map((fila) => fila.designacion)).toEqual(['C1', 'C2', 'C3', 'C4'])
+    expect(cocheras.map((fila) => fila.coeficiente)).toEqual(['2.000', '2.000', '2.000', '2.000'])
+    expect(suma(filas.slice(0, 12)).equals(importe('92'))).toBe(true)
+    expect(suma(filas).equals(CIEN)).toBe(true)
+  })
+
+  it('con cocheras la suma da exacto aunque el porcentaje traiga mas decimales', () => {
+    for (const [cantidad, porcentaje] of [
+      [1, '0.5'],
+      [3, '10'],
+      [7, '12.345'],
+      [40, '15.1234567'],
+    ] as const) {
+      const filas = padronPorPisos(10, 4, CIEN, { cantidad, porcentaje: importe(porcentaje) })
+      expect(filas.filter((fila) => fila.tipo === 'cochera')).toHaveLength(cantidad)
+      expect(suma(filas).equals(CIEN)).toBe(true)
+    }
+  })
+
+  it('cocheras sin un porcentaje entre 0 y 100 no generan nada', () => {
+    for (const porcentaje of ['0', '100', '120', '0.123456789']) {
+      expect(padronPorPisos(4, 3, CIEN, { cantidad: 2, porcentaje: importe(porcentaje) })).toEqual(
+        [],
+      )
+    }
+  })
 })
 
 describe('pegado del padron', () => {

@@ -50,23 +50,70 @@ const designacionDe = (piso: number, unidad: number, porPiso: number) =>
  * sobrante es `0.000064 %` y nadie lo nota. Ahi esta la diferencia entre
  * redondear y cobrarle de mas a un vecino.
  */
-export function padronPorPisos(pisos: number, porPiso: number, objetivo: Importe): FilaDePadron[] {
-  const total = pisos * porPiso
-  if (!Number.isInteger(total) || total < 1) return []
+export function padronPorPisos(
+  pisos: number,
+  porPiso: number,
+  objetivo: Importe,
+  cocheras: { cantidad: number; porcentaje: Importe } = { cantidad: 0, porcentaje: importe('0') },
+): FilaDePadron[] {
+  const departamentos = pisos * porPiso
+  if (!Number.isInteger(departamentos) || departamentos < 1) return []
+  if (!Number.isInteger(cocheras.cantidad) || cocheras.cantidad < 0) return []
 
+  // Las cocheras son unidades funcionales con su propio coeficiente: se llevan
+  // entre todas el porcentaje que se indica, parejo, y el resto es de los
+  // departamentos. Sin porcentaje valido no hay a quien cobrarle la cochera.
+  const conCocheras = cocheras.cantidad > 0
+  if (
+    conCocheras &&
+    (cocheras.porcentaje.lessThanOrEqualTo(0) ||
+      cocheras.porcentaje.greaterThanOrEqualTo(objetivo) ||
+      cocheras.porcentaje.decimalPlaces() > 8)
+  ) {
+    return []
+  }
+  const grupos = [
+    {
+      cantidad: departamentos,
+      monto: conCocheras ? objetivo.minus(cocheras.porcentaje) : objetivo,
+    },
+    ...(conCocheras ? [{ cantidad: cocheras.cantidad, monto: cocheras.porcentaje }] : []),
+  ]
+
+  // Nunca menos decimales que los del porcentaje: si no, el sobrante no entra
+  // en la primera fila del grupo y la suma deja de dar exacto.
+  const minimo = conCocheras ? cocheras.porcentaje.decimalPlaces() : 0
   const decimales =
-    DECIMALES_POSIBLES.find((cantidad) => sobranteTolerable(objetivo, total, cantidad)) ??
-    DECIMALES_POSIBLES[DECIMALES_POSIBLES.length - 1]
+    DECIMALES_POSIBLES.find(
+      (cantidad) =>
+        cantidad >= minimo && grupos.every((g) => sobranteTolerable(g.monto, g.cantidad, cantidad)),
+    ) ?? DECIMALES_POSIBLES[DECIMALES_POSIBLES.length - 1]
 
-  const parejo = corte(objetivo, total, decimales)
-  const sobrante = objetivo.minus(parejo.times(total))
+  const [deptos, cochera] = grupos.map((g) => repartir(g.monto, g.cantidad, decimales))
+  return [
+    ...deptos.map((coeficiente, i) => ({
+      designacion: designacionDe(Math.floor(i / porPiso) + 1, i % porPiso, porPiso),
+      coeficiente,
+    })),
+    ...(cochera ?? []).map((coeficiente, i) => ({
+      designacion: `C${i + 1}`,
+      coeficiente,
+      tipo: 'cochera',
+    })),
+  ]
+}
 
-  return Array.from({ length: total }, (_, i) => ({
-    designacion: designacionDe(Math.floor(i / porPiso) + 1, i % porPiso, porPiso),
-    // El sobrante va entero a la primera, que asi queda siendo la de mayor
-    // coeficiente: la misma unidad que elegiria `ajustePorRedondeo`.
-    coeficiente: (i === 0 ? parejo.plus(sobrante) : parejo).toFixed(decimales),
-  }))
+/**
+ * El monto en partes iguales. El sobrante va entero a la primera, que asi queda
+ * siendo la de mayor coeficiente del grupo: la misma unidad que elegiria
+ * `ajustePorRedondeo`.
+ */
+function repartir(monto: Importe, cantidad: number, decimales: number): string[] {
+  const parejo = corte(monto, cantidad, decimales)
+  const sobrante = monto.minus(parejo.times(cantidad))
+  return Array.from({ length: cantidad }, (_, i) =>
+    (i === 0 ? parejo.plus(sobrante) : parejo).toFixed(decimales),
+  )
 }
 
 /** Reparto parejo, truncado: lo que falta se reparte despues, nunca de mas. */

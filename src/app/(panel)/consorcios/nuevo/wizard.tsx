@@ -4,14 +4,10 @@ import { useActionState, useEffect, useRef, useState } from 'react'
 import { Trash2, TriangleAlert } from 'lucide-react'
 
 import { importe } from '@/compartido/dinero'
-import {
-  ajustePorRedondeo,
-  decimalesDelPadron,
-  filasDesdePegado,
-  padronPorPisos,
-} from '@/compartido/padron'
+import { ajustePorRedondeo, decimalesDelPadron, filasDesdePegado } from '@/compartido/padron'
 
 import { accionAltaConsorcioConPadron } from '../acciones'
+import { GeneradorDePadron } from '../generador-padron'
 
 const SIN_ERROR = { mensaje: '' }
 
@@ -56,8 +52,6 @@ export function WizardConsorcio({
   const [cuit, setCuit] = useState('')
 
   const [filas, setFilas] = useState<Fila[]>([{ ...VACIA }])
-  const [pisos, setPisos] = useState('')
-  const [porPiso, setPorPiso] = useState('')
 
   const tituloPasoRef = useRef<HTMLHeadingElement | null>(null)
   const errorPasoRef = useRef<HTMLParagraphElement | null>(null)
@@ -111,11 +105,6 @@ export function WizardConsorcio({
   const aplicarAjuste = () => {
     if (!ajuste) return
     cambiar(ajuste.indice, 'coeficiente', ajuste.nuevo)
-  }
-
-  const generar = () => {
-    const generadas = padronPorPisos(Number(pisos), Number(porPiso), importe(OBJETIVO))
-    if (generadas.length > 0) setFilas(generadas.map(conTipo))
   }
 
   const continuarDesdeDatos = () => {
@@ -265,40 +254,14 @@ export function WizardConsorcio({
           filas se completan solas.
         </p>
 
-        <fieldset className="fila-de-filtros">
-          <legend className="ayuda">O generarlo, si el edificio es parejo</legend>
-
-          <div className="campo">
-            <label htmlFor="asistente-pisos">Pisos</label>
-            <input
-              id="asistente-pisos"
-              className="cifra"
-              inputMode="numeric"
-              value={pisos}
-              onChange={(evento) => setPisos(evento.target.value.replace(/\D/g, ''))}
-            />
-          </div>
-
-          <div className="campo">
-            <label htmlFor="asistente-por-piso">Unidades por piso</label>
-            <input
-              id="asistente-por-piso"
-              className="cifra"
-              inputMode="numeric"
-              value={porPiso}
-              onChange={(evento) => setPorPiso(evento.target.value.replace(/\D/g, ''))}
-            />
-          </div>
-
-          <button
-            className="boton boton--fantasma"
-            type="button"
-            onClick={generar}
-            disabled={pisos === '' || porPiso === ''}
-          >
-            Generar padrón
-          </button>
-        </fieldset>
+        <GeneradorDePadron
+          prefijo="asistente-"
+          leyenda="O generarlo, si el edificio es parejo"
+          alGenerar={(generadas) => {
+            setFilas(generadas.map(conTipo))
+            setErrorPaso('')
+          }}
+        />
 
         <div className="tabla-desplazable">
           <table>

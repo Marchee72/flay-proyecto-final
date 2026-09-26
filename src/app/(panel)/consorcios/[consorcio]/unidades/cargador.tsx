@@ -4,14 +4,10 @@ import { useActionState, useState } from 'react'
 import { Trash2, TriangleAlert } from 'lucide-react'
 
 import { importe } from '@/compartido/dinero'
-import {
-  ajustePorRedondeo,
-  decimalesDelPadron,
-  filasDesdePegado,
-  padronPorPisos,
-} from '@/compartido/padron'
+import { ajustePorRedondeo, decimalesDelPadron, filasDesdePegado } from '@/compartido/padron'
 
 import { accionCargarPadron } from '../../acciones'
+import { GeneradorDePadron } from '../../generador-padron'
 
 const SIN_ERROR = { mensaje: '' }
 
@@ -41,8 +37,6 @@ export function CargadorDePadron({
 }) {
   const [estado, accion, enviando] = useActionState(accionCargarPadron, SIN_ERROR)
   const [filas, setFilas] = useState<Fila[]>([{ ...VACIA }])
-  const [pisos, setPisos] = useState('')
-  const [porPiso, setPorPiso] = useState('')
 
   const cargadas = filas.filter((fila) => fila.designacion.trim() !== '')
   const suma = cargadas.reduce(
@@ -90,11 +84,6 @@ export function CargadorDePadron({
     cambiar(ajuste.indice, 'coeficiente', ajuste.nuevo)
   }
 
-  const generar = () => {
-    const generadas = padronPorPisos(Number(pisos), Number(porPiso), importe(OBJETIVO))
-    if (generadas.length > 0) setFilas(generadas.map(conTipo))
-  }
-
   return (
     <form action={accion} noValidate>
       <input type="hidden" name="consorcio" value={consorcioId} />
@@ -104,40 +93,11 @@ export function CargadorDePadron({
         filas se completan solas.
       </p>
 
-      <fieldset className="fila-de-filtros">
-        <legend className="ayuda">O generalo, si el edificio es parejo</legend>
-
-        <div className="campo">
-          <label htmlFor="pisos">Pisos</label>
-          <input
-            id="pisos"
-            className="cifra"
-            inputMode="numeric"
-            value={pisos}
-            onChange={(evento) => setPisos(evento.target.value.replace(/\D/g, ''))}
-          />
-        </div>
-
-        <div className="campo">
-          <label htmlFor="por-piso">Unidades por piso</label>
-          <input
-            id="por-piso"
-            className="cifra"
-            inputMode="numeric"
-            value={porPiso}
-            onChange={(evento) => setPorPiso(evento.target.value.replace(/\D/g, ''))}
-          />
-        </div>
-
-        <button
-          className="boton boton--fantasma"
-          type="button"
-          onClick={generar}
-          disabled={pisos === '' || porPiso === ''}
-        >
-          Generar padrón
-        </button>
-      </fieldset>
+      <GeneradorDePadron
+        prefijo=""
+        leyenda="O generalo, si el edificio es parejo"
+        alGenerar={(generadas) => setFilas(generadas.map(conTipo))}
+      />
 
       <div className="tabla-desplazable">
         <table>

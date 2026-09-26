@@ -291,8 +291,10 @@ puede «Actualizar los indicadores».
 **Muestra**: padrón vigente (designación, tipo, coeficiente) con la suma al pie.
 **Quién**: administrador y consejo.
 **Acciones**: cargar el padrón (*administrador*), sólo cuando está vacío: se cargan **todas las
-unidades de una vez** (o se genera por pisos × unidades por piso y se ajusta). Tipos: departamento,
-cochera, local, baulera.
+unidades de una vez** (o se genera por pisos × unidades por piso y se ajusta). El generador, que
+también está en el paso 2 del alta de consorcio, suma las **cocheras**: cuántas y qué porcentaje del
+edificio se llevan entre todas; salen como `C1…Cn`, de tipo cochera, con ese porcentaje repartido
+parejo, y los departamentos se reparten el resto. Tipos: departamento, cochera, local, baulera.
 **Reglas**: RN-01 — la suma debe dar exactamente 100,00000000 %; unidad por unidad nunca cerraría.
 Un padrón que no cierra bloquea la liquidación (aviso en el resumen). RN-02 — los coeficientes sólo
 cambian hacia el futuro con `CoeficienteHistorico`; la vigencia anterior cierra el día **antes** de

@@ -148,9 +148,10 @@ Unidad funcional: departamento, cochera, local o baulera.
 | tipo | enumerado | NN | departamento, cochera, local, baulera |
 | piso | texto(10) | | Piso |
 | superficie_m2 | decimal(8,2) | | Superficie según el reglamento |
-| activa | booleano | NN | Estado |
+| baja_desde | fecha | | Baja lógica: desde cuándo deja de liquidarse; nula mientras está activa |
 
-Restricción: `UQ (consorcio_id, designacion)`.
+Restricciones: `UQ (consorcio_id, designacion)`; una unidad dada de baja tiene coeficiente cero, así
+la suma del padrón vigente sigue siendo 100 % (RN-01) y su historia económica queda intacta.
 
 ### CoeficienteHistorico
 
@@ -582,7 +583,7 @@ factibilidad técnica del punto 5.2.
 
 | Tabla | Índice | Propósito |
 |---|---|---|
-| `Unidad` | (consorcio_id, activa) | Listados por consorcio |
+| `Unidad` | (consorcio_id) | Listados por consorcio |
 | `Gasto` | (periodo_id, rubro_id) | Liquidación y análisis por rubro |
 | `Gasto` | (proveedor_id, fecha) | Indicador de proveedores, RF-24 |
 | `DetalleLiquidacion` | (unidad_id, liquidacion_id) | Estado de cuenta por unidad |

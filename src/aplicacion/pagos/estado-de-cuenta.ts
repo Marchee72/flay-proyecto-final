@@ -230,7 +230,7 @@ export async function verMorosidad(
       const hoy = reloj.hoy()
       const [deudas, unidadesTotales] = await Promise.all([
         saldoImpagoPorUnidad(hoy),
-        prisma.unidad.count(),
+        prisma.unidad.count({ where: { bajaDesde: null } }),
       ])
 
       const agregado: MorosidadAgregada = {

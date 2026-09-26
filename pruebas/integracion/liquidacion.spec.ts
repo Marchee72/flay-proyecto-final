@@ -4,7 +4,7 @@ import { importe } from '@/compartido/dinero'
 import { anularLiquidacion } from '@/aplicacion/liquidacion/anular'
 import { liquidarPeriodo, PeriodoNoCerrado } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
-import { cambiarCoeficiente, cargarPadron } from '@/aplicacion/consorcios/unidades'
+import { cambiarCoeficiente, cargarPadron, editarPadron } from '@/aplicacion/consorcios/unidades'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { prismaBase } from '@/infraestructura/prisma'
@@ -173,6 +173,39 @@ describe('emision de la liquidacion', () => {
         where: { liquidacionId: { not: primera.liquidacionId } },
       }),
     ).toBe(0)
+  })
+})
+
+describe('unidad dada de baja (FR-011)', () => {
+  it('no se liquida: sin detalle, y el total va entero a las que quedan', async () => {
+    const unidades = await prismaBase.unidad.findMany({
+      where: { consorcioId },
+      orderBy: { designacion: 'asc' },
+    })
+    // Dada de baja antes de que exista una sola liquidacion: no debe nada.
+    await editarPadron(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidades: [
+        { id: unidades[0].id, designacion: '1A', coeficiente: '100' },
+        { id: unidades[1].id, designacion: '1B', coeficiente: '50', baja: true },
+      ],
+    })
+    const periodoId = await periodoConGasto(1)
+
+    const emitida = await liquidarPeriodo(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId,
+    })
+
+    expect(emitida.unidades).toBe(1)
+    const detalles = await prismaBase.detalleLiquidacion.findMany({
+      where: { liquidacionId: emitida.liquidacionId },
+    })
+    expect(detalles.map((d) => [d.unidadId, d.totalUnidad.toFixed(2)])).toEqual([
+      [unidades[0].id, '1000.00'],
+    ])
   })
 })
 

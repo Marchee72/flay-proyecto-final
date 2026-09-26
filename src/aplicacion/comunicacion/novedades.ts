@@ -151,13 +151,19 @@ async function unidadesDestino(
   if (alcance === 'unidad') {
     // Aislada: una unidad de otro consorcio no aparece.
     const unidad = unidadId
-      ? await prisma.unidad.findFirst({ where: { id: unidadId }, select: { id: true } })
+      ? await prisma.unidad.findFirst({
+          where: { id: unidadId, bajaDesde: null },
+          select: { id: true },
+        })
       : null
     if (!unidad) throw new DestinatarioInvalido('Elegí una unidad del consorcio.')
     return { unidadIds: [unidad.id], division: null }
   }
   const letra = division?.trim().toUpperCase() ?? ''
-  const unidades = await prisma.unidad.findMany({ select: { id: true, designacion: true } })
+  const unidades = await prisma.unidad.findMany({
+    where: { bajaDesde: null },
+    select: { id: true, designacion: true },
+  })
   const deLaDivision = unidades.filter((u) => letra && divisionDe(u.designacion) === letra)
   if (deLaDivision.length === 0) {
     throw new DestinatarioInvalido('Elegí una división que exista en el padrón.')
@@ -182,6 +188,7 @@ export async function destinatariosPosibles(
     },
     async () => {
       const unidades = await prisma.unidad.findMany({
+        where: { bajaDesde: null },
         select: { id: true, designacion: true },
         orderBy: { designacion: 'asc' },
       })

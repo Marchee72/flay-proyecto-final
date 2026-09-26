@@ -1,11 +1,12 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { altaConsorcio } from '@/aplicacion/consorcios/alta-consorcio'
 import { tipoDeUnidadDesdeFormulario } from '@/aplicacion/consorcios/tipos-de-unidad'
-import { cargarPadron } from '@/aplicacion/consorcios/unidades'
+import { cargarPadron, editarPadron } from '@/aplicacion/consorcios/unidades'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 
@@ -122,4 +123,39 @@ export async function accionCargarPadron(_previo: Resultado, datos: FormData): P
   }
 
   redirect(`/consorcios/${consorcioId}`)
+}
+
+/**
+ * Edicion del padron ya cargado (FR-011): las mismas listas paralelas que la
+ * carga, mas `id` (vacio en las nuevas) y `baja`.
+ */
+export async function accionEditarPadron(_previo: Resultado, datos: FormData): Promise<Resultado> {
+  const usuarioId = await quienOpera()
+  const consorcioId = String(datos.get('consorcio') ?? '')
+
+  const ids = datos.getAll('id').map(String)
+  const bajas = datos.getAll('baja').map(String)
+  const designaciones = datos.getAll('designacion').map(String)
+  const coeficientes = datos.getAll('coeficiente').map(String)
+  const tipos = datos.getAll('tipo').map(String)
+
+  try {
+    await editarPadron(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      unidades: designaciones.map((designacion, i) => ({
+        id: ids[i] || undefined,
+        designacion,
+        coeficiente: coeficientes[i],
+        tipo: tipoDeUnidadDesdeFormulario(tipos[i]),
+        baja: bajas[i] === '1',
+      })),
+    })
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
+    throw error
+  }
+
+  revalidatePath('/consorcios/[consorcio]', 'layout')
+  redirect(`/consorcios/${consorcioId}/unidades?editado=1`)
 }

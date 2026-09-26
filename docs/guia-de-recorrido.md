@@ -298,8 +298,14 @@ parejo, y los departamentos se reparten el resto. Tipos: departamento, cochera, 
 **Reglas**: RN-01 — la suma debe dar exactamente 100,00000000 %; unidad por unidad nunca cerraría.
 Un padrón que no cierra bloquea la liquidación (aviso en el resumen). RN-02 — los coeficientes sólo
 cambian hacia el futuro con `CoeficienteHistorico`; la vigencia anterior cierra el día **antes** de
-que abra la nueva. `agregarUnidades` y `cambiarCoeficientes` existen como casos de uso pero no tienen
-pantalla todavía.
+que abra la nueva.
+**Editar padrón** (*administrador*, botón en la página; `?editar=1`): el mismo editor con las
+unidades cargadas. Se puede renombrar, cambiar tipo y coeficiente, agregar unidades y **dar de baja**
+(con deshacer), y se guarda todo junto: la suma tiene que seguir dando 100. Rige desde hoy (la
+vigencia anterior cierra ayer; si se abrió hoy mismo, se corrige en su lugar). La baja es lógica:
+coeficiente cero, deja de liquidarse, de ofrecerse para reservas, reclamos y ocupaciones, y aparece
+en «Dadas de baja»; se rechaza si la unidad tiene ocupantes, expensas sin pagar o reservas por
+delante. Dos unidades con el mismo nombre también se rechazan.
 
 ### 3.16 Proveedores — `/proveedores`
 

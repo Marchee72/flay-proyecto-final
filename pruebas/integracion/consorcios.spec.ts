@@ -8,6 +8,8 @@ import {
   agregarUnidad,
   cambiarCoeficiente,
   cargarPadron,
+  DesignacionRepetida,
+  editarPadron,
   PadronYaCargado,
 } from '@/aplicacion/consorcios/unidades'
 import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
@@ -173,6 +175,126 @@ describe('cambio de coeficiente (regla RN-02, FR-012)', () => {
         ajustes: [{ unidadId: unidades[1].id, coeficiente: '40.00000000' }],
       }),
     ).rejects.toBeInstanceOf(VigenciaRetroactiva)
+  })
+})
+
+describe('edicion del padron (FR-011)', () => {
+  const editar = (
+    unidades: Parameters<typeof editarPadron>[2]['unidades'],
+    reloj = RELOJ,
+    quien = administrador,
+  ) => editarPadron(repo, reloj, { usuarioId: quien, consorcioId, unidades })
+  const leer = async () => verConsorcio(repo, RELOJ, { usuarioId: administrador, consorcioId })
+
+  it('renombra, cambia tipo y coeficientes y agrega, todo junto; el mismo dia corrige en su lugar', async () => {
+    await padron(MITADES)
+    const [a, b] = (await leer()).unidades
+
+    await editar([
+      { id: a.id, designacion: 'PB-A', tipo: 'departamento', coeficiente: '45' },
+      { id: b.id, designacion: '1B', tipo: 'local', coeficiente: '45' },
+      { designacion: 'C1', tipo: 'cochera', coeficiente: '10' },
+    ])
+
+    const despues = await leer()
+    expect(despues.cuadra).toBe(true)
+    expect(despues.unidades.map((u) => [u.designacion, u.tipo, u.coeficiente])).toEqual([
+      ['1B', 'local', '45.00000000'],
+      ['C1', 'cochera', '10.00000000'],
+      ['PB-A', 'departamento', '45.00000000'],
+    ])
+    // Cargado y editado el mismo dia: ninguna vigencia que termine antes de empezar.
+    const historia = await prismaBase.coeficienteHistorico.findMany({
+      where: { unidadId: { in: [a.id, b.id] } },
+    })
+    expect(historia).toHaveLength(2)
+    expect(historia.every((h) => h.vigenciaHasta === null)).toBe(true)
+  })
+
+  it('otro dia, la vigencia anterior cierra ayer y la nueva abre hoy', async () => {
+    await padron(MITADES)
+    const [a, b] = (await leer()).unidades
+    const despues = relojFijo('2026-10-15T12:00:00Z')
+
+    await editar(
+      [
+        { id: a.id, designacion: '1A', coeficiente: '60' },
+        { id: b.id, designacion: '1B', coeficiente: '40' },
+      ],
+      despues,
+    )
+
+    const historia = await prismaBase.coeficienteHistorico.findMany({
+      where: { unidadId: a.id },
+      orderBy: { vigenciaDesde: 'asc' },
+    })
+    expect(historia.map((h) => h.vigenciaHasta?.toISOString().slice(0, 10) ?? null)).toEqual([
+      '2026-10-14',
+      null,
+    ])
+    expect(historia[1].coeficiente.toFixed(8)).toBe('60.00000000')
+  })
+
+  it('da de baja con coeficiente cero y sale del padron vigente, salvo que tenga ocupantes', async () => {
+    await padron([
+      { designacion: '1A', coeficiente: '40' },
+      { designacion: '1B', coeficiente: '30' },
+      { designacion: '1C', coeficiente: '30' },
+    ])
+    const [a, b, c] = (await leer()).unidades
+    const persona = (await prismaBase.usuario.findUniqueOrThrow({ where: { id: consorcista } }))
+      .personaId
+    await registrarOcupacion(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidadId: b.id,
+      personaId: persona,
+      tipo: 'propietario',
+      desde: fecha('2026-01-01'),
+    })
+
+    await expect(
+      editar([
+        { id: a.id, designacion: '1A', coeficiente: '70' },
+        { id: b.id, designacion: '1B', coeficiente: '30', baja: true },
+      ]),
+    ).rejects.toThrow('tiene ocupantes vigentes')
+
+    const resultado = await editar([
+      { id: a.id, designacion: '1A', coeficiente: '70' },
+      { id: c.id, designacion: '1C', coeficiente: '30', baja: true },
+    ])
+    expect(resultado).toEqual({ cambiadas: 1, agregadas: 0, bajas: 1 })
+
+    const despues = await leer()
+    expect(despues.cuadra).toBe(true)
+    expect(despues.unidades.map((u) => u.designacion)).toEqual(['1A', '1B'])
+    expect(despues.dadasDeBaja).toEqual([
+      { id: c.id, designacion: '1C', tipo: 'departamento', bajaDesde: '2026-09-09' },
+    ])
+    const baja = await prismaBase.unidad.findUniqueOrThrow({ where: { id: c.id } })
+    expect(baja.coeficiente.toFixed(8)).toBe('0.00000000')
+  })
+
+  it('rechaza nombres repetidos, sumas que no cierran y a quien no administra', async () => {
+    await padron(MITADES)
+    const [a, b] = (await leer()).unidades
+
+    await expect(
+      editar([
+        { id: a.id, designacion: '1B', coeficiente: '50' },
+        { id: b.id, designacion: '1B', coeficiente: '50' },
+      ]),
+    ).rejects.toBeInstanceOf(DesignacionRepetida)
+    await expect(
+      editar([{ id: a.id, designacion: '1A', coeficiente: '60' }]),
+    ).rejects.toBeInstanceOf(SumaDeCoeficientesInvalida)
+    await expect(
+      editar([{ id: a.id, designacion: '1A', coeficiente: '50' }], RELOJ, consorcista),
+    ).rejects.toBeInstanceOf(RolInsuficiente)
+
+    // Nada cambio.
+    expect((await leer()).unidades.map((u) => u.designacion)).toEqual(['1A', '1B'])
   })
 })
 

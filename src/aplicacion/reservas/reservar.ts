@@ -62,7 +62,9 @@ export async function reservar(
     async (acceso) => {
       const espacio = await prisma.espacioComun.findFirst({ where: { id: datos.espacioId } })
       if (!espacio || !espacio.activo) throw new NoEncontrado()
-      const unidad = await prisma.unidad.findFirst({ where: { id: datos.unidadId } })
+      const unidad = await prisma.unidad.findFirst({
+        where: { id: datos.unidadId, bajaDesde: null },
+      })
       if (!unidad) throw new NoEncontrado()
 
       // Un consorcista reserva para una unidad que ocupa; el administrador, para cualquiera.
@@ -329,6 +331,7 @@ export async function unidadesParaReservar(
     async (acceso) => {
       if (acceso.roles.includes('administrador')) {
         return prisma.unidad.findMany({
+          where: { bajaDesde: null },
           select: { id: true, designacion: true },
           orderBy: { designacion: 'asc' },
         })

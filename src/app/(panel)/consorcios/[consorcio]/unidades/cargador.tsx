@@ -1,19 +1,26 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { Trash2, TriangleAlert } from 'lucide-react'
+import { Trash2, TriangleAlert, Undo2 } from 'lucide-react'
 
 import { importe } from '@/compartido/dinero'
 import { ajustePorRedondeo, decimalesDelPadron, filasDesdePegado } from '@/compartido/padron'
 
-import { accionCargarPadron } from '../../acciones'
+import { accionCargarPadron, accionEditarPadron } from '../../acciones'
 import { GeneradorDePadron } from '../../generador-padron'
 
 const SIN_ERROR = { mensaje: '' }
 
 const OBJETIVO = '100.00000000'
 
-type Fila = { designacion: string; coeficiente: string; tipo: string }
+/** Con `id`, una unidad que ya existe; `baja` solo tiene sentido para esas. */
+export type Fila = {
+  id?: string
+  designacion: string
+  coeficiente: string
+  tipo: string
+  baja?: boolean
+}
 
 const POR_OMISION = 'departamento'
 
@@ -24,6 +31,10 @@ const VACIA: Fila = { designacion: '', coeficiente: '', tipo: POR_OMISION }
  * consorcios): el rechazo del final no puede ser una sorpresa despues de
  * cargar noventa y seis unidades.
  *
+ * Con `inicial` es la edicion del padron ya cargado (FR-011): las mismas
+ * filas, mas agregar y dar de baja, y todo se guarda junto. Ahi no hay
+ * generador: regenerar pisaria las unidades que ya tienen historia.
+ *
  * La suma se hace con aritmetica decimal, tambien en el navegador. Con el tipo
  * numerico nativo, `0.1 + 0.2` ya no da `0.3`: la pantalla diria que cierra
  * cuando no cierra (Principio II).
@@ -31,14 +42,20 @@ const VACIA: Fila = { designacion: '', coeficiente: '', tipo: POR_OMISION }
 export function CargadorDePadron({
   consorcioId,
   tipos,
+  inicial,
 }: {
   consorcioId: string
   tipos: readonly { valor: string; etiqueta: string }[]
+  inicial?: Fila[]
 }) {
-  const [estado, accion, enviando] = useActionState(accionCargarPadron, SIN_ERROR)
-  const [filas, setFilas] = useState<Fila[]>([{ ...VACIA }])
+  const edicion = inicial !== undefined
+  const [estado, accion, enviando] = useActionState(
+    edicion ? accionEditarPadron : accionCargarPadron,
+    SIN_ERROR,
+  )
+  const [filas, setFilas] = useState<Fila[]>(inicial ?? [{ ...VACIA }])
 
-  const cargadas = filas.filter((fila) => fila.designacion.trim() !== '')
+  const cargadas = filas.filter((fila) => fila.designacion.trim() !== '' && !fila.baja)
   const suma = cargadas.reduce(
     (total, fila) => total.plus(importe(esDecimal(fila.coeficiente) ? fila.coeficiente : '0')),
     importe('0'),
@@ -46,17 +63,26 @@ export function CargadorDePadron({
   const diferencia = suma.minus(importe(OBJETIVO))
   const cuadra = diferencia.isZero()
   const decimales = decimalesDelPadron(cargadas.map((fila) => fila.coeficiente))
-  const ajuste = ajustePorRedondeo(filas, importe(OBJETIVO))
+  // La dada de baja cuenta como cero, sin correr los indices de las demas.
+  const ajuste = ajustePorRedondeo(
+    filas.map((fila) => (fila.baja ? { ...fila, coeficiente: '0' } : fila)),
+    importe(OBJETIVO),
+  )
 
-  const cambiar = (indice: number, campo: keyof Fila, valor: string) =>
+  const cambiar = (indice: number, campo: 'designacion' | 'coeficiente' | 'tipo', valor: string) =>
     setFilas(filas.map((fila, i) => (i === indice ? { ...fila, [campo]: valor } : fila)))
 
   /**
-   * Quitar una fila del padrón en carga (solo presentación: la fila vive en el
-   * estado del formulario hasta confirmar). Si era la última, queda una vacía
-   * para seguir cargando. Táctil: `.boton` ya cumple `--toque` (RNF-01).
+   * Quitar una fila nueva (solo presentación: vive en el estado del formulario
+   * hasta confirmar) o marcar para dar de baja una que ya existe, que se puede
+   * deshacer. Si no queda ninguna, una vacía para seguir cargando. Táctil:
+   * `.boton` ya cumple `--toque` (RNF-01).
    */
   const quitar = (indice: number) => {
+    if (filas[indice].id) {
+      setFilas(filas.map((fila, i) => (i === indice ? { ...fila, baja: !fila.baja } : fila)))
+      return
+    }
     const restantes = filas.filter((_, i) => i !== indice)
     setFilas(restantes.length > 0 ? restantes : [{ ...VACIA }])
   }
@@ -67,6 +93,7 @@ export function CargadorDePadron({
    * se cuelan los errores que despues rechaza el disparador.
    */
   const pegar = (indice: number, evento: React.ClipboardEvent) => {
+    if (filas[indice].id) return // sobre una unidad existente, pegar es pegar
     const pegadas = filasDesdePegado(
       evento.clipboardData.getData('text'),
       tipos.map((tipo) => tipo.valor),
@@ -88,20 +115,28 @@ export function CargadorDePadron({
     <form action={accion} noValidate>
       <input type="hidden" name="consorcio" value={consorcioId} />
 
-      <p className="ayuda">
-        Pegar el padrón desde una planilla en la primera casilla —designación y coeficiente— y las
-        filas se completan solas.
-      </p>
-
-      <GeneradorDePadron
-        prefijo=""
-        leyenda="O generalo, si el edificio es parejo"
-        alGenerar={(generadas) => setFilas(generadas.map(conTipo))}
-      />
+      {edicion ? (
+        <p className="ayuda">
+          Los cambios rigen desde hoy y quedan en la historia de coeficientes. Una unidad con
+          ocupantes, deuda o reservas por delante no se puede dar de baja.
+        </p>
+      ) : (
+        <>
+          <p className="ayuda">
+            Pegar el padrón desde una planilla en la primera casilla —designación y coeficiente— y
+            las filas se completan solas.
+          </p>
+          <GeneradorDePadron
+            prefijo=""
+            leyenda="O generalo, si el edificio es parejo"
+            alGenerar={(generadas) => setFilas(generadas.map(conTipo))}
+          />
+        </>
+      )}
 
       <div className="tabla-desplazable">
         <table>
-          <caption className="ayuda">Unidades a cargar</caption>
+          <caption className="ayuda">{edicion ? 'Padrón a guardar' : 'Unidades a cargar'}</caption>
           <thead>
             <tr>
               <th scope="col">Designación</th>
@@ -109,13 +144,15 @@ export function CargadorDePadron({
               <th scope="col" className="numero">
                 Coeficiente %
               </th>
-              <th scope="col">Quitar</th>
+              <th scope="col">{edicion ? 'Baja' : 'Quitar'}</th>
             </tr>
           </thead>
           <tbody>
             {filas.map((fila, indice) => (
-              <tr key={indice}>
+              <tr key={fila.id ?? `nueva-${indice}`} className={fila.baja ? 'apagado' : undefined}>
                 <td>
+                  <input type="hidden" name="id" value={fila.id ?? ''} />
+                  <input type="hidden" name="baja" value={fila.baja ? '1' : ''} />
                   <label className="oculto" htmlFor={`designacion-${indice}`}>
                     Designación de la unidad {indice + 1}
                   </label>
@@ -123,6 +160,7 @@ export function CargadorDePadron({
                     id={`designacion-${indice}`}
                     name="designacion"
                     value={fila.designacion}
+                    readOnly={fila.baja}
                     onChange={(evento) => cambiar(indice, 'designacion', evento.target.value)}
                     onPaste={(evento) => pegar(indice, evento)}
                   />
@@ -154,7 +192,8 @@ export function CargadorDePadron({
                     className="cifra"
                     inputMode="decimal"
                     placeholder="0.00"
-                    value={fila.coeficiente}
+                    value={fila.baja ? '0' : fila.coeficiente}
+                    readOnly={fila.baja}
                     onChange={(evento) => cambiar(indice, 'coeficiente', evento.target.value)}
                   />
                 </td>
@@ -163,9 +202,14 @@ export function CargadorDePadron({
                     className="boton boton--fantasma boton--icono"
                     type="button"
                     onClick={() => quitar(indice)}
-                    aria-label={`Quitar la unidad ${indice + 1}${fila.designacion.trim() ? ` (${fila.designacion.trim()})` : ''}`}
+                    aria-pressed={fila.id ? fila.baja === true : undefined}
+                    aria-label={`${fila.id ? (fila.baja ? 'Deshacer la baja de' : 'Dar de baja') : 'Quitar'} la unidad ${indice + 1}${fila.designacion.trim() ? ` (${fila.designacion.trim()})` : ''}`}
                   >
-                    <Trash2 className="icono" aria-hidden="true" />
+                    {fila.baja ? (
+                      <Undo2 className="icono" aria-hidden="true" />
+                    ) : (
+                      <Trash2 className="icono" aria-hidden="true" />
+                    )}
                   </button>
                 </td>
               </tr>
@@ -207,11 +251,17 @@ export function CargadorDePadron({
           type="button"
           onClick={() => setFilas([...filas, { ...VACIA }])}
         >
-          Agregar fila
+          {edicion ? 'Agregar unidad' : 'Agregar fila'}
         </button>
 
         <button className="boton boton--primario" type="submit" disabled={enviando}>
-          {enviando ? 'Cargando…' : `Cargar ${cargadas.length} unidades`}
+          {enviando
+            ? edicion
+              ? 'Guardando…'
+              : 'Cargando…'
+            : edicion
+              ? 'Guardar cambios'
+              : `Cargar ${cargadas.length} unidades`}
         </button>
       </div>
 

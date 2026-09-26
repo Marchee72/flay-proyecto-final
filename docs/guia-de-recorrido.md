@@ -291,6 +291,9 @@ pantalla todavía.
 **Muestra**: razón social, CUIT, rubro habitual.
 **Acciones**: nuevo (razón social, CUIT, rubro habitual, teléfono, correo) y editar —
 *administrador*. Ver: todos (el consorcista los ve como contactos útiles).
+**Sin duplicados**: el CUIT se normaliza a `NN-NNNNNNNN-N` antes de guardarlo, así que
+`20123456789` y `20-12345678-9` son el mismo proveedor y el segundo se rechaza con «Ya hay un
+proveedor con el CUIT …». Sin 11 dígitos no se acepta. El CUIT no se edita.
 
 ### 3.17 Usuarios — `/usuarios`
 

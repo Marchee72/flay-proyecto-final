@@ -1,6 +1,9 @@
+import { Prisma } from '@prisma/client'
+
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
+import { normalizarCuit } from '@/dominio/proveedores/cuit'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { sinConsorcio } from '@/infraestructura/cliente-aislado'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
@@ -28,6 +31,18 @@ export class CuitDeProveedorRepetido extends ErrorDeAplicacion {
   }
 }
 
+export class CuitInvalido extends ErrorDeAplicacion {
+  constructor() {
+    super('El CUIT tiene que tener 11 dígitos, con o sin guiones.', 'RF-05')
+  }
+}
+
+export class ProveedorIncompleto extends ErrorDeAplicacion {
+  constructor() {
+    super('Poné la razón social del proveedor.', 'RF-05')
+  }
+}
+
 export async function altaProveedor(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
@@ -51,24 +66,35 @@ export async function altaProveedor(
       accion: 'dar de alta proveedores',
     },
     async () => {
-      const cuit = datos.cuit.trim()
+      const razonSocial = datos.razonSocial.trim()
+      if (!razonSocial) throw new ProveedorIncompleto()
+      // Normalizado, «20123456789» y «20-12345678-9» son el mismo proveedor.
+      const cuit = normalizarCuit(datos.cuit)
+      if (!cuit) throw new CuitInvalido()
 
       // La clave unica (consorcio, cuit) es la que garantiza; esto da el mensaje.
       if (await prisma.proveedor.findFirst({ where: { cuit } })) {
         throw new CuitDeProveedorRepetido(cuit)
       }
 
-      const creado = await prisma.proveedor.create({
-        data: sinConsorcio({
-          razonSocial: datos.razonSocial.trim(),
-          cuit,
-          rubroHabitualId: datos.rubroHabitualId || null,
-          telefono: datos.telefono?.trim() || null,
-          correo: datos.correo?.trim() || null,
-        }),
-      })
-
-      return { proveedorId: creado.id }
+      try {
+        const creado = await prisma.proveedor.create({
+          data: sinConsorcio({
+            razonSocial,
+            cuit,
+            rubroHabitualId: datos.rubroHabitualId || null,
+            telefono: datos.telefono?.trim() || null,
+            correo: datos.correo?.trim() || null,
+          }),
+        })
+        return { proveedorId: creado.id }
+      } catch (error) {
+        // Doble envio: los dos pasaron la consulta y la clave unica freno al segundo.
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+          throw new CuitDeProveedorRepetido(cuit)
+        }
+        throw error
+      }
     },
   )
 }

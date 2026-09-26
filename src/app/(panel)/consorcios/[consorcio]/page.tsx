@@ -11,10 +11,12 @@ import {
 } from 'lucide-react'
 
 import { fechaParaMostrar, importeParaMostrar } from '@/compartido/formato'
+import { listarNovedades } from '@/aplicacion/comunicacion/novedades'
 import { verResumenConsorcio } from '@/aplicacion/consorcios/resumen'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 
 import { AvisoDeError, conConsorcio } from '../../con-consorcio'
+import { TarjetaNovedad } from './novedades/tarjeta-novedad'
 
 export const metadata: Metadata = { title: 'Resumen — Flay' }
 
@@ -32,11 +34,14 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
   const base = `/consorcios/${activo.id}`
 
   let resumen
+  let novedades
   try {
-    resumen = await verResumenConsorcio(HABILITACIONES, RELOJ, {
-      usuarioId,
-      consorcioId: activo.id,
-    })
+    const datos = { usuarioId, consorcioId: activo.id }
+    ;[resumen, novedades] = await Promise.all([
+      verResumenConsorcio(HABILITACIONES, RELOJ, datos),
+      // Las vigentes que le tocan y no descarto: lo primero que ve cada uno.
+      listarNovedades(HABILITACIONES, RELOJ, { ...datos, soloVigentes: true }),
+    ])
   } catch (error) {
     return <AvisoDeError error={error} />
   }
@@ -49,6 +54,15 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
       {/* El nombre ya encabeza el lateral: el h1 es la seccion, como en el resto. */}
       <h1>Resumen</h1>
       <p className="apagado">{activo.direccion}</p>
+
+      {novedades.length > 0 && (
+        <section aria-labelledby="titulo-novedades">
+          <h2 id="titulo-novedades">Novedades</h2>
+          {novedades.map((n) => (
+            <TarjetaNovedad key={n.id} novedad={n} consorcioId={activo.id} Titulo="h3" />
+          ))}
+        </section>
+      )}
 
       {administra && (
         <div className="fila-acciones">

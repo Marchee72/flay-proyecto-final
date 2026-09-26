@@ -65,8 +65,9 @@ Cada ficha: qué muestra, qué se puede hacer (con el rol entre paréntesis), re
 
 ### 3.1 Resumen — `/consorcios/[consorcio]`
 
-**Muestra**: nombre y dirección; cuatro KPI (período abierto y su vencimiento, gastos del período,
-morosidad «n de m unidades» con deuda vencida, reclamos abiertos y críticos); avisos sólo si aplican
+**Muestra**: nombre y dirección; arriba, las **novedades vigentes** que le tocan a quien entra
+(generales, de su unidad o de su división), cada una con «Descartar»; cuatro KPI (período abierto y
+su vencimiento, gastos del período, morosidad «n de m unidades» con deuda vencida, reclamos abiertos y críticos); avisos sólo si aplican
 (padrón que no cierra, padrón vacío); tarjetas de últimos gastos, últimos pagos, reclamos sin
 resolver y contactos útiles (administración y proveedores).
 **Acciones**: «Cargar gasto», «Registrar pago» y, si hay período abierto, «Liquidar»
@@ -234,9 +235,15 @@ futuras avisando a cada solicitante.
 
 ### 3.12 Novedades — `/novedades`
 
-**Muestra**: comunicados de la administración, fijados primero, con fecha.
-**Acciones**: publicar (modal: título hasta 140, texto, fijada) — *administrador*. Publicar avisa a
-todos los habilitados del consorcio.
+**Muestra**: comunicados de la administración, fijados primero, con fecha y, si no es general, a quién
+van. El consorcista ve sólo las **vigentes** que le tocan y no descartó; el administrador ve todas con
+su estado (`Programada`, `Vigente`, `Vencida`) y sus fechas.
+**Acciones**: publicar (modal: título hasta 140, texto, **para** —todo el consorcio, una unidad o una
+división—, **se muestra desde / hasta** —por omisión hoy y treinta días—, fijada) —
+*administrador*. Publicar avisa sólo a los destinatarios habilitados. «Descartar» (cualquiera, salvo
+en la vista de gestión del administrador) la oculta para siempre, sólo para quien la descarta.
+**Reglas**: la división es la letra que sigue al piso (1A, 2A, 3A son la división A); una unidad sin
+letra (C1, Local 2) no tiene división. Una novedad que termina antes de hoy no se puede publicar.
 
 ### 3.13 Documentación — `/documentos`, `/documentos/[id]`, `/documentos/consultar`
 

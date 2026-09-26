@@ -264,6 +264,7 @@ model Unidad {
   pagos       Pago[]
   reclamos    Reclamo[]
   reservas    Reserva[]
+  novedades   Novedad[]
 
   @@unique([consorcioId, designacion])
   @@index([consorcioId])
@@ -788,21 +789,50 @@ enum EstadoReserva {
   rechazada
 }
 
-/// Comunicado del consorcio (RF-18, CU-12).
+/// Comunicado del consorcio (RF-18, CU-12). Rige entre dos fechas y despues
+/// deja de mostrarse; puede ir a todo el consorcio, a una unidad o a una
+/// division (la columna de departamentos con la misma letra).
 model Novedad {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  consorcioId   String   @map("consorcio_id") @db.Uuid
-  titulo        String   @db.VarChar(140)
-  cuerpo        String   @db.Text
-  publicadaPor  String   @map("publicada_por") @db.Uuid
-  publicadaEn   DateTime @default(now()) @map("publicada_en") @db.Timestamptz(6)
-  fijada        Boolean  @default(false)
-  creadoEn      DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
-  actualizadoEn DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId   String         @map("consorcio_id") @db.Uuid
+  titulo        String         @db.VarChar(140)
+  cuerpo        String         @db.Text
+  publicadaPor  String         @map("publicada_por") @db.Uuid
+  publicadaEn   DateTime       @default(now()) @map("publicada_en") @db.Timestamptz(6)
+  fijada        Boolean        @default(false)
+  vigenteDesde  DateTime       @map("vigente_desde") @db.Date
+  vigenteHasta  DateTime       @map("vigente_hasta") @db.Date
+  alcance       AlcanceNovedad @default(general)
+  /// Solo con alcance `unidad`.
+  unidadId      String?        @map("unidad_id") @db.Uuid
+  /// Solo con alcance `division`: la letra (A, B...).
+  division      String?        @db.VarChar(4)
+  creadoEn      DateTime       @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime       @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  consorcio Consorcio @relation(fields: [consorcioId], references: [id])
+  consorcio Consorcio           @relation(fields: [consorcioId], references: [id])
+  unidad    Unidad?             @relation(fields: [unidadId], references: [id], onDelete: Restrict)
+  descartes NovedadDescartada[]
 
   @@index([consorcioId, fijada, publicadaEn])
+}
+
+enum AlcanceNovedad {
+  general
+  unidad
+  division
+}
+
+/// Quien ya no quiere ver una novedad. Sin consorcio_id: se alcanza siempre
+/// por su novedad, que si esta aislada.
+model NovedadDescartada {
+  novedadId    String   @map("novedad_id") @db.Uuid
+  usuarioId    String   @map("usuario_id") @db.Uuid
+  descartadaEn DateTime @default(now()) @map("descartada_en") @db.Timestamptz(6)
+
+  novedad Novedad @relation(fields: [novedadId], references: [id], onDelete: Cascade)
+
+  @@id([novedadId, usuarioId])
 }
 
 /// Reglamento, acta o contrato (RF-19, CU-15). La baja esta diferida (§ 9.11).

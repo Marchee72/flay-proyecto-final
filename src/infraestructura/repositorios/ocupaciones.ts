@@ -92,6 +92,23 @@ export async function unidadesOcupadasPor(
     ORDER BY un."designacion"`
 }
 
+/**
+ * Los usuarios que ocupan alguna de esas unidades a esa fecha. Los ids tienen
+ * que venir de una consulta ya aislada: esto no filtra por consorcio.
+ */
+export async function usuariosQueOcupan(
+  unidadIds: readonly string[],
+  fecha: Date,
+): Promise<string[]> {
+  if (unidadIds.length === 0) return []
+  const filas = await prismaBase.$queryRaw<{ id: string }[]>`
+    SELECT DISTINCT u."id" FROM "Ocupacion" o
+    JOIN "Usuario" u ON u."persona_id" = o."persona_id"
+    WHERE o."unidad_id" = ANY(${unidadIds}::uuid[])
+      AND o."vigencia" @> ${fecha}::date`
+  return filas.map((fila) => fila.id)
+}
+
 export interface Ocupante {
   tipo: TipoDeOcupacion
   nombre: string

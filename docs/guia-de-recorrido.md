@@ -240,9 +240,11 @@ todos los habilitados del consorcio.
 
 ### 3.13 Documentación — `/documentos`, `/documentos/[id]`, `/documentos/consultar`
 
-**Muestra**: tabla de documentos (título, tipo, fecha, estado de indexación: `Pendiente de indexar`,
-`Indexando`, `Listo para consultar`, `No se pudo indexar` con el motivo). Los no visibles para
-consorcistas llevan el ojo tachado. El detalle abre el PDF en visor con descarga por enlace firmado.
+**Muestra**: tabla de documentos (título, tipo, fecha). Sólo el administrador ve además la columna
+«Consultas»: `En proceso`, `Procesado` o `No se pudo procesar` con el motivo, y un botón
+«Reintentar» en lo que no está procesado. Mientras algo está en proceso la página se refresca sola,
+y ese refresco es el que hace avanzar la cola. Los no visibles para consorcistas llevan el ojo
+tachado. El detalle abre el PDF en visor con descarga por enlace firmado.
 **Tipos**: reglamento de copropiedad, reglamento interno, acta, contrato, póliza, otro.
 **Acciones**: cargar (*administrador*): sólo PDF, hasta 25 MB, con marca «visible para
 consorcistas». Se indexa en segundo plano (extracción de texto, fragmentación, vectores, con

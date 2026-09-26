@@ -7,7 +7,11 @@ import { redirect } from 'next/navigation'
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { consultarDocumentacion, valorarConsulta } from '@/aplicacion/comunicacion/consultar'
 import { despacharNotificaciones, reintentarAgotados } from '@/aplicacion/comunicacion/despachar'
-import { cargarDocumento, TIPOS_DOCUMENTO } from '@/aplicacion/comunicacion/documentos'
+import {
+  cargarDocumento,
+  reindexarDocumento,
+  TIPOS_DOCUMENTO,
+} from '@/aplicacion/comunicacion/documentos'
 import { publicarNovedad } from '@/aplicacion/comunicacion/novedades'
 import { ASISTENCIA, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
@@ -69,6 +73,18 @@ export async function accionCargarDocumento(
   }
   revalidatePath('/consorcios/[consorcio]/documentos', 'page')
   return { mensaje: '', destino: `/consorcios/${consorcioId}/documentos?cargado=1` }
+}
+
+export async function accionReindexar(datos: FormData): Promise<void> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) redirect('/ingresar')
+  const consorcioId = texto(datos, 'consorcio')
+  await reindexarDocumento(HABILITACIONES, RELOJ, {
+    usuarioId,
+    consorcioId,
+    documentoId: texto(datos, 'documento'),
+  })
+  revalidatePath('/consorcios/[consorcio]/documentos', 'page')
 }
 
 export async function accionDespachar(datos: FormData): Promise<void> {

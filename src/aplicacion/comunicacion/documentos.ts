@@ -6,6 +6,7 @@ import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { claveEsDe } from '@/aplicacion/comunicacion/objetos'
+import type { Transaccion } from '@/aplicacion/comunicacion/notificar'
 import { sinConsorcio } from '@/infraestructura/cliente-aislado'
 import { prisma } from '@/infraestructura/prisma'
 
@@ -25,11 +26,12 @@ export const TIPOS_DOCUMENTO: readonly { valor: TipoDocumento; etiqueta: string 
   { valor: 'otro', etiqueta: 'Otro' },
 ]
 
+/** Solo lo ve el administrador: al consorcista la indexacion no le dice nada. */
 export const ETIQUETA_INDEXACION: Record<EstadoIndexacion, string> = {
-  pendiente: 'Pendiente de indexar',
-  procesando: 'Indexando',
-  indexado: 'Listo para consultar',
-  error: 'No se pudo indexar',
+  pendiente: 'En proceso',
+  procesando: 'En proceso',
+  indexado: 'Procesado',
+  error: 'No se pudo procesar',
 }
 
 export interface DocumentoDelConsorcio {
@@ -39,7 +41,8 @@ export interface DocumentoDelConsorcio {
   titulo: string
   fechaDocumento: string | null
   visibleConsorcistas: boolean
-  estadoIndexacion: EstadoIndexacion
+  /** `null` para quien no administra. */
+  estadoIndexacion: EstadoIndexacion | null
   errorIndexacion: string | null
   fragmentos: number
 }
@@ -97,11 +100,48 @@ export async function cargarDocumento(
           }),
           select: { id: true },
         })
-        await tx.$executeRaw`
-          INSERT INTO "TrabajoPendiente" (tipo, carga)
-          VALUES ('indexar_documento'::"TipoTrabajo", jsonb_build_object('documentoId', ${documento.id}::text))
-        `
+        await encolarIndexacion(tx, documento.id)
         return { documentoId: documento.id }
+      })
+    },
+  )
+}
+
+const encolarIndexacion = (tx: Transaccion, documentoId: string) => tx.$executeRaw`
+  INSERT INTO "TrabajoPendiente" (tipo, carga)
+  VALUES ('indexar_documento'::"TipoTrabajo", jsonb_build_object('documentoId', ${documentoId}::text))
+`
+
+/**
+ * Vuelve a encolar un documento que quedo en `error` (o trabado en
+ * `procesando`): el administrador no tiene que borrarlo y subirlo de nuevo.
+ */
+export async function reindexarDocumento(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: { usuarioId: string; consorcioId: string; documentoId: string },
+): Promise<void> {
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    {
+      usuarioId: datos.usuarioId,
+      consorcioId: datos.consorcioId,
+      rolesPermitidos: ['administrador'],
+      accion: 'reprocesar documentos',
+    },
+    async () => {
+      const documento = await prisma.documentoConsorcio.findFirst({
+        where: { id: datos.documentoId },
+        select: { id: true },
+      })
+      if (!documento) throw new NoEncontrado()
+      await prisma.$transaction(async (tx) => {
+        await tx.documentoConsorcio.update({
+          where: { id: documento.id },
+          data: { estadoIndexacion: 'pendiente', errorIndexacion: null },
+        })
+        await encolarIndexacion(tx, documento.id)
       })
     },
   )
@@ -120,6 +160,7 @@ export async function listarDocumentos(
     reloj,
     { usuarioId: datos.usuarioId, consorcioId: datos.consorcioId, accion: 'ver documentos' },
     async (acceso) => {
+      const administra = acceso.roles.includes('administrador')
       const documentos = await prisma.documentoConsorcio.findMany({
         where: visiblesPara(acceso.roles),
         orderBy: [{ tipo: 'asc' }, { fechaDocumento: 'desc' }, { creadoEn: 'desc' }],
@@ -132,8 +173,8 @@ export async function listarDocumentos(
         titulo: d.titulo,
         fechaDocumento: d.fechaDocumento?.toISOString().slice(0, 10) ?? null,
         visibleConsorcistas: d.visibleConsorcistas,
-        estadoIndexacion: d.estadoIndexacion,
-        errorIndexacion: d.errorIndexacion,
+        estadoIndexacion: administra ? d.estadoIndexacion : null,
+        errorIndexacion: administra ? d.errorIndexacion : null,
         fragmentos: d._count.fragmentos,
       }))
     },

@@ -98,10 +98,12 @@ export async function consultarDocumentacion(
         return { modo: 'sin_respaldo', consultaId: id }
       }
 
+      // Al generador se le numera por posicion: `numero_fragmento` es por
+      // documento, y con dos documentos el [3] de uno pisaba al del otro.
       const respuesta = await asistencia.respuestas.responder(
         pregunta,
-        fragmentos.map((f) => ({
-          numero: f.numero,
+        fragmentos.map((f, i) => ({
+          numero: i + 1,
           documento: f.documento,
           pagina: f.pagina,
           contenido: f.contenido,
@@ -109,8 +111,8 @@ export async function consultarDocumentacion(
       )
       if (!respuesta.disponible) return degradado(respuesta.motivo)
 
-      const citas: Cita[] = respuesta.valor.citas
-        .map((numero) => fragmentos.find((f) => f.numero === numero))
+      const citas: Cita[] = [...new Set(respuesta.valor.citas)]
+        .map((numero) => fragmentos[numero - 1])
         .filter((f): f is NonNullable<typeof f> => f !== undefined)
         .map((f) => ({
           fragmentoId: f.fragmentoId,

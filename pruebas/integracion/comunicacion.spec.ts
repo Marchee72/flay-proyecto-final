@@ -99,6 +99,15 @@ describe('documentos', () => {
     expect(await titulos(vecino)).toEqual(['Reglamento'])
     expect(await titulos(consejo)).toEqual(['Contrato de limpieza', 'Reglamento'])
     expect(await titulos(administrador)).toEqual(['Contrato de limpieza', 'Reglamento'])
+
+    // Si esta procesado para las consultas solo le interesa al administrador.
+    const estados = async (usuarioId: string) =>
+      (await listarDocumentos(repo, RELOJ, { usuarioId, consorcioId })).map(
+        (d) => d.estadoIndexacion,
+      )
+    expect(await estados(vecino)).toEqual([null])
+    expect(await estados(consejo)).toEqual([null, null])
+    expect(await estados(administrador)).toEqual(['pendiente', 'pendiente'])
   })
 
   it('nace pendiente con su trabajo de indexacion, y una clave ajena no se confirma', async () => {

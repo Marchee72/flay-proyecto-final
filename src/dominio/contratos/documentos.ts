@@ -21,6 +21,26 @@ export interface LineaDeInteres {
   importe: string
 }
 
+/** Un gasto del periodo, tal como lo cargo el administrador (`RF-10`). */
+export interface LineaDeGasto {
+  /** `05/08/2026`, ya en formato de pantalla. */
+  fecha: string
+  proveedor: string | null
+  descripcion: string
+  importe: string
+}
+
+/**
+ * Los gastos del consorcio en el periodo, de una clasificacion (RN-04),
+ * agrupados por rubro. El subtotal lo suma la aplicacion y el total es el de
+ * la liquidacion: el papel rinde cuentas sin que el generador sume nada.
+ */
+export interface GastosDeClasificacion {
+  clasificacion: 'ordinario' | 'extraordinario'
+  rubros: { rubro: string; subtotal: string; lineas: LineaDeGasto[] }[]
+  total: string
+}
+
 export interface ExpensaParaDocumento {
   consorcio: { nombre: string; direccion: string; localidad: string }
   /** `08/2026`: el periodo liquidado. */
@@ -29,6 +49,8 @@ export interface ExpensaParaDocumento {
   vencimiento: string
   unidad: { designacion: string; tipo: string }
   coeficienteAplicado: string
+  /** Vacio si el periodo no tuvo gastos; una entrada por clasificacion con gastos. */
+  gastos: GastosDeClasificacion[]
   importeOrdinario: string
   importeExtraordinario: string
   deudaAnterior: string

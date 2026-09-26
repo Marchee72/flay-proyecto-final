@@ -4,7 +4,7 @@ import { exigirSumaExacta } from '@/dominio/coeficientes/suma'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { TIPO_UNIDAD_POR_OMISION, type TipoUnidad } from '@/dominio/unidades/tipo'
-import { conAutorizacionDePlataforma } from '@/aplicacion/autorizacion'
+import { conAutorizacionDeAdministradora } from '@/aplicacion/autorizacion'
 import { prismaBase } from '@/infraestructura/prisma'
 
 /** Coeficiente como cadena de ocho decimales: nunca el tipo numerico (FR-013). */
@@ -21,8 +21,9 @@ export interface UnidadNueva {
 /**
  * Alta de consorcio (FR-009, FR-007b).
  *
- * La autoriza el super administrador de plataforma, no un administrador de
- * consorcio: al crear el primero no hay consorcio contra el cual evaluar el par
+ * La autoriza el super administrador, o quien tiene habilitacion sobre la
+ * administradora dueña del consorcio nuevo, no un administrador de consorcio:
+ * al crear el primero no hay consorcio contra el cual evaluar el par
  * (rol, consorcio). Es una de las dos operaciones que trabajan por encima del
  * aislamiento, y por eso no abre contexto.
  *
@@ -54,10 +55,14 @@ export async function altaConsorcio(
     unidades?: readonly UnidadNueva[]
   },
 ): Promise<{ consorcioId: string }> {
-  return conAutorizacionDePlataforma(
+  return conAutorizacionDeAdministradora(
     repositorio,
     reloj,
-    { usuarioId: datos.usuarioId, accion: 'dar de alta un consorcio' },
+    {
+      usuarioId: datos.usuarioId,
+      administradoraId: datos.administradoraId,
+      accion: 'dar de alta un consorcio',
+    },
     async () => {
       if (await prismaBase.consorcio.findUnique({ where: { cuit: datos.cuit } })) {
         throw new CuitYaRegistrado()

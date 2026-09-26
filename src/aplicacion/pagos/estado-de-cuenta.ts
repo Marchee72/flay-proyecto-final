@@ -4,7 +4,11 @@ import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
-import { ocupaUnidad } from '@/infraestructura/repositorios/ocupaciones'
+import {
+  ocupaUnidad,
+  ocupantesVigentesDe,
+  type Ocupante,
+} from '@/infraestructura/repositorios/ocupaciones'
 
 /**
  * Estado de cuenta de una unidad (`FR-028`) y morosidad del consorcio
@@ -126,12 +130,23 @@ export interface MorosidadAgregada {
   deudaTotal: string
 }
 
+export interface PeriodoImpago {
+  /** `07/2026` */
+  periodo: string
+  vencimiento: string
+  saldo: string
+}
+
 export interface DeudorNominado {
   unidadId: string
   designacion: string
   deuda: string
   /** Liquidaciones vencidas e impagas. */
   periodosVencidos: number
+  /** Cada una con lo que le falta, de la mas vieja a la mas nueva. */
+  periodos: PeriodoImpago[]
+  /** Propietario e inquilino vigentes, para poder llamarlos (dato personal, RNF-13). */
+  ocupantes: Ocupante[]
 }
 
 export type Morosidad =
@@ -148,10 +163,13 @@ export type Morosidad =
  */
 export async function saldoImpagoPorUnidad(
   hoy: Date,
-): Promise<Map<string, { deuda: Decimal; vencidos: number }>> {
+): Promise<Map<string, { deuda: Decimal; vencidos: number; periodos: PeriodoImpago[] }>> {
   const liquidaciones = await prisma.liquidacion.findMany({
     where: { estado: 'vigente', vencimiento: { lt: hoy } },
+    orderBy: { vencimiento: 'asc' },
     select: {
+      vencimiento: true,
+      periodo: { select: { anio: true, mes: true } },
       detalles: {
         select: {
           unidadId: true,
@@ -162,9 +180,14 @@ export async function saldoImpagoPorUnidad(
     },
   })
 
-  const porUnidad = new Map<string, { deuda: Decimal; vencidos: number }>()
+  const porUnidad = new Map<
+    string,
+    { deuda: Decimal; vencidos: number; periodos: PeriodoImpago[] }
+  >()
 
-  for (const detalle of liquidaciones.flatMap((liquidacion) => liquidacion.detalles)) {
+  for (const { detalle, liquidacion } of liquidaciones.flatMap((liquidacion) =>
+    liquidacion.detalles.map((detalle) => ({ detalle, liquidacion })),
+  )) {
     const pagado = detalle.imputaciones.reduce(
       (total, i) => total.plus(importe(i.importeImputado.toFixed(2))),
       new Decimal(0),
@@ -172,10 +195,22 @@ export async function saldoImpagoPorUnidad(
     const saldo = importe(detalle.totalUnidad.toFixed(2)).minus(pagado)
     if (saldo.lessThanOrEqualTo(0)) continue
 
-    const actual = porUnidad.get(detalle.unidadId) ?? { deuda: new Decimal(0), vencidos: 0 }
+    const actual = porUnidad.get(detalle.unidadId) ?? {
+      deuda: new Decimal(0),
+      vencidos: 0,
+      periodos: [],
+    }
     porUnidad.set(detalle.unidadId, {
       deuda: actual.deuda.plus(saldo),
       vencidos: actual.vencidos + 1,
+      periodos: [
+        ...actual.periodos,
+        {
+          periodo: `${String(liquidacion.periodo.mes).padStart(2, '0')}/${liquidacion.periodo.anio}`,
+          vencimiento: liquidacion.vencimiento.toISOString().slice(0, 10),
+          saldo: saldo.toFixed(DECIMALES_IMPORTE),
+        },
+      ],
     })
   }
 
@@ -217,16 +252,26 @@ export async function verMorosidad(
         select: { id: true, designacion: true },
         orderBy: { designacion: 'asc' },
       })
+      // Los ids salen de la consulta aislada de arriba: nunca de un parametro.
+      const ocupantes = await ocupantesVigentesDe(
+        unidades.map((unidad) => unidad.id),
+        hoy,
+      )
 
       return {
         nominada: true,
         agregado,
-        deudores: unidades.map((unidad) => ({
-          unidadId: unidad.id,
-          designacion: unidad.designacion,
-          deuda: deudas.get(unidad.id)!.deuda.toFixed(DECIMALES_IMPORTE),
-          periodosVencidos: deudas.get(unidad.id)!.vencidos,
-        })),
+        deudores: unidades.map((unidad) => {
+          const deuda = deudas.get(unidad.id)!
+          return {
+            unidadId: unidad.id,
+            designacion: unidad.designacion,
+            deuda: deuda.deuda.toFixed(DECIMALES_IMPORTE),
+            periodosVencidos: deuda.vencidos,
+            periodos: deuda.periodos,
+            ocupantes: ocupantes.get(unidad.id) ?? [],
+          }
+        }),
       }
     },
   )

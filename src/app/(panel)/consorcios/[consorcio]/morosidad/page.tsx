@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { BadgeCheck, Siren, TriangleAlert } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { importeParaMostrar } from '@/compartido/formato'
+import { fechaParaMostrar, importeParaMostrar, plural } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verMorosidad } from '@/aplicacion/pagos/estado-de-cuenta'
 
@@ -13,6 +14,9 @@ export const metadata: Metadata = { title: 'Morosidad — Flay' }
 /**
  * Morosidad (`FR-029`, regla RN-13 § 7.2). Lo que se muestra es lo que el caso
  * de uso devolvio segun el rol: si no vino nomina, no hay nomina que ocultar.
+ *
+ * Por deudor: a quien llamar, que periodos debe (un `<details>`, sin
+ * JavaScript) y el enlace a su estado de cuenta, donde se registra el pago.
  */
 export default async function MorosidadPage({
   params,
@@ -62,9 +66,8 @@ export default async function MorosidadPage({
               <thead>
                 <tr>
                   <th scope="col">Unidad</th>
-                  <th scope="col" className="numero">
-                    Períodos vencidos
-                  </th>
+                  <th scope="col">Ocupantes</th>
+                  <th scope="col">Períodos vencidos</th>
                   <th scope="col" className="numero">
                     Deuda
                   </th>
@@ -73,8 +76,54 @@ export default async function MorosidadPage({
               <tbody>
                 {morosidad.deudores.map((deudor) => (
                   <tr key={deudor.unidadId}>
-                    <td>{deudor.designacion}</td>
-                    <td className="numero cifra">{deudor.periodosVencidos}</td>
+                    <td>
+                      <Link
+                        href={`/consorcios/${activo.id}/pagos?unidad=${deudor.unidadId}#movimientos`}
+                      >
+                        {deudor.designacion}
+                      </Link>
+                    </td>
+                    <td>
+                      {deudor.ocupantes.length === 0 ? (
+                        <span className="ayuda">Sin ocupantes cargados</span>
+                      ) : (
+                        <ul className="lista-simple lista-simple--apilada">
+                          {deudor.ocupantes.map((ocupante) => (
+                            <li key={`${ocupante.tipo}-${ocupante.nombre}`}>
+                              <span>
+                                {ocupante.nombre} <span className="apagado">({ocupante.tipo})</span>
+                              </span>
+                              <span>
+                                {ocupante.telefono && (
+                                  <a href={`tel:${ocupante.telefono}`}>{ocupante.telefono}</a>
+                                )}{' '}
+                                {ocupante.correo && (
+                                  <a href={`mailto:${ocupante.correo}`}>{ocupante.correo}</a>
+                                )}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </td>
+                    <td>
+                      <details>
+                        <summary>{plural(deudor.periodosVencidos, 'período', 'períodos')}</summary>
+                        <ul className="lista-simple">
+                          {deudor.periodos.map((periodo) => (
+                            <li key={periodo.periodo}>
+                              <span>
+                                {periodo.periodo}{' '}
+                                <span className="ayuda">
+                                  venció {fechaParaMostrar(periodo.vencimiento)}
+                                </span>
+                              </span>
+                              <span className="cifra">{importeParaMostrar(periodo.saldo)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    </td>
                     <td className="numero cifra">{importeParaMostrar(deudor.deuda)}</td>
                   </tr>
                 ))}

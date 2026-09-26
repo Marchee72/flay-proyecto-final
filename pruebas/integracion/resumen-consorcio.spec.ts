@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { verResumenConsorcio } from '@/aplicacion/consorcios/resumen'
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
@@ -35,7 +36,10 @@ beforeEach(async () => {
   await prismaBase.persona.updateMany({ data: { telefono: '341-5550000' } })
 })
 
-afterEach(limpiar)
+afterEach(async () => {
+  await prismaBase.pago.deleteMany({})
+  await limpiar()
+})
 
 describe('resumen del consorcio', () => {
   it('un consorcio recien creado tiene resumen: todo en cero, nada revienta', async () => {
@@ -123,5 +127,71 @@ describe('resumen del consorcio', () => {
     ])
     expect(resumen.padron).toEqual({ unidades: 2, cuadra: true })
     expect(resumen.proveedores.map((p) => p.razonSocial)).toEqual(['Plomeria Lopez'])
+  })
+
+  it('el consorcista ve sus pagos y los reclamos propios o generales, nada ajeno (RN-12)', async () => {
+    await cargarPadron(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidades: [
+        { designacion: '1A', coeficiente: '50.00000000' },
+        { designacion: '1B', coeficiente: '50.00000000' },
+      ],
+    })
+    const unidades = await prismaBase.unidad.findMany({
+      where: { consorcioId },
+      orderBy: { designacion: 'asc' },
+    })
+    const [suya, ajena] = unidades
+    const vecina = await crearUsuario('Nadia')
+    await registrarOcupacion(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidadId: suya.id,
+      personaId: vecina.personaId,
+      tipo: 'propietario',
+      desde: new Date('2026-01-01'),
+    })
+
+    for (const unidad of [suya, ajena]) {
+      await prismaBase.pago.create({
+        data: {
+          consorcioId,
+          unidadId: unidad.id,
+          fechaPago: new Date('2026-09-05'),
+          importe: '100.00',
+          medio: 'transferencia',
+          registradoPor: administrador,
+        },
+      })
+    }
+    for (const [creadoPor, titulo, alcance] of [
+      [administrador, 'Particular ajeno', 'individual'],
+      [administrador, 'Del edificio', 'general'],
+      [vecina.id, 'Mio', 'individual'],
+    ] as const) {
+      await prismaBase.reclamo.create({
+        data: { consorcioId, creadoPor, titulo, descripcion: '-', alcance },
+      })
+    }
+
+    const resumen = await verResumenConsorcio(repo, RELOJ, {
+      usuarioId: vecina.id,
+      consorcioId,
+    })
+    expect(resumen.ultimosPagos.map((p) => p.unidad)).toEqual(['1A'])
+    expect(resumen.reclamosSinResponder.map((r) => r.titulo).sort()).toEqual([
+      'Del edificio',
+      'Mio',
+    ])
+    expect(resumen.reclamosAbiertos).toBe(2)
+
+    // El administrador sigue viendo todo.
+    const completo = await verResumenConsorcio(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+    })
+    expect(completo.ultimosPagos).toHaveLength(2)
+    expect(completo.reclamosAbiertos).toBe(3)
   })
 })

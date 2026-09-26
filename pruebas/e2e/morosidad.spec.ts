@@ -57,5 +57,12 @@ test('el administrador ve la nomina', async ({ page }) => {
   await expect(tabla).toBeVisible()
   await expect(tabla.getByRole('cell', { name: '3B', exact: true })).toBeVisible()
   await expect(tabla.getByRole('cell', { name: '3C', exact: true })).toBeVisible()
+  // El detalle por deudor: desglose desplegable y enlace a su estado de cuenta.
+  await tabla.getByText('1 período').first().click()
+  await expect(tabla.getByText(/venció/).first()).toBeVisible()
+  await expect(tabla.getByRole('link', { name: '3B', exact: true })).toHaveAttribute(
+    'href',
+    /\/pagos\?unidad=/,
+  )
   expect(await desbordaALoAncho(page)).toBe(false)
 })

@@ -185,17 +185,6 @@ describe('morosidad por rol (FR-029, SC-015)', () => {
     // Vencio el 10/02 y hoy es 15/09: 1A y 1B deben 500 cada una.
     await emitirMes(1)
 
-    const nominada = await verMorosidad(repo, RELOJ, { usuarioId: administrador, consorcioId })
-    expect(nominada.nominada).toBe(true)
-    if (nominada.nominada) {
-      expect(nominada.deudores.map((d) => d.designacion)).toEqual(['1A', '1B'])
-      expect(nominada.agregado).toEqual({
-        unidadesEnMora: 2,
-        unidadesTotales: 2,
-        deudaTotal: '1000.00',
-      })
-    }
-
     const vecino = await crearUsuario('Beto')
     await registrarOcupacion(repo, RELOJ, {
       usuarioId: administrador,
@@ -206,10 +195,31 @@ describe('morosidad por rol (FR-029, SC-015)', () => {
       desde: new Date('2026-01-01'),
     })
 
+    const nominada = await verMorosidad(repo, RELOJ, { usuarioId: administrador, consorcioId })
+    expect(nominada.nominada).toBe(true)
+    if (nominada.nominada) {
+      expect(nominada.deudores.map((d) => d.designacion)).toEqual(['1A', '1B'])
+      expect(nominada.agregado).toEqual({
+        unidadesEnMora: 2,
+        unidadesTotales: 2,
+        deudaTotal: '1000.00',
+      })
+      // El detalle por deudor: que periodo debe y a quien llamar.
+      const [unoA, unoB] = nominada.deudores
+      expect(unoA.periodos).toEqual([
+        { periodo: '01/2026', vencimiento: '2026-02-10', saldo: '500.00' },
+      ])
+      expect(unoA.ocupantes).toEqual([
+        { tipo: 'propietario', nombre: 'Beto Diaz', telefono: null, correo: null },
+      ])
+      expect(unoB.ocupantes).toEqual([])
+    }
+
     const agregada = await verMorosidad(repo, RELOJ, { usuarioId: vecino.id, consorcioId })
     expect(agregada.nominada).toBe(false)
     expect(agregada.agregado.unidadesEnMora).toBe(2)
     expect(JSON.stringify(agregada)).not.toContain('1B')
+    expect(JSON.stringify(agregada)).not.toContain('Beto')
   })
 
   /**

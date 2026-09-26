@@ -91,3 +91,52 @@ export async function unidadesOcupadasPor(
       AND o."vigencia" @> ${fecha}::date
     ORDER BY un."designacion"`
 }
+
+export interface Ocupante {
+  tipo: TipoDeOcupacion
+  nombre: string
+  telefono: string | null
+  correo: string | null
+}
+
+/**
+ * Quienes ocupan cada unidad a esa fecha, propietario primero. Los ids tienen
+ * que venir de una consulta ya aislada: esto no filtra por consorcio.
+ */
+export async function ocupantesVigentesDe(
+  unidadIds: readonly string[],
+  fecha: Date,
+): Promise<Map<string, Ocupante[]>> {
+  if (unidadIds.length === 0) return new Map()
+
+  const filas = await prismaBase.$queryRaw<
+    {
+      unidad_id: string
+      tipo: TipoDeOcupacion
+      nombre: string
+      apellido: string
+      telefono: string | null
+      correo: string | null
+    }[]
+  >`
+    SELECT o."unidad_id", o."tipo", p."nombre", p."apellido", p."telefono", p."correo"
+    FROM "Ocupacion" o
+    JOIN "Persona" p ON p."id" = o."persona_id"
+    WHERE o."unidad_id" = ANY(${unidadIds}::uuid[])
+      AND o."vigencia" @> ${fecha}::date
+    ORDER BY o."tipo", p."apellido", p."nombre"`
+
+  const porUnidad = new Map<string, Ocupante[]>()
+  for (const fila of filas) {
+    porUnidad.set(fila.unidad_id, [
+      ...(porUnidad.get(fila.unidad_id) ?? []),
+      {
+        tipo: fila.tipo,
+        nombre: `${fila.nombre} ${fila.apellido}`,
+        telefono: fila.telefono,
+        correo: fila.correo,
+      },
+    ])
+  }
+  return porUnidad
+}

@@ -5,6 +5,7 @@ import React from 'react'
 import { importeParaMostrar, coeficienteParaMostrar } from '@/compartido/formato'
 import type {
   ExpensaParaDocumento,
+  GastosDeClasificacion,
   GeneradorDeDocumentos,
   LineaDeInteres,
 } from '@/dominio/contratos/documentos'
@@ -59,6 +60,16 @@ const estilos = StyleSheet.create({
   },
   celdaAncha: { width: '40%' },
   celda: { width: '20%', textAlign: 'right' },
+  celdaFecha: { width: '16%' },
+  celdaDetalle: { width: '64%', paddingRight: 8 },
+  rubro: { marginTop: 6, color: '#555555' },
+  subtotal: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 3,
+    borderTopWidth: 0.5,
+    borderTopColor: '#1a1a1a',
+  },
   pie: { marginTop: 24, fontSize: 8, color: '#777777' },
 })
 
@@ -104,6 +115,54 @@ function DesgloseDeInteres({ lineas }: { lineas: LineaDeInteres[] }) {
   )
 }
 
+const TITULO_CLASIFICACION = {
+  ordinario: 'Gastos ordinarios',
+  extraordinario: 'Gastos extraordinarios',
+} as const
+
+/**
+ * Lo que el consorcio gasto en el periodo, rubro por rubro (`FR-017`): es lo
+ * que le permite a un propietario entender de donde sale su parte sin pedir
+ * la planilla. La lista parte de pagina sola si es larga.
+ */
+function GastosDelPeriodo({ grupos }: { grupos: GastosDeClasificacion[] }) {
+  if (grupos.length === 0) return null
+
+  return (
+    <View style={estilos.bloque}>
+      <Text style={estilos.subtitulo}>Gastos del consorcio en el periodo</Text>
+      {grupos.map((grupo) => (
+        <View key={grupo.clasificacion} style={{ marginBottom: 10 }}>
+          <Text>{TITULO_CLASIFICACION[grupo.clasificacion]}</Text>
+          {grupo.rubros.map((rubro) => (
+            <View key={rubro.rubro}>
+              <Text style={estilos.rubro}>{rubro.rubro}</Text>
+              {rubro.lineas.map((linea, i) => (
+                <View key={i} style={estilos.filaConLinea}>
+                  <Text style={estilos.celdaFecha}>{linea.fecha}</Text>
+                  <Text style={estilos.celdaDetalle}>
+                    {linea.proveedor ? `${linea.proveedor} - ` : ''}
+                    {linea.descripcion}
+                  </Text>
+                  <Text style={estilos.celda}>{importeParaMostrar(linea.importe)}</Text>
+                </View>
+              ))}
+              <View style={estilos.subtotal}>
+                <Text>Subtotal {rubro.rubro}</Text>
+                <Text>{importeParaMostrar(rubro.subtotal)}</Text>
+              </View>
+            </View>
+          ))}
+          <View style={estilos.total}>
+            <Text>Total {TITULO_CLASIFICACION[grupo.clasificacion].toLowerCase()}</Text>
+            <Text>{importeParaMostrar(grupo.total)}</Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  )
+}
+
 export function Expensa({ datos }: { datos: ExpensaParaDocumento }) {
   return (
     <Document
@@ -134,8 +193,12 @@ export function Expensa({ datos }: { datos: ExpensaParaDocumento }) {
           </View>
         </View>
 
+        <GastosDelPeriodo grupos={datos.gastos} />
+
         <View style={estilos.bloque}>
-          <Text style={estilos.subtitulo}>Detalle del periodo</Text>
+          <Text style={estilos.subtitulo}>
+            Su parte ({coeficienteParaMostrar(datos.coeficienteAplicado)} % de los gastos)
+          </Text>
           <Renglon concepto="Expensas ordinarias" importe={datos.importeOrdinario} />
           <Renglon concepto="Expensas extraordinarias" importe={datos.importeExtraordinario} />
           <Renglon concepto="Deuda anterior" importe={datos.deudaAnterior} />

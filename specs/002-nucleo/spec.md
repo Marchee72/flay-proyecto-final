@@ -314,9 +314,10 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
   lugar, considerando los tres niveles en este orden: habilitación de plataforma, habilitación
   sobre la administradora dueña del consorcio, y habilitación sobre el consorcio. Los dos ejes de
   aislamiento colapsan ahí y no en cada consulta: es el mismo criterio del Principio I.
-- **FR-007b**: El **super administrador** de plataforma es quien da de alta administradoras y
-  consorcios. La razón es estructural: el alta de un consorcio no se puede autorizar por par
-  (rol, consorcio) porque al crear el primero no hay ninguno contra el cual evaluar.
+- **FR-007b**: El **super administrador** de plataforma es quien da de alta administradoras. Los
+  consorcios los da de alta él, en cualquier administradora, o quien tiene habilitación sobre la
+  administradora dueña, sólo en la suya. La razón es estructural: el alta de un consorcio no se puede
+  autorizar por par (rol, consorcio) porque al crear el primero no hay ninguno contra el cual evaluar.
 
   Se modela como **tabla propia** con vigencia, no como una habilitación con consorcio nulo: un
   nulo en la tabla que materializa el Principio I es la clase de agujero que después filtra datos
@@ -531,9 +532,10 @@ una y verificar que todas dejan asiento; abrir un período y comprobar que un ga
   contraseña sea correcta**, y vuelve a funcionar pasados quince minutos o cuando el administrador
   levanta el bloqueo. El mensaje es idéntico para cuenta inexistente, contraseña incorrecta y
   cuenta bloqueada (FR-001b, FR-001c).
-- **SC-002c**: Un usuario **sin** habilitación de plataforma no puede dar de alta un consorcio ni
-  una administradora, ni siquiera siendo administrador de otro consorcio; una habilitación de
-  plataforma vencida ayer tampoco alcanza (FR-007b, FR-009).
+- **SC-002c**: Un usuario **sin** habilitación de plataforma no puede dar de alta una
+  administradora, ni un consorcio fuera de la administradora sobre la que está habilitado, ni
+  siquiera siendo administrador de otro consorcio; una habilitación de plataforma vencida ayer
+  tampoco alcanza (FR-007b, FR-009).
 - **SC-002d**: Un usuario con habilitación sobre la **administradora** obtiene rol efectivo de
   administrador sobre el **100 %** de los consorcios de esa cartera y **cero** filas de los
   consorcios de cualquier otra administradora (FR-007, FR-007c, § 9 factor 13).

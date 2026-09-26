@@ -94,6 +94,17 @@ test('una direccion vieja va a la misma seccion del consorcio pedido', async ({ 
   await expect(page).toHaveURL('/bandeja')
 })
 
+test('filtrar los gastos por periodo no abre el alta; ?abrir=1 si', async ({ page }) => {
+  await entrar(page, unico.correo)
+  // Es el enlace «Ver gastos» de Expensas: `periodo` es del filtro, no del alta.
+  await page.goto(`/consorcios/${unico.consorcioId}/gastos?periodo=${unico.periodoId}`)
+  await expect(page.getByRole('table')).toBeVisible()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+
+  await page.goto(`/consorcios/${unico.consorcioId}/gastos?abrir=1`)
+  await expect(page.getByRole('dialog', { name: 'Nuevo gasto' })).toBeVisible()
+})
+
 test('un consorcio fuera del alcance no dibuja nada', async ({ page }) => {
   await entrar(page, unico.correo)
   await page.goto(`/consorcios/${segundoConsorcioId}/gastos`)

@@ -224,6 +224,12 @@ no reserva («la reserva la hace quien ocupa la unidad»).
    sólo traduce el error.
 4. Cada confirmación o cancelación avisa por correo al solicitante.
 
+**Historial de uso** — `/reservas/historial`, sólo *administrador* (enlace «Historial de uso»): un mes
+por vez (`<input type="month">`, el actual por omisión) y filtro por espacio. Muestra todas las
+reservas del mes, pasadas incluidas, con la unidad **y el nombre de quien reservó**, y el estado; una
+confirmada que ya terminó figura como `Cumplida`. Al consorcista el caso de uso le responde «tu rol no
+permite».
+
 ### 3.11 Espacios — `/espacios`
 
 **Muestra**: tarjetas por espacio con capacidad, anticipación (h a días), duración máxima, reservas

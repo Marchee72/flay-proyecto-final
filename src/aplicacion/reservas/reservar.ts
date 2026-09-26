@@ -6,7 +6,7 @@ import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { notificar } from '@/aplicacion/comunicacion/notificar'
 import { saldoImpagoPorUnidad } from '@/aplicacion/pagos/estado-de-cuenta'
 import { sinConsorcio } from '@/infraestructura/cliente-aislado'
-import { prisma } from '@/infraestructura/prisma'
+import { prisma, prismaBase } from '@/infraestructura/prisma'
 import { ocupaUnidad, unidadesOcupadasPor } from '@/infraestructura/repositorios/ocupaciones'
 
 /**
@@ -246,6 +246,71 @@ export async function listarReservas(
         estado: r.estado,
         motivoRechazo: r.motivoRechazo,
         propia: r.solicitadaPor === datos.usuarioId,
+      }))
+    },
+  )
+}
+
+export interface ReservaDelHistorial extends ReservaDelConsorcio {
+  solicitante: string
+  /** Una confirmada que ya termino: nadie escribe `cumplida`, se deduce aca. */
+  cumplida: boolean
+}
+
+/**
+ * El historial de uso de los espacios comunes: cualquier rango, pasado
+ * incluido, todos los estados y con el nombre de quien reservo. Solo para el
+ * administrador; el consorcista sigue viendo unidades, no nombres.
+ */
+export async function historialDeReservas(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: { usuarioId: string; consorcioId: string; desde: Date; hasta: Date; espacioId?: string },
+): Promise<ReservaDelHistorial[]> {
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    {
+      usuarioId: datos.usuarioId,
+      consorcioId: datos.consorcioId,
+      rolesPermitidos: ['administrador'],
+      accion: 'ver el historial de reservas',
+    },
+    async () => {
+      const reservas = await prisma.reserva.findMany({
+        where: {
+          ...(datos.espacioId ? { espacioId: datos.espacioId } : {}),
+          desde: { lt: datos.hasta },
+          hasta: { gt: datos.desde },
+        },
+        include: {
+          espacio: { select: { nombre: true } },
+          unidad: { select: { designacion: true } },
+        },
+        orderBy: { desde: 'desc' },
+      })
+      // El usuario no lleva consorcio: los ids salen de reservas ya aisladas.
+      const usuarios = await prismaBase.usuario.findMany({
+        where: { id: { in: [...new Set(reservas.map((r) => r.solicitadaPor))] } },
+        select: { id: true, persona: { select: { nombre: true, apellido: true } } },
+      })
+      const nombre = new Map(
+        usuarios.map((u) => [u.id, `${u.persona.nombre} ${u.persona.apellido}`]),
+      )
+      const ahora = reloj.ahora()
+      return reservas.map((r) => ({
+        id: r.id,
+        espacioId: r.espacioId,
+        espacio: r.espacio.nombre,
+        unidad: r.unidad.designacion,
+        desde: r.desde.toISOString(),
+        hasta: r.hasta.toISOString(),
+        cantidadPersonas: r.cantidadPersonas,
+        estado: r.estado,
+        motivoRechazo: r.motivoRechazo,
+        propia: r.solicitadaPor === datos.usuarioId,
+        solicitante: nombre.get(r.solicitadaPor) ?? '—',
+        cumplida: r.estado === 'cumplida' || (r.estado === 'confirmada' && r.hasta < ahora),
       }))
     },
   )

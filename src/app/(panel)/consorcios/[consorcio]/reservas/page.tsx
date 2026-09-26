@@ -66,7 +66,8 @@ export default async function ReservasPage({
           {esAdministrador && (
             <>
               {' '}
-              <Link href={`/consorcios/${activo.id}/espacios`}>Administrar espacios</Link>.
+              <Link href={`/consorcios/${activo.id}/espacios`}>Administrar espacios</Link> ·{' '}
+              <Link href={`/consorcios/${activo.id}/reservas/historial`}>Historial de uso</Link>.
             </>
           )}
         </p>

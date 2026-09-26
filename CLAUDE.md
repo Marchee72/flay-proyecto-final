@@ -151,7 +151,7 @@ comprensibles (RNF-10), auditoría registrada si toca datos económicos, documen
 
 ## Lo que no se adivina leyendo el código
 
-Veintidós decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
+Veintitrés decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
 
 1. **El orden de las semillas y las pruebas.** `npm run test:integracion` **vacía** las tablas de
    negocio, semilla incluida: en una base compartida no hay forma de distinguir lo sembrado de lo
@@ -242,6 +242,11 @@ Veintidós decisiones que costaron una vuelta y conviene no volver a tomar desde
     lleva un `<input type="month">` y la acción resuelve `periodoPara(anio, mes)`, que devuelve el
     existente o lo crea. Cerrar, liquidar y anular siguen siendo explícitos. Un mes ya cerrado o
     liquidado rechaza el gasto (RN-03) igual que antes.
+23. **La unidad dada de baja sigue en la tabla.** `editarPadron` la deja con coeficiente cero y
+    `bajaDesde`: borrarla rompería la suma histórica y su historia económica. Por eso quien lee el
+    padrón *vigente* —liquidar, reservar, reclamar, ocupar, dirigir una novedad— filtra
+    `bajaDesde: null`; quien lee historia (una expensa vieja) no. Una consulta nueva sobre
+    `prisma.unidad` que se olvida el filtro no rompe la suma, pero ofrece una unidad que ya no está.
 
 
 ## Notas

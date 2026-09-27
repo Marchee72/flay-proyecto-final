@@ -361,6 +361,20 @@ export async function sembrarDemo(
   for (const clave of ['C-C', 'C-D'] as const) {
     await asegurarHabilitacion(admin.id, consorcios[clave], 'administrador')
   }
+  await prismaBase.habilitacionAdministradora.upsert({
+    where: {
+      usuarioId_administradoraId: {
+        usuarioId: admin.id,
+        administradoraId: juego.administradoraId,
+      },
+    },
+    update: { vigenciaHasta: null },
+    create: {
+      usuarioId: admin.id,
+      administradoraId: juego.administradoraId,
+      vigenciaDesde: HOY,
+    },
+  })
   const usuarios: Record<string, string> = { 'admin1@flay.demo': admin.id }
   for (const definicion of CONSORCISTAS) {
     usuarios[definicion.correo] = await asegurarConsorcista(

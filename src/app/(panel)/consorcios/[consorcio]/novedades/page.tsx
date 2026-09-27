@@ -1,17 +1,23 @@
 import type { Metadata } from 'next'
-import { BadgeCheck, Megaphone, Pin } from 'lucide-react'
+import { BadgeCheck, Megaphone } from 'lucide-react'
 
-import { fechaParaMostrar } from '@/compartido/formato'
-import { listarNovedades } from '@/aplicacion/comunicacion/novedades'
+import { destinatariosPosibles, listarNovedades } from '@/aplicacion/comunicacion/novedades'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
 import { ModalNovedad } from './modal-novedad'
+import { TarjetaNovedad } from './tarjeta-novedad'
 
 export const metadata: Metadata = { title: 'Novedades — Flay' }
 
-/** Novedades del consorcio (`RF-18`, `CU-12`): fijadas primero; publica el administrador. */
+const DIA = 24 * 60 * 60 * 1000
+
+/**
+ * Novedades del consorcio (`RF-18`, `CU-12`): fijadas primero. El consorcista
+ * ve las vigentes que le tocan; el administrador ve todas con su estado y
+ * publica.
+ */
 export default async function NovedadesPage({
   params,
   searchParams,
@@ -26,10 +32,14 @@ export default async function NovedadesPage({
   const { usuarioId, activo } = pantalla
 
   try {
-    const [novedades, roles] = await Promise.all([
-      listarNovedades(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
-      rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id),
+    const roles = await rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id)
+    const administra = roles.includes('administrador')
+    const datos = { usuarioId, consorcioId: activo.id }
+    const [novedades, destinatarios] = await Promise.all([
+      listarNovedades(HABILITACIONES, RELOJ, datos),
+      administra ? destinatariosPosibles(HABILITACIONES, RELOJ, datos) : null,
     ])
+    const hoy = RELOJ.hoy()
 
     return (
       <>
@@ -41,25 +51,24 @@ export default async function NovedadesPage({
             <span>Novedad publicada y avisada.</span>
           </p>
         )}
-        {roles.includes('administrador') && (
+        {destinatarios && (
           <div className="fila-acciones">
-            <ModalNovedad consorcioId={activo.id} />
+            <ModalNovedad
+              consorcioId={activo.id}
+              hoy={hoy.toISOString().slice(0, 10)}
+              enUnMes={new Date(hoy.getTime() + 30 * DIA).toISOString().slice(0, 10)}
+              destinatarios={destinatarios}
+            />
           </div>
         )}
         {novedades.length === 0 ? (
           <div className="vacio">
             <Megaphone aria-hidden="true" />
-            <p>Sin novedades todavía.</p>
+            <p>Sin novedades por ahora.</p>
           </div>
         ) : (
           novedades.map((n) => (
-            <article className="tarjeta" key={n.id}>
-              <h2>
-                {n.fijada && <Pin className="icono" aria-label="Fijada" />} {n.titulo}
-              </h2>
-              <p className="ayuda">{fechaParaMostrar(n.publicadaEn)}</p>
-              <p style={{ whiteSpace: 'pre-line' }}>{n.cuerpo}</p>
-            </article>
+            <TarjetaNovedad key={n.id} novedad={n} consorcioId={activo.id} conEstado={administra} />
           ))
         )}
       </>

@@ -65,8 +65,9 @@ Cada ficha: qué muestra, qué se puede hacer (con el rol entre paréntesis), re
 
 ### 3.1 Resumen — `/consorcios/[consorcio]`
 
-**Muestra**: nombre y dirección; cuatro KPI (período abierto y su vencimiento, gastos del período,
-morosidad «n de m unidades» con deuda vencida, reclamos abiertos y críticos); avisos sólo si aplican
+**Muestra**: nombre y dirección; arriba, las **novedades vigentes** que le tocan a quien entra
+(generales, de su unidad o de su división), cada una con «Descartar»; cuatro KPI (período abierto y
+su vencimiento, gastos del período, morosidad «n de m unidades» con deuda vencida, reclamos abiertos y críticos); avisos sólo si aplican
 (padrón que no cierra, padrón vacío); tarjetas de últimos gastos, últimos pagos, reclamos sin
 resolver y contactos útiles (administración y proveedores).
 **Acciones**: «Cargar gasto», «Registrar pago» y, si hay período abierto, «Liquidar»
@@ -223,6 +224,12 @@ no reserva («la reserva la hace quien ocupa la unidad»).
    sólo traduce el error.
 4. Cada confirmación o cancelación avisa por correo al solicitante.
 
+**Historial de uso** — `/reservas/historial`, sólo *administrador* (enlace «Historial de uso»): un mes
+por vez (`<input type="month">`, el actual por omisión) y filtro por espacio. Muestra todas las
+reservas del mes, pasadas incluidas, con la unidad **y el nombre de quien reservó**, y el estado; una
+confirmada que ya terminó figura como `Cumplida`. Al consorcista el caso de uso le responde «tu rol no
+permite».
+
 ### 3.11 Espacios — `/espacios`
 
 **Muestra**: tarjetas por espacio con capacidad, anticipación (h a días), duración máxima, reservas
@@ -234,15 +241,23 @@ futuras avisando a cada solicitante.
 
 ### 3.12 Novedades — `/novedades`
 
-**Muestra**: comunicados de la administración, fijados primero, con fecha.
-**Acciones**: publicar (modal: título hasta 140, texto, fijada) — *administrador*. Publicar avisa a
-todos los habilitados del consorcio.
+**Muestra**: comunicados de la administración, fijados primero, con fecha y, si no es general, a quién
+van. El consorcista ve sólo las **vigentes** que le tocan y no descartó; el administrador ve todas con
+su estado (`Programada`, `Vigente`, `Vencida`) y sus fechas.
+**Acciones**: publicar (modal: título hasta 140, texto, **para** —todo el consorcio, una unidad o una
+división—, **se muestra desde / hasta** —por omisión hoy y treinta días—, fijada) —
+*administrador*. Publicar avisa sólo a los destinatarios habilitados. «Descartar» (cualquiera, salvo
+en la vista de gestión del administrador) la oculta para siempre, sólo para quien la descarta.
+**Reglas**: la división es la letra que sigue al piso (1A, 2A, 3A son la división A); una unidad sin
+letra (C1, Local 2) no tiene división. Una novedad que termina antes de hoy no se puede publicar.
 
 ### 3.13 Documentación — `/documentos`, `/documentos/[id]`, `/documentos/consultar`
 
-**Muestra**: tabla de documentos (título, tipo, fecha, estado de indexación: `Pendiente de indexar`,
-`Indexando`, `Listo para consultar`, `No se pudo indexar` con el motivo). Los no visibles para
-consorcistas llevan el ojo tachado. El detalle abre el PDF en visor con descarga por enlace firmado.
+**Muestra**: tabla de documentos (título, tipo, fecha). Sólo el administrador ve además la columna
+«Consultas»: `En proceso`, `Procesado` o `No se pudo procesar` con el motivo, y un botón
+«Reintentar» en lo que no está procesado. Mientras algo está en proceso la página se refresca sola,
+y ese refresco es el que hace avanzar la cola. Los no visibles para consorcistas llevan el ojo
+tachado. El detalle abre el PDF en visor con descarga por enlace firmado.
 **Tipos**: reglamento de copropiedad, reglamento interno, acta, contrato, póliza, otro.
 **Acciones**: cargar (*administrador*): sólo PDF, hasta 25 MB, con marca «visible para
 consorcistas». Se indexa en segundo plano (extracción de texto, fragmentación, vectores, con
@@ -276,19 +291,30 @@ puede «Actualizar los indicadores».
 **Muestra**: padrón vigente (designación, tipo, coeficiente) con la suma al pie.
 **Quién**: administrador y consejo.
 **Acciones**: cargar el padrón (*administrador*), sólo cuando está vacío: se cargan **todas las
-unidades de una vez** (o se genera por pisos × unidades por piso y se ajusta). Tipos: departamento,
-cochera, local, baulera.
+unidades de una vez** (o se genera por pisos × unidades por piso y se ajusta). El generador, que
+también está en el paso 2 del alta de consorcio, suma las **cocheras**: cuántas y qué porcentaje del
+edificio se llevan entre todas; salen como `C1…Cn`, de tipo cochera, con ese porcentaje repartido
+parejo, y los departamentos se reparten el resto. Tipos: departamento, cochera, local, baulera.
 **Reglas**: RN-01 — la suma debe dar exactamente 100,00000000 %; unidad por unidad nunca cerraría.
 Un padrón que no cierra bloquea la liquidación (aviso en el resumen). RN-02 — los coeficientes sólo
 cambian hacia el futuro con `CoeficienteHistorico`; la vigencia anterior cierra el día **antes** de
-que abra la nueva. `agregarUnidades` y `cambiarCoeficientes` existen como casos de uso pero no tienen
-pantalla todavía.
+que abra la nueva.
+**Editar padrón** (*administrador*, botón en la página; `?editar=1`): el mismo editor con las
+unidades cargadas. Se puede renombrar, cambiar tipo y coeficiente, agregar unidades y **dar de baja**
+(con deshacer), y se guarda todo junto: la suma tiene que seguir dando 100. Rige desde hoy (la
+vigencia anterior cierra ayer; si se abrió hoy mismo, se corrige en su lugar). La baja es lógica:
+coeficiente cero, deja de liquidarse, de ofrecerse para reservas, reclamos y ocupaciones, y aparece
+en «Dadas de baja»; se rechaza si la unidad tiene ocupantes, expensas sin pagar o reservas por
+delante. Dos unidades con el mismo nombre también se rechazan.
 
 ### 3.16 Proveedores — `/proveedores`
 
 **Muestra**: razón social, CUIT, rubro habitual.
 **Acciones**: nuevo (razón social, CUIT, rubro habitual, teléfono, correo) y editar —
 *administrador*. Ver: todos (el consorcista los ve como contactos útiles).
+**Sin duplicados**: el CUIT se normaliza a `NN-NNNNNNNN-N` antes de guardarlo, así que
+`20123456789` y `20-12345678-9` son el mismo proveedor y el segundo se rechaza con «Ya hay un
+proveedor con el CUIT …». Sin 11 dígitos no se acepta. El CUIT no se edita.
 
 ### 3.17 Usuarios — `/usuarios`
 

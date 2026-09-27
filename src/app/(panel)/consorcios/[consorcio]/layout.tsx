@@ -1,20 +1,18 @@
 import { redirect } from 'next/navigation'
-import { Menu } from 'lucide-react'
 
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 
 import { AvisoFueraDeAlcance, consorciosAlAlcance } from '../../con-consorcio'
-import { BarraInferior, Navegacion } from '../../navegacion'
-import { SelectorDeConsorcio } from '../../selector-consorcio'
+import { Marco } from '../../marco'
 
 /**
- * Dentro de un consorcio: lateral con las secciones agrupadas, barra inferior
- * en telefono y el atajo para saltar a otro consorcio. Resuelve el consorcio
- * de la ruta contra el alcance una sola vez (`consorciosAlAlcance` esta
- * cacheado por pedido, asi que la pagina no repite la consulta). Un id fuera
- * del alcance no dibuja nada mas que el aviso.
+ * Dentro de un consorcio: el marco con el selector y las secciones agrupadas,
+ * y en telefono la barra inferior. Resuelve el consorcio de la ruta contra el
+ * alcance una sola vez (`consorciosAlAlcance` esta cacheado por pedido, asi
+ * que la pagina no repite la consulta). Un id fuera del alcance dibuja el
+ * marco sin secciones y el aviso, nada mas.
  */
 export default async function ConsorcioLayout({
   children,
@@ -32,32 +30,17 @@ export default async function ConsorcioLayout({
 
   if (!activo) {
     return (
-      <main className="suelto">
+      <Marco>
         <AvisoFueraDeAlcance />
-      </main>
+      </Marco>
     )
   }
 
-  const base = `/consorcios/${activo.id}`
   const roles = await rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id)
 
   return (
-    <>
-      <div className="disposicion">
-        <div className="lateral__marco">
-          <SelectorDeConsorcio consorcios={consorcios} activoId={activo.id} />
-          <details className="menu">
-            <summary aria-label="Abrir menú de secciones">
-              <Menu className="icono" aria-hidden="true" />
-              Secciones
-            </summary>
-            <Navegacion base={base} roles={roles} etiqueta="Todas las secciones" />
-          </details>
-          <Navegacion base={base} roles={roles} />
-        </div>
-        <main>{children}</main>
-      </div>
-      <BarraInferior base={base} />
-    </>
+    <Marco consorcio={{ consorcios, activoId: activo.id, base: `/consorcios/${activo.id}`, roles }}>
+      {children}
+    </Marco>
   )
 }

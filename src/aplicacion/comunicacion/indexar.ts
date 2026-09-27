@@ -70,7 +70,12 @@ export function manejadorIndexacion(
     )
     if (!resultado.disponible) return fallar(resultado.motivo)
 
-    await guardarFragmentos(documentoId, fragmentos, resultado.valor)
+    try {
+      await guardarFragmentos(documentoId, fragmentos, resultado.valor)
+    } catch (error) {
+      console.error('[indexar]', error)
+      return fallar('No se pudo guardar el índice del documento.')
+    }
     await prismaBase.documentoConsorcio.update({
       where: { id: documentoId },
       data: { estadoIndexacion: 'indexado', hashSha256: hash, errorIndexacion: null },

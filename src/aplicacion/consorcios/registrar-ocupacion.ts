@@ -50,7 +50,9 @@ export async function registrarOcupacion(
     async (acceso) => {
       // El aislamiento decide si la unidad es de este consorcio: la consulta no
       // escribe el filtro, lo pone la extension (Principio I).
-      const unidad = await prisma.unidad.findFirst({ where: { id: datos.unidadId } })
+      const unidad = await prisma.unidad.findFirst({
+        where: { id: datos.unidadId, bajaDesde: null },
+      })
       if (!unidad) throw new NoEncontrado()
 
       if (!acceso.roles.includes('administrador')) {

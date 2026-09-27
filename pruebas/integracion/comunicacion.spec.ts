@@ -1,7 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { cargarDocumento, listarDocumentos } from '@/aplicacion/comunicacion/documentos'
-import { listarNovedades, publicarNovedad } from '@/aplicacion/comunicacion/novedades'
+import {
+  descartarNovedad,
+  listarNovedades,
+  publicarNovedad,
+  VigenciaDeNovedadInvalida,
+} from '@/aplicacion/comunicacion/novedades'
+import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
+import { cargarPadron } from '@/aplicacion/consorcios/unidades'
+import { NoEncontrado } from '@/compartido/errores'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
 
@@ -78,6 +86,122 @@ describe('novedades', () => {
   })
 })
 
+describe('novedades con destinatario, vigencia y descarte', () => {
+  let delB: string
+  let unidad2A: string
+
+  beforeEach(async () => {
+    await cargarPadron(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidades: [
+        { designacion: '1A', coeficiente: '30.00000000' },
+        { designacion: '2A', coeficiente: '30.00000000' },
+        { designacion: '1B', coeficiente: '40.00000000' },
+      ],
+    })
+    const unidades = await prismaBase.unidad.findMany({ where: { consorcioId } })
+    const id = (d: string) => unidades.find((u) => u.designacion === d)!.id
+    unidad2A = id('2A')
+    const usuarioB = await crearUsuario('Eli')
+    delB = usuarioB.id
+    const vecinoPersona = (await prismaBase.usuario.findUniqueOrThrow({ where: { id: vecino } }))
+      .personaId
+    for (const [unidadId, personaId] of [
+      [unidad2A, vecinoPersona],
+      [id('1B'), usuarioB.personaId],
+    ]) {
+      await registrarOcupacion(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        unidadId,
+        personaId,
+        tipo: 'propietario',
+        desde: new Date('2026-01-01'),
+      })
+    }
+  })
+
+  const publicar = (datos: Partial<Parameters<typeof publicarNovedad>[2]>) =>
+    publicarNovedad(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      titulo: 'Aviso',
+      cuerpo: 'Texto',
+      ...datos,
+    })
+  const titulos = async (usuarioId: string, reloj = RELOJ) =>
+    (await listarNovedades(repo, reloj, { usuarioId, consorcioId })).map((n) => n.titulo)
+  const avisadosDe = async (titulo: string) =>
+    (await prismaBase.notificacion.findMany({ where: { titulo: `Novedad: ${titulo}` } })).map(
+      (a) => a.usuarioId,
+    )
+
+  it('a una unidad: la ve y la recibe solo quien la ocupa', async () => {
+    await publicar({ titulo: 'Filtracion en el 2A', alcance: 'unidad', unidadId: unidad2A })
+    expect(await titulos(vecino)).toEqual(['Filtracion en el 2A'])
+    expect(await titulos(delB)).toEqual([])
+    expect(await avisadosDe('Filtracion en el 2A')).toEqual([vecino])
+  })
+
+  it('a una division: la ven los de esa letra en todos los pisos, y nadie mas', async () => {
+    await publicar({ titulo: 'Corte en la columna A', alcance: 'division', division: 'a' })
+    expect(await titulos(vecino)).toEqual(['Corte en la columna A'])
+    expect(await titulos(delB)).toEqual([])
+    expect(await avisadosDe('Corte en la columna A')).toEqual([vecino])
+
+    await expect(publicar({ alcance: 'division', division: 'Z' })).rejects.toThrow(
+      'división que exista',
+    )
+  })
+
+  it('la general la ven todos; la programada y la vencida no le llegan al consorcista', async () => {
+    await publicar({ titulo: 'General' })
+    await publicar({
+      titulo: 'Programada',
+      vigenteDesde: new Date('2026-09-20'),
+      vigenteHasta: new Date('2026-09-30'),
+    })
+    await publicar({
+      titulo: 'Corta',
+      vigenteDesde: new Date('2026-09-10'),
+      vigenteHasta: new Date('2026-09-16'),
+    })
+    expect((await titulos(delB)).sort()).toEqual(['Corta', 'General'])
+
+    // Diez dias despues, «Corta» vencio y «Programada» ya rige.
+    const despues = relojFijo('2026-09-25T12:00:00Z')
+    expect((await titulos(vecino, despues)).sort()).toEqual(['General', 'Programada'])
+
+    // El administrador las ve todas en la seccion, con su estado.
+    const gestion = await listarNovedades(repo, despues, {
+      usuarioId: administrador,
+      consorcioId,
+    })
+    expect(Object.fromEntries(gestion.map((n) => [n.titulo, n.estado]))).toEqual({
+      General: 'vigente',
+      Programada: 'vigente',
+      Corta: 'vencida',
+    })
+
+    await expect(
+      publicar({ vigenteDesde: new Date('2026-09-10'), vigenteHasta: new Date('2026-09-14') }),
+    ).rejects.toBeInstanceOf(VigenciaDeNovedadInvalida)
+  })
+
+  it('descartar la oculta solo para quien descarta; una de otro consorcio no se encuentra', async () => {
+    const { novedadId } = await publicar({ titulo: 'Asamblea' })
+    await descartarNovedad(repo, RELOJ, { usuarioId: vecino, consorcioId, novedadId })
+    await descartarNovedad(repo, RELOJ, { usuarioId: vecino, consorcioId, novedadId })
+    expect(await titulos(vecino)).toEqual([])
+    expect(await titulos(delB)).toEqual(['Asamblea'])
+
+    await expect(
+      descartarNovedad(repo, RELOJ, { usuarioId: ajeno, consorcioId: otroConsorcioId, novedadId }),
+    ).rejects.toBeInstanceOf(NoEncontrado)
+  })
+})
+
 describe('documentos', () => {
   const cargar = (titulo: string, visibleConsorcistas: boolean) =>
     cargarDocumento(repo, RELOJ, {
@@ -99,6 +223,15 @@ describe('documentos', () => {
     expect(await titulos(vecino)).toEqual(['Reglamento'])
     expect(await titulos(consejo)).toEqual(['Contrato de limpieza', 'Reglamento'])
     expect(await titulos(administrador)).toEqual(['Contrato de limpieza', 'Reglamento'])
+
+    // Si esta procesado para las consultas solo le interesa al administrador.
+    const estados = async (usuarioId: string) =>
+      (await listarDocumentos(repo, RELOJ, { usuarioId, consorcioId })).map(
+        (d) => d.estadoIndexacion,
+      )
+    expect(await estados(vecino)).toEqual([null])
+    expect(await estados(consejo)).toEqual([null, null])
+    expect(await estados(administrador)).toEqual(['pendiente', 'pendiente'])
   })
 
   it('nace pendiente con su trabajo de indexacion, y una clave ajena no se confirma', async () => {

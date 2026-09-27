@@ -54,6 +54,8 @@ erDiagram
     CONSORCIO ||--o{ PERIODO : "liquida por"
     CONSORCIO ||--o{ ESPACIO_COMUN : "dispone de"
     CONSORCIO ||--o{ NOVEDAD : "publica"
+    NOVEDAD ||--o{ NOVEDAD_DESCARTADA : "es descartada en"
+    UNIDAD |o--o{ NOVEDAD : "es destinataria de"
     CONSORCIO ||--o{ DOCUMENTO_CONSORCIO : "conserva"
     CONSORCIO ||--o{ HABILITACION : "otorga"
     CONSORCIO ||--o{ RECLAMO : "recibe"
@@ -146,9 +148,10 @@ Unidad funcional: departamento, cochera, local o baulera.
 | tipo | enumerado | NN | departamento, cochera, local, baulera |
 | piso | texto(10) | | Piso |
 | superficie_m2 | decimal(8,2) | | Superficie según el reglamento |
-| activa | booleano | NN | Estado |
+| baja_desde | fecha | | Baja lógica: desde cuándo deja de liquidarse; nula mientras está activa |
 
-Restricción: `UQ (consorcio_id, designacion)`.
+Restricciones: `UQ (consorcio_id, designacion)`; una unidad dada de baja tiene coeficiente cero, así
+la suma del padrón vigente sigue siendo 100 % (RN-01) y su historia económica queda intacta.
 
 ### CoeficienteHistorico
 
@@ -427,6 +430,17 @@ materializa RN-10 en la base de datos y no en el código de la aplicación.
 | publicada_por | uuid | FK, NN | Autor |
 | publicada_en | marca temporal | NN | Publicación |
 | fijada | booleano | NN | Si se fija al inicio del listado |
+| vigente_desde | fecha | NN | Desde cuándo se muestra |
+| vigente_hasta | fecha | NN, ≥ vigente_desde | Hasta cuándo se muestra; después deja de aparecer |
+| alcance | enumerado | NN | general, unidad, división |
+| unidad_id | uuid | FK | Unidad destinataria, solo con alcance unidad |
+| division | texto(4) | | Letra de la división destinataria (la columna 1A, 2A, 3A…), solo con alcance división |
+
+| `NovedadDescartada` | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| novedad_id | uuid | PK, FK | Novedad |
+| usuario_id | uuid | PK | Quien la descartó y ya no la ve |
+| descartada_en | marca temporal | NN | Cuándo |
 
 | `DocumentoConsorcio` | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -569,7 +583,7 @@ factibilidad técnica del punto 5.2.
 
 | Tabla | Índice | Propósito |
 |---|---|---|
-| `Unidad` | (consorcio_id, activa) | Listados por consorcio |
+| `Unidad` | (consorcio_id) | Listados por consorcio |
 | `Gasto` | (periodo_id, rubro_id) | Liquidación y análisis por rubro |
 | `Gasto` | (proveedor_id, fecha) | Indicador de proveedores, RF-24 |
 | `DetalleLiquidacion` | (unidad_id, liquidacion_id) | Estado de cuenta por unidad |

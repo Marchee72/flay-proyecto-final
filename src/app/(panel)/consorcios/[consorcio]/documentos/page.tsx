@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BadgeCheck, EyeOff, FileText } from 'lucide-react'
+import { BadgeCheck, EyeOff, FileText, MessageCircleQuestion } from 'lucide-react'
 
 import { fechaParaMostrar } from '@/compartido/formato'
 import {
@@ -11,7 +11,9 @@ import {
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 
+import { accionReindexar } from '../../../comunicacion/acciones'
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
+import { EnVivo } from '../../../en-vivo'
 import { ModalDocumento } from './modal-documento'
 
 export const metadata: Metadata = { title: 'Documentación — Flay' }
@@ -24,9 +26,10 @@ const CLASE_INDEXACION: Record<string, string> = {
 }
 
 /**
- * Documentacion del consorcio (`RF-19`, `CU-15`): listado por tipo con el
- * estado de indexacion legible, carga con subida directa y marca de
- * visibilidad, descarga por enlace firmado.
+ * Documentacion del consorcio (`RF-19`, `CU-15`): listado por tipo, carga con
+ * subida directa y marca de visibilidad, descarga por enlace firmado. Si ya
+ * esta procesado para las consultas solo le importa al administrador: es el
+ * unico que ve esa columna, y el que puede reintentar.
  */
 export default async function DocumentosPage({
   params,
@@ -46,29 +49,39 @@ export default async function DocumentosPage({
       listarDocumentos(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
       rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id),
     ])
+    const administra = roles.includes('administrador')
+    const enProceso = documentos.some(
+      (d) => d.estadoIndexacion === 'pendiente' || d.estadoIndexacion === 'procesando',
+    )
 
     return (
       <>
-        <h1>Documentación</h1>
-        <p className="apagado">
-          Reglamento, actas y contratos del consorcio.{' '}
-          <Link href={`/consorcios/${activo.id}/documentos/consultar`}>
-            Preguntarle a la documentación
-          </Link>
-          .
-        </p>
+        {/* Cada refresco drena la cola: es lo que hace avanzar el proceso (decision 21). */}
+        {enProceso && <EnVivo />}
+        <div className="cabecera-pagina">
+          <div>
+            <h1>Documentación</h1>
+            <p className="apagado">Reglamento, actas y contratos del consorcio.</p>
+          </div>
+          <div className="cabecera-pagina__acciones">
+            <Link
+              className="boton boton--fantasma"
+              href={`/consorcios/${activo.id}/documentos/consultar`}
+            >
+              <MessageCircleQuestion className="icono" aria-hidden="true" />
+              Preguntarle a la documentación
+            </Link>
+            {administra && <ModalDocumento consorcioId={activo.id} tipos={TIPOS_DOCUMENTO} />}
+          </div>
+        </div>
         {parametros.cargado && (
           <p className="aviso aviso--exito" role="status">
             <BadgeCheck className="icono" aria-hidden="true" />
             <span>
-              Documento cargado. Se indexa en segundo plano; cuando diga «listo» se puede consultar.
+              Documento cargado. Se procesa en segundo plano; cuando diga «Procesado» ya entra en
+              las consultas.
             </span>
           </p>
-        )}
-        {roles.includes('administrador') && (
-          <div className="fila-acciones">
-            <ModalDocumento consorcioId={activo.id} tipos={TIPOS_DOCUMENTO} />
-          </div>
         )}
         {documentos.length === 0 ? (
           <div className="vacio">
@@ -86,7 +99,7 @@ export default async function DocumentosPage({
                   <th scope="col">Documento</th>
                   <th scope="col">Tipo</th>
                   <th scope="col">Fecha</th>
-                  <th scope="col">Indexación</th>
+                  {administra && <th scope="col">Consultas</th>}
                   <th scope="col">
                     <span className="oculto">Descarga</span>
                   </th>
@@ -106,17 +119,28 @@ export default async function DocumentosPage({
                     </td>
                     <td>{d.tipoEtiqueta}</td>
                     <td>{d.fechaDocumento ? fechaParaMostrar(d.fechaDocumento) : '—'}</td>
-                    <td>
-                      <span className={`etiqueta ${CLASE_INDEXACION[d.estadoIndexacion]}`}>
-                        {ETIQUETA_INDEXACION[d.estadoIndexacion]}
-                      </span>
-                      {d.estadoIndexacion === 'error' && d.errorIndexacion && (
-                        <p className="ayuda">{d.errorIndexacion}</p>
-                      )}
-                    </td>
+                    {administra && d.estadoIndexacion && (
+                      <td>
+                        <span className={`etiqueta ${CLASE_INDEXACION[d.estadoIndexacion]}`}>
+                          {ETIQUETA_INDEXACION[d.estadoIndexacion]}
+                        </span>
+                        {d.estadoIndexacion === 'error' && d.errorIndexacion && (
+                          <p className="ayuda">{d.errorIndexacion}</p>
+                        )}
+                        {d.estadoIndexacion !== 'indexado' && (
+                          <form action={accionReindexar}>
+                            <input type="hidden" name="consorcio" value={activo.id} />
+                            <input type="hidden" name="documento" value={d.id} />
+                            <button type="submit" className="boton boton--terciario">
+                              Reintentar
+                            </button>
+                          </form>
+                        )}
+                      </td>
+                    )}
                     <td>
                       <Link
-                        className="boton boton--fantasma"
+                        className="boton boton--terciario"
                         href={`/consorcios/${activo.id}/documentos/${d.id}`}
                       >
                         Abrir

@@ -87,6 +87,10 @@ const PANTALLAS = [
 
 const DEL_ADMINISTRADOR = [
   {
+    nombre: 'historial de reservas',
+    ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/reservas/historial`,
+  },
+  {
     nombre: 'panel de indicadores',
     ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/indicadores`,
   },

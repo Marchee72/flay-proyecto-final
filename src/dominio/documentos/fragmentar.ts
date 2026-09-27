@@ -4,8 +4,8 @@
  *
  * Si el documento tiene articulos numerados («Art. 12.», «Artículo 12»), cada
  * articulo es un fragmento: es la unidad de sentido de un reglamento y lo que
- * la prueba de concepto midio al 100 %. Si no, se agrupan parrafos hasta
- * ~1.000 caracteres, repitiendo el ultimo parrafo del fragmento anterior como
+ * la prueba de concepto midio al 100 %. Si no, se agrupan lineas hasta
+ * ~1.000 caracteres, repitiendo la ultima linea del fragmento anterior como
  * solapamiento, para que una idea cortada quede entera en alguno de los dos.
  */
 
@@ -26,7 +26,10 @@ const ARTICULO = /^(?:Art\.?|Art[íi]culo)\s*\d+\s*[.:°º-]/i
 export function fragmentar(paginas: PaginaDeTexto[]): Fragmento[] {
   const parrafos = paginas.flatMap((p) =>
     p.texto
-      .split(/\n\s*\n|\r\n\s*\r\n/)
+      // Por linea, no por parrafo: el texto que sale de un PDF casi no trae
+      // lineas en blanco, y una pagina entera como un solo parrafo escondia
+      // los articulos (`^Art.`) y daba fragmentos que no se parecian a nada.
+      .split(/\r?\n/)
       .map((texto) => texto.replace(/\s+/g, ' ').trim())
       .filter((texto) => texto.length > 0)
       .map((texto) => ({ pagina: p.pagina, texto })),

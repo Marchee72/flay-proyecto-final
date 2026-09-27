@@ -17,7 +17,29 @@ if (existsSync('.env')) process.loadEnvFile('.env')
 
 export const CONTRASENA = 'una-contrasena-larga-de-prueba'
 
-export const prisma = new PrismaClient()
+/**
+ * Para Prisma, `where: { consorcioId: undefined }` es «sin filtro»: un
+ * `afterAll` que corre con el `beforeAll` a medias borraria la tabla entera
+ * (paso el 2026-09-21 contra la base de demostracion, con `Habilitacion`).
+ * Un borrado con un valor indefinido en el filtro no sale.
+ */
+export const prisma = new PrismaClient().$extends({
+  query: {
+    $allModels: {
+      deleteMany({ args, query, model }) {
+        const indefinidos = Object.entries(args.where ?? {})
+          .filter(([, valor]) => valor === undefined)
+          .map(([campo]) => campo)
+        if (indefinidos.length > 0) {
+          throw new Error(
+            `${model}.deleteMany con ${indefinidos.join(', ')} indefinido: borraria toda la tabla.`,
+          )
+        }
+        return query(args)
+      },
+    },
+  },
+})
 
 const unico = () => crypto.randomUUID().slice(0, 8)
 

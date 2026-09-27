@@ -119,6 +119,7 @@ export async function unidadesParaReclamar(
       const privilegiado = acceso.roles.some((r) => r === 'administrador' || r === 'consejo')
       if (privilegiado) {
         return prisma.unidad.findMany({
+          where: { bajaDesde: null },
           select: { id: true, designacion: true },
           orderBy: { designacion: 'asc' },
         })

@@ -29,6 +29,8 @@ export interface ConsorcioConPadron {
   localidad: string
   cuit: string
   unidades: UnidadDelPadron[]
+  /** Las dadas de baja (FR-011): fuera del padron vigente, con su fecha. */
+  dadasDeBaja: { id: string; designacion: string; tipo: string; bajaDesde: string }[]
   /** Suma corriente, para que el rechazo del final no sea una sorpresa. */
   suma: string
   /** Con signo: negativa si falta, positiva si sobra. Vacia si cuadra. */
@@ -57,7 +59,8 @@ export async function verConsorcio(
         where: { id: datos.consorcioId },
       })
 
-      const unidades = await prisma.unidad.findMany({ orderBy: { designacion: 'asc' } })
+      const todas = await prisma.unidad.findMany({ orderBy: { designacion: 'asc' } })
+      const unidades = todas.filter((unidad) => unidad.bajaDesde === null)
 
       const suma = sumarCoeficientes(
         unidades.map((unidad) => ({
@@ -78,6 +81,14 @@ export async function verConsorcio(
           tipo: unidad.tipo,
           coeficiente: coeficienteSerializado(unidad.coeficiente),
         })),
+        dadasDeBaja: todas
+          .filter((unidad) => unidad.bajaDesde !== null)
+          .map((unidad) => ({
+            id: unidad.id,
+            designacion: unidad.designacion,
+            tipo: unidad.tipo,
+            bajaDesde: unidad.bajaDesde!.toISOString().slice(0, 10),
+          })),
         suma: coeficienteSerializado(suma.total),
         diferencia: suma.cuadra ? '' : coeficienteSerializado(suma.diferencia),
         cuadra: suma.cuadra && suma.total.equals(SUMA_EXIGIDA),

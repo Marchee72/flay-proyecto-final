@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Siren } from 'lucide-react'
+import { BadgeCheck, Pencil, Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { coeficienteParaMostrar } from '@/compartido/formato'
+import { coeficienteParaMostrar, fechaParaMostrar } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { TIPOS_DE_UNIDAD_ASIGNABLES } from '@/aplicacion/consorcios/tipos-de-unidad'
 import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
@@ -14,11 +15,18 @@ import { CargadorDePadron } from './cargador'
 
 export const metadata: Metadata = { title: 'Unidades — Flay' }
 
-export default async function UnidadesPage({ params }: { params: Promise<{ consorcio: string }> }) {
+export default async function UnidadesPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ consorcio: string }>
+  searchParams: Promise<{ editar?: string; editado?: string }>
+}) {
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) redirect('/ingresar')
 
   const { consorcio: id } = await params
+  const parametros = await searchParams
 
   let consorcio
   try {
@@ -33,14 +41,58 @@ export default async function UnidadesPage({ params }: { params: Promise<{ conso
     )
   }
 
+  // El consejo ve el padron pero no lo carga ni lo edita (RNF-03): sin permiso no hay editor.
+  const administra = (await rolesEn(HABILITACIONES, RELOJ, usuarioId, id)).includes('administrador')
+
+  if (administra && parametros.editar && consorcio.unidades.length > 0) {
+    return (
+      <>
+        <h1>Editar padrón</h1>
+        <p className="apagado">
+          Renombrar, cambiar el tipo o el coeficiente, agregar unidades o darlas de baja. Se guarda
+          todo junto y la suma tiene que seguir dando 100.{' '}
+          <Link href={`/consorcios/${consorcio.id}/unidades`}>Volver sin guardar</Link>.
+        </p>
+        <CargadorDePadron
+          consorcioId={consorcio.id}
+          tipos={TIPOS_DE_UNIDAD_ASIGNABLES}
+          inicial={consorcio.unidades.map((unidad) => ({
+            id: unidad.id,
+            designacion: unidad.designacion,
+            tipo: unidad.tipo,
+            coeficiente: coeficienteParaMostrar(unidad.coeficiente),
+          }))}
+        />
+      </>
+    )
+  }
+
   return (
     <>
       <h1>Unidades</h1>
       <p className="apagado">El padrón vigente: designación, tipo y coeficiente de cada unidad.</p>
 
+      {parametros.editado && (
+        <p className="aviso aviso--exito" role="status">
+          <BadgeCheck className="icono" aria-hidden="true" />
+          <span>Padrón guardado. Los cambios de coeficiente rigen desde hoy.</span>
+        </p>
+      )}
+
+      {administra && consorcio.unidades.length > 0 && (
+        <div className="fila-acciones">
+          <Link
+            className="boton boton--primario"
+            href={`/consorcios/${consorcio.id}/unidades?editar=1`}
+          >
+            <Pencil className="icono" aria-hidden="true" />
+            Editar padrón
+          </Link>
+        </div>
+      )}
+
       {consorcio.unidades.length === 0 ? (
-        // El consejo ve el padron pero no lo carga (RNF-03): sin permiso no hay cargador.
-        (await rolesEn(HABILITACIONES, RELOJ, usuarioId, id)).includes('administrador') ? (
+        administra ? (
           <>
             <p className="apagado">
               El padrón se carga entero de una vez: unidad por unidad la suma nunca daría 100 y cada
@@ -79,6 +131,32 @@ export default async function UnidadesPage({ params }: { params: Promise<{ conso
                 <td className="numero cifra">{coeficienteParaMostrar(consorcio.suma)}</td>
               </tr>
             </tfoot>
+          </table>
+        </div>
+      )}
+
+      {consorcio.dadasDeBaja.length > 0 && (
+        <div className="tabla-desplazable">
+          <table>
+            <caption className="ayuda">
+              Dadas de baja: ya no se liquidan, pero su historia sigue en pie
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Designación</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Baja desde</th>
+              </tr>
+            </thead>
+            <tbody>
+              {consorcio.dadasDeBaja.map((unidad) => (
+                <tr key={unidad.id}>
+                  <td>{unidad.designacion}</td>
+                  <td>{etiquetaDeTipo(unidad.tipo)}</td>
+                  <td>{fechaParaMostrar(unidad.bajaDesde)}</td>
+                </tr>
+              ))}
+            </tbody>
           </table>
         </div>
       )}

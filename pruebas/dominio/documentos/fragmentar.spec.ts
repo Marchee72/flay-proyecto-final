@@ -52,6 +52,22 @@ describe('fragmentar', () => {
     }
   })
 
+  it('el texto de un PDF, sin lineas en blanco, igual se corta por articulo', () => {
+    const texto = [
+      'REGLAMENTO DE COPROPIEDAD',
+      'Art. 1. El inmueble queda sometido al régimen',
+      'de propiedad horizontal.',
+      'Art. 2. Las mascotas se permiten con correa',
+      'en los espacios comunes.',
+      'Art. 3. El salón de usos múltiples se reserva.',
+    ].join('\n')
+    const fragmentos = fragmentar([{ pagina: 1, texto }])
+    expect(fragmentos).toHaveLength(3)
+    expect(fragmentos[1].contenido).toBe(
+      'Art. 2. Las mascotas se permiten con correa\nen los espacios comunes.',
+    )
+  })
+
   it('un documento vacio da cero fragmentos sin error', () => {
     expect(fragmentar([])).toEqual([])
     expect(fragmentar([{ pagina: 1, texto: '   \n\n  ' }])).toEqual([])

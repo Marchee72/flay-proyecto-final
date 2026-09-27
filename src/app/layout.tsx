@@ -1,13 +1,14 @@
 import type { Metadata } from 'next'
-import { Poppins } from 'next/font/google'
+import { Plus_Jakarta_Sans } from 'next/font/google'
 
 import './globals.css'
 
-// Poppins en todo, con las cifras en tabular (§3.1 de la guia de estilos).
-const poppins = Poppins({
-  weight: ['400', '500', '600', '700'],
+// Plus Jakarta Sans en todo, con las cifras en tabular (§3.1 de la guia de
+// estilos). La variable la lee el token --tipografia de globals.css.
+const fuente = Plus_Jakarta_Sans({
+  weight: ['400', '500', '600', '700', '800'],
   subsets: ['latin'],
-  variable: '--tipografia',
+  variable: '--fuente-marca',
   display: 'swap',
 })
 
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" className={poppins.variable}>
+    <html lang="es" className={fuente.variable}>
       <body>{children}</body>
     </html>
   )

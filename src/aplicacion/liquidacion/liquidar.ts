@@ -91,7 +91,11 @@ export async function liquidarPeriodo(
         select: { diaVencimiento: true, tasaMoraMensual: true },
       })
 
-      const unidades = await prisma.unidad.findMany({ orderBy: { designacion: 'asc' } })
+      // La dada de baja tiene coeficiente cero: no suma nada y no lleva detalle.
+      const unidades = await prisma.unidad.findMany({
+        where: { bajaDesde: null },
+        orderBy: { designacion: 'asc' },
+      })
       const padron: UnidadDelPadron[] = unidades.map((unidad) => ({
         unidadId: unidad.id,
         designacion: unidad.designacion,

@@ -212,6 +212,73 @@ describe('consulta documental', () => {
     expect(await prismaBase.consultaDocumental.count({ where: { consorcioId } })).toBe(0)
   })
 
+  it('con dos documentos, cada cita apunta al documento del fragmento citado', async () => {
+    // Los mismos articulos en dos documentos: `numero_fragmento` se repite.
+    await indexar(consorcioId, 'Reglamento', true)
+    await indexar(consorcioId, 'Copia del reglamento', true)
+
+    let vistos: FragmentoParaResponder[] = []
+    const espia = {
+      vectores: asistenciaDeterminista.vectores,
+      respuestas: {
+        async responder(pregunta: string, fragmentos: FragmentoParaResponder[]) {
+          vistos = fragmentos
+          return asistenciaDeterminista.respuestas.responder(pregunta, fragmentos)
+        },
+      },
+    }
+    const r = await preguntar(
+      vecino,
+      consorcioId,
+      '¿Cuántas personas entran en el salón de usos múltiples?',
+      espia,
+    )
+    expect(r.modo).toBe('respuesta')
+    expect(vistos.map((f) => f.numero)).toEqual(vistos.map((_, i) => i + 1))
+    if (r.modo === 'respuesta') {
+      for (const cita of r.citas) {
+        const visto = vistos.find((f) => f.documento === cita.documento && f.pagina === cita.pagina)
+        expect(visto).toBeDefined()
+      }
+    }
+  })
+
+  it('guarda cientos de fragmentos en una sola sentencia, y si guardar falla el documento queda en error', async () => {
+    const texto = Array.from(
+      { length: 150 },
+      (_, i) => `Art. ${i + 1}. Disposición número ${i + 1}.`,
+    ).join('\n')
+    const largo = new Uint8Array(Buffer.from(texto))
+    const documentoId = await indexar(consorcioId, 'Largo', true, largo)
+    const conVector = await prismaBase.$queryRaw<{ n: bigint }[]>`
+      SELECT COUNT(*) AS n FROM "FragmentoDocumento"
+      WHERE documento_id = ${documentoId}::uuid AND vector IS NOT NULL`
+    expect(Number(conVector[0].n)).toBe(150)
+
+    // Un vector de dimension equivocada hace fallar el INSERT: antes eso dejaba
+    // el documento en `procesando` para siempre.
+    const clave = `documentos/${consorcioId}/${crypto.randomUUID()}/r.md`
+    const { almacen, bajar } = almacenEnMemoria({ [clave]: REGLAMENTO })
+    const { documentoId: roto } = await cargarDocumento(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      clave,
+      tipoContenido: 'text/markdown',
+      tipo: 'reglamento_copropiedad',
+      titulo: 'Roto',
+      visibleConsorcistas: true,
+    })
+    const cortos: GeneradorVectores = {
+      dimensiones: 768,
+      pisoDeSimilitud: 0,
+      vectorizar: async (textos) => ({ disponible: true, valor: textos.map(() => [1, 2, 3]) }),
+    }
+    await drenar({ indexar_documento: manejadorIndexacion(almacen, cortos, textoPorPagina, bajar) })
+    const documento = await prismaBase.documentoConsorcio.findUniqueOrThrow({ where: { id: roto } })
+    expect(documento.estadoIndexacion).toBe('error')
+    expect(documento.errorIndexacion).toMatch(/guardar el índice/)
+  })
+
   it('sin generador de vectores el documento queda en error con motivo, y el trabajo reintenta', async () => {
     const clave = `documentos/${consorcioId}/${crypto.randomUUID()}/r.md`
     const { almacen, bajar } = almacenEnMemoria({ [clave]: REGLAMENTO })

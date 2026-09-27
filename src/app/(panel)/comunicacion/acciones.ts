@@ -1,14 +1,18 @@
 'use server'
 
-import type { TipoDocumento } from '@prisma/client'
+import type { AlcanceNovedad, TipoDocumento } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { consultarDocumentacion, valorarConsulta } from '@/aplicacion/comunicacion/consultar'
 import { despacharNotificaciones, reintentarAgotados } from '@/aplicacion/comunicacion/despachar'
-import { cargarDocumento, TIPOS_DOCUMENTO } from '@/aplicacion/comunicacion/documentos'
-import { publicarNovedad } from '@/aplicacion/comunicacion/novedades'
+import {
+  cargarDocumento,
+  reindexarDocumento,
+  TIPOS_DOCUMENTO,
+} from '@/aplicacion/comunicacion/documentos'
+import { descartarNovedad, publicarNovedad } from '@/aplicacion/comunicacion/novedades'
 import { ASISTENCIA, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { MANEJADORES } from '@/aplicacion/pendientes/manejadores'
@@ -17,6 +21,9 @@ export type Resultado = { mensaje: string }
 
 const texto = (datos: FormData, campo: string) => String(datos.get(campo) ?? '').trim()
 
+/** Un `<input type="date">` vacio o roto da una fecha invalida, que el caso de uso rechaza. */
+const fecha = (valor: string) => new Date(`${valor}T00:00:00Z`)
+
 export async function accionPublicarNovedad(
   _previo: Resultado,
   datos: FormData,
@@ -24,6 +31,10 @@ export async function accionPublicarNovedad(
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) redirect('/ingresar')
   const consorcioId = texto(datos, 'consorcio')
+  const alcance = texto(datos, 'alcance')
+  if (alcance !== 'general' && alcance !== 'unidad' && alcance !== 'division') {
+    return { mensaje: 'Elegí a quién va la novedad.' }
+  }
   try {
     await publicarNovedad(HABILITACIONES, RELOJ, {
       usuarioId,
@@ -31,6 +42,11 @@ export async function accionPublicarNovedad(
       titulo: texto(datos, 'titulo'),
       cuerpo: texto(datos, 'cuerpo'),
       fijada: datos.get('fijada') === 'on',
+      vigenteDesde: fecha(texto(datos, 'desde')),
+      vigenteHasta: fecha(texto(datos, 'hasta')),
+      alcance: alcance satisfies AlcanceNovedad,
+      unidadId: texto(datos, 'unidad') || null,
+      division: texto(datos, 'division') || null,
     })
   } catch (error) {
     if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
@@ -38,6 +54,18 @@ export async function accionPublicarNovedad(
   }
   revalidatePath('/consorcios/[consorcio]/novedades', 'page')
   redirect(`/consorcios/${consorcioId}/novedades?publicada=1`)
+}
+
+/** Dejar de ver una novedad; vuelve a la pagina desde donde se descarto. */
+export async function accionDescartarNovedad(datos: FormData): Promise<void> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) redirect('/ingresar')
+  await descartarNovedad(HABILITACIONES, RELOJ, {
+    usuarioId,
+    consorcioId: texto(datos, 'consorcio'),
+    novedadId: texto(datos, 'novedad'),
+  })
+  revalidatePath('/consorcios/[consorcio]', 'layout')
 }
 
 /** Confirmacion de la subida directa de un documento: la clave ya esta en el almacen. */
@@ -69,6 +97,18 @@ export async function accionCargarDocumento(
   }
   revalidatePath('/consorcios/[consorcio]/documentos', 'page')
   return { mensaje: '', destino: `/consorcios/${consorcioId}/documentos?cargado=1` }
+}
+
+export async function accionReindexar(datos: FormData): Promise<void> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) redirect('/ingresar')
+  const consorcioId = texto(datos, 'consorcio')
+  await reindexarDocumento(HABILITACIONES, RELOJ, {
+    usuarioId,
+    consorcioId,
+    documentoId: texto(datos, 'documento'),
+  })
+  revalidatePath('/consorcios/[consorcio]/documentos', 'page')
 }
 
 export async function accionDespachar(datos: FormData): Promise<void> {

@@ -7,7 +7,13 @@ import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { altaEspacio, bajaEspacio } from '@/aplicacion/reservas/espacios'
-import { cancelarReserva, listarReservas, reservar } from '@/aplicacion/reservas/reservar'
+import {
+  cancelarReserva,
+  historialDeReservas,
+  listarReservas,
+  reservar,
+} from '@/aplicacion/reservas/reservar'
+import { RolInsuficiente } from '@/compartido/errores'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
 
@@ -284,5 +290,38 @@ describe('avisos, aislamiento, baja y auditoria', () => {
     const [reserva] = await prismaBase.reserva.findMany({ where: { espacioId } })
     expect(reserva.estado).toBe('cancelada')
     expect(reserva.motivoRechazo).toContain('dado de baja')
+  })
+})
+
+describe('historial de uso', () => {
+  it('el administrador ve meses pasados con quien reservo; el consorcista no entra', async () => {
+    // Una reserva de agosto: `reservar` no deja crear en el pasado, va directo.
+    await prismaBase.reserva.create({
+      data: {
+        consorcioId,
+        espacioId,
+        unidadId: unidadA,
+        solicitadaPor: vecino.id,
+        desde: new Date('2026-08-10T21:00:00Z'),
+        hasta: new Date('2026-08-11T01:00:00Z'),
+        estado: 'confirmada',
+      },
+    })
+    const agosto = {
+      consorcioId,
+      desde: new Date('2026-08-01T03:00:00Z'),
+      hasta: new Date('2026-09-01T03:00:00Z'),
+    }
+
+    const historial = await historialDeReservas(repo, RELOJ, {
+      ...agosto,
+      usuarioId: administrador,
+    })
+    expect(historial).toHaveLength(1)
+    expect(historial[0]).toMatchObject({ unidad: '1A', solicitante: 'Beto Diaz', cumplida: true })
+
+    await expect(
+      historialDeReservas(repo, RELOJ, { ...agosto, usuarioId: vecino.id }),
+    ).rejects.toBeInstanceOf(RolInsuficiente)
   })
 })

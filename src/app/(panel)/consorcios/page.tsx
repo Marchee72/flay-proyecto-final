@@ -12,6 +12,7 @@ import { listarPeriodos } from '@/aplicacion/periodos/periodos'
 import { plural } from '@/compartido/formato'
 
 import { consorciosAlAlcance } from '../con-consorcio'
+import { Marco } from '../marco'
 
 import { BotonModal } from '../modal'
 import { WizardConsorcio } from './nuevo/wizard'
@@ -63,7 +64,7 @@ export default async function ConsorciosPage({
   )
 
   return (
-    <main className="suelto">
+    <Marco>
       <h1>Consorcios</h1>
       <p className="apagado">Los edificios que administrás. Elegí uno para trabajar sobre él.</p>
 
@@ -157,7 +158,7 @@ export default async function ConsorciosPage({
           )}
         </>
       )}
-    </main>
+    </Marco>
   )
 }
 

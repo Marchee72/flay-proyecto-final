@@ -15,6 +15,12 @@ export interface ResumenConsorcio {
   gastosDelPeriodo: string
   /** Porcentaje de unidades en mora, null sin liquidaciones vencidas. */
   morosidad: { unidadesEnMora: number; unidadesTotales: number; deudaTotal: string } | null
+  /** Unidades vigentes del padron: el denominador de «al dia». */
+  unidades: number
+  /** Los gastos del periodo abierto por rubro, de mayor a menor. */
+  rubrosDelPeriodo: { rubro: string; importe: string }[]
+  /** Lo emitido en las ultimas liquidaciones vigentes, de la mas vieja a la mas nueva. */
+  emitidoPorMes: { etiqueta: string; importe: string }[]
   reclamosAbiertos: number
   reclamosCriticos: number
   /** Solo administrador y consejo lo ven; para el resto, null. */
@@ -84,6 +90,7 @@ export async function verResumenConsorcio(
         proveedores,
         padron,
         mora,
+        liquidaciones,
       ] = await Promise.all([
         prismaBase.consorcio.findUniqueOrThrow({
           where: { id: datos.consorcioId },
@@ -146,14 +153,33 @@ export async function verResumenConsorcio(
         }),
         sinRol(verConsorcio(repositorio, reloj, datos)),
         verMorosidad(repositorio, reloj, datos),
+        prisma.liquidacion.findMany({
+          where: { estado: 'vigente' },
+          orderBy: [{ periodo: { anio: 'desc' } }, { periodo: { mes: 'desc' } }],
+          take: 5,
+          select: { totalGeneral: true, periodo: { select: { anio: true, mes: true } } },
+        }),
       ])
 
-      const gastosDelPeriodo = abierto
-        ? await prisma.gasto.aggregate({
-            where: { periodoId: abierto.id },
-            _sum: { importe: true },
+      const [gastosDelPeriodo, porRubro] = abierto
+        ? await Promise.all([
+            prisma.gasto.aggregate({ where: { periodoId: abierto.id }, _sum: { importe: true } }),
+            prisma.gasto.groupBy({
+              by: ['rubroId'],
+              where: { periodoId: abierto.id },
+              _sum: { importe: true },
+            }),
+          ])
+        : [null, []]
+      // El catalogo de rubros es global (sin consorcio): se nombran por id.
+      const nombres = new Map(
+        (
+          await prismaBase.rubroGasto.findMany({
+            where: { id: { in: porRubro.map((r) => r.rubroId) } },
+            select: { id: true, nombre: true },
           })
-        : null
+        ).map((r) => [r.id, r.nombre]),
+      )
 
       return {
         roles: acceso.roles,
@@ -170,6 +196,16 @@ export async function verResumenConsorcio(
           mora.agregado.unidadesTotales > 0 && mora.agregado.unidadesEnMora > 0
             ? mora.agregado
             : null,
+        unidades: mora.agregado.unidadesTotales,
+        rubrosDelPeriodo: porRubro
+          .map((r) => ({
+            rubro: nombres.get(r.rubroId) ?? 'Sin rubro',
+            importe: (r._sum.importe ?? new Decimal(0)).toFixed(2),
+          }))
+          .sort((a, b) => new Decimal(b.importe).comparedTo(new Decimal(a.importe))),
+        emitidoPorMes: liquidaciones
+          .map((l) => ({ etiqueta: etiqueta(l.periodo), importe: l.totalGeneral.toFixed(2) }))
+          .reverse(),
         reclamosAbiertos: reclamos.length,
         reclamosCriticos: reclamos.filter((r) => r.urgencia === 'critica').length,
         padron: padron

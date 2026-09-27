@@ -19,26 +19,21 @@ export async function guardarFragmentos(
   fragmentos: Fragmento[],
   vectores: number[][],
 ): Promise<void> {
-  await prismaBase.$transaction(async (tx) => {
-    await tx.fragmentoDocumento.deleteMany({ where: { documentoId } })
-    const ids = fragmentos.map(() => crypto.randomUUID())
-    await tx.fragmentoDocumento.createMany({
-      data: fragmentos.map((f, i) => ({
-        id: ids[i],
-        documentoId,
-        numeroFragmento: f.numero,
-        pagina: f.pagina,
-        contenido: f.contenido,
-      })),
-    })
-    // La columna vector no la escribe Prisma: una sentencia por fila, en la
-    // misma transaccion. Cientos de fragmentos, no miles: entra en el tiempo.
-    for (let i = 0; i < ids.length; i++) {
-      await tx.$executeRaw`
-        UPDATE "FragmentoDocumento" SET vector = ${aVector(vectores[i])}::vector
-        WHERE id = ${ids[i]}::uuid`
-    }
-  })
+  // Dos sentencias sea cual sea el largo del documento. Con una por fila, un
+  // reglamento de setenta articulos contra la base remota pasaba los 5 s de la
+  // transaccion interactiva y el documento quedaba en `procesando` para siempre.
+  await prismaBase.$transaction([
+    prismaBase.fragmentoDocumento.deleteMany({ where: { documentoId } }),
+    prismaBase.$executeRaw`
+      INSERT INTO "FragmentoDocumento" (documento_id, numero_fragmento, pagina, contenido, vector)
+      SELECT ${documentoId}::uuid, f.numero, f.pagina, f.contenido, f.vector::vector
+      FROM unnest(
+        ${fragmentos.map((f) => f.numero)}::int[],
+        ${fragmentos.map((f) => f.pagina)}::int[],
+        ${fragmentos.map((f) => f.contenido)}::text[],
+        ${vectores.map(aVector)}::text[]
+      ) AS f(numero, pagina, contenido, vector)`,
+  ])
 }
 
 export interface FragmentoRecuperado {

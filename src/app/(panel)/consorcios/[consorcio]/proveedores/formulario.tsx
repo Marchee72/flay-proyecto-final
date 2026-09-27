@@ -41,12 +41,14 @@ export function FormularioProveedor({
           id="cuit"
           name="cuit"
           inputMode="numeric"
+          pattern="[0-9 \-]{11,13}"
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-proveedor ayuda-cuit' : 'ayuda-cuit'}
         />
         <p className="ayuda" id="ayuda-cuit">
-          No se puede editar después: identifica al proveedor.
+          11 dígitos, con o sin guiones. No se puede editar después: identifica al proveedor y no
+          puede haber dos iguales en el consorcio.
         </p>
       </div>
 

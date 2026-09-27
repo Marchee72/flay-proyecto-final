@@ -1,8 +1,9 @@
 import { existsSync } from 'node:fs'
 
 import { hash } from '@node-rs/argon2'
-import { PrismaClient } from '@prisma/client'
 import { expect, test } from '@playwright/test'
+
+import { prisma } from './sesion'
 
 /**
  * SC-010 de punta a punta: el importe cruza base, servidor e interfaz **como
@@ -23,8 +24,6 @@ if (existsSync('.env')) process.loadEnvFile('.env')
 const IMPORTE = '999999999999.99'
 const IMPORTE_EN_PANTALLA = '$ 999.999.999.999,99'
 const CONTRASENA = 'una-contrasena-larga-de-prueba'
-
-const prisma = new PrismaClient()
 
 const unico = () => crypto.randomUUID().slice(0, 8)
 

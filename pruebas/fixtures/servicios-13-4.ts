@@ -19,6 +19,7 @@ const USUARIOS = [
     nombre: 'Adriana',
     apellido: 'Delta',
     correo: 'admin1@flay.demo',
+    administradora: true,
     roles: [
       ['C-A', 'administrador'],
       ['C-B', 'administrador'],
@@ -245,6 +246,28 @@ export async function sembrarServicios(
           INSERT INTO "Ocupacion" (unidad_id, persona_id, tipo, vigencia)
           VALUES (${unidad.id}::uuid, ${persona.id}::uuid, ${tipo}::"TipoOcupacion", daterange(${HOY}::date, NULL))
         `
+      }
+    }
+    if ('administradora' in definicion && definicion.administradora) {
+      const consorcio = await cliente.consorcio.findUnique({
+        where: { id: consorcios['C-A'] },
+        select: { administradoraId: true },
+      })
+      if (consorcio) {
+        await cliente.habilitacionAdministradora.upsert({
+          where: {
+            usuarioId_administradoraId: {
+              usuarioId,
+              administradoraId: consorcio.administradoraId,
+            },
+          },
+          update: { vigenciaHasta: null },
+          create: {
+            usuarioId,
+            administradoraId: consorcio.administradoraId,
+            vigenciaDesde: HOY,
+          },
+        })
       }
     }
     usuarios[definicion.clave] = usuarioId

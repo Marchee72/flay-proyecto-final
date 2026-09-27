@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Receipt, ScanSearch, Siren } from 'lucide-re
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { fechaParaMostrar, importeParaMostrar, plural } from '@/compartido/formato'
+import { paginasAMostrar } from '@/compartido/paginas'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarGastos } from '@/aplicacion/gastos/listar-gastos'
@@ -14,6 +15,7 @@ import { conConsorcio } from '../../../con-consorcio'
 import { ModalGasto } from './modal-gasto'
 import { EnlaceExportar } from '../../../exportar'
 import { Filtros } from '../../../filtros'
+import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Gastos — Flay' }
 
@@ -150,12 +152,7 @@ export default async function GastosPage({
           </div>
         ) : (
           <>
-            <div
-              className="tabla-desplazable"
-              tabIndex={0}
-              role="region"
-              aria-label="Gastos del filtro"
-            >
+            <TablaDesplazable tabIndex={0} role="region" aria-label="Gastos del filtro">
               <table>
                 <caption className="ayuda">
                   {plural(listado.cantidad, 'gasto', 'gastos')} · página {listado.pagina} de{' '}
@@ -197,7 +194,7 @@ export default async function GastosPage({
                   </tr>
                 </tfoot>
               </table>
-            </div>
+            </TablaDesplazable>
 
             <Paginado listado={listado} parametros={parametros} consorcioId={activo.id} />
           </>
@@ -274,17 +271,4 @@ function Paginado({
       </ul>
     </nav>
   )
-}
-
-/**
- * Ventana de hasta 5 páginas centrada en la actual (solo presentación): evita
- * una fila de 100 enlaces cuando el listado crece. Sin aritmética monetaria,
- * solo índices de página.
- */
-function paginasAMostrar(actual: number, total: number): number[] {
-  const inicio = Math.max(1, Math.min(actual - 2, total - 4))
-  const fin = Math.min(total, inicio + 4)
-  const paginas: number[] = []
-  for (let pagina = inicio; pagina <= fin; pagina++) paginas.push(pagina)
-  return paginas
 }

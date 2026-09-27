@@ -9,6 +9,7 @@ import { misExpensas } from '@/aplicacion/liquidacion/ver-expensa'
 
 import { conConsorcio } from '../../../con-consorcio'
 import { Filtros } from '../../../filtros'
+import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Expensas — Flay' }
 
@@ -86,7 +87,7 @@ export default async function ExpensasPage({
             </p>
           </div>
         ) : (
-          <div className="tabla-desplazable">
+          <TablaDesplazable>
             <table>
               <caption>
                 {plural(filas.length, 'liquidación', 'liquidaciones')} en{' '}
@@ -133,7 +134,7 @@ export default async function ExpensasPage({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TablaDesplazable>
         )}
       </>
     )

@@ -8,6 +8,7 @@ import { ajustePorRedondeo, decimalesDelPadron, filasDesdePegado } from '@/compa
 
 import { accionCargarPadron, accionEditarPadron } from '../../acciones'
 import { GeneradorDePadron } from '../../generador-padron'
+import { TablaDesplazable } from '../../../tabla-desplazable'
 
 const SIN_ERROR = { mensaje: '' }
 
@@ -134,7 +135,7 @@ export function CargadorDePadron({
         </>
       )}
 
-      <div className="tabla-desplazable">
+      <TablaDesplazable paginar={false}>
         <table>
           <caption className="ayuda">{edicion ? 'Padrón a guardar' : 'Unidades a cargar'}</caption>
           <thead>
@@ -223,7 +224,7 @@ export function CargadorDePadron({
             </tr>
           </tfoot>
         </table>
-      </div>
+      </TablaDesplazable>
 
       <p aria-live="polite" className={cuadra ? 'aviso aviso--atencion' : 'ayuda'}>
         {cuadra && <TriangleAlert className="icono" aria-hidden="true" />}

@@ -9,6 +9,7 @@ import { ROLES_ASIGNABLES } from '@/aplicacion/identidad/roles'
 import { accionReenviar } from './acciones'
 import { ModalInvitar } from './modal-invitar'
 import { conConsorcio } from '../../../con-consorcio'
+import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Usuarios — Flay' }
 
@@ -98,12 +99,7 @@ function Tabla({
     )
   }
   return (
-    <div
-      className="tabla-desplazable"
-      tabIndex={0}
-      role="region"
-      aria-label="Personas con acceso a este consorcio"
-    >
+    <TablaDesplazable tabIndex={0} role="region" aria-label="Personas con acceso a este consorcio">
       <table>
         <caption className="ayuda">Personas con acceso a este consorcio</caption>
         <thead>
@@ -131,7 +127,7 @@ function Tabla({
           ))}
         </tbody>
       </table>
-    </div>
+    </TablaDesplazable>
   )
 }
 

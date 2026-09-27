@@ -8,6 +8,7 @@ import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verMorosidad } from '@/aplicacion/pagos/estado-de-cuenta'
 
 import { conConsorcio } from '../../../con-consorcio'
+import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Morosidad — Flay' }
 
@@ -60,7 +61,7 @@ export default async function MorosidadPage({
             <p>Ninguna unidad con deuda vencida.</p>
           </div>
         ) : morosidad.nominada ? (
-          <div className="tabla-desplazable">
+          <TablaDesplazable>
             <table>
               <caption className="ayuda">Nómina de deudores</caption>
               <thead>
@@ -129,7 +130,7 @@ export default async function MorosidadPage({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TablaDesplazable>
         ) : (
           <p className="ayuda">
             La nómina de deudores la ven el administrador y el consejo de propietarios.

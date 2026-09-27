@@ -8,6 +8,7 @@ import { AvisoDeError, conConsorcio } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
 import { etiquetaDePeriodo } from '../alertas'
 import { SerieDeCarga } from '../graficos'
+import { TablaDesplazable } from '../../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'I-5 Carga administrativa — Flay' }
 
@@ -54,12 +55,7 @@ export default async function CargaPage({ params }: { params: Promise<{ consorci
               }))}
               lineaBase={lineaBaseHoras}
             />
-            <div
-              className="tabla-desplazable"
-              tabIndex={0}
-              role="region"
-              aria-label="Carga administrativa por mes"
-            >
+            <TablaDesplazable tabIndex={0} role="region" aria-label="Carga administrativa por mes">
               <table>
                 <caption className="ayuda">
                   Los mismos datos del gráfico, más la precisión de la asistencia
@@ -102,7 +98,7 @@ export default async function CargaPage({ params }: { params: Promise<{ consorci
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TablaDesplazable>
           </>
         )}
       </>

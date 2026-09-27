@@ -177,6 +177,16 @@ th a:not(.boton):hover,
   flex-direction: column;
   gap: 2px;
   min-height: 0;
+  overflow: hidden;
+}
+.panel > * {
+  flex: none;
+}
+/* El medio: lo unico que desplaza. */
+.panel > .panel__global,
+.panel > .lateral {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   /* Fino y sin pista: solo el pulgar sobre el grafito. */
   scrollbar-width: thin;
@@ -270,12 +280,49 @@ th a:not(.boton):hover,
   gap: 2px;
 }
 .lateral__bloque h2 {
-  margin: var(--e3) var(--e3) 2px;
+  margin: var(--e2) 0 2px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #8a929a;
+}
+/* El titulo del bloque pliega y despliega sus secciones hacia arriba. */
+.lateral__bloque h2 button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 var(--e3);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+.lateral__bloque h2 button:hover {
+  color: #ffffff;
+  background: rgb(255 255 255 / 6%);
+}
+.lateral__chevron {
+  width: 14px;
+  height: 14px;
+  transform: rotate(180deg);
+}
+.lateral__bloque h2 [aria-expanded='false'] .lateral__chevron {
+  transform: none;
+}
+.lateral__enlaces {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.lateral__enlaces[hidden] {
+  display: none;
 }
 .panel__pie {
   margin-top: auto;
@@ -909,8 +956,11 @@ form > .fila-acciones {
 }
 
 /* La tabla se desplaza dentro de su contenedor; la pagina nunca (RNF-01). */
+/* Toda tabla desplaza adentro de su caja, a lo ancho y a lo alto, con el
+   encabezado fijo arriba; y pagina de a 20 (`TablaDesplazable`). */
 .tabla-desplazable {
-  overflow-x: auto;
+  overflow: auto;
+  max-height: min(70vh, 760px);
   /* Contiene a los hijos absolutos (.oculto): sin esto se escapan del
      desplazamiento y ensanchan la pagina en el telefono. */
   position: relative;
@@ -918,6 +968,11 @@ form > .fila-acciones {
   background: var(--superficie);
   box-shadow: var(--sombra);
   padding: 0 var(--e2);
+}
+/* La fila de otra pagina. `!important` porque en telefono las filas son
+   `display: flex` y le ganarian al `[hidden]` del navegador. */
+.tabla-desplazable tr[hidden] {
+  display: none !important;
 }
 table {
   width: 100%;
@@ -945,6 +1000,10 @@ thead th {
   font-size: var(--t-ayuda);
   font-weight: 600;
   height: var(--toque);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--superficie);
 }
 tbody tr:last-child td {
   border-bottom: 0;
@@ -1251,6 +1310,35 @@ tfoot td {
   border-color: var(--grafito);
   color: var(--tinta-clara);
 }
+.paginacion button {
+  cursor: pointer;
+}
+.paginacion button[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.paginacion .icono {
+  width: 18px;
+  height: 18px;
+}
+/* Debajo de la tabla: cuantas se ven a la izquierda, las paginas a la derecha. */
+.paginacion-tabla {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e2) var(--e4);
+  margin: var(--e3) 0 var(--e4);
+}
+.paginacion-tabla .ayuda,
+.paginacion-tabla .paginacion {
+  margin: 0;
+}
+/* Siete botones de 44 entran en 390 px con separacion de 4: sin segunda fila. */
+.paginacion-tabla .paginacion {
+  flex-wrap: nowrap;
+  gap: var(--e1);
+}
 
 /* Progreso de diferidos (documentos, indexacion): barra + texto con
    magnitud exacta + reintento visible (§6, RNF-10). El reintento es un
@@ -1287,7 +1375,11 @@ tfoot td {
      La cabecera sigue ahi para el lector de pantalla; el pie es la ultima
      fila. Las celdas con controles (el padron) se reparten el ancho. */
   .tabla-desplazable {
-    overflow-x: visible;
+    overflow: visible;
+    max-height: none;
+  }
+  thead th {
+    position: static;
   }
   table {
     display: block;
@@ -2557,7 +2649,7 @@ td select {
     background: var(--grafito);
     box-shadow: 0 16px 36px rgb(21 24 27 / 28%);
   }
-  .barra-inferior nav {
+  .barra-inferior > nav {
     flex: 1;
   }
   .barra-inferior ul {
@@ -2567,7 +2659,7 @@ td select {
     padding: 0;
     list-style: none;
   }
-  .barra-inferior a,
+  .barra-inferior > nav a,
   .menu > summary {
     width: 48px;
     height: 48px;
@@ -2577,12 +2669,12 @@ td select {
     justify-content: center;
     color: #b9c0c7;
   }
-  .barra-inferior a .icono,
+  .barra-inferior > nav a .icono,
   .menu > summary .icono {
     width: 22px;
     height: 22px;
   }
-  .barra-inferior a[aria-current='page'] {
+  .barra-inferior > nav a[aria-current='page'] {
     background: var(--lima-alto);
     color: var(--grafito);
   }
@@ -2609,7 +2701,8 @@ td select {
     background: var(--grafito);
     box-shadow: var(--sombra-alta);
   }
-  .menu .lateral a {
+  .menu .lateral a,
+  .menu .lateral__bloque h2 button {
     min-height: var(--toque);
   }
 }

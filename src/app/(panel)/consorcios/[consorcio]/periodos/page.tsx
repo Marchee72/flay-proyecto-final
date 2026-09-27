@@ -20,6 +20,7 @@ import { fechaParaMostrar, importeParaMostrar } from '@/compartido/formato'
 import { BotonAnular, BotonCerrar, BotonLiquidar } from './acciones-de-estado'
 import { conConsorcio } from '../../../con-consorcio'
 import { EnlaceExportar } from '../../../exportar'
+import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Períodos — Flay' }
 
@@ -73,7 +74,7 @@ export default async function PeriodosPage({
             <p>Todavía no hay períodos: se crean al cargar el primer gasto del mes.</p>
           </div>
         ) : (
-          <div className="tabla-desplazable">
+          <TablaDesplazable>
             <table>
               <caption className="ayuda">Períodos del consorcio</caption>
               <thead>
@@ -145,7 +146,7 @@ export default async function PeriodosPage({
                 })}
               </tbody>
             </table>
-          </div>
+          </TablaDesplazable>
         )}
 
         {administra && (

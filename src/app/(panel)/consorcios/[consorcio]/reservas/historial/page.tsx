@@ -9,6 +9,7 @@ import { historialDeReservas, type ReservaDelHistorial } from '@/aplicacion/rese
 
 import { AvisoDeError, conConsorcio } from '../../../../con-consorcio'
 import { Filtros } from '../../../../filtros'
+import { TablaDesplazable } from '../../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Historial de reservas — Flay' }
 
@@ -98,12 +99,7 @@ export default async function HistorialDeReservasPage({
             <p>Sin reservas en ese mes.</p>
           </div>
         ) : (
-          <div
-            className="tabla-desplazable"
-            tabIndex={0}
-            role="region"
-            aria-label="Historial de reservas"
-          >
+          <TablaDesplazable tabIndex={0} role="region" aria-label="Historial de reservas">
             <table>
               <thead>
                 <tr>
@@ -131,7 +127,7 @@ export default async function HistorialDeReservasPage({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TablaDesplazable>
         )}
       </>
     )

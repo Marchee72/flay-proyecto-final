@@ -12,6 +12,7 @@ import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 
 import { CargadorDePadron } from './cargador'
+import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Unidades — Flay' }
 
@@ -104,7 +105,7 @@ export default async function UnidadesPage({
           <p className="apagado">El administrador todavía no cargó el padrón.</p>
         )
       ) : (
-        <div className="tabla-desplazable">
+        <TablaDesplazable>
           <table>
             <caption className="ayuda">Padrón vigente</caption>
             <thead>
@@ -132,11 +133,11 @@ export default async function UnidadesPage({
               </tr>
             </tfoot>
           </table>
-        </div>
+        </TablaDesplazable>
       )}
 
       {consorcio.dadasDeBaja.length > 0 && (
-        <div className="tabla-desplazable">
+        <TablaDesplazable>
           <table>
             <caption className="ayuda">
               Dadas de baja: ya no se liquidan, pero su historia sigue en pie
@@ -158,7 +159,7 @@ export default async function UnidadesPage({
               ))}
             </tbody>
           </table>
-        </div>
+        </TablaDesplazable>
       )}
     </>
   )

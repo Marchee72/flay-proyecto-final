@@ -17,15 +17,11 @@ export default async function InvitacionPage({
   const { credencial } = await params
 
   return (
-    <div>
-      <span className="marca">FLAY</span>
+    <div className="acceso__formulario">
+      <h1>Fijar contraseña</h1>
+      <p className="apagado">Con ella se ingresa a Flay de ahora en más.</p>
 
-      <div className="tarjeta">
-        <h1>Fijar contraseña</h1>
-        <p className="apagado">Con ella se ingresa a Flay de ahora en más.</p>
-
-        <FormularioInvitacion credencial={credencial} />
-      </div>
+      <FormularioInvitacion credencial={credencial} />
     </div>
   )
 }

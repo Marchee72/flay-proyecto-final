@@ -121,6 +121,11 @@ describe('resumen del consorcio', () => {
       vencimiento: '2026-10-10',
     })
     expect(resumen.gastosDelPeriodo).toBe('1250.50')
+    // Los dos gastos son del mismo rubro: una sola fila con la suma (rediseño 013).
+    expect(resumen.rubrosDelPeriodo).toEqual([{ rubro: 'Rubro de prueba', importe: '1250.50' }])
+    // Sin liquidaciones emitidas todavia, el grafico de emitido va vacio.
+    expect(resumen.emitidoPorMes).toEqual([])
+    expect(resumen.unidades).toBe(2)
     expect(resumen.ultimosGastos.map((g) => g.descripcion)).toEqual([
       'Gasto de 250.50',
       'Gasto de 1000.00',

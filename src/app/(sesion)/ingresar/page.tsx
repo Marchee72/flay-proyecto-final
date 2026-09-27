@@ -13,21 +13,23 @@ export default async function IngresarPage({
   const { listo } = await searchParams
 
   return (
-    <div>
-      <span className="marca">FLAY</span>
+    <div className="acceso__formulario">
+      <h1>Ingresar</h1>
+      <p className="apagado">Con el correo con el que te invitó la administración.</p>
 
-      <div className="tarjeta">
-        <h1>Ingresar</h1>
+      {listo && (
+        <p className="aviso aviso--exito" role="status">
+          <BadgeCheck className="icono" aria-hidden="true" />
+          <span>La contraseña quedó guardada. Ya se puede entrar.</span>
+        </p>
+      )}
 
-        {listo && (
-          <p className="aviso aviso--atencion" role="status">
-            <BadgeCheck className="icono" aria-hidden="true" />
-            <span>La contraseña quedó guardada. Ya se puede entrar.</span>
-          </p>
-        )}
+      <FormularioIngreso />
 
-        <FormularioIngreso />
-      </div>
+      <p className="ayuda">
+        ¿No tenés cuenta? La crea la administración de tu edificio y te llega una invitación por
+        correo.
+      </p>
     </div>
   )
 }

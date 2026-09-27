@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { hash } from '@node-rs/argon2'
 import { expect, test } from '@playwright/test'
 
-import { prisma } from './sesion'
+import { prisma, rubroDePrueba } from './sesion'
 
 /**
  * SC-010 de punta a punta: el importe cruza base, servidor e interfaz **como
@@ -72,11 +72,7 @@ test.beforeAll(async () => {
     },
   })
 
-  const rubro = await prisma.rubroGasto.upsert({
-    where: { nombre: 'Obra de fachada' },
-    update: {},
-    create: { nombre: 'Obra de fachada', clasificacion: 'extraordinario' },
-  })
+  const rubro = await rubroDePrueba('Obra de fachada', 'extraordinario')
 
   const periodo = await prisma.periodo.create({
     data: { consorcioId: consorcio.id, anio: 2026, mes: 9 },

@@ -43,6 +43,16 @@ export const prisma = new PrismaClient().$extends({
 
 const unico = () => crypto.randomUUID().slice(0, 8)
 
+/**
+ * El rubro compartido, sin carrera: con la base vacia, dos workers que hacen
+ * `upsert` a la vez no lo encuentran y lo insertan los dos, y uno choca con la
+ * clave unica. `skipDuplicates` es `ON CONFLICT DO NOTHING`.
+ */
+export async function rubroDePrueba(nombre: string, clasificacion: 'ordinario' | 'extraordinario') {
+  await prisma.rubroGasto.createMany({ data: [{ nombre, clasificacion }], skipDuplicates: true })
+  return prisma.rubroGasto.findUniqueOrThrow({ where: { nombre } })
+}
+
 export interface Escenario {
   administradoraId: string
   consorcioId: string
@@ -96,11 +106,7 @@ export async function sembrarEscenario(
     },
   })
 
-  const rubro = await prisma.rubroGasto.upsert({
-    where: { nombre: 'Mantenimiento de ascensores' },
-    update: {},
-    create: { nombre: 'Mantenimiento de ascensores', clasificacion: 'ordinario' },
-  })
+  const rubro = await rubroDePrueba('Mantenimiento de ascensores', 'ordinario')
 
   const proveedor = await prisma.proveedor.create({
     data: {

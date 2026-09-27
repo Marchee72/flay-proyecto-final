@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BadgeCheck, CalendarCheck, Siren } from 'lucide-react'
+import { BadgeCheck, CalendarCheck, History, Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { momentoParaMostrar } from '@/compartido/formato'
@@ -59,18 +59,29 @@ export default async function ReservasPage({
 
     return (
       <>
-        <h1>Reservas</h1>
-        <p className="apagado">
-          Los próximos sesenta días. Una unidad con deuda vencida no puede reservar hasta
-          regularizar.
+        <div className="cabecera-pagina">
+          <div>
+            <h1>Reservas</h1>
+            <p className="apagado">
+              Los próximos sesenta días. Una unidad con deuda vencida no puede reservar hasta
+              regularizar.
+            </p>
+          </div>
           {esAdministrador && (
-            <>
-              {' '}
-              <Link href={`/consorcios/${activo.id}/espacios`}>Administrar espacios</Link> ·{' '}
-              <Link href={`/consorcios/${activo.id}/reservas/historial`}>Historial de uso</Link>.
-            </>
+            <div className="cabecera-pagina__acciones">
+              <Link
+                className="boton boton--terciario"
+                href={`/consorcios/${activo.id}/reservas/historial`}
+              >
+                <History className="icono" aria-hidden="true" />
+                Historial de uso
+              </Link>
+              <Link className="boton boton--fantasma" href={`/consorcios/${activo.id}/espacios`}>
+                Administrar espacios
+              </Link>
+            </div>
           )}
-        </p>
+        </div>
 
         {parametros.confirmada && (
           <p className="aviso aviso--exito" role="status">
@@ -174,7 +185,7 @@ export default async function ReservasPage({
                         <form action={accionCancelarReserva}>
                           <input type="hidden" name="consorcio" value={activo.id} />
                           <input type="hidden" name="reserva" value={r.id} />
-                          <button className="boton boton--fantasma" type="submit">
+                          <button className="boton boton--terciario" type="submit">
                             Cancelar
                           </button>
                         </form>

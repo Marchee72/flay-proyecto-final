@@ -7,6 +7,7 @@ import { misAdministradoras } from '@/aplicacion/administradoras/mis-administrad
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 
+import { Marco } from '../../marco'
 import { FormularioConsorcio } from './formulario'
 
 export const metadata: Metadata = { title: 'Nuevo consorcio — Flay' }
@@ -18,7 +19,7 @@ export default async function NuevoConsorcioPage() {
   const administradoras = await misAdministradoras(HABILITACIONES, RELOJ, usuarioId)
 
   return (
-    <>
+    <Marco>
       <h1>Nuevo consorcio</h1>
 
       {administradoras.length === 0 ? (
@@ -38,6 +39,6 @@ export default async function NuevoConsorcioPage() {
       <p>
         <Link href="/consorcios">Volver a consorcios</Link>
       </p>
-    </>
+    </Marco>
   )
 }

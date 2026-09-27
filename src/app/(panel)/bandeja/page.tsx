@@ -12,6 +12,7 @@ import { verBandeja } from '@/aplicacion/pendientes/bandeja'
 import { accionDespachar } from '../comunicacion/acciones'
 import { AvisoDeError } from '../con-consorcio'
 import { Filtros } from '../filtros'
+import { Marco } from '../marco'
 
 export const metadata: Metadata = { title: 'Bandeja — Flay' }
 
@@ -37,7 +38,7 @@ export default async function BandejaPage({
   const hayAlgo = visibles.some((c) => c.reclamos.length > 0 || c.periodosAbiertos.length > 0)
 
   return (
-    <main className="suelto">
+    <Marco>
       <h1>Bandeja</h1>
       <p className="apagado">
         Lo que espera una decisión, en todos los consorcios que administrás.
@@ -162,6 +163,6 @@ export default async function BandejaPage({
           </div>
         </>
       )}
-    </main>
+    </Marco>
   )
 }

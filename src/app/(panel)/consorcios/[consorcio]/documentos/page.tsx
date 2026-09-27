@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BadgeCheck, EyeOff, FileText } from 'lucide-react'
+import { BadgeCheck, EyeOff, FileText, MessageCircleQuestion } from 'lucide-react'
 
 import { fechaParaMostrar } from '@/compartido/formato'
 import {
@@ -58,14 +58,22 @@ export default async function DocumentosPage({
       <>
         {/* Cada refresco drena la cola: es lo que hace avanzar el proceso (decision 21). */}
         {enProceso && <EnVivo />}
-        <h1>Documentación</h1>
-        <p className="apagado">
-          Reglamento, actas y contratos del consorcio.{' '}
-          <Link href={`/consorcios/${activo.id}/documentos/consultar`}>
-            Preguntarle a la documentación
-          </Link>
-          .
-        </p>
+        <div className="cabecera-pagina">
+          <div>
+            <h1>Documentación</h1>
+            <p className="apagado">Reglamento, actas y contratos del consorcio.</p>
+          </div>
+          <div className="cabecera-pagina__acciones">
+            <Link
+              className="boton boton--fantasma"
+              href={`/consorcios/${activo.id}/documentos/consultar`}
+            >
+              <MessageCircleQuestion className="icono" aria-hidden="true" />
+              Preguntarle a la documentación
+            </Link>
+            {administra && <ModalDocumento consorcioId={activo.id} tipos={TIPOS_DOCUMENTO} />}
+          </div>
+        </div>
         {parametros.cargado && (
           <p className="aviso aviso--exito" role="status">
             <BadgeCheck className="icono" aria-hidden="true" />
@@ -74,11 +82,6 @@ export default async function DocumentosPage({
               las consultas.
             </span>
           </p>
-        )}
-        {administra && (
-          <div className="fila-acciones">
-            <ModalDocumento consorcioId={activo.id} tipos={TIPOS_DOCUMENTO} />
-          </div>
         )}
         {documentos.length === 0 ? (
           <div className="vacio">
@@ -128,7 +131,7 @@ export default async function DocumentosPage({
                           <form action={accionReindexar}>
                             <input type="hidden" name="consorcio" value={activo.id} />
                             <input type="hidden" name="documento" value={d.id} />
-                            <button type="submit" className="boton boton--fantasma">
+                            <button type="submit" className="boton boton--terciario">
                               Reintentar
                             </button>
                           </form>
@@ -137,7 +140,7 @@ export default async function DocumentosPage({
                     )}
                     <td>
                       <Link
-                        className="boton boton--fantasma"
+                        className="boton boton--terciario"
                         href={`/consorcios/${activo.id}/documentos/${d.id}`}
                       >
                         Abrir

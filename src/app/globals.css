@@ -1,38 +1,47 @@
 /*
  * Tokens y base de la interfaz. Unica fuente de valores: ninguna pantalla
- * escribe un color ni un espacio a mano. Corresponden a docs/guia-estilos.md §3
- * y al ejemplo verificado en docs/guia-estilos-ejemplo.html.
+ * escribe un color ni un espacio a mano. Corresponden a docs/guia-estilos.md §3.
+ * Rediseño 013: panel flotante, tarjetas sin borde con sombra suave, botones
+ * de una linea y una altura, estados sin borde (docs/guia-estilos.md §7).
  */
 :root {
   /* Superficies */
-  --grafito: #23272e;
-  --grafito-claro: #2e333b;
-  --fondo: #f4f6f4;
+  --grafito: #16191d;
+  --grafito-claro: #23282e;
+  --fondo: #eef0eb;
   --superficie: #ffffff;
+  --superficie-hundida: #f5f6f2;
 
   /* Texto */
-  --tinta: #1a1d21;
-  --tinta-apagada: #4a5158;
-  --tinta-clara: #e8eaed;
+  --tinta: #15181b;
+  --tinta-apagada: #4f575f;
+  --tinta-clara: #e6e9ec;
+  --tinta-clara-apagada: #9aa2aa;
 
   /* Semaforo */
-  --verde: #2e7d32;
+  --verde: #256b29;
   --lima: #7cb342;
-  --lima-alto: #9ccc65;
-  --ambar: #8a5f14;
-  --rojo: #b3261e;
+  --lima-alto: #a5d66f;
+  --ambar: #7a5410;
+  --rojo: #a52a21;
   --rojo-borde: #8f1d16;
+  --azul: #1f57a0;
 
   /* Fondos palidos */
-  --verde-palido: #f1f8f1;
-  --ambar-palido: #fdf3d7;
-  --rojo-palido: #fdecea;
-  --gris-palido: #ecefec;
+  --verde-palido: #e8f3e8;
+  --ambar-palido: #fbf0d6;
+  --rojo-palido: #fbe8e6;
+  --gris-palido: #eceee9;
+  --azul-palido: #e6eef9;
 
   /* Bordes: el de control cumple 3:1 sobre blanco (WCAG 1.4.11) */
-  --linea: #c9cfc9;
-  --linea-suave: #e2e6ea;
-  --linea-control: #767e76;
+  --linea: #d6dbd2;
+  --linea-suave: #e8ebe5;
+  --linea-control: #7e867e;
+
+  /* Profundidad: las tarjetas se separan por sombra, no por borde */
+  --sombra: 0 1px 2px rgb(21 24 27 / 4%), 0 10px 30px rgb(21 24 27 / 5%);
+  --sombra-alta: 0 16px 40px rgb(21 24 27 / 16%), 0 2px 6px rgb(21 24 27 / 6%);
 
   /* Espaciado, base 4 */
   --e1: 4px;
@@ -42,9 +51,10 @@
   --e5: 24px;
   --e6: 32px;
 
-  /* Tipografia: Poppins en todo, Inter tabular en cifras (§3.1) */
-  --tipografia: 'Poppins', -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --tipografia-cifra: 'Inter', 'Poppins', -apple-system, sans-serif;
+  /* Tipografia: Plus Jakarta Sans en todo, con digitos tabulares en cifras
+     (§3.1). La familia la carga next/font en --fuente-marca. */
+  --tipografia: var(--fuente-marca), 'Plus Jakarta Sans', -apple-system, 'Segoe UI', sans-serif;
+  --tipografia-cifra: var(--tipografia);
   --t-ayuda: 12px;
   --t-menor: 13px;
   --t-cuerpo: 15px;
@@ -52,8 +62,9 @@
   --t-titulo2: 22px;
   --t-titulo1: 28px;
 
-  --radio: 10px;
-  --radio-chico: 8px;
+  --radio: 16px;
+  --radio-chico: 10px;
+  --radio-grande: 22px;
   --pastilla: 999px;
   --toque: 44px;
 }
@@ -74,8 +85,9 @@ body {
 h1,
 h2,
 h3 {
-  font-weight: 600;
+  font-weight: 700;
   margin: 0;
+  letter-spacing: -0.02em;
 }
 h1 {
   font-size: var(--t-titulo1);
@@ -101,8 +113,30 @@ h3 {
   color: var(--tinta-apagada);
 }
 
+/* Un enlace dentro de un texto: verde, subrayado fino y separado. En tablas,
+   listas y titulos de tarjeta el nombre es el enlace y no se subraya (abajo). */
 a {
+  color: var(--verde);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+td a:not(.boton),
+th a:not(.boton),
+.lista-simple a,
+.tarjeta h2 a,
+.tarjeta h3 a,
+.enlace-seco {
   color: var(--tinta);
+  font-weight: 600;
+  text-decoration: none;
+}
+td a:not(.boton):hover,
+th a:not(.boton):hover,
+.lista-simple a:hover,
+.tarjeta h2 a:hover,
+.tarjeta h3 a:hover,
+.enlace-seco:hover {
+  text-decoration: underline;
 }
 
 /* Foco visible en todo lo operable; se define una vez y no se quita (§5). */
@@ -111,9 +145,9 @@ a {
   outline-offset: 2px;
   border-radius: var(--radio-chico);
 }
-.barra :focus-visible,
-.lateral :focus-visible,
-.barra-inferior :focus-visible {
+.panel :focus-visible,
+.barra-inferior :focus-visible,
+.emergente :focus-visible {
   outline-color: var(--lima-alto);
 }
 
@@ -123,223 +157,466 @@ a {
   flex: none;
 }
 
-/* Estructura ------------------------------------------------------------- */
-.barra {
-  background: var(--grafito);
-  color: var(--tinta-clara);
-  padding: var(--e3) var(--e5);
-  /* Tres columnas: la navegacion global centrada de verdad (1fr auto 1fr),
-     la marca a la izquierda y la salida a la derecha. */
+/* Estructura: el marco (rediseño 013, guia §7.1) ----------------------------
+   Un panel grafito flotante a la izquierda y el contenido sobre el fondo claro.
+   Sin barra superior: marca, avisos, consorcio, navegacion y sesion viven en el
+   panel. Cada uno desplaza por su cuenta (`min-height: 0` en cada nivel). */
+.marco {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: 256px minmax(0, 1fr);
   gap: var(--e3);
-  align-items: center;
-}
-/* Los tres bloques miden lo mismo (un toque) y centran adentro: asi el logo,
-   los enlaces y Salir quedan a la misma altura aunque cambie la tipografia. */
-.barra > * {
-  display: flex;
-  align-items: center;
-  min-height: var(--toque);
-}
-.barra .icono {
-  display: block;
-}
-.barra__global {
-  gap: var(--e2);
-}
-.barra__global a {
-  display: flex;
-  align-items: center;
-  gap: var(--e2);
-  min-height: var(--toque);
-  padding: 0 var(--e3);
-  border-radius: var(--radio-chico);
-  color: var(--tinta-clara);
-  text-decoration: none;
-  font-size: var(--t-menor);
-}
-.barra__global a:hover {
-  background: var(--grafito-claro);
-}
-.marca {
-  font-weight: 700;
-  font-size: var(--t-titulo1);
-  letter-spacing: 0.04em;
-  color: var(--tinta-clara);
-  text-decoration: none;
-}
-.consorcio {
-  margin-left: auto;
-  font-size: var(--t-menor);
-  border: 1px solid var(--tinta-apagada);
-  border-radius: var(--radio-chico);
-  padding: var(--e2) var(--e3);
-  min-height: var(--toque);
-  display: flex;
-  align-items: center;
-  gap: var(--e2);
-  background: transparent;
-  color: var(--tinta-clara);
-  font-family: inherit;
-}
-
-/* Armazon a la altura exacta de la ventana: la barra no se mueve, y el
-   lateral y el contenido se desplazan cada uno por su cuenta (`min-height: 0`
-   en cada nivel para que el flex deje encoger a los hijos). */
-.armazon {
   height: 100dvh;
-  display: flex;
-  flex-direction: column;
-}
-.envoltorio {
-  /* A filo: el menu pegado al borde izquierdo y hasta abajo de la ventana. */
-  margin: 0;
-  max-width: none;
-  padding: 0;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-.armazon .disposicion {
-  flex: 1;
-  min-height: 0;
-}
-/* Pantallas sin lateral (lista de consorcios, bandeja): el contenido solo,
-   con el mismo margen que el `main` de la L. */
-main.suelto {
-  padding: var(--e4);
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-/* Opcion 3 del prototipo: la L de grafito abraza el contenido y la esquina
-   superior izquierda del contenido se curva hacia adentro. Arriba fundido
-   con la barra (sin radio), abajo tarjeta redondeada. `clip` recorta
-   las esquinas redondeadas sin abrir un contenedor de desplazamiento, asi
-   que el lateral pegado sigue funcionando. */
-.disposicion {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  align-items: stretch;
-  background: var(--grafito);
-  /* A filo: sin radio exterior; solo la curva interior del contenido. */
-  border-radius: 0;
-  overflow: clip;
-}
-/* Sin esto, una tabla ancha estira la columna y desborda la pagina. */
-.disposicion > * {
-  min-width: 0;
-}
-/* El contenido como cuadrado redondeado sobre el grafito, con su scroll. */
-.disposicion > main {
-  background: var(--fondo);
-  border-top-left-radius: var(--radio);
-  padding: var(--e4);
-  min-height: 0;
-  overflow-y: auto;
-}
-
-.lateral {
-  background: var(--grafito);
   padding: var(--e3);
-  font-size: var(--t-cuerpo);
-  /* Si el menu es mas alto que la ventana, se desplaza solo. */
+}
+.panel {
+  background: var(--grafito);
+  color: var(--tinta-clara);
+  border-radius: 24px;
+  padding: var(--e4) var(--e3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   min-height: 0;
   overflow-y: auto;
   /* Fino y sin pista: solo el pulgar sobre el grafito. */
   scrollbar-width: thin;
-  scrollbar-color: var(--tinta-apagada) transparent;
+  scrollbar-color: var(--grafito-claro) transparent;
 }
+.panel__cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e2);
+  padding: 0 0 var(--e3) var(--e3);
+}
+.marca {
+  font-weight: 800;
+  font-size: 21px;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  text-decoration: none;
+}
+.panel__acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--e1);
+}
+.panel__acciones form {
+  margin: 0;
+}
+/* Icono del panel (campana, salir): cuadrado tactil sobre el grafito. */
+.panel__icono {
+  position: relative;
+  width: var(--toque);
+  height: var(--toque);
+  border-radius: 12px;
+  border: 0;
+  background: rgb(255 255 255 / 6%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: none;
+}
+.panel__icono:hover {
+  background: rgb(255 255 255 / 12%);
+}
+.panel__global,
+.lateral {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.panel__global {
+  padding-bottom: var(--e2);
+  margin-bottom: var(--e1);
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+}
+.panel__global a,
 .lateral a {
   display: flex;
   align-items: center;
   gap: var(--e3);
-  /* En escritorio se apunta con el raton: 36 px hacen entrar las 16
-     secciones en 900 px. El alto de toque vuelve en telefono (abajo). */
+  /* Se apunta con el raton: 36 px hacen entrar todas las secciones en 900 px.
+     En la hoja del telefono vuelve el alto de toque (abajo). */
   min-height: 36px;
   padding: 0 var(--e3);
-  border-radius: var(--radio-chico);
-  color: var(--tinta-clara);
+  border-radius: 12px;
+  color: #b9c0c7;
   text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
 }
+.panel__global .icono,
+.lateral .icono {
+  width: 18px;
+  height: 18px;
+}
+.panel__global a:hover,
 .lateral a:hover {
-  background: var(--grafito-claro);
+  background: rgb(255 255 255 / 6%);
+  color: #ffffff;
 }
+.panel__global a[aria-current='page'],
 .lateral a[aria-current='page'] {
+  background: var(--lima-alto);
+  color: var(--grafito);
   font-weight: 700;
-  color: var(--lima-alto);
-  background: var(--grafito-claro);
 }
-/* La columna grafito: el conmutador de consorcio arriba, menu en telefono,
-   lateral. `min-height: 0` deja que el lateral encoja y desplace adentro. */
-.lateral__marco {
-  background: var(--grafito);
-  color: var(--tinta-clara);
+.lateral__bloque {
   display: flex;
   flex-direction: column;
-  gap: var(--e2);
-  padding-top: var(--e3);
-  min-height: 0;
-}
-.lateral__marco .selector-consorcio {
-  margin: 0 var(--e3);
+  gap: 2px;
 }
 .lateral__bloque h2 {
-  margin: var(--e3) var(--e3) var(--e1);
-  font-size: 10px;
-  font-weight: 700;
+  margin: var(--e3) var(--e3) 2px;
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--lima-alto);
+  color: #8a929a;
 }
-
-/* Menu de telefono: apertura nativa, sin guion. */
-.menu {
-  display: none;
+.panel__pie {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  padding: var(--e3) 0 0 var(--e2);
+  border-top: 1px solid rgb(255 255 255 / 8%);
 }
-.menu > summary {
-  list-style: none;
-  min-height: var(--toque);
-  min-width: var(--toque);
+.panel__pie form {
+  margin: 0;
+}
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #e9ede4;
+  color: var(--grafito);
+  font-size: 12px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--tinta-apagada);
-  border-radius: var(--radio-chico);
-  cursor: pointer;
+  flex: none;
 }
-.menu > summary::-webkit-details-marker {
-  display: none;
+.panel__nombre {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.menu[open] .lateral {
-  display: block;
-  position: absolute;
-  left: var(--e4);
-  right: var(--e4);
-  z-index: 2;
-  /* El armazon ya no crece con la pagina: el menu desplegado desplaza adentro. */
-  max-height: 70dvh;
-}
-.menu[open] .lateral a {
-  min-height: var(--toque);
+.contenido {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--e5) var(--e5) var(--e6);
 }
 
-/* Variante C del prototipo: barra inferior solo en telefono; en escritorio
-   manda el lateral y no se muestra. */
-.barra-inferior {
+/* Conmutador de consorcio: tarjeta con siglas, nombre y direccion enteros. El
+   `<select>` nativo la cubre, transparente: el teclado y el telefono usan el
+   control de siempre, y el foco se dibuja en la tarjeta. */
+.selector-consorcio {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  padding: 10px;
+  margin: 0 0 var(--e2);
+  border-radius: 16px;
+  background: rgb(255 255 255 / 6%);
+  color: #ffffff;
+}
+.selector-consorcio:has(select):hover {
+  background: rgb(255 255 255 / 10%);
+}
+.selector-consorcio:has(select:focus-visible) {
+  outline: 3px solid var(--lima-alto);
+  outline-offset: 2px;
+}
+.selector-consorcio__insignia {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: var(--lima-alto);
+  color: var(--grafito);
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.selector-consorcio__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  line-height: 1.3;
+}
+.selector-consorcio__nombre {
+  font-size: 14px;
+  font-weight: 700;
+}
+.selector-consorcio__direccion {
+  font-size: 12px;
+  color: var(--tinta-clara-apagada);
+}
+.selector-consorcio__flecha {
+  width: 16px;
+  height: 16px;
+  color: var(--tinta-clara-apagada);
+  flex: none;
+}
+.selector-consorcio select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* Campana (rediseño 013): contador, panel de avisos y aviso emergente. */
+.campana {
+  position: relative;
+}
+.campana__cuenta {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--pastilla);
+  border: 2px solid var(--grafito);
+  background: var(--lima-alto);
+  color: var(--grafito);
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.campana__panel {
+  position: fixed;
+  top: var(--e4);
+  left: 280px;
+  z-index: 20;
+  width: 400px;
+  max-height: calc(100dvh - 2 * var(--e4));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--superficie);
+  color: var(--tinta);
+  border-radius: 20px;
+  box-shadow: var(--sombra-alta);
+}
+.campana__panel[hidden] {
+  display: none;
+}
+.campana__cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e2);
+  padding: var(--e3) var(--e2) var(--e2) var(--e5);
+}
+.campana__cabeza h2 {
+  font-size: 18px;
+}
+.campana__filtro {
+  display: flex;
+  gap: var(--e1);
+  padding: 0 var(--e4) var(--e3);
+  border-bottom: 1px solid var(--linea-suave);
+}
+.campana__filtro button {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tinta-apagada);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+}
+.campana__filtro [aria-pressed='true'] {
+  background: var(--grafito);
+  color: #ffffff;
+}
+.campana__chip {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--pastilla);
+  background: var(--lima-alto);
+  color: var(--grafito);
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.campana__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+}
+.campana__item {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 10px;
+  gap: 14px;
+  align-items: start;
+  width: 100%;
+  padding: 14px var(--e5);
+  border: 0;
+  border-bottom: 1px solid var(--linea-suave);
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: var(--tinta);
+  cursor: pointer;
+}
+.campana__item:hover {
+  background: var(--superficie-hundida);
+}
+.campana__item--nueva {
+  background: #f4f9ee;
+}
+.campana__texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.campana__texto strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.campana__texto span,
+.campana__texto small {
+  font-size: 13px;
+  color: var(--tinta-apagada);
+}
+.campana__texto small {
+  font-size: 12px;
+}
+.campana__punto {
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  border-radius: 50%;
+}
+.campana__item--nueva .campana__punto {
+  background: var(--lima);
+}
+.campana__vacio {
+  padding: 40px var(--e5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--e2);
+  text-align: center;
+  font-size: 13px;
+  color: var(--tinta-apagada);
+}
+.campana__vacio strong {
+  font-size: 15px;
+  color: var(--tinta);
+}
+/* Icono sobre un tinte: el tipo de aviso se ve de un vistazo. */
+.aviso-tono {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.aviso-tono--verde {
+  background: var(--verde-palido);
+  color: var(--verde);
+}
+.aviso-tono--ambar {
+  background: var(--ambar-palido);
+  color: var(--ambar);
+}
+.aviso-tono--azul {
+  background: var(--azul-palido);
+  color: var(--azul);
+}
+.aviso-tono--rojo {
+  background: var(--rojo-palido);
+  color: var(--rojo);
+}
+.emergente {
+  position: fixed;
+  left: 292px;
+  bottom: var(--e5);
+  z-index: 30;
+  width: min(440px, calc(100vw - 2 * var(--e4)));
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  padding: var(--e3) var(--e2) var(--e3) 14px;
+  border-radius: 16px;
+  background: var(--grafito);
+  color: #ffffff;
+  box-shadow: var(--sombra-alta);
+  animation: modal-entrar 200ms ease-out;
+}
+.emergente__texto {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.emergente__texto small {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lima-alto);
+}
+.emergente__texto strong {
+  font-size: 14px;
+}
+.emergente .boton--terciario {
+  color: #ffffff;
+}
+.emergente .boton--terciario:hover {
+  background: var(--grafito-claro);
+}
+@media (prefers-reduced-motion: reduce) {
+  .emergente {
+    animation: none;
+  }
+}
+
+/* La barra flotante y los atajos de la cabecera son del telefono (abajo). */
+.barra-inferior,
+.solo-telefono-flex {
   display: none;
 }
 
 /* Componentes ------------------------------------------------------------ */
 .tarjeta {
   background: var(--superficie);
-  border: 1px solid var(--linea-suave);
-  border-radius: var(--radio);
-  padding: var(--e4);
+  border-radius: var(--radio-grande);
+  box-shadow: var(--sombra);
+  padding: var(--e5);
 }
 /* Buscador a todo el ancho: el campo crece, los botones quedan al final. */
 .buscador .campo {
@@ -364,9 +641,9 @@ main.suelto {
   justify-content: center;
   min-width: var(--toque);
   min-height: var(--toque);
-  border-radius: var(--pastilla);
-  background: var(--lima);
-  color: var(--grafito);
+  border-radius: 12px;
+  background: var(--grafito);
+  color: var(--lima-alto);
 }
 .tarjeta-consorcio h2 {
   font-size: var(--t-titulo3);
@@ -378,46 +655,65 @@ main.suelto {
   margin: auto 0 0;
 }
 
-/* Titulos de tarjeta: el enlace se subraya solo al pasar el cursor. */
-.tarjeta h2 a,
-.tarjeta h3 a {
-  text-decoration: none;
-}
-.tarjeta h2 a:hover,
-.tarjeta h3 a:hover {
-  text-decoration: underline;
-}
-
+/* Botones (guia §7.2): una altura (44) y una linea siempre. Si la etiqueta no
+   entra se acorta, nunca se parte: dos alturas en la misma fila es lo que la
+   auditoria encontro en Espacios. La pastilla queda para los estados. */
 .boton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--e2);
+  height: var(--toque);
   min-height: var(--toque);
-  padding: 0 var(--e5);
-  border-radius: var(--pastilla);
-  font-weight: 700;
-  font-size: var(--t-cuerpo);
+  padding: 0 18px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
   line-height: 1;
   font-family: var(--tipografia);
-  border: 2px solid transparent;
+  white-space: nowrap;
+  border: 1px solid transparent;
   cursor: pointer;
   /* Los botones suelen ser enlaces: sin subrayado de enlace. */
   text-decoration: none;
+  flex: none;
 }
+.boton .icono {
+  width: 18px;
+  height: 18px;
+}
+/* Primario: grafito, uno por vista. */
 .boton--primario {
-  background: var(--lima);
-  color: var(--grafito);
+  background: var(--grafito);
+  color: #ffffff;
 }
+.boton--primario:hover {
+  background: var(--grafito-claro);
+}
+/* Secundario: blanco con borde gris de 1 px. */
 .boton--fantasma {
   background: var(--superficie);
-  border-color: var(--grafito);
-  color: var(--grafito);
+  border-color: var(--linea);
+  color: var(--tinta);
+}
+.boton--fantasma:hover {
+  background: var(--superficie-hundida);
+}
+/* Terciario: sin borde; acciones de fila y de tarjeta. */
+.boton--terciario {
+  background: transparent;
+  color: var(--tinta);
+}
+.boton--terciario:hover {
+  background: var(--gris-palido);
 }
 .boton--peligro {
   background: var(--superficie);
-  border-color: var(--rojo);
+  border-color: #e6bdb9;
   color: var(--rojo);
+}
+.boton--peligro:hover {
+  background: var(--rojo-palido);
 }
 .boton[disabled] {
   opacity: 0.5;
@@ -443,8 +739,8 @@ main.suelto {
   gap: var(--e2);
   min-height: var(--toque);
   padding: 0 var(--e4);
-  border-radius: var(--pastilla);
-  border: 1px solid var(--linea-control);
+  border-radius: 12px;
+  border: 1px solid var(--linea);
   background: var(--superficie);
   font-size: var(--t-menor);
   font-weight: 600;
@@ -504,9 +800,20 @@ form > .fila-acciones {
 .fila-acciones {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--e2);
   /* Aire arriba y abajo: es un `div`, no hereda el margen del parrafo. */
   margin: var(--e4) 0;
+}
+/* Una accion que es un formulario (dar de baja, cancelar) se alinea con sus
+   vecinas: sin esto `form > .boton` le sumaba 16 px arriba, la fila se estiraba
+   a 60 y el boton de al lado crecia con ella (auditoria, Espacios). */
+.fila-acciones form {
+  display: inline-flex;
+  margin: 0;
+}
+.fila-acciones form > .boton {
+  margin-top: 0;
 }
 
 .campo {
@@ -527,6 +834,7 @@ form > .fila-acciones {
   padding: 0 var(--e3);
   border: 1px solid var(--linea-control);
   border-radius: var(--radio-chico);
+  background: var(--superficie);
   font-size: var(--t-cuerpo);
   line-height: 1.5;
   font-family: var(--tipografia);
@@ -573,7 +881,7 @@ form > .fila-acciones {
 }
 
 .aviso {
-  border-radius: var(--radio-chico);
+  border-radius: 14px;
   padding: var(--e3) var(--e4);
   font-size: var(--t-cuerpo);
   margin: var(--e3) 0;
@@ -583,19 +891,16 @@ form > .fila-acciones {
 }
 .aviso--atencion {
   background: var(--ambar-palido);
-  border: 1px solid var(--ambar);
-  border-left-width: 4px;
+  color: #5c3f0c;
 }
 .aviso--problema {
   background: var(--rojo-palido);
-  border: 1px solid var(--rojo-borde);
-  border-left: 4px solid var(--rojo);
+  color: #7e1f18;
 }
 /* Algo que salio bien no es una advertencia: verde, con tilde. */
 .aviso--exito {
   background: var(--verde-palido);
-  border: 1px solid var(--verde);
-  border-left-width: 4px;
+  color: #1d5520;
 }
 /* El icono acompaña al texto; nunca es la unica señal (§3.2). */
 .aviso svg {
@@ -609,9 +914,10 @@ form > .fila-acciones {
   /* Contiene a los hijos absolutos (.oculto): sin esto se escapan del
      desplazamiento y ensanchan la pagina en el telefono. */
   position: relative;
-  border: 1px solid var(--linea);
-  border-radius: var(--radio);
+  border-radius: var(--radio-grande);
   background: var(--superficie);
+  box-shadow: var(--sombra);
+  padding: 0 var(--e2);
 }
 table {
   width: 100%;
@@ -629,17 +935,40 @@ caption {
 th,
 td {
   text-align: left;
-  padding: var(--e3) var(--e4);
+  padding: var(--e2) var(--e4);
   border-bottom: 1px solid var(--linea-suave);
   font-size: var(--t-cuerpo);
-  height: var(--toque);
+  height: 56px;
 }
 thead th {
-  background: var(--gris-palido);
   color: var(--tinta-apagada);
   font-size: var(--t-ayuda);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-weight: 600;
+  height: var(--toque);
+}
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+tbody tr:hover td {
+  background: var(--superficie-hundida);
+}
+/* Una accion de fila vive en un formulario: sin el margen de `form > .boton`,
+   que la corria unos pixeles por debajo del centro de la fila. */
+td form {
+  display: inline-flex;
+  margin: 0;
+}
+td form > .boton {
+  margin-top: 0;
+}
+/* Acciones de fila (guia §7.2): terciarias. El secundario pierde el borde
+   dentro de una tabla, asi una columna de acciones no es una pila de cajas. */
+td .boton--fantasma {
+  background: transparent;
+  border-color: transparent;
+}
+td .boton--fantasma:hover {
+  background: var(--gris-palido);
 }
 td.numero,
 th.numero {
@@ -647,13 +976,13 @@ th.numero {
 }
 tfoot td {
   font-weight: 700;
-  border-top: 2px solid var(--linea);
-  background: var(--gris-palido);
+  border-top: 1px solid var(--linea);
+  border-bottom: 0;
 }
 
 .vacio {
   border: 1px dashed var(--linea);
-  border-radius: var(--radio);
+  border-radius: var(--radio-grande);
   padding: var(--e6);
   text-align: center;
   background: var(--superficie);
@@ -686,9 +1015,11 @@ tfoot td {
 .lista-simple li {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: var(--e3);
+  min-height: 48px;
   padding: var(--e2) 0;
-  border-bottom: 1px solid var(--linea);
+  border-bottom: 1px solid var(--linea-suave);
 }
 .lista-simple li:last-child {
   border-bottom: 0;
@@ -729,56 +1060,85 @@ tfoot td {
   font-weight: 600;
 }
 
+/* KPI en superficie blanca: el grafito queda para el panel lateral. El icono
+   va sobre un tinte que cambia con la posicion, asi cuatro seguidos no son
+   cuatro iguales. */
 .kpi {
-  background: var(--grafito);
-  border-radius: var(--radio);
-  padding: var(--e3) var(--e4);
+  background: var(--superficie);
+  border-radius: var(--radio-grande);
+  box-shadow: var(--sombra);
+  padding: var(--e4) var(--e5);
   display: flex;
-  gap: var(--e3);
+  gap: var(--e4);
   align-items: center;
 }
 .kpi__icono {
   width: 40px;
   height: 40px;
-  border-radius: var(--radio-chico);
-  background: var(--lima-alto);
-  color: var(--grafito);
+  border-radius: 12px;
+  background: var(--azul-palido);
+  color: var(--azul);
   display: flex;
   align-items: center;
   justify-content: center;
   flex: none;
 }
-/* Rotulo 10px en mayusculas lima: unica excepcion fuera de escala,
-   documentada en guia §3.4. */
-.kpi__rotulo {
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  color: var(--lima-alto);
-  font-weight: 600;
-  text-transform: uppercase;
+.kpi:nth-child(4n + 2) .kpi__icono {
+  background: var(--verde-palido);
+  color: var(--verde);
 }
-/* La cifra va en Inter tabular blanco; se usa con la clase `cifra`. */
+.kpi:nth-child(4n + 3) .kpi__icono {
+  background: var(--rojo-palido);
+  color: var(--rojo);
+}
+.kpi:nth-child(4n + 4) .kpi__icono {
+  background: var(--ambar-palido);
+  color: var(--ambar);
+}
+.kpi__rotulo {
+  font-size: var(--t-menor);
+  color: var(--tinta-apagada);
+  font-weight: 600;
+}
 .kpi__cifra {
   font-family: var(--tipografia-cifra);
   font-variant-numeric: tabular-nums;
-  font-size: var(--t-titulo2);
+  white-space: nowrap;
+  font-size: 26px;
   font-weight: 700;
-  color: var(--superficie);
+  letter-spacing: -0.02em;
+  color: var(--tinta);
 }
 .kpi__detalle {
   font-size: var(--t-ayuda);
-  color: var(--tinta-clara);
+  color: var(--tinta-apagada);
 }
 
-/* Etiquetas de estado: color + palabra, nunca color solo (§3.2). */
+/* Estados (guia §7.3): pastilla tenue sin borde, con punto y palabra; nunca
+   color solo (§3.2). Sin borde no se confunde con un boton. */
 .etiqueta {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
   font-size: var(--t-ayuda);
   font-weight: 600;
-  padding: var(--e1) var(--e3);
+  padding: 0 10px;
   border-radius: var(--pastilla);
-  border: 1px solid currentColor;
   white-space: nowrap;
+  vertical-align: middle;
+}
+.etiqueta:not(:has(.icono))::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+.etiqueta--info {
+  color: var(--azul);
+  background: var(--azul-palido);
 }
 .etiqueta--rendido {
   color: var(--verde);
@@ -800,8 +1160,8 @@ tfoot td {
    de la pastilla; nunca color solo. Separación con token; el alineado vertical
    no tiene token y se fija en la línea de texto. */
 .etiqueta .icono {
-  vertical-align: -4px;
-  margin-right: var(--e1);
+  width: 14px;
+  height: 14px;
 }
 /* Algo corre en segundo plano: late como el esqueleto, y se queda quieto si
    la persona pidió menos movimiento. */
@@ -877,7 +1237,7 @@ tfoot td {
   align-items: center;
   justify-content: center;
   padding: 0 var(--e3);
-  border: 1px solid var(--linea-control);
+  border: 1px solid var(--linea);
   border-radius: var(--radio-chico);
   background: var(--superficie);
   color: var(--tinta);
@@ -918,50 +1278,6 @@ tfoot td {
 }
 
 @media (max-width: 760px) {
-  .envoltorio {
-    padding: 0;
-  }
-  .disposicion {
-    grid-template-columns: 1fr;
-    /* La fila del consorcio mide lo suyo y el contenido se queda con el
-       resto: sin esto las dos filas `auto` se reparten el alto sobrante. */
-    grid-template-rows: auto minmax(0, 1fr);
-    /* Sin lateral no hay L: el contenido ocupa todo y no muestra grafito. */
-    background: transparent;
-  }
-  .disposicion > main {
-    border-radius: 0;
-  }
-  .lateral__marco > .lateral {
-    display: none;
-  }
-  .lateral__marco {
-    padding: var(--e3);
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-  .lateral__marco .selector-consorcio {
-    margin: 0;
-    flex: 1;
-  }
-  main.suelto {
-    padding: 0;
-  }
-  .menu {
-    display: block;
-  }
-  /* Una sola fila: Consorcios y Bandeja quedan como icono (el nombre sigue
-     en `aria-label`), y «Salir» no cae a una segunda linea. */
-  .barra {
-    padding: var(--e2) var(--e4);
-  }
-  .barra .barra__texto {
-    display: none;
-  }
-  .marca {
-    font-size: var(--t-titulo2);
-  }
   h1 {
     font-size: var(--t-titulo2);
   }
@@ -1121,43 +1437,6 @@ tfoot td {
     background: var(--lima);
     border-color: var(--lima);
   }
-  /* Las 5 principales al alcance del pulgar: icono + etiqueta corta, cada
-     destino tactil (alto de toque mas una fila de etiqueta) y siempre a la
-     vista con `sticky` (sigue en flujo: no tapa contenido ni pide relleno).
-     Solo iconos + palabra, nunca color solo; la activa lleva filo lima. */
-  .barra-inferior {
-    display: block;
-    position: sticky;
-    bottom: 0;
-    background: var(--grafito);
-    border-top: 1px solid var(--tinta-apagada);
-  }
-  .barra-inferior ul {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .barra-inferior a {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--e1);
-    min-height: calc(var(--toque) + var(--e3));
-    min-width: var(--toque);
-    padding: var(--e1);
-    color: var(--tinta-clara);
-    text-decoration: none;
-    font-size: var(--t-ayuda);
-    font-weight: 600;
-    text-align: center;
-  }
-  .barra-inferior a[aria-current='page'] {
-    color: var(--lima-alto);
-    box-shadow: inset 0 var(--e1) 0 var(--lima-alto);
-  }
 }
 
 /* Volver a la pantalla madre dentro del mismo consorcio (el nombre del
@@ -1169,28 +1448,624 @@ tfoot td {
   white-space: nowrap;
 }
 
-/* Acceso: las pantallas sin panel —ingresar, invitacion— ------------------ */
+/* Acceso: las pantallas sin panel —ingresar, invitacion— ------------------
+   La marca en grafito a la izquierda y el formulario a la derecha. */
 .acceso {
   min-height: 100dvh;
   display: grid;
-  place-items: center;
-  padding: var(--e4);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 640px);
+  background: var(--fondo);
 }
-.acceso > div {
-  width: 100%;
-  max-width: 400px;
+.acceso__marca {
+  background: var(--grafito);
+  color: #ffffff;
+  padding: var(--e6) 72px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--e6);
+  position: relative;
+  overflow: hidden;
 }
-.acceso .marca {
+.acceso__marca::before,
+.acceso__marca::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid #2e343b;
+  pointer-events: none;
+}
+.acceso__marca::before {
+  left: -200px;
+  bottom: -260px;
+  width: 680px;
+  height: 680px;
+}
+.acceso__marca::after {
+  left: -80px;
+  bottom: -140px;
+  width: 440px;
+  height: 440px;
+}
+.acceso__marca .marca {
+  font-size: 26px;
+  position: relative;
+}
+.acceso__lema {
+  position: relative;
+  max-width: 520px;
+}
+.acceso__titular {
+  margin: 0 0 var(--e4);
+  font-size: 44px;
+  line-height: 1.12;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.acceso__titular span {
+  color: var(--lima-alto);
+}
+.acceso__lema p:last-child {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.6;
+  color: #c9ced4;
+}
+.acceso__marca small {
+  position: relative;
+  font-size: var(--t-menor);
+  color: #8a929a;
+}
+.acceso__cuerpo {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--e6);
+  padding: var(--e6) 96px;
+}
+.acceso__volver {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  align-self: flex-start;
+  min-height: var(--toque);
+  font-size: 14px;
+  font-weight: 600;
   color: var(--tinta);
-  display: block;
-  margin-bottom: var(--e4);
+  text-decoration: none;
+}
+.acceso__volver:hover {
+  text-decoration: underline;
+}
+.acceso__formulario h1 {
+  font-size: 32px;
+}
+.acceso__formulario > .apagado {
+  margin: var(--e2) 0 var(--e5);
 }
 .acceso .campo {
   max-width: none;
 }
-.acceso .boton {
-  margin-top: var(--e4);
+.acceso .campo input {
+  min-height: 48px;
+}
+.acceso form > .boton {
+  margin-top: var(--e5);
   width: 100%;
+  height: 52px;
+}
+.acceso__formulario > .ayuda {
+  margin: var(--e5) 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+@media (max-width: 900px) {
+  .acceso {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .acceso__marca {
+    padding: var(--e4);
+  }
+  .acceso__marca::before,
+  .acceso__marca::after,
+  .acceso__lema,
+  .acceso__marca small {
+    display: none;
+  }
+  .acceso__cuerpo {
+    justify-content: flex-start;
+    gap: var(--e4);
+    padding: var(--e4);
+  }
+}
+
+/* Botones de la portada: lima sobre grafito y la version grande del heroe. */
+.boton--lima {
+  background: var(--lima-alto);
+  color: var(--grafito);
+}
+.boton--lima:hover {
+  background: #b5de86;
+}
+.boton--grande {
+  height: 52px;
+  padding: 0 var(--e5);
+  font-size: 15px;
+}
+
+/* Landing (rediseño 013) ---------------------------------------------------- */
+.landing {
+  background: var(--fondo);
+}
+.landing h1,
+.landing h2 {
+  letter-spacing: -0.02em;
+}
+.landing__heroe {
+  background: var(--grafito);
+  color: #ffffff;
+  padding: 0 120px 112px;
+  position: relative;
+  overflow: hidden;
+}
+.landing__heroe::before,
+.landing__heroe::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  border-radius: 50%;
+  border: 1px solid #2e343b;
+  pointer-events: none;
+}
+.landing__heroe::before {
+  right: -180px;
+  top: 120px;
+  width: 720px;
+  height: 720px;
+}
+.landing__heroe::after {
+  right: -60px;
+  top: 240px;
+  width: 480px;
+  height: 480px;
+}
+.landing__nav {
+  position: relative;
+  z-index: 1;
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e4);
+}
+.landing__nav .marca {
+  font-size: 26px;
+}
+.landing__enlaces {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+}
+.landing__enlaces > a:not(.boton) {
+  color: #d5d9de;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.landing__enlaces > a:not(.boton):hover {
+  color: #ffffff;
+}
+.landing__heroe-cuerpo {
+  position: relative;
+  z-index: 1;
+  margin-top: 88px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 72px;
+  align-items: center;
+}
+.landing__propuesta {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.landing__sello {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--pastilla);
+  background: var(--grafito-claro);
+  color: #c5e1a5;
+  font-size: 13px;
+  font-weight: 500;
+}
+.landing__propuesta h1 {
+  font-size: 56px;
+  line-height: 1.1;
+  font-weight: 700;
+  text-wrap: balance;
+}
+.landing__acento {
+  display: block;
+  color: var(--lima-alto);
+}
+.landing__propuesta p {
+  margin: 0;
+  max-width: 560px;
+  font-size: 18px;
+  line-height: 1.6;
+  color: #c9ced4;
+}
+.landing__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e3);
+}
+.landing__vista {
+  position: relative;
+  height: 520px;
+}
+.landing__expensa {
+  position: absolute;
+  left: 0;
+  top: 24px;
+  right: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px;
+  border-radius: 20px;
+  background: var(--superficie);
+  color: var(--tinta);
+  box-shadow: 0 30px 60px rgb(0 0 0 / 35%);
+}
+.landing__expensa-cabeza {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--e3);
+}
+.landing__expensa-cabeza div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.landing__expensa-cabeza div span {
+  font-size: 13px;
+  color: var(--tinta-apagada);
+}
+.landing__expensa-cabeza strong {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.landing__expensa ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.landing__expensa li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--e3);
+  padding: var(--e3) 0;
+  border-bottom: 1px solid var(--linea-suave);
+  font-size: 14px;
+}
+.landing__expensa li:last-child {
+  border-bottom: 0;
+}
+.landing__expensa-acciones {
+  display: flex;
+  gap: 10px;
+}
+.landing__expensa-acciones span {
+  flex: 1;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e2);
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid var(--linea);
+}
+.landing__expensa-acciones span:first-child {
+  background: var(--grafito);
+  border-color: var(--grafito);
+  color: #ffffff;
+}
+.landing__aviso {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 360px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: var(--e4);
+  border-radius: 16px;
+  background: var(--grafito-claro);
+  border: 1px solid #3a4048;
+  box-shadow: 0 20px 40px rgb(0 0 0 / 35%);
+}
+.landing__aviso > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.landing__aviso small {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lima-alto);
+}
+.landing__aviso strong {
+  font-size: 14px;
+}
+.landing__aviso span span {
+  font-size: 12px;
+  color: #a7aeb6;
+}
+.landing__publicos {
+  padding: 112px 120px 56px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px;
+}
+.landing__publico {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 40px;
+  border-radius: var(--radio-grande);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+  scroll-margin-top: var(--e5);
+}
+.landing__rotulo {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--verde);
+}
+.landing__publico--vecinos .landing__rotulo,
+.landing__publico--vecinos .landing__punto .icono {
+  color: var(--azul);
+}
+.landing__publico h2 {
+  margin-top: -18px;
+  font-size: 32px;
+  line-height: 1.2;
+}
+.landing__punto {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.landing__punto .icono {
+  width: 22px;
+  height: 22px;
+  color: var(--verde);
+  margin-top: 1px;
+}
+.landing__punto strong {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+.landing__punto span {
+  font-size: 14px;
+  color: var(--tinta-apagada);
+  line-height: 1.55;
+}
+.landing__como {
+  padding: 56px 120px 112px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+  scroll-margin-top: var(--e5);
+}
+.landing__como h2 {
+  font-size: 40px;
+  line-height: 1.15;
+  max-width: 720px;
+}
+.landing__como ol {
+  list-style: none;
+  counter-reset: paso;
+  margin: 28px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--e5);
+}
+.landing__como li {
+  counter-increment: paso;
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+  padding: 28px;
+  border-radius: var(--radio-grande);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+.landing__como li::before {
+  content: counter(paso);
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--grafito);
+  color: var(--lima-alto);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.landing__como strong {
+  font-size: 18px;
+}
+.landing__como span {
+  font-size: 15px;
+  color: var(--tinta-apagada);
+  line-height: 1.6;
+}
+.landing__garantias {
+  background: var(--grafito);
+  color: #ffffff;
+  padding: 96px 120px;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 80px;
+}
+.landing__garantias > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e4);
+}
+.landing__escudo {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--grafito-claro);
+  color: var(--lima-alto);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.landing__garantias h2 {
+  font-size: 36px;
+  line-height: 1.2;
+}
+.landing__garantias p {
+  margin: 0;
+  font-size: 16px;
+  color: #c9ced4;
+  line-height: 1.6;
+}
+.landing__garantias ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.landing__garantias li {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--e5) 0;
+  border-top: 1px solid #3a4048;
+}
+.landing__garantias li:last-child {
+  border-bottom: 1px solid #3a4048;
+}
+.landing__garantias li strong {
+  font-size: 17px;
+}
+.landing__garantias li span {
+  font-size: 15px;
+  color: #c9ced4;
+  line-height: 1.6;
+}
+.landing__cierre {
+  padding: 104px 120px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 48px;
+}
+.landing__cierre h2 {
+  font-size: 36px;
+}
+.landing__cierre p {
+  margin: 10px 0 0;
+  font-size: 17px;
+  color: var(--tinta-apagada);
+}
+.landing__pie {
+  border-top: 1px solid var(--linea);
+  padding: 32px 120px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--e3);
+  font-size: 13px;
+  color: var(--tinta-apagada);
+}
+.landing__pie .marca {
+  color: var(--tinta);
+  font-size: 16px;
+}
+.landing :focus-visible {
+  outline-color: var(--lima-alto);
+}
+.landing__publicos :focus-visible,
+.landing__como :focus-visible,
+.landing__cierre :focus-visible {
+  outline-color: var(--verde);
+}
+@media (max-width: 1100px) {
+  .landing__heroe,
+  .landing__publicos,
+  .landing__como,
+  .landing__garantias,
+  .landing__cierre,
+  .landing__pie {
+    padding-left: var(--e5);
+    padding-right: var(--e5);
+  }
+  .landing__heroe-cuerpo,
+  .landing__publicos,
+  .landing__garantias {
+    grid-template-columns: 1fr;
+  }
+  .landing__como ol {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .landing__heroe {
+    padding-bottom: 56px;
+  }
+  .landing__enlaces > a:not(.boton) {
+    display: none;
+  }
+  .landing__heroe-cuerpo {
+    margin-top: var(--e5);
+  }
+  .landing__propuesta h1 {
+    font-size: 36px;
+  }
+  .landing__propuesta p {
+    font-size: 16px;
+  }
+  .landing__vista {
+    display: none;
+  }
+  .landing__publicos {
+    padding-top: 56px;
+  }
+  .landing__publico {
+    padding: var(--e5);
+  }
+  .landing__publico h2,
+  .landing__como h2,
+  .landing__garantias h2,
+  .landing__cierre h2 {
+    font-size: 26px;
+  }
+  .landing__garantias {
+    padding-top: 56px;
+    padding-bottom: 56px;
+    gap: var(--e5);
+  }
+  .landing__cierre {
+    padding-top: 56px;
+    padding-bottom: 56px;
+  }
 }
 
 /* Un grupo de campos no es un formulario aparte: agrupa para el lector de
@@ -1214,78 +2089,6 @@ fieldset > legend {
 }
 .fila-de-filtros .campo {
   margin-top: 0;
-}
-
-/* La salida cierra la barra por derecha: solo el icono, el nombre en `aria-label`. */
-.salida {
-  justify-self: end;
-  gap: var(--e3);
-}
-.salida__nombre {
-  font-size: var(--t-menor);
-  white-space: nowrap;
-}
-.salida .boton {
-  /* Es hijo directo de un <form>, y `form > .boton` le pone margen arriba:
-     era lo que bajaba el icono ocho pixeles respecto del resto de la barra. */
-  margin-top: 0;
-  border-color: var(--tinta-clara);
-  color: var(--tinta-clara);
-  background: transparent;
-}
-
-/* Conmutador de consorcio (§3.4): encabeza el lateral y es el titulo. El
-   `<select>` va sin apariencia nativa, en negrita como titulo, y la flecha
-   doble dice que se puede cambiar; con un solo consorcio es el nombre solo.
-   Sin guion (GET a la misma dirección). */
-.selector-consorcio {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--e3);
-  min-height: var(--toque);
-  min-width: 0;
-  padding: 0 var(--e3);
-  border-radius: var(--radio-chico);
-  font-weight: 700;
-  font-size: var(--t-titulo3);
-}
-.selector-consorcio:has(select):hover {
-  background: var(--grafito-claro);
-}
-.selector-consorcio .icono {
-  color: var(--lima-alto);
-}
-.selector-consorcio select,
-.selector-consorcio__nombre {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.selector-consorcio select {
-  appearance: none;
-  min-height: var(--toque);
-  /* Deja lugar a la flecha, que se dibuja aparte. */
-  padding: 0 var(--e5) 0 0;
-  border: 0;
-  background: transparent;
-  color: var(--tinta-clara);
-  font: inherit;
-  cursor: pointer;
-}
-.selector-consorcio select option {
-  color: var(--tinta);
-  font-weight: 400;
-}
-.selector-consorcio__flecha {
-  position: absolute;
-  right: var(--e3);
-  width: 16px;
-  height: 16px;
-  color: var(--linea-control);
-  pointer-events: none;
 }
 
 /* Campos dentro de una tabla: el mismo control, sin repetir la envoltura. */
@@ -1328,7 +2131,6 @@ td select {
   font-weight: 700;
   color: var(--ambar);
   background: var(--ambar-palido);
-  border: 1px solid var(--ambar);
   border-radius: var(--pastilla);
   padding: 0 var(--e2);
   margin-bottom: var(--e1);
@@ -1350,8 +2152,9 @@ td select {
    Solo tokens; la entrada anima `opacity`/`transform` 200 ms y se apaga con
    `prefers-reduced-motion` (regla dura de animaciones). */
 .modal {
-  border: 1px solid var(--linea);
-  border-radius: var(--radio);
+  border: 0;
+  box-shadow: var(--sombra-alta);
+  border-radius: var(--radio-grande);
   background: var(--superficie);
   color: var(--tinta);
   padding: 0;
@@ -1552,8 +2355,8 @@ td select {
 .grafico {
   margin-top: var(--e3);
   background: var(--superficie);
-  border: 1px solid var(--linea-suave);
-  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  border-radius: var(--radio-grande);
   padding: var(--e3) var(--e2) var(--e2) 0;
 }
 .alertas {
@@ -1691,5 +2494,414 @@ td select {
   }
   .solo-telefono {
     display: inline;
+  }
+}
+
+/* Marco en telefono (rediseño 013): el panel se vuelve la cabecera —marca,
+   atajos, campana y el consorcio— y las secciones pasan a una barra flotante
+   en forma de pastilla; «Más» abre el resto como hoja sobre la barra. */
+@media (max-width: 760px) {
+  .marco {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100dvh;
+    padding: 0;
+    gap: 0;
+  }
+  .panel {
+    border-radius: 0 0 22px 22px;
+    padding: var(--e2) var(--e3) var(--e3) var(--e4);
+    overflow: visible;
+  }
+  .panel > .panel__global,
+  .panel > .lateral,
+  .panel__pie {
+    display: none;
+  }
+  .panel__cabeza {
+    padding: 0 0 var(--e2);
+  }
+  .solo-telefono-flex {
+    display: flex;
+  }
+  .selector-consorcio {
+    margin: 0;
+  }
+  .contenido {
+    overflow: visible;
+    padding: var(--e5) var(--e4) 112px;
+  }
+  .campana__panel {
+    top: var(--e2);
+    left: var(--e2);
+    right: var(--e2);
+    width: auto;
+  }
+  .emergente {
+    left: var(--e4);
+    bottom: 96px;
+  }
+  .barra-inferior {
+    display: flex;
+    align-items: center;
+    gap: var(--e1);
+    position: fixed;
+    left: var(--e4);
+    right: var(--e4);
+    bottom: var(--e4);
+    z-index: 10;
+    height: 64px;
+    padding: 0 var(--e2);
+    border-radius: var(--pastilla);
+    background: var(--grafito);
+    box-shadow: 0 16px 36px rgb(21 24 27 / 28%);
+  }
+  .barra-inferior nav {
+    flex: 1;
+  }
+  .barra-inferior ul {
+    display: flex;
+    justify-content: space-around;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .barra-inferior a,
+  .menu > summary {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--pastilla);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #b9c0c7;
+  }
+  .barra-inferior a .icono,
+  .menu > summary .icono {
+    width: 22px;
+    height: 22px;
+  }
+  .barra-inferior a[aria-current='page'] {
+    background: var(--lima-alto);
+    color: var(--grafito);
+  }
+  .menu > summary {
+    list-style: none;
+    cursor: pointer;
+  }
+  .menu > summary::-webkit-details-marker {
+    display: none;
+  }
+  .menu[open] > summary {
+    background: rgb(255 255 255 / 10%);
+    color: #ffffff;
+  }
+  .menu .lateral {
+    position: fixed;
+    left: var(--e4);
+    right: var(--e4);
+    bottom: 92px;
+    max-height: 70dvh;
+    overflow-y: auto;
+    padding: var(--e3);
+    border-radius: 22px;
+    background: var(--grafito);
+    box-shadow: var(--sombra-alta);
+  }
+  .menu .lateral a {
+    min-height: var(--toque);
+  }
+}
+
+/* Cabecera de pagina (guia §7.5): titulo y descripcion a la izquierda, las
+   acciones a la derecha en una fila. En telefono las acciones bajan. */
+.cabecera-pagina {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--e3) var(--e5);
+  margin: 0 0 var(--e5);
+}
+.cabecera-pagina h1 {
+  font-size: 32px;
+}
+.cabecera-pagina p {
+  margin: var(--e1) 0 0;
+}
+.cabecera-pagina__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+}
+
+/* Novedades del inicio: una fila compacta por novedad, no una tarjeta alta. */
+.novedades-inicio {
+  display: grid;
+  gap: var(--e2);
+  margin: 0 0 var(--e5);
+}
+.novedad-fila {
+  display: flex;
+  align-items: center;
+  gap: var(--e4);
+  padding: var(--e3) var(--e3) var(--e3) var(--e4);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+.novedad-fila__texto {
+  flex: 1;
+  min-width: 0;
+}
+.novedad-fila h3 {
+  font-size: 15px;
+  letter-spacing: 0;
+}
+.novedad-fila p {
+  margin: 2px 0 0;
+  font-size: 14px;
+  color: var(--tinta-apagada);
+}
+.novedad-fila form {
+  margin: 0;
+}
+
+/* El tablero del resumen: grilla de 12 con tarjetas de distinto ancho. */
+.tablero {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 18px;
+  align-items: stretch;
+}
+.tablero > .tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e4);
+  min-width: 0;
+}
+.tablero__ancho {
+  grid-column: span 8;
+}
+.tablero__angosto {
+  grid-column: span 4;
+}
+.tablero__medio {
+  grid-column: span 4;
+}
+.tablero__mitad {
+  grid-column: span 6;
+}
+.tablero__cabeza {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--e4);
+}
+.tablero__dato {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e1);
+}
+.tablero__dato--derecha {
+  align-items: flex-end;
+  text-align: right;
+}
+.tablero__titulo {
+  font-size: var(--t-menor);
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--tinta-apagada);
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+}
+.tablero__titulo .icono {
+  width: 16px;
+  height: 16px;
+}
+.tablero__fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e3);
+}
+.tablero__fila .enlace-seco {
+  font-size: var(--t-menor);
+}
+.tablero__boton {
+  align-self: flex-start;
+  margin-top: auto;
+}
+.cifra-grande {
+  font-family: var(--tipografia-cifra);
+  font-variant-numeric: tabular-nums;
+  font-size: 36px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+.barra-rubros {
+  display: flex;
+  gap: 3px;
+  height: 14px;
+  border-radius: var(--pastilla);
+  overflow: hidden;
+}
+.barra-rubros span {
+  display: block;
+  min-width: 4px;
+}
+.leyenda-rubros {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--e2) var(--e6);
+  font-size: var(--t-menor);
+}
+.leyenda-rubros li {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  min-width: 0;
+}
+.leyenda-rubros i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+.leyenda-rubros span:first-of-type {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.leyenda-rubros .cifra {
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* La tarjeta oscura: una sola por pantalla, para la cifra que manda. */
+.tarjeta--oscura {
+  background: var(--grafito);
+  color: #ffffff;
+}
+.tarjeta--oscura .tablero__titulo {
+  color: var(--tinta-clara-apagada);
+}
+.boton--sobre-oscuro {
+  background: rgb(255 255 255 / 8%);
+  color: #ffffff;
+}
+.boton--sobre-oscuro:hover {
+  background: rgb(255 255 255 / 14%);
+}
+.tarjeta--oscura :focus-visible {
+  outline-color: var(--lima-alto);
+}
+.cobro {
+  display: flex;
+  align-items: center;
+  gap: var(--e5);
+}
+.cobro svg {
+  flex: none;
+}
+.cobro__cifra {
+  fill: #ffffff;
+  font-size: 26px;
+  font-weight: 800;
+}
+.cobro__de {
+  fill: var(--tinta-clara-apagada);
+  font-size: 12px;
+}
+.cobro__texto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e1);
+  font-size: var(--t-menor);
+  color: var(--tinta-clara-apagada);
+}
+.cobro__texto strong {
+  font-size: 15px;
+  color: #ffffff;
+}
+.cobro__texto b {
+  color: #ffffff;
+}
+/* Barras de lo emitido: la altura es la parte del mes mas alto. */
+.barras {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 14px;
+  height: 180px;
+}
+.barras li {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  justify-items: center;
+  align-items: end;
+  gap: var(--e2);
+  min-width: 0;
+}
+.barras__valor {
+  font-size: 12px;
+  font-weight: 600;
+}
+.barras__barra {
+  width: 100%;
+  min-height: 6px;
+  border-radius: 10px;
+  background: #d5d9d0;
+  align-self: end;
+}
+.barras__barra--ultima {
+  background: var(--grafito);
+}
+.barras__mes {
+  font-size: 12px;
+  color: var(--tinta-apagada);
+}
+.lista-simple__doble {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.urgencia .icono {
+  width: 14px;
+  height: 14px;
+}
+@media (max-width: 1100px) {
+  .tablero__ancho,
+  .tablero__angosto,
+  .tablero__medio,
+  .tablero__mitad {
+    grid-column: span 12;
+  }
+}
+@media (max-width: 760px) {
+  .cabecera-pagina h1 {
+    font-size: 26px;
+  }
+  .tablero__dato--derecha {
+    align-items: flex-start;
+    text-align: left;
+  }
+  .cifra-grande {
+    font-size: 30px;
+  }
+  .novedad-fila {
+    align-items: flex-start;
   }
 }

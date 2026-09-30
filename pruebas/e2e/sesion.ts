@@ -328,6 +328,7 @@ export async function limpiarServicios(
   await prisma.documentoConsorcio.deleteMany({ where: { consorcioId: escenario.consorcioId } })
   await prisma.reclamo.deleteMany({ where: { consorcioId: escenario.consorcioId } })
   await prisma.reserva.deleteMany({ where: { consorcioId: escenario.consorcioId } })
+  await prisma.suspensionEspacio.deleteMany({ where: { consorcioId: escenario.consorcioId } })
   await prisma.espacioComun.deleteMany({ where: { consorcioId: escenario.consorcioId } })
   await prisma.$executeRaw`
     DELETE FROM "Ocupacion" WHERE unidad_id IN

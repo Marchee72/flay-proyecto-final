@@ -9,6 +9,7 @@ import { ROLES_ASIGNABLES } from '@/aplicacion/identidad/roles'
 import { accionReenviar } from './acciones'
 import { ModalInvitar } from './modal-invitar'
 import { conConsorcio } from '../../../con-consorcio'
+import { Emergente } from '../../../emergente'
 import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Usuarios — Flay' }
@@ -46,20 +47,18 @@ export default async function UsuariosPage({
       <p className="apagado">Quiénes tienen acceso y con qué rol.</p>
 
       {parametros.invitado && (
-        <p className="aviso aviso--atencion" role="status">
+        <Emergente tono="ambar">
           Invitación creada. El correo con el enlace sale en el próximo pedido; abajo se ve su
           estado.
-        </p>
+        </Emergente>
       )}
       {parametros.reenviado && (
-        <p className="aviso aviso--atencion" role="status">
+        <Emergente tono="ambar">
           Invitación reenviada. Si vuelve a fallar, el estado lo dice acá.
-        </p>
+        </Emergente>
       )}
       {parametros.problema && (
-        <p className="aviso aviso--problema" role="alert">
-          No pudimos reenviar esa invitación.
-        </p>
+        <Emergente tono="rojo">No pudimos reenviar esa invitación.</Emergente>
       )}
 
       {denegado ? (

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { CircleCheck, FileText, Siren, TriangleAlert } from 'lucide-react'
+import { FileText, Siren, TriangleAlert } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { fechaParaMostrar, importeParaMostrar } from '@/compartido/formato'
@@ -9,6 +9,7 @@ import { verGasto, type ComprobanteDelGasto } from '@/aplicacion/gastos/ver-gast
 
 import { AdjuntarComprobante } from './adjuntar'
 import { conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
+import { Emergente } from '../../../../emergente'
 import { Volver } from '../../../../encabezado-consorcio'
 
 export const metadata: Metadata = { title: 'Gasto — Flay' }
@@ -59,10 +60,9 @@ export default async function GastoPage({
       </p>
 
       {parametros.nuevo && (
-        <p className="aviso aviso--exito" role="status">
-          <CircleCheck className="icono" aria-hidden="true" />
-          <span>Gasto registrado. Si hay comprobante, adjuntarlo a continuación.</span>
-        </p>
+        <Emergente tono="verde">
+          Gasto registrado. Si hay comprobante, adjuntarlo a continuación.
+        </Emergente>
       )}
 
       <div className="tarjeta">

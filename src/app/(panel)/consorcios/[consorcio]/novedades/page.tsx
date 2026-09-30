@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
-import { BadgeCheck, Megaphone } from 'lucide-react'
+import { Megaphone } from 'lucide-react'
 
 import { destinatariosPosibles, listarNovedades } from '@/aplicacion/comunicacion/novedades'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
+import { Emergente } from '../../../emergente'
 import { ModalNovedad } from './modal-novedad'
 import { TarjetaNovedad } from './tarjeta-novedad'
 
@@ -45,12 +46,7 @@ export default async function NovedadesPage({
       <>
         <h1>Novedades</h1>
         <p className="apagado">Lo que la administración le dice al consorcio.</p>
-        {parametros.publicada && (
-          <p className="aviso aviso--exito" role="status">
-            <BadgeCheck className="icono" aria-hidden="true" />
-            <span>Novedad publicada y avisada.</span>
-          </p>
-        )}
+        {parametros.publicada && <Emergente tono="verde">Novedad publicada y avisada.</Emergente>}
         {destinatarios && (
           <div className="fila-acciones">
             <ModalNovedad
@@ -67,9 +63,11 @@ export default async function NovedadesPage({
             <p>Sin novedades por ahora.</p>
           </div>
         ) : (
-          novedades.map((n) => (
-            <TarjetaNovedad key={n.id} novedad={n} consorcioId={activo.id} conEstado={administra} />
-          ))
+          <div className="novedades">
+            {novedades.map((n) => (
+              <TarjetaNovedad key={n.id} novedad={n} conEstado={administra} />
+            ))}
+          </div>
         )}
       </>
     )

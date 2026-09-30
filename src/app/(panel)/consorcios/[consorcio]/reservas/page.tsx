@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BadgeCheck, CalendarCheck, History, Siren } from 'lucide-react'
+import { CalendarCheck, History, Siren } from 'lucide-react'
 
-import { ErrorDeAplicacion } from '@/compartido/errores'
 import { momentoParaMostrar } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
@@ -10,6 +9,7 @@ import { listarEspacios } from '@/aplicacion/reservas/espacios'
 import { listarReservas, unidadesParaReservar } from '@/aplicacion/reservas/reservar'
 
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
+import { Emergente } from '../../../emergente'
 import { accionCancelarReserva } from './acciones'
 import { ModalReserva } from './modal-reserva'
 import { Filtros } from '../../../filtros'
@@ -85,20 +85,10 @@ export default async function ReservasPage({
         </div>
 
         {parametros.confirmada && (
-          <p className="aviso aviso--exito" role="status">
-            <BadgeCheck className="icono" aria-hidden="true" />
-            <span>Reserva confirmada. Te llega un aviso por correo.</span>
-          </p>
+          <Emergente tono="verde">Reserva confirmada. Te llega un aviso por correo.</Emergente>
         )}
-        {parametros.cancelada && (
-          <p className="aviso aviso--exito" role="status">
-            <BadgeCheck className="icono" aria-hidden="true" />
-            <span>Reserva cancelada.</span>
-          </p>
-        )}
-        {parametros.error && (
-          <AvisoDeError error={new ErrorDeAplicacion(parametros.error, 'RF-16')} />
-        )}
+        {parametros.cancelada && <Emergente tono="verde">Reserva cancelada.</Emergente>}
+        {parametros.error && <Emergente tono="rojo">{parametros.error}</Emergente>}
 
         {espacios.length === 0 ? (
           <div className="vacio">

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { CircleCheck, Siren, Wallet } from 'lucide-react'
+import { Siren, Wallet } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { fechaParaMostrar, importeParaMostrar, plural } from '@/compartido/formato'
@@ -11,6 +11,7 @@ import { verEstadoDeCuenta } from '@/aplicacion/pagos/estado-de-cuenta'
 import { MEDIOS_DE_PAGO } from '@/aplicacion/pagos/registrar'
 
 import { conConsorcio } from '../../../con-consorcio'
+import { Emergente } from '../../../emergente'
 import { EnlaceExportar } from '../../../exportar'
 import { ModalPago } from './modal-pago'
 import { TablaDesplazable } from '../../../tabla-desplazable'
@@ -79,10 +80,7 @@ export default async function PagosPage({
         </div>
 
         {parametros.registrado && (
-          <p className="aviso aviso--exito" role="status">
-            <CircleCheck className="icono" aria-hidden="true" />
-            <span>Pago registrado e imputado a lo más viejo primero.</span>
-          </p>
+          <Emergente tono="verde">Pago registrado e imputado a lo más viejo primero.</Emergente>
         )}
 
         {cuentas.length === 0 ? (

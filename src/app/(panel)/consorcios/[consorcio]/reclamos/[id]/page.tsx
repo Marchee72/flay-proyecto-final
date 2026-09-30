@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BadgeCheck, Siren, Sparkles } from 'lucide-react'
+import { Siren, Sparkles } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { momentoParaMostrar } from '@/compartido/formato'
@@ -11,6 +11,7 @@ import { posiblesResponsables } from '@/aplicacion/reclamos/asignar'
 import { verReclamo } from '@/aplicacion/reclamos/consultar'
 
 import { conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
+import { Emergente } from '../../../../emergente'
 import { Volver } from '../../../../encabezado-consorcio'
 import { EstadoDeReclamo, UrgenciaDeReclamo } from '../etiquetas'
 import { AccionesDeReclamo } from './acciones-de-reclamo'
@@ -56,10 +57,7 @@ export default async function ReclamoPage({
         </p>
 
         {parametros.registrado && (
-          <p className="aviso aviso--exito" role="status">
-            <BadgeCheck className="icono" aria-hidden="true" />
-            <span>Reclamo registrado. La administración lo va a asignar.</span>
-          </p>
+          <Emergente tono="verde">Reclamo registrado. La administración lo va a asignar.</Emergente>
         )}
 
         <section className="tarjeta">

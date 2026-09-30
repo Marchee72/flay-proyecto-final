@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { BadgeCheck, Pencil, Siren } from 'lucide-react'
+import { Pencil, Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { coeficienteParaMostrar, fechaParaMostrar } from '@/compartido/formato'
@@ -12,6 +12,7 @@ import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 
 import { CargadorDePadron } from './cargador'
+import { Emergente } from '../../../emergente'
 import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Unidades — Flay' }
@@ -74,10 +75,9 @@ export default async function UnidadesPage({
       <p className="apagado">El padrón vigente: designación, tipo y coeficiente de cada unidad.</p>
 
       {parametros.editado && (
-        <p className="aviso aviso--exito" role="status">
-          <BadgeCheck className="icono" aria-hidden="true" />
-          <span>Padrón guardado. Los cambios de coeficiente rigen desde hoy.</span>
-        </p>
+        <Emergente tono="verde">
+          Padrón guardado. Los cambios de coeficiente rigen desde hoy.
+        </Emergente>
       )}
 
       {administra && consorcio.unidades.length > 0 && (

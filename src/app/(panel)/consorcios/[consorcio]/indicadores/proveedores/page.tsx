@@ -9,6 +9,7 @@ import { AvisoDeError, conConsorcio } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
 import { DispersionDeProveedores } from '../graficos'
 import { Filtros } from '../../../../filtros'
+import { TablaDesplazable } from '../../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'I-3 Proveedores — Flay' }
 
@@ -79,12 +80,7 @@ export default async function ProveedoresPage({
                 horas: f.horasMediasResolucion,
               }))}
             />
-            <div
-              className="tabla-desplazable"
-              tabIndex={0}
-              role="region"
-              aria-label="Desempeño por proveedor"
-            >
+            <TablaDesplazable tabIndex={0} role="region" aria-label="Desempeño por proveedor">
               <table>
                 <caption className="ayuda">Un renglón por proveedor y rubro</caption>
                 <thead>
@@ -126,7 +122,7 @@ export default async function ProveedoresPage({
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TablaDesplazable>
           </>
         )}
       </>

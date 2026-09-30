@@ -6,7 +6,12 @@ import { redirect } from 'next/navigation'
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
-import { altaEspacio, bajaEspacio, editarEspacio } from '@/aplicacion/reservas/espacios'
+import {
+  altaEspacio,
+  deshabilitarEspacio,
+  editarEspacio,
+  habilitarEspacio,
+} from '@/aplicacion/reservas/espacios'
 import { cancelarReserva, reservar } from '@/aplicacion/reservas/reservar'
 
 export type Resultado = { mensaje: string }
@@ -103,13 +108,39 @@ export async function accionGuardarEspacio(
   redirect(`/consorcios/${consorcioId}/espacios?guardado=1`)
 }
 
-export async function accionBajaEspacio(datos: FormData): Promise<void> {
+export async function accionDeshabilitarEspacio(
+  _previo: Resultado,
+  datos: FormData,
+): Promise<Resultado> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) redirect('/ingresar')
+
+  const consorcioId = texto(datos, 'consorcio')
+  const finPlaneado = texto(datos, 'hasta')
+  try {
+    await deshabilitarEspacio(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      espacioId: texto(datos, 'espacio'),
+      motivo: texto(datos, 'motivo'),
+      // Fecha suelta: se toma hasta el final de ese día, hora del consorcio.
+      hasta: finPlaneado ? new Date(`${finPlaneado}T23:59:59-03:00`) : null,
+    })
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
+    throw error
+  }
+  revalidatePath('/consorcios/[consorcio]/espacios', 'page')
+  redirect(`/consorcios/${consorcioId}/espacios?deshabilitado=1`)
+}
+
+export async function accionHabilitarEspacio(datos: FormData): Promise<void> {
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) redirect('/ingresar')
 
   const consorcioId = texto(datos, 'consorcio')
   try {
-    await bajaEspacio(HABILITACIONES, RELOJ, {
+    await habilitarEspacio(HABILITACIONES, RELOJ, {
       usuarioId,
       consorcioId,
       espacioId: texto(datos, 'espacio'),
@@ -121,5 +152,5 @@ export async function accionBajaEspacio(datos: FormData): Promise<void> {
     )
   }
   revalidatePath('/consorcios/[consorcio]/espacios', 'page')
-  redirect(`/consorcios/${consorcioId}/espacios?baja=1`)
+  redirect(`/consorcios/${consorcioId}/espacios?habilitado=1`)
 }

@@ -83,7 +83,7 @@ test('la novedad del administrador la ve el consorcista, y el contrato no visibl
   await expect(page.getByRole('heading', { name: /Corte de agua el jueves/ })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Publicar novedad' })).toHaveCount(0)
 
-  // En el inicio tambien, y descartada ya no aparece en ningun lado (RF-18).
+  // En el inicio tambien; descartar la saca del inicio, pero queda en Novedades (RF-18).
   await page.goto(`/consorcios/${administrador.consorcioId}`)
   const tarjeta = page.getByRole('article').filter({ hasText: 'Corte de agua el jueves' })
   await expect(tarjeta).toBeVisible()
@@ -91,7 +91,7 @@ test('la novedad del administrador la ve el consorcista, y el contrato no visibl
   await tarjeta.getByRole('button', { name: 'Descartar' }).click()
   await expect(tarjeta).toHaveCount(0)
   await page.goto(`/consorcios/${administrador.consorcioId}/novedades`)
-  await expect(page.getByRole('heading', { name: /Corte de agua el jueves/ })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: /Corte de agua el jueves/ })).toBeVisible()
 
   await page.goto(`/consorcios/${administrador.consorcioId}/documentos`)
   await expect(page.getByRole('table')).toContainText('Reglamento de copropiedad')

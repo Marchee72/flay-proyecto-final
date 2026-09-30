@@ -1,15 +1,16 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BadgeCheck, Gauge, RefreshCw, TriangleAlert } from 'lucide-react'
+import { Gauge, RefreshCw, TriangleAlert } from 'lucide-react'
 
-import { ErrorDeAplicacion } from '@/compartido/errores'
 import { momentoParaMostrar } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verPanel } from '@/aplicacion/indicadores/indicadores'
 
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
+import { Emergente } from '../../../emergente'
 import { accionRefrescar } from './acciones'
+import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Indicadores — Flay' }
 
@@ -87,15 +88,8 @@ export default async function IndicadoresPage({
           {panel.refrescadoEn ? momentoParaMostrar(panel.refrescadoEn) : 'todavía no se actualizó'}.
         </p>
 
-        {parametros.actualizado && (
-          <p className="aviso aviso--exito" role="status">
-            <BadgeCheck className="icono" aria-hidden="true" />
-            <span>Indicadores actualizados.</span>
-          </p>
-        )}
-        {parametros.error && (
-          <AvisoDeError error={new ErrorDeAplicacion(parametros.error, 'FR-018')} />
-        )}
+        {parametros.actualizado && <Emergente tono="verde">Indicadores actualizados.</Emergente>}
+        {parametros.error && <Emergente tono="rojo">{parametros.error}</Emergente>}
 
         <div className="kpi">
           <span className="kpi__icono">
@@ -120,12 +114,7 @@ export default async function IndicadoresPage({
           </button>
         </form>
 
-        <div
-          className="tabla-desplazable"
-          tabIndex={0}
-          role="region"
-          aria-label="Estado por consorcio"
-        >
+        <TablaDesplazable tabIndex={0} role="region" aria-label="Estado por consorcio">
           <table>
             <caption className="ayuda">Un renglón por consorcio administrado</caption>
             <thead>
@@ -173,7 +162,7 @@ export default async function IndicadoresPage({
               ))}
             </tbody>
           </table>
-        </div>
+        </TablaDesplazable>
 
         <PorIndicador consorcioId={activo.id} administra />
       </>

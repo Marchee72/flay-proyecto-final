@@ -1,6 +1,6 @@
 'use server'
 
-import type { AlcanceNovedad, TipoDocumento } from '@prisma/client'
+import type { AlcanceNovedad, TipoDocumento, Urgencia } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -32,8 +32,17 @@ export async function accionPublicarNovedad(
   if (!usuarioId) redirect('/ingresar')
   const consorcioId = texto(datos, 'consorcio')
   const alcance = texto(datos, 'alcance')
-  if (alcance !== 'general' && alcance !== 'unidad' && alcance !== 'division') {
+  if (
+    alcance !== 'general' &&
+    alcance !== 'unidad' &&
+    alcance !== 'division' &&
+    alcance !== 'piso'
+  ) {
     return { mensaje: 'Elegí a quién va la novedad.' }
+  }
+  const severidad = texto(datos, 'severidad')
+  if (severidad !== 'baja' && severidad !== 'media' && severidad !== 'alta') {
+    return { mensaje: 'Elegí la severidad de la novedad.' }
   }
   try {
     await publicarNovedad(HABILITACIONES, RELOJ, {
@@ -42,11 +51,13 @@ export async function accionPublicarNovedad(
       titulo: texto(datos, 'titulo'),
       cuerpo: texto(datos, 'cuerpo'),
       fijada: datos.get('fijada') === 'on',
+      severidad: severidad satisfies Urgencia,
       vigenteDesde: fecha(texto(datos, 'desde')),
       vigenteHasta: fecha(texto(datos, 'hasta')),
       alcance: alcance satisfies AlcanceNovedad,
       unidadId: texto(datos, 'unidad') || null,
       division: texto(datos, 'division') || null,
+      piso: texto(datos, 'piso') || null,
     })
   } catch (error) {
     if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }

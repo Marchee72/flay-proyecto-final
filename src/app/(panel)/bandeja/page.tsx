@@ -1,16 +1,15 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { BadgeCheck, Inbox, Send } from 'lucide-react'
+import { Inbox, Send } from 'lucide-react'
 
-import { ErrorDeAplicacion } from '@/compartido/errores'
 import { fechaParaMostrar, plural } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { verBandeja } from '@/aplicacion/pendientes/bandeja'
 
 import { accionDespachar } from '../comunicacion/acciones'
-import { AvisoDeError } from '../con-consorcio'
+import { Emergente } from '../emergente'
 import { Filtros } from '../filtros'
 import { Marco } from '../marco'
 
@@ -45,14 +44,9 @@ export default async function BandejaPage({
       </p>
 
       {parametros.despachado && (
-        <p className="aviso aviso--exito" role="status">
-          <BadgeCheck className="icono" aria-hidden="true" />
-          <span>Se despachó lo que había pendiente.</span>
-        </p>
+        <Emergente tono="verde">Se despachó lo que había pendiente.</Emergente>
       )}
-      {parametros.error && (
-        <AvisoDeError error={new ErrorDeAplicacion(parametros.error, 'FR-012')} />
-      )}
+      {parametros.error && <Emergente tono="rojo">{parametros.error}</Emergente>}
 
       {bandeja.consorcios.length > 1 && (
         <Filtros>

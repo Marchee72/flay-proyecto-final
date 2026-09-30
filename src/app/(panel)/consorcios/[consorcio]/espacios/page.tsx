@@ -1,13 +1,16 @@
 import type { Metadata } from 'next'
-import { BadgeCheck, DoorOpen } from 'lucide-react'
+import Link from 'next/link'
+import { CalendarRange, DoorOpen } from 'lucide-react'
 
-import { ErrorDeAplicacion } from '@/compartido/errores'
+import { fechaEnArParaMostrar } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarEspacios } from '@/aplicacion/reservas/espacios'
 
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
-import { accionBajaEspacio } from '../reservas/acciones'
+import { Emergente } from '../../../emergente'
+import { accionHabilitarEspacio } from '../reservas/acciones'
+import { ModalDeshabilitar } from './modal-deshabilitar'
 import { ModalEspacio } from './modal-espacio'
 
 export const metadata: Metadata = { title: 'Espacios comunes — Flay' }
@@ -18,7 +21,12 @@ export default async function EspaciosPage({
   searchParams,
 }: {
   params: Promise<{ consorcio: string }>
-  searchParams: Promise<{ guardado?: string; baja?: string; error?: string }>
+  searchParams: Promise<{
+    guardado?: string
+    deshabilitado?: string
+    habilitado?: string
+    error?: string
+  }>
 }) {
   const parametros = await searchParams
   const { consorcio: consorcioId } = await params
@@ -45,23 +53,27 @@ export default async function EspaciosPage({
           Las reglas del reglamento interno, en datos: lo que el sistema aplica al reservar.
         </p>
 
-        {(parametros.guardado || parametros.baja) && (
-          <p className="aviso aviso--exito" role="status">
-            <BadgeCheck className="icono" aria-hidden="true" />
-            <span>
-              {parametros.baja
-                ? 'Espacio dado de baja; las reservas futuras quedaron canceladas y avisadas.'
+        {(parametros.guardado || parametros.deshabilitado || parametros.habilitado) && (
+          <Emergente tono="verde">
+            {parametros.deshabilitado
+              ? 'Espacio deshabilitado; las reservas afectadas quedaron canceladas y avisadas.'
+              : parametros.habilitado
+                ? 'Espacio habilitado; ya se puede reservar.'
                 : 'Espacio guardado.'}
-            </span>
-          </p>
+          </Emergente>
         )}
-        {parametros.error && (
-          <AvisoDeError error={new ErrorDeAplicacion(parametros.error, 'RF-15')} />
-        )}
+        {parametros.error && <Emergente tono="rojo">{parametros.error}</Emergente>}
 
         {administra && (
           <div className="fila-acciones">
             <ModalEspacio consorcioId={activo.id} />
+            <Link
+              className="boton boton--fantasma"
+              href={`/consorcios/${activo.id}/reservas/historial`}
+            >
+              <CalendarRange className="icono" aria-hidden="true" />
+              Calendario de uso
+            </Link>
           </div>
         )}
 
@@ -73,9 +85,19 @@ export default async function EspaciosPage({
         ) : (
           <div className="rejilla">
             {espacios.map((e) => (
-              <article className="tarjeta" key={e.id} aria-label={e.nombre}>
+              <article
+                className={e.activo ? 'tarjeta' : 'tarjeta tarjeta--inactiva'}
+                key={e.id}
+                aria-label={e.nombre}
+              >
                 <h2>{e.nombre}</h2>
-                {!e.activo && <p className="etiqueta etiqueta--vencido">Dado de baja</p>}
+                {!e.activo && (
+                  <p className="etiqueta etiqueta--vencido">
+                    Deshabilitado
+                    {e.suspension && ` — ${e.suspension.motivo}`}
+                    {e.suspension?.hasta && ` (hasta ${fechaEnArParaMostrar(e.suspension.hasta)})`}
+                  </p>
+                )}
                 <dl className="definiciones">
                   <dt>Capacidad</dt>
                   <dd>{e.capacidadMaxima ?? 'Sin tope'}</dd>
@@ -88,16 +110,21 @@ export default async function EspaciosPage({
                   <dt>Por mes y unidad</dt>
                   <dd>{e.reservasMaxMesUnidad}</dd>
                 </dl>
-                {administra && e.activo && (
+                {administra && (
                   <div className="fila-acciones">
                     <ModalEspacio consorcioId={activo.id} espacio={e} />
-                    <form action={accionBajaEspacio}>
-                      <input type="hidden" name="consorcio" value={activo.id} />
-                      <input type="hidden" name="espacio" value={e.id} />
-                      <button className="boton boton--peligro" type="submit">
-                        Dar de baja
-                      </button>
-                    </form>
+                    {e.activo ? (
+                      <ModalDeshabilitar consorcioId={activo.id} espacio={e} />
+                    ) : (
+                      <form action={accionHabilitarEspacio}>
+                        <input type="hidden" name="consorcio" value={activo.id} />
+                        <input type="hidden" name="espacio" value={e.id} />
+                        <button className="boton boton--exito" type="submit">
+                          <DoorOpen className="icono" aria-hidden="true" />
+                          Habilitar
+                        </button>
+                      </form>
+                    )}
                   </div>
                 )}
               </article>

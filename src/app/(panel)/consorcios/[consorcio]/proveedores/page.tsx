@@ -9,6 +9,7 @@ import { listarProveedores, listarRubros } from '@/aplicacion/proveedores/provee
 import { FormularioProveedor } from './formulario'
 import { conConsorcio } from '../../../con-consorcio'
 import { BotonModal } from '../../../modal'
+import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Proveedores — Flay' }
 
@@ -50,7 +51,7 @@ export default async function ProveedoresPage({
             <p>Todavía no hay proveedores cargados.</p>
           </div>
         ) : (
-          <div className="tabla-desplazable">
+          <TablaDesplazable>
             <table>
               <caption className="ayuda">Proveedores del consorcio</caption>
               <thead>
@@ -70,7 +71,7 @@ export default async function ProveedoresPage({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TablaDesplazable>
         )}
       </>
     )

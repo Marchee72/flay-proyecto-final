@@ -8,6 +8,7 @@ import { ajustePorRedondeo, decimalesDelPadron, filasDesdePegado } from '@/compa
 
 import { accionAltaConsorcioConPadron } from '../acciones'
 import { GeneradorDePadron } from '../generador-padron'
+import { TablaDesplazable } from '../../tabla-desplazable'
 
 const SIN_ERROR = { mensaje: '' }
 
@@ -263,7 +264,7 @@ export function WizardConsorcio({
           }}
         />
 
-        <div className="tabla-desplazable">
+        <TablaDesplazable paginar={false}>
           <table>
             <caption className="ayuda">Unidades a cargar</caption>
             <thead>
@@ -343,7 +344,7 @@ export function WizardConsorcio({
               </tr>
             </tfoot>
           </table>
-        </div>
+        </TablaDesplazable>
 
         <p aria-live="polite" className={cuadra ? 'aviso aviso--atencion' : 'ayuda'}>
           {cuadra && <TriangleAlert className="icono" aria-hidden="true" />}

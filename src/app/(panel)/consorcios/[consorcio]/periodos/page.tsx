@@ -1,14 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import {
-  BadgeCheck,
-  CalendarDays,
-  Circle,
-  CircleCheck,
-  CircleDot,
-  Siren,
-  type LucideIcon,
-} from 'lucide-react'
+import { BadgeCheck, CalendarDays, Circle, CircleDot, Siren, type LucideIcon } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
@@ -19,7 +11,9 @@ import { fechaParaMostrar, importeParaMostrar } from '@/compartido/formato'
 
 import { BotonAnular, BotonCerrar, BotonLiquidar } from './acciones-de-estado'
 import { conConsorcio } from '../../../con-consorcio'
+import { Emergente } from '../../../emergente'
 import { EnlaceExportar } from '../../../exportar'
+import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Períodos — Flay' }
 
@@ -55,12 +49,7 @@ export default async function PeriodosPage({
       <>
         <h1>Períodos</h1>
         <p className="apagado">Un período por mes; aparece al cargar el primer gasto.</p>
-        {hecho && (
-          <p className="aviso aviso--exito" role="status">
-            <CircleCheck className="icono" aria-hidden="true" />
-            <span>{hecho}</span>
-          </p>
-        )}
+        {hecho && <Emergente tono="verde">{hecho}</Emergente>}
         <div className="fila-acciones">
           {roles.some((r) => r === 'administrador' || r === 'consejo') && (
             <EnlaceExportar consorcioId={activo.id} tabla="liquidaciones" />
@@ -73,7 +62,7 @@ export default async function PeriodosPage({
             <p>Todavía no hay períodos: se crean al cargar el primer gasto del mes.</p>
           </div>
         ) : (
-          <div className="tabla-desplazable">
+          <TablaDesplazable>
             <table>
               <caption className="ayuda">Períodos del consorcio</caption>
               <thead>
@@ -145,7 +134,7 @@ export default async function PeriodosPage({
                 })}
               </tbody>
             </table>
-          </div>
+          </TablaDesplazable>
         )}
 
         {administra && (

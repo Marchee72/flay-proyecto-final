@@ -66,6 +66,7 @@ model Consorcio {
   pagos          Pago[]
   reclamos       Reclamo[]
   espacios       EspacioComun[]
+  suspensiones   SuspensionEspacio[]
   reservas       Reserva[]
   novedades      Novedad[]
   documentos     DocumentoConsorcio[]
@@ -752,10 +753,31 @@ model EspacioComun {
   creadoEn                DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn           DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  consorcio Consorcio @relation(fields: [consorcioId], references: [id])
-  reservas  Reserva[]
+  consorcio    Consorcio           @relation(fields: [consorcioId], references: [id])
+  reservas     Reserva[]
+  suspensiones SuspensionEspacio[]
 
   @@unique([consorcioId, nombre])
+}
+
+/// Cada tramo en que un espacio comun estuvo deshabilitado (RF-15): reforma,
+/// suspension por danos, etc. `hasta` es el fin planificado o nulo mientras
+/// sigue deshabilitado; al rehabilitar se escribe el fin real. Es el historial
+/// que el calendario de uso pinta. El estado vigente lo lleva `EspacioComun.activo`.
+model SuspensionEspacio {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId String    @map("consorcio_id") @db.Uuid
+  espacioId   String    @map("espacio_id") @db.Uuid
+  desde       DateTime  @db.Timestamptz(6)
+  hasta       DateTime? @db.Timestamptz(6)
+  motivo      String    @db.Text
+  creadoPor   String    @map("creado_por") @db.Uuid
+  creadoEn    DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  consorcio Consorcio    @relation(fields: [consorcioId], references: [id])
+  espacio   EspacioComun @relation(fields: [espacioId], references: [id])
+
+  @@index([consorcioId, espacioId, desde])
 }
 
 /// Reserva de un espacio (RF-16, CU-09). La superposicion la rechaza la base:
@@ -793,8 +815,9 @@ enum EstadoReserva {
 }
 
 /// Comunicado del consorcio (RF-18, CU-12). Rige entre dos fechas y despues
-/// deja de mostrarse; puede ir a todo el consorcio, a una unidad o a una
-/// division (la columna de departamentos con la misma letra).
+/// deja de mostrarse; puede ir a todo el consorcio, a una unidad, a una
+/// division (la columna con la misma letra) o a un piso (la planta). Lleva
+/// severidad para tenir el aviso.
 model Novedad {
   id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   consorcioId   String         @map("consorcio_id") @db.Uuid
@@ -806,10 +829,14 @@ model Novedad {
   vigenteDesde  DateTime       @map("vigente_desde") @db.Date
   vigenteHasta  DateTime       @map("vigente_hasta") @db.Date
   alcance       AlcanceNovedad @default(general)
+  /// Que tan grave es el aviso (RF-18): tine el borde y lleva pastilla con icono.
+  severidad     Urgencia       @default(baja)
   /// Solo con alcance `unidad`.
   unidadId      String?        @map("unidad_id") @db.Uuid
   /// Solo con alcance `division`: la letra (A, B...).
   division      String?        @db.VarChar(4)
+  /// Solo con alcance `piso`: el numero o PB (3, 10, PB...).
+  piso          String?        @db.VarChar(4)
   creadoEn      DateTime       @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn DateTime       @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
@@ -824,6 +851,7 @@ enum AlcanceNovedad {
   general
   unidad
   division
+  piso
 }
 
 /// Quien ya no quiere ver una novedad. Sin consorcio_id: se alcanza siempre

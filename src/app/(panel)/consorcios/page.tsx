@@ -12,6 +12,7 @@ import { listarPeriodos } from '@/aplicacion/periodos/periodos'
 import { plural } from '@/compartido/formato'
 
 import { consorciosAlAlcance } from '../con-consorcio'
+import { Filtros } from '../filtros'
 import { Marco } from '../marco'
 
 import { BotonModal } from '../modal'
@@ -97,26 +98,28 @@ export default async function ConsorciosPage({
         </div>
       ) : (
         <>
-          <form className="fila-de-filtros buscador" role="search" aria-label="Buscar consorcio">
-            <div className="campo">
-              <label htmlFor="q">Buscar por nombre o dirección</label>
-              <input
-                id="q"
-                name="q"
-                type="search"
-                defaultValue={parametros.q ?? ''}
-                autoComplete="off"
-              />
-            </div>
-            <button className="boton boton--fantasma" type="submit">
-              Buscar
-            </button>
-            {busqueda && (
-              <Link className="boton boton--fantasma" href="/consorcios">
-                Limpiar
-              </Link>
-            )}
-          </form>
+          <Filtros>
+            <form className="fila-de-filtros buscador" role="search" aria-label="Buscar consorcio">
+              <div className="campo">
+                <label htmlFor="q">Buscar por nombre o dirección</label>
+                <input
+                  id="q"
+                  name="q"
+                  type="search"
+                  defaultValue={parametros.q ?? ''}
+                  autoComplete="off"
+                />
+              </div>
+              <button className="boton boton--fantasma" type="submit">
+                Buscar
+              </button>
+              {busqueda && (
+                <Link className="boton boton--fantasma" href="/consorcios">
+                  Limpiar
+                </Link>
+              )}
+            </form>
+          </Filtros>
 
           {visibles.length === 0 ? (
             <div className="vacio">

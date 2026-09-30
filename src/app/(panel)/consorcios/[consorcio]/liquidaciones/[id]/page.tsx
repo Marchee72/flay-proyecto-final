@@ -10,6 +10,7 @@ import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { BotonGenerarDocumentos } from '../../periodos/acciones-de-estado'
 import { conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
+import { TablaDesplazable } from '../../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Liquidación — Flay' }
 
@@ -92,7 +93,7 @@ export default async function LiquidacionPage({
           </div>
         )}
 
-        <div className="tabla-desplazable">
+        <TablaDesplazable>
           <table>
             <caption className="ayuda">Detalle por unidad</caption>
             <thead>
@@ -153,7 +154,7 @@ export default async function LiquidacionPage({
               ))}
             </tbody>
           </table>
-        </div>
+        </TablaDesplazable>
       </>
     )
   } catch (error) {

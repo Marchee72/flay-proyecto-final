@@ -10,6 +10,7 @@ import { AvisoDeError, conConsorcio } from '../../../../con-consorcio'
 import { EnVivo } from '../../../../en-vivo'
 import { Volver } from '../../../../encabezado-consorcio'
 import { CargadorDeComprobante } from './cargador'
+import { TablaDesplazable } from '../../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Carga asistida — Flay' }
 
@@ -110,7 +111,7 @@ export default async function CargaAsistidaPage({
             <p>No hay comprobantes en proceso ni esperando revisión.</p>
           </div>
         ) : (
-          <div className="tabla-desplazable">
+          <TablaDesplazable>
             <table>
               <thead>
                 <tr>
@@ -154,7 +155,7 @@ export default async function CargaAsistidaPage({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TablaDesplazable>
         )}
       </>
     )

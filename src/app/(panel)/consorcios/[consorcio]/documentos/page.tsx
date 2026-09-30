@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BadgeCheck, EyeOff, FileText, MessageCircleQuestion } from 'lucide-react'
+import { EyeOff, FileText, MessageCircleQuestion } from 'lucide-react'
 
 import { fechaParaMostrar } from '@/compartido/formato'
 import {
@@ -13,8 +13,10 @@ import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 
 import { accionReindexar } from '../../../comunicacion/acciones'
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
+import { Emergente } from '../../../emergente'
 import { EnVivo } from '../../../en-vivo'
 import { ModalDocumento } from './modal-documento'
+import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Documentación — Flay' }
 
@@ -75,13 +77,10 @@ export default async function DocumentosPage({
           </div>
         </div>
         {parametros.cargado && (
-          <p className="aviso aviso--exito" role="status">
-            <BadgeCheck className="icono" aria-hidden="true" />
-            <span>
-              Documento cargado. Se procesa en segundo plano; cuando diga «Procesado» ya entra en
-              las consultas.
-            </span>
-          </p>
+          <Emergente tono="verde">
+            Documento cargado. Se procesa en segundo plano; cuando diga «Procesado» ya entra en las
+            consultas.
+          </Emergente>
         )}
         {documentos.length === 0 ? (
           <div className="vacio">
@@ -89,7 +88,7 @@ export default async function DocumentosPage({
             <p>Sin documentos todavía.</p>
           </div>
         ) : (
-          <div className="tabla-desplazable" tabIndex={0} role="region" aria-label="Documentos">
+          <TablaDesplazable tabIndex={0} role="region" aria-label="Documentos">
             <table>
               <caption>
                 Los que los consorcistas no ven llevan el ojo tachado junto al título.
@@ -150,7 +149,7 @@ export default async function DocumentosPage({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TablaDesplazable>
         )}
       </>
     )

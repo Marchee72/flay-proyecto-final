@@ -22,7 +22,9 @@ export type EstadoPeriodo = (typeof ESTADOS_PERIODO)[number]
  * no reescribiendo el que ya se le mando a los consorcistas.
  */
 export const TRANSICIONES: Readonly<Record<EstadoPeriodo, readonly EstadoPeriodo[]>> = {
-  abierto: ['cerrado', 'anulado'],
+  // Liquidar desde abierto cierra el periodo en el mismo paso: lo que se emite
+  // es lo que el administrador reviso, y la emision lo verifica (RF-07).
+  abierto: ['cerrado', 'liquidado', 'anulado'],
   // Reabrir un periodo cerrado es normal: se cierra para liquidar y aparece una
   // factura del mes. Una vez liquidado, ya no.
   cerrado: ['abierto', 'liquidado', 'anulado'],

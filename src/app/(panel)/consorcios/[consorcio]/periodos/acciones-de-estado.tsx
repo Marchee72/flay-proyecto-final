@@ -22,11 +22,11 @@ type AccionDeEstado = (previo: Resultado, datos: FormData) => Promise<Resultado>
  * fila que falló** y no arriba de todo, que con doce períodos en pantalla es la
  * diferencia entre entender qué pasó y adivinarlo (RNF-10).
  *
- * Liquidar y anular tocan dinero y piden confirmación explícita en dos pasos
- * (RN-06, RN-14): el primer clic solo muestra el resumen con la magnitud
- * exacta; recién el segundo envía la Server Action, que se invoca igual que
- * antes. El estado de confirmación vive en el cliente con foco gestionado
- * (sin `confirm()` nativo ni librerías nuevas).
+ * Anular toca dinero y se dispara desde la tabla, sin pantalla previa: pide
+ * confirmación explícita en dos pasos (RN-06). El primer clic solo muestra el
+ * resumen con la magnitud exacta; recién el segundo envía la Server Action. El
+ * estado vive en el cliente con foco gestionado (sin `confirm()` nativo ni
+ * librerías nuevas). Liquidar no la necesita: su pantalla **es** el resumen.
  */
 export function BotonCerrar({
   consorcioId,
@@ -47,38 +47,32 @@ export function BotonCerrar({
   )
 }
 
+/**
+ * Liquidar no confirma en dos pasos: vive **dentro** de la pantalla de revision
+ * (`periodos/[id]`), que ya muestra los gastos, los totales y el reparto. Un
+ * modal que repitiera el total arriba de todo eso no agrega una decision, la
+ * estorba. Anular si lo hace: se dispara desde la tabla, sin pantalla previa.
+ */
 export function BotonLiquidar({
   consorcioId,
   periodoId,
-  periodoEtiqueta,
-  cantidadGastos,
+  totalRevisado,
 }: {
   consorcioId: string
   periodoId: string
-  /** `08/2026`: cadena ya armada en el servidor, acá solo se muestra. */
-  periodoEtiqueta: string
-  /** Cantidad de gastos del período (conteo, no dinero). */
-  cantidadGastos: number
+  /** El total que se vio al revisar; la emision lo compara (RF-07). */
+  totalRevisado: string
 }) {
-  const alcance =
-    cantidadGastos === 1 ? 'Se liquida 1 gasto.' : `Se liquidan ${cantidadGastos} gastos.`
-
   return (
-    <ConfirmacionEnDosPasos
+    <Boton
       accion={accionLiquidarPeriodo}
       consorcioId={consorcioId}
       campo="periodo"
       valor={periodoId}
-      variante="liquidar"
-      etiquetaInicial="Liquidar"
-      titulo={`Confirmar liquidación del período ${periodoEtiqueta}`}
-      descripcion={`${alcance} Al confirmar se generan las expensas y ya no se pueden cargar más gastos en este período.`}
-      resumen={[
-        { rotulo: 'Período', valor: periodoEtiqueta },
-        { rotulo: 'Gastos', valor: String(cantidadGastos) },
-      ]}
-      etiquetaConfirmar="Confirmar liquidación"
+      ocultos={{ totalRevisado }}
+      etiqueta="Confirmar y liquidar"
       trabajando="Liquidando…"
+      primario
     />
   )
 }
@@ -105,8 +99,6 @@ export function BotonAnular({
       consorcioId={consorcioId}
       campo="liquidacion"
       valor={liquidacionId}
-      variante="anular"
-      peligro
       etiquetaInicial="Anular"
       titulo={`Confirmar anulación del período ${periodoEtiqueta}`}
       descripcion={`Se anula la liquidación de ${total} con vencimiento ${vencimiento}. Los pagos aplicados se liberan como saldo a favor y la anulación queda registrada.`}
@@ -145,6 +137,7 @@ function Boton({
   consorcioId,
   campo,
   valor,
+  ocultos = {},
   etiqueta,
   trabajando,
   primario = false,
@@ -153,6 +146,8 @@ function Boton({
   consorcioId: string
   campo: string
   valor: string
+  /** Campos extra que viajan con el envio. */
+  ocultos?: Record<string, string>
   etiqueta: string
   trabajando: string
   primario?: boolean
@@ -163,6 +158,9 @@ function Boton({
     <form action={enviar}>
       <input type="hidden" name="consorcio" value={consorcioId} />
       <input type="hidden" name={campo} value={valor} />
+      {Object.entries(ocultos).map(([nombre, valorOculto]) => (
+        <input key={nombre} type="hidden" name={nombre} value={valorOculto} />
+      ))}
 
       <button
         className={`boton ${primario ? 'boton--primario' : 'boton--fantasma'}`}
@@ -182,22 +180,21 @@ function Boton({
 }
 
 /**
- * Disparo en dos pasos para las acciones que tocan dinero (RN-06, RN-14).
+ * Disparo en dos pasos de la anulación (RN-06), que se aprieta desde la tabla
+ * y no tiene pantalla previa donde ver lo que se va a deshacer.
  *
  * El primer botón es `type="button"`: solo abre el diálogo con el resumen. Es
  * el mismo `<dialog>` nativo del resto del panel (`modal.tsx`): `showModal()`
  * atrapa el foco, Escape cierra y al cerrar el foco vuelve al botón inicial.
- * Antes era un panel dentro de la celda, y la tabla se deformaba para
- * hacerle lugar. El envío real ocurre recién en «Confirmar…». Solo Anular
- * viste `.boton--peligro`; Liquidar confirma con `.boton--primario`.
+ * Antes era un panel dentro de la celda, y la tabla se deformaba para hacerle
+ * lugar. El envío real ocurre recién en «Confirmar…».
  */
 function ConfirmacionEnDosPasos({
   accion,
   consorcioId,
   campo,
   valor,
-  variante,
-  peligro = false,
+  ocultos = {},
   etiquetaInicial,
   titulo,
   descripcion,
@@ -209,8 +206,8 @@ function ConfirmacionEnDosPasos({
   consorcioId: string
   campo: string
   valor: string
-  variante: 'liquidar' | 'anular'
-  peligro?: boolean
+  /** Campos extra que viajan con el envío. */
+  ocultos?: Record<string, string>
   etiquetaInicial: string
   titulo: string
   descripcion: string
@@ -222,7 +219,7 @@ function ConfirmacionEnDosPasos({
   const inicialRef = useRef<HTMLButtonElement>(null)
   const dialogo = useRef<HTMLDialogElement>(null)
   const tituloRef = useRef<HTMLHeadingElement>(null)
-  const tituloId = `confirmar-${variante}-${valor}-titulo`
+  const tituloId = `confirmar-anular-${valor}-titulo`
 
   const abrir = () => {
     if (!dialogo.current || dialogo.current.open) return
@@ -231,11 +228,9 @@ function ConfirmacionEnDosPasos({
   }
   const cerrar = () => dialogo.current?.close()
 
-  const clase = peligro ? 'boton--peligro' : 'boton--primario'
-
   return (
     <>
-      <button ref={inicialRef} className={`boton ${clase}`} type="button" onClick={abrir}>
+      <button ref={inicialRef} className="boton boton--peligro" type="button" onClick={abrir}>
         {etiquetaInicial}
       </button>
 
@@ -251,6 +246,9 @@ function ConfirmacionEnDosPasos({
         <form action={enviar} className="modal__interior">
           <input type="hidden" name="consorcio" value={consorcioId} />
           <input type="hidden" name={campo} value={valor} />
+          {Object.entries(ocultos).map(([nombre, valorOculto]) => (
+            <input key={nombre} type="hidden" name={nombre} value={valorOculto} />
+          ))}
 
           <div className="modal__encabezado">
             <h2 ref={tituloRef} id={tituloId} tabIndex={-1} className="modal__titulo">
@@ -284,7 +282,7 @@ function ConfirmacionEnDosPasos({
           )}
 
           <div className="fila-acciones">
-            <button className={`boton ${clase}`} type="submit" disabled={enCurso}>
+            <button className="boton boton--peligro" type="submit" disabled={enCurso}>
               {enCurso ? trabajando : etiquetaConfirmar}
             </button>
             <button className="boton boton--fantasma" type="button" onClick={cerrar}>

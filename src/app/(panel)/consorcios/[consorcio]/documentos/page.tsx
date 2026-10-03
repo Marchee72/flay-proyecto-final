@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BadgeCheck, EyeOff, FileText, MessageCircleQuestion } from 'lucide-react'
+import { EyeOff, FileText, MessageCircleQuestion } from 'lucide-react'
 
 import { fechaParaMostrar } from '@/compartido/formato'
 import {
@@ -33,12 +33,9 @@ const CLASE_INDEXACION: Record<string, string> = {
  */
 export default async function DocumentosPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ consorcio: string }>
-  searchParams: Promise<{ cargado?: string }>
 }) {
-  const parametros = await searchParams
   const { consorcio: consorcioId } = await params
   const pantalla = await conConsorcio(consorcioId, 'Documentación')
   if ('salida' in pantalla) return pantalla.salida
@@ -74,15 +71,6 @@ export default async function DocumentosPage({
             {administra && <ModalDocumento consorcioId={activo.id} tipos={TIPOS_DOCUMENTO} />}
           </div>
         </div>
-        {parametros.cargado && (
-          <p className="aviso aviso--exito" role="status">
-            <BadgeCheck className="icono" aria-hidden="true" />
-            <span>
-              Documento cargado. Se procesa en segundo plano; cuando diga «Procesado» ya entra en
-              las consultas.
-            </span>
-          </p>
-        )}
         {documentos.length === 0 ? (
           <div className="vacio">
             <FileText aria-hidden="true" />

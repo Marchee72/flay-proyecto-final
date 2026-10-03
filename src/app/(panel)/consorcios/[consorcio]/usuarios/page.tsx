@@ -12,17 +12,8 @@ import { conConsorcio } from '../../../con-consorcio'
 
 export const metadata: Metadata = { title: 'Usuarios — Flay' }
 
-type Parametros = { invitado?: string; reenviado?: string; problema?: string }
-
-export default async function UsuariosPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ consorcio: string }>
-  searchParams: Promise<Parametros>
-}) {
+export default async function UsuariosPage({ params }: { params: Promise<{ consorcio: string }> }) {
   const { consorcio: consorcioId } = await params
-  const parametros = await searchParams
   const pantalla = await conConsorcio(consorcioId, 'Usuarios')
   if ('salida' in pantalla) return pantalla.salida
   const { usuarioId, activo } = pantalla
@@ -43,23 +34,6 @@ export default async function UsuariosPage({
     <>
       <h1>Usuarios</h1>
       <p className="apagado">Quiénes tienen acceso y con qué rol.</p>
-
-      {parametros.invitado && (
-        <p className="aviso aviso--atencion" role="status">
-          Invitación creada. El correo con el enlace sale en el próximo pedido; abajo se ve su
-          estado.
-        </p>
-      )}
-      {parametros.reenviado && (
-        <p className="aviso aviso--atencion" role="status">
-          Invitación reenviada. Si vuelve a fallar, el estado lo dice acá.
-        </p>
-      )}
-      {parametros.problema && (
-        <p className="aviso aviso--problema" role="alert">
-          No pudimos reenviar esa invitación.
-        </p>
-      )}
 
       {denegado ? (
         <p className="aviso aviso--problema" role="alert">

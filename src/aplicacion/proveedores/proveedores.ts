@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client'
+import { Prisma, type Clasificacion } from '@prisma/client'
 
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
@@ -167,9 +167,12 @@ export async function listarProveedores(
 }
 
 /** Catalogo global de rubros: lo mismo para todos los consorcios (FR-014). */
-export async function listarRubros(): Promise<{ id: string; nombre: string }[]> {
+export async function listarRubros(): Promise<
+  { id: string; nombre: string; clasificacion: Clasificacion }[]
+> {
   return prismaBase.rubroGasto.findMany({
-    select: { id: true, nombre: true },
+    // La clasificacion viaja para que el alta pueda proponerla (regla RN-04).
+    select: { id: true, nombre: true, clasificacion: true },
     orderBy: { nombre: 'asc' },
   })
 }

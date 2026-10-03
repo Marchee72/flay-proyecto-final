@@ -53,12 +53,14 @@ test('el administrador ve el panel, la morosidad de su consorcio y la alerta', a
 
   await page.goto(`/consorcios/${administrador.consorcioId}/indicadores`)
   await page.getByRole('button', { name: 'Actualizar ahora' }).click()
-  await expect(page.getByRole('status')).toContainText('Indicadores actualizados')
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Indicadores actualizados' }),
+  ).toBeVisible()
 })
 
 test('el consorcista no accede al panel', async ({ page }) => {
   await entrar(page, consorcista.correo)
   await page.goto(`/consorcios/${consorcista.consorcioId}/indicadores`)
-  await expect(page.getByRole('alert').first()).toContainText('Tu rol no permite')
+  await expect(page.getByRole('alert').filter({ hasText: 'Tu rol no permite' })).toBeVisible()
   await expect(page.locator('.kpi')).toHaveCount(0)
 })

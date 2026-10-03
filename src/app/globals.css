@@ -98,6 +98,15 @@ h2 {
 h3 {
   font-size: var(--t-titulo3);
 }
+/* Un título que lleva icono lo separa de la palabra. Sin esto el icono queda
+   pegado al texto: pasaba en las tarjetas de Expensas, donde el patrón recién
+   se hizo visible. `:has` lo acota a los títulos que de verdad tienen uno. */
+h2:has(> .icono),
+h3:has(> .icono) {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+}
 
 /* Las cifras alinean coma con coma (§3.1). */
 .cifra {
@@ -563,11 +572,22 @@ th a:not(.boton):hover,
   background: var(--rojo-palido);
   color: var(--rojo);
 }
-.emergente {
+/* Una sola pila para todo aviso de accion, abajo a la derecha. El mas nuevo
+   entra abajo y empuja a los que ya estaban. */
+.pila-avisos {
   position: fixed;
-  left: 292px;
+  right: var(--e5);
   bottom: var(--e5);
   z-index: 30;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--e2);
+  pointer-events: none;
+}
+.pila-avisos > * {
+  pointer-events: auto;
+}
+.emergente {
   width: min(440px, calc(100vw - 2 * var(--e4)));
   display: flex;
   align-items: center;
@@ -910,7 +930,8 @@ form > .fila-acciones {
 
 /* La tabla se desplaza dentro de su contenedor; la pagina nunca (RNF-01). */
 .tabla-desplazable {
-  overflow-x: auto;
+  overflow: auto;
+  max-height: min(65vh, 600px);
   /* Contiene a los hijos absolutos (.oculto): sin esto se escapan del
      desplazamiento y ensanchan la pagina en el telefono. */
   position: relative;
@@ -945,6 +966,11 @@ thead th {
   font-size: var(--t-ayuda);
   font-weight: 600;
   height: var(--toque);
+  position: sticky;
+  top: 0;
+  background: var(--superficie);
+  z-index: 2;
+  box-shadow: 0 1px 0 var(--linea-suave);
 }
 tbody tr:last-child td {
   border-bottom: 0;
@@ -978,6 +1004,11 @@ tfoot td {
   font-weight: 700;
   border-top: 1px solid var(--linea);
   border-bottom: 0;
+  position: sticky;
+  bottom: 0;
+  background: var(--superficie);
+  z-index: 2;
+  box-shadow: 0 -1px 0 var(--linea);
 }
 
 .vacio {
@@ -1006,6 +1037,22 @@ tfoot td {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--e3);
   margin: 0 0 var(--e4);
+}
+/* Dos tarjetas que se leen de a pares —el mes en curso y el último emitido—.
+   No usan `.rejilla` porque su `auto-fit` abre una tercera columna fantasma en
+   pantalla ancha y las deja con 12 px de aire, que a este tamaño se ven
+   pegadas. Acá son dos, parejas, separadas como el padding de la tarjeta. */
+.par-de-tarjetas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--e5);
+  margin: var(--e4) 0 var(--e5);
+  align-items: start;
+}
+@media (max-width: 760px) {
+  .par-de-tarjetas {
+    grid-template-columns: 1fr;
+  }
 }
 .lista-simple {
   list-style: none;
@@ -1288,6 +1335,8 @@ tfoot td {
      fila. Las celdas con controles (el padron) se reparten el ancho. */
   .tabla-desplazable {
     overflow-x: visible;
+    overflow-y: visible;
+    max-height: none;
   }
   table {
     display: block;
@@ -1362,6 +1411,11 @@ tfoot td {
   }
   td:has(input, select, .boton, .etiqueta)::before {
     content: none;
+  }
+  /* El guión que sostiene una columna vacía en escritorio no aporta nada acá,
+     donde la fila se lee como una frase encadenada con «·». */
+  td.sin-dato {
+    display: none;
   }
   td:not(.numero):has(input, select) {
     flex: 1 1 45%;
@@ -2538,8 +2592,9 @@ td select {
     right: var(--e2);
     width: auto;
   }
-  .emergente {
+  .pila-avisos {
     left: var(--e4);
+    right: var(--e4);
     bottom: 96px;
   }
   .barra-inferior {
@@ -2636,36 +2691,79 @@ td select {
   gap: var(--e2);
 }
 
-/* Novedades del inicio: una fila compacta por novedad, no una tarjeta alta. */
+/* Novedades del inicio: una tarjeta con filas compactas, no una tarjeta por
+   novedad. Filete lima en la fijada, cuerpo a dos lineas y la fecha debajo;
+   «Descartar» es un aspa al costado. */
 .novedades-inicio {
   display: grid;
-  gap: var(--e2);
+  gap: var(--e4);
   margin: 0 0 var(--e5);
 }
 .novedad-fila {
   display: flex;
-  align-items: center;
-  gap: var(--e4);
-  padding: var(--e3) var(--e3) var(--e3) var(--e4);
-  border-radius: var(--radio);
-  background: var(--superficie);
-  box-shadow: var(--sombra);
+  align-items: flex-start;
+  gap: var(--e3);
+  padding-left: var(--e4);
+  border-left: 3px solid var(--linea);
+}
+.novedad-fila--fijada {
+  border-left-color: var(--lima);
 }
 .novedad-fila__texto {
   flex: 1;
   min-width: 0;
 }
 .novedad-fila h3 {
-  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: var(--e1);
+  font-size: var(--t-cuerpo);
   letter-spacing: 0;
 }
+.novedad-fila h3 .icono {
+  width: 14px;
+  height: 14px;
+  color: var(--tinta-apagada);
+}
+/* El cuerpo entero esta en la seccion: aca dos lineas y basta. */
 .novedad-fila p {
   margin: 2px 0 0;
-  font-size: 14px;
+  font-size: var(--t-menor);
   color: var(--tinta-apagada);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.novedad-fila .kpi__detalle {
+  display: block;
+  margin-top: var(--e1);
 }
 .novedad-fila form {
   margin: 0;
+}
+/* Aspa cuadrada: el icono solo, sin ensanchar la fila. */
+.boton--aspa {
+  width: var(--toque);
+  padding: 0;
+  color: var(--tinta-apagada);
+  border-radius: var(--pastilla);
+}
+/* El descarte se ve antes de que vuelva el servidor (§7.5, animaciones). */
+.descartandose {
+  animation: novedad-se-va 240ms ease-in forwards;
+  pointer-events: none;
+}
+@keyframes novedad-se-va {
+  to {
+    opacity: 0;
+    transform: translateX(var(--e5));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .descartandose {
+    animation: none;
+  }
 }
 
 /* El tablero del resumen: grilla de 12 con tarjetas de distinto ancho. */
@@ -2804,6 +2902,33 @@ td select {
 .tarjeta--oscura :focus-visible {
   outline-color: var(--lima-alto);
 }
+/* Las piezas corrientes de una tarjeta —texto apagado, mosaicos de resumen,
+   botones— nacen pensadas para fondo claro y desaparecen sobre el grafito.
+   Acá se las da vuelta una sola vez, para que `tarjeta--oscura` se le pueda
+   poner a cualquier tarjeta sin rehacerle las entrañas. */
+.tarjeta--oscura .apagado,
+.tarjeta--oscura .resumen__rotulo {
+  color: var(--tinta-clara-apagada);
+}
+.tarjeta--oscura .resumen__item {
+  background: rgb(255 255 255 / 8%);
+}
+/* El primario es grafito sobre grafito: acá se invierte. */
+.tarjeta--oscura .boton--primario {
+  background: #ffffff;
+  color: var(--grafito);
+}
+.tarjeta--oscura .boton--primario:hover {
+  background: var(--tinta-clara);
+}
+.tarjeta--oscura .boton--fantasma {
+  background: rgb(255 255 255 / 8%);
+  border-color: transparent;
+  color: #ffffff;
+}
+.tarjeta--oscura .boton--fantasma:hover {
+  background: rgb(255 255 255 / 14%);
+}
 .cobro {
   display: flex;
   align-items: center;
@@ -2901,7 +3026,94 @@ td select {
   .cifra-grande {
     font-size: 30px;
   }
-  .novedad-fila {
-    align-items: flex-start;
+}
+
+/* Barra de progreso de navegacion instantanea (RNF-06) */
+.barra-carga {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: transparent;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.barra-carga__progreso {
+  height: 100%;
+  background: var(--lima);
+  width: 0%;
+  animation: animacion-progreso 2s cubic-bezier(0.1, 0.5, 0.1, 1) forwards;
+  box-shadow: 0 0 8px var(--lima-alto);
+}
+
+@keyframes animacion-progreso {
+  0% {
+    width: 0%;
+  }
+  20% {
+    width: 35%;
+  }
+  50% {
+    width: 70%;
+  }
+  100% {
+    width: 90%;
+  }
+}
+
+/* Esqueletos de carga para transiciones suaves (RNF-06) */
+.esqueleto-pantalla {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e4);
+  padding: var(--e2) 0;
+}
+
+.esqueleto {
+  background: linear-gradient(
+    90deg,
+    var(--linea-suave) 25%,
+    var(--superficie-hundida) 50%,
+    var(--linea-suave) 75%
+  );
+  background-size: 200% 100%;
+  animation: brillo-esqueleto 1.5s infinite;
+  border-radius: 8px;
+}
+
+.esqueleto--titulo {
+  height: 32px;
+  width: 240px;
+}
+
+.esqueleto--subtitulo {
+  height: 18px;
+  width: 380px;
+}
+
+.esqueleto-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--e4);
+  margin: var(--e3) 0;
+}
+
+.esqueleto--tarjeta {
+  height: 100px;
+}
+
+.esqueleto--bloque {
+  height: 280px;
+  width: 100%;
+}
+
+@keyframes brillo-esqueleto {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
   }
 }

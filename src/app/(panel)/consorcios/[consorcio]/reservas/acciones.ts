@@ -46,7 +46,7 @@ export async function accionReservar(_previo: Resultado, datos: FormData): Promi
   }
 
   revalidatePath('/consorcios/[consorcio]/reservas', 'page')
-  redirect(`/consorcios/${consorcioId}/reservas?confirmada=1`)
+  redirect(`/consorcios/${consorcioId}/reservas?hecho=reserva-confirmada`)
 }
 
 export async function accionCancelarReserva(datos: FormData): Promise<void> {
@@ -67,7 +67,7 @@ export async function accionCancelarReserva(datos: FormData): Promise<void> {
     )
   }
   revalidatePath('/consorcios/[consorcio]/reservas', 'page')
-  redirect(`/consorcios/${consorcioId}/reservas?cancelada=1`)
+  redirect(`/consorcios/${consorcioId}/reservas?hecho=reserva-cancelada`)
 }
 
 export async function accionGuardarEspacio(
@@ -100,7 +100,7 @@ export async function accionGuardarEspacio(
   }
 
   revalidatePath('/consorcios/[consorcio]/espacios', 'page')
-  redirect(`/consorcios/${consorcioId}/espacios?guardado=1`)
+  redirect(`/consorcios/${consorcioId}/espacios?hecho=espacio-guardado`)
 }
 
 export async function accionBajaEspacio(datos: FormData): Promise<void> {
@@ -121,5 +121,5 @@ export async function accionBajaEspacio(datos: FormData): Promise<void> {
     )
   }
   revalidatePath('/consorcios/[consorcio]/espacios', 'page')
-  redirect(`/consorcios/${consorcioId}/espacios?baja=1`)
+  redirect(`/consorcios/${consorcioId}/espacios?hecho=espacio-baja`)
 }

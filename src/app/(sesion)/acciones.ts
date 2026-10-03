@@ -49,5 +49,5 @@ export async function accionFijarContrasena(
     throw error
   }
 
-  redirect('/ingresar?listo=1')
+  redirect('/ingresar?hecho=contrasena-guardada')
 }

@@ -67,11 +67,19 @@ export async function limpiar() {
   await prismaBase.documentoConsorcio.deleteMany({})
   await prismaBase.novedad.deleteMany({})
   await prismaBase.reserva.deleteMany({})
+  await prismaBase.$executeRawUnsafe('DELETE FROM "SuspensionEspacio"').catch(() => {})
   await prismaBase.espacioComun.deleteMany({})
   await prismaBase.reclamo.deleteMany({})
+
   await prismaBase.comprobante.deleteMany({})
   await prismaBase.gasto.deleteMany({})
+  await prismaBase.pagoImputacion.deleteMany({}).catch(() => {})
+  await prismaBase.pago.deleteMany({}).catch(() => {})
+  await prismaBase.interesLiquidado.deleteMany({}).catch(() => {})
+  await prismaBase.detalleLiquidacion.deleteMany({}).catch(() => {})
+  await prismaBase.liquidacion.deleteMany({}).catch(() => {})
   await prismaBase.periodo.deleteMany({})
+
   await prismaBase.proveedor.deleteMany({})
   await prismaBase.$executeRaw`DELETE FROM "Ocupacion"`
   await prismaBase.coeficienteHistorico.deleteMany({})

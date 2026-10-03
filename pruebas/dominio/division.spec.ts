@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { divisionDe } from '@/dominio/unidades/division'
+import { divisionDe, pisoDe } from '@/dominio/unidades/division'
 
 describe('divisionDe (RF-18)', () => {
   it('es la letra que sigue al piso', () => {
@@ -16,5 +16,25 @@ describe('divisionDe (RF-18)', () => {
     expect(divisionDe('Local 2')).toBeNull()
     expect(divisionDe('1-27')).toBeNull()
     expect(divisionDe('Cochera 5')).toBeNull()
+  })
+})
+
+describe('pisoDe', () => {
+  it('extrae el piso o planta baja', () => {
+    expect(pisoDe('3A')).toBe('3')
+    expect(pisoDe('3-A')).toBe('3')
+    expect(pisoDe('10 b')).toBe('10')
+    expect(pisoDe('PB-B')).toBe('PB')
+    expect(pisoDe('pb a')).toBe('PB')
+    expect(pisoDe('4°C')).toBe('4')
+    expect(pisoDe('PB')).toBe('PB')
+    expect(pisoDe('5')).toBe('5')
+  })
+
+  it('devuelve null si no tiene piso reconocible', () => {
+    expect(pisoDe('C1')).toBeNull()
+    expect(pisoDe('Local 2')).toBeNull()
+    expect(pisoDe('1-27')).toBeNull()
+    expect(pisoDe('Cochera 5')).toBeNull()
   })
 })

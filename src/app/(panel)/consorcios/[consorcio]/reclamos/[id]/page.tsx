@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BadgeCheck, Siren, Sparkles } from 'lucide-react'
+import { Siren, Sparkles } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { momentoParaMostrar } from '@/compartido/formato'
@@ -21,14 +21,11 @@ export const metadata: Metadata = { title: 'Reclamo — Flay' }
 /** Detalle con historial completo, acciones por rol y la sugerencia del triage aparte (`CU-08`, `CU-14`). */
 export default async function ReclamoPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ consorcio: string; id: string }>
-  searchParams: Promise<{ registrado?: string }>
 }) {
   const { consorcio: consorcioId, id: crudo } = await params
   const id = idONoEncontrado(crudo)
-  const parametros = await searchParams
   const pantalla = await conConsorcio(consorcioId, 'Reclamo')
   if ('salida' in pantalla) return pantalla.salida
   const { usuarioId, activo } = pantalla
@@ -54,13 +51,6 @@ export default async function ReclamoPage({
           <EstadoDeReclamo estado={reclamo.estado} />
           <UrgenciaDeReclamo urgencia={reclamo.urgencia} />
         </p>
-
-        {parametros.registrado && (
-          <p className="aviso aviso--exito" role="status">
-            <BadgeCheck className="icono" aria-hidden="true" />
-            <span>Reclamo registrado. La administración lo va a asignar.</span>
-          </p>
-        )}
 
         <section className="tarjeta">
           <p>{reclamo.descripcion}</p>

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BadgeCheck, Siren, TriangleAlert } from 'lucide-react'
+import { BadgeCheck, Siren, TriangleAlert, Wallet } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { fechaParaMostrar, importeParaMostrar, plural } from '@/compartido/formato'
@@ -38,18 +38,34 @@ export default async function MorosidadPage({
         <h1>Morosidad</h1>
         <p className="apagado">Deuda vencida a hoy.</p>
 
-        <div className="kpi">
-          <span className="kpi__icono">
-            <TriangleAlert className="icono" aria-hidden="true" />
-          </span>
-          <div>
-            <div className="kpi__rotulo">Unidades con deuda vencida</div>
-            <div className="kpi__cifra cifra">
-              {morosidad.agregado.unidadesEnMora} de {morosidad.agregado.unidadesTotales}
+        <div className="fila-kpi">
+          <div className="kpi">
+            <span className="kpi__icono">
+              <TriangleAlert className="icono" aria-hidden="true" />
+            </span>
+            <div>
+              <div className="kpi__rotulo">Unidades con deuda vencida</div>
+              <div className="kpi__cifra cifra">
+                {morosidad.agregado.unidadesEnMora} de {morosidad.agregado.unidadesTotales}
+              </div>
+              <div className="kpi__detalle">
+                {morosidad.agregado.unidadesTotales > 0
+                  ? `${Math.round((morosidad.agregado.unidadesEnMora / morosidad.agregado.unidadesTotales) * 100)} % del consorcio`
+                  : 'Sin unidades'}
+              </div>
             </div>
-            <div className="kpi__detalle">
-              Deuda total{' '}
-              <span className="cifra">{importeParaMostrar(morosidad.agregado.deudaTotal)}</span>
+          </div>
+
+          <div className="kpi">
+            <span className="kpi__icono">
+              <Wallet className="icono" aria-hidden="true" />
+            </span>
+            <div>
+              <div className="kpi__rotulo">Deuda total vencida</div>
+              <div className="kpi__cifra cifra">
+                {importeParaMostrar(morosidad.agregado.deudaTotal)}
+              </div>
+              <div className="kpi__detalle">Acumulado impago de períodos vencidos</div>
             </div>
           </div>
         </div>
@@ -60,76 +76,92 @@ export default async function MorosidadPage({
             <p>Ninguna unidad con deuda vencida.</p>
           </div>
         ) : morosidad.nominada ? (
-          <div className="tabla-desplazable">
-            <table>
-              <caption className="ayuda">Nómina de deudores</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Unidad</th>
-                  <th scope="col">Ocupantes</th>
-                  <th scope="col">Períodos vencidos</th>
-                  <th scope="col" className="numero">
-                    Deuda
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {morosidad.deudores.map((deudor) => (
-                  <tr key={deudor.unidadId}>
-                    <td>
-                      <Link
-                        href={`/consorcios/${activo.id}/pagos?unidad=${deudor.unidadId}#movimientos`}
-                      >
-                        {deudor.designacion}
-                      </Link>
-                    </td>
-                    <td>
-                      {deudor.ocupantes.length === 0 ? (
-                        <span className="ayuda">Sin ocupantes cargados</span>
-                      ) : (
-                        <ul className="lista-simple lista-simple--apilada">
-                          {deudor.ocupantes.map((ocupante) => (
-                            <li key={`${ocupante.tipo}-${ocupante.nombre}`}>
-                              <span>
-                                {ocupante.nombre} <span className="apagado">({ocupante.tipo})</span>
-                              </span>
-                              <span>
-                                {ocupante.telefono && (
-                                  <a href={`tel:${ocupante.telefono}`}>{ocupante.telefono}</a>
-                                )}{' '}
-                                {ocupante.correo && (
-                                  <a href={`mailto:${ocupante.correo}`}>{ocupante.correo}</a>
-                                )}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </td>
-                    <td>
-                      <details>
-                        <summary>{plural(deudor.periodosVencidos, 'período', 'períodos')}</summary>
-                        <ul className="lista-simple">
-                          {deudor.periodos.map((periodo) => (
-                            <li key={periodo.periodo}>
-                              <span>
-                                {periodo.periodo}{' '}
-                                <span className="ayuda">
-                                  venció {fechaParaMostrar(periodo.vencimiento)}
-                                </span>
-                              </span>
-                              <span className="cifra">{importeParaMostrar(periodo.saldo)}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </details>
-                    </td>
-                    <td className="numero cifra">{importeParaMostrar(deudor.deuda)}</td>
+          <section className="tarjeta">
+            <h2>Nómina de deudores</h2>
+            <div className="tabla-desplazable">
+              <table>
+                <caption className="ayuda">
+                  {plural(morosidad.deudores.length, 'unidad deudora', 'unidades deudoras')}
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Unidad</th>
+                    <th scope="col">Ocupantes</th>
+                    <th scope="col">Períodos vencidos</th>
+                    <th scope="col" className="numero">
+                      Deuda
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {morosidad.deudores.map((deudor) => (
+                    <tr key={deudor.unidadId}>
+                      <td>
+                        <Link
+                          href={`/consorcios/${activo.id}/pagos?unidad=${deudor.unidadId}#movimientos`}
+                        >
+                          {deudor.designacion}
+                        </Link>
+                      </td>
+                      <td>
+                        {deudor.ocupantes.length === 0 ? (
+                          <span className="ayuda">Sin ocupantes cargados</span>
+                        ) : (
+                          <ul className="lista-simple lista-simple--apilada">
+                            {deudor.ocupantes.map((ocupante) => (
+                              <li key={`${ocupante.tipo}-${ocupante.nombre}`}>
+                                <span>
+                                  {ocupante.nombre}{' '}
+                                  <span className="apagado">({ocupante.tipo})</span>
+                                </span>
+                                <span>
+                                  {ocupante.telefono && (
+                                    <a href={`tel:${ocupante.telefono}`}>{ocupante.telefono}</a>
+                                  )}{' '}
+                                  {ocupante.correo && (
+                                    <a href={`mailto:${ocupante.correo}`}>{ocupante.correo}</a>
+                                  )}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </td>
+                      <td>
+                        <details>
+                          <summary>
+                            {plural(deudor.periodosVencidos, 'período', 'períodos')}
+                          </summary>
+                          <ul className="lista-simple">
+                            {deudor.periodos.map((periodo) => (
+                              <li key={periodo.periodo}>
+                                <span>
+                                  {periodo.periodo}{' '}
+                                  <span className="ayuda">
+                                    venció {fechaParaMostrar(periodo.vencimiento)}
+                                  </span>
+                                </span>
+                                <span className="cifra">{importeParaMostrar(periodo.saldo)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      </td>
+                      <td className="numero cifra">{importeParaMostrar(deudor.deuda)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan={3}>Total deuda</td>
+                    <td className="numero cifra">
+                      {importeParaMostrar(morosidad.agregado.deudaTotal)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </section>
         ) : (
           <p className="ayuda">
             La nómina de deudores la ven el administrador y el consejo de propietarios.

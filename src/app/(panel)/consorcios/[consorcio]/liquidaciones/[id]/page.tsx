@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { Siren, TriangleAlert } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
@@ -91,6 +92,12 @@ export default async function LiquidacionPage({
             )}
           </div>
         )}
+
+        <p>
+          <Link href={`/consorcios/${activo.id}/gastos?periodo=${liquidacion.periodoId}`}>
+            Ver los gastos de {liquidacion.periodo}
+          </Link>
+        </p>
 
         <div className="tabla-desplazable">
           <table>

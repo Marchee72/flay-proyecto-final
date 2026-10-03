@@ -157,5 +157,5 @@ export async function accionEditarPadron(_previo: Resultado, datos: FormData): P
   }
 
   revalidatePath('/consorcios/[consorcio]', 'layout')
-  redirect(`/consorcios/${consorcioId}/unidades?editado=1`)
+  redirect(`/consorcios/${consorcioId}/unidades?hecho=padron-guardado`)
 }

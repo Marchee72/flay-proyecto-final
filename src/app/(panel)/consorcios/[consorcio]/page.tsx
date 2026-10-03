@@ -7,11 +7,11 @@ import {
   CalendarDays,
   Megaphone,
   Phone,
+  Pin,
   Plus,
   Siren,
   TriangleAlert,
   Wallet,
-  X,
 } from 'lucide-react'
 
 import { importe } from '@/compartido/dinero'
@@ -20,7 +20,7 @@ import { listarNovedades } from '@/aplicacion/comunicacion/novedades'
 import { verResumenConsorcio } from '@/aplicacion/consorcios/resumen'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 
-import { accionDescartarNovedad } from '../../comunicacion/acciones'
+import { DescartarNovedad } from '../../comunicacion/descartar-novedad'
 import { AvisoDeError, conConsorcio } from '../../con-consorcio'
 
 export const metadata: Metadata = { title: 'Resumen — Flay' }
@@ -29,6 +29,8 @@ export const metadata: Metadata = { title: 'Resumen — Flay' }
 const TONOS = ['#16191d', '#4f575f', '#5e9a2e', '#a5d66f', '#cfe6b3', '#d5d9d0']
 /** Cuantos rubros se nombran; el resto va junto. */
 const VISIBLES = 5
+/** Cuantas novedades entran en el resumen antes de mandar a la seccion. */
+const NOVEDADES = 3
 
 const URGENCIA: Record<string, { texto: string; clase: string; sube: boolean }> = {
   critica: { texto: 'Crítica', clase: 'urgencia--urgente', sube: true },
@@ -130,27 +132,32 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
       </div>
 
       {novedades.length > 0 && (
-        <section className="novedades-inicio" aria-labelledby="titulo-novedades">
-          <h2 id="titulo-novedades" className="oculto">
-            Novedades
-          </h2>
-          {novedades.map((n) => (
-            <article key={n.id} className="novedad-fila">
-              <span className="aviso-tono aviso-tono--azul">
-                <Megaphone className="icono" aria-hidden="true" />
-              </span>
+        <section className="tarjeta novedades-inicio" aria-labelledby="titulo-novedades">
+          <div className="tablero__fila">
+            <h2 id="titulo-novedades" className="tablero__titulo">
+              <Megaphone className="icono" aria-hidden="true" /> Novedades
+            </h2>
+            <Link className="enlace-seco" href={`${base}/novedades`}>
+              {novedades.length > NOVEDADES ? `Ver las ${novedades.length}` : 'Ver todas'}
+            </Link>
+          </div>
+          {novedades.slice(0, NOVEDADES).map((n) => (
+            <article
+              key={n.id}
+              className={n.fijada ? 'novedad-fila novedad-fila--fijada' : 'novedad-fila'}
+            >
               <div className="novedad-fila__texto">
-                <h3>{n.titulo}</h3>
+                <h3>
+                  {n.fijada && <Pin className="icono" aria-label="Fijada" />}
+                  {n.titulo}
+                </h3>
                 <p>{n.cuerpo}</p>
+                <span className="kpi__detalle">
+                  {fechaParaMostrar(n.publicadaEn)}
+                  {n.destinatario && ` · ${n.destinatario}`}
+                </span>
               </div>
-              <form action={accionDescartarNovedad}>
-                <input type="hidden" name="consorcio" value={activo.id} />
-                <input type="hidden" name="novedad" value={n.id} />
-                <button type="submit" className="boton boton--terciario">
-                  <X className="icono" aria-hidden="true" />
-                  Descartar
-                </button>
-              </form>
+              <DescartarNovedad consorcioId={activo.id} novedadId={n.id} soloIcono />
             </article>
           ))}
         </section>

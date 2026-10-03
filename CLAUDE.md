@@ -247,6 +247,23 @@ Veintitrés decisiones que costaron una vuelta y conviene no volver a tomar desd
     padrón *vigente* —liquidar, reservar, reclamar, ocupar, dirigir una novedad— filtra
     `bajaDesde: null`; quien lee historia (una expensa vieja) no. Una consulta nueva sobre
     `prisma.unidad` que se olvida el filtro no rompe la suma, pero ofrece una unidad que ya no está.
+24. **El resultado de una acción es un toast, y viaja en la dirección.** La acción redirige con
+    `?hecho=<clave>` o `?error=<texto>`, y lo dibuja `PilaDeAvisos` (`src/app/avisos.tsx`), montada
+    una sola vez en el layout raíz —así alcanza al panel, al ingreso y a la landing—. Los textos de
+    éxito viven ahí, en el diccionario `HECHO`: antes estaban repetidos en cada página de destino, con
+    una bandera distinta por acción y `?registrado=1` queriendo decir dos cosas. Un componente cliente
+    que no navega avisa con `avisar(texto, tono)`; es un emisor de módulo, no un contexto, para poder
+    importarlo sin envolver el árbol. El éxito se va a los 8 s; el problema queda hasta que se lo
+    cierra. **El parámetro se queda en la dirección a propósito**: sacarlo con `history.replaceState`
+    pisa cualquier navegación que el router tenga en vuelo —Next vuelve a aplicar su URL y el árbol
+    queda suspendido, con la pantalla en blanco—, y da igual hacerlo al mostrar el aviso que al
+    cerrarlo, porque el momento no se elige desde ahí.
+25. **El banner dentro de la pantalla no desapareció, y no es lo mismo que el toast.** Sigue siendo
+    `.aviso` lo que describe el estado de lo que se está mirando («el período está abierto», «esta
+    liquidación fue anulada», «extrayendo los datos…») y lo que no pudo cargar (`AvisoDeError` en el
+    `catch` de cada página), y `.error` lo que le falta a un campo, que vuelve por `useActionState` y
+    tiene que seguir ahí con el formulario abierto. La regla: si nace de una acción recién disparada y
+    no hace falta después de leerse, es toast; si no, se queda donde está.
 
 
 ## Notas

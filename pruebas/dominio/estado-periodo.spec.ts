@@ -37,6 +37,10 @@ describe('estado del periodo', () => {
     expect(transicionValida('cerrado', 'liquidado')).toBe(true)
   })
 
+  it('un periodo abierto se liquida sin cerrarlo antes: liquidar lo cierra', () => {
+    expect(transicionValida('abierto', 'liquidado')).toBe(true)
+  })
+
   it('el rechazo dice el estado y que hacer, no un codigo (RNF-10)', () => {
     expect(() => exigirPeriodoConGastos('liquidado')).toThrow(PeriodoNoAdmiteGastos)
 

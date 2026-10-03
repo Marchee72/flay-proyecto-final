@@ -1,4 +1,8 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import type { NextConfig } from 'next'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const nextConfig: NextConfig = {
   /**
@@ -9,7 +13,11 @@ const nextConfig: NextConfig = {
    * fuera del empaquetado se carga entero desde `node_modules`, con sus datos.
    * Local nunca fallo, porque ahi el paquete siempre esta completo.
    */
-  serverExternalPackages: ['@react-pdf/renderer'],
+  serverExternalPackages: ['@react-pdf/renderer', 'unpdf'],
+  outputFileTracingRoot: path.resolve(__dirname),
+  experimental: {
+    optimizePackageImports: ['lucide-react'],
+  },
 }
 
 export default nextConfig

@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BadgeCheck, CalendarCheck, History, Siren } from 'lucide-react'
+import { CalendarCheck, History, Siren } from 'lucide-react'
 
-import { ErrorDeAplicacion } from '@/compartido/errores'
 import { momentoParaMostrar } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
@@ -28,12 +27,7 @@ export default async function ReservasPage({
   searchParams,
 }: {
   params: Promise<{ consorcio: string }>
-  searchParams: Promise<{
-    espacio?: string
-    confirmada?: string
-    cancelada?: string
-    error?: string
-  }>
+  searchParams: Promise<{ espacio?: string }>
 }) {
   const parametros = await searchParams
   const { consorcio: consorcioId } = await params
@@ -82,22 +76,6 @@ export default async function ReservasPage({
             </div>
           )}
         </div>
-
-        {parametros.confirmada && (
-          <p className="aviso aviso--exito" role="status">
-            <BadgeCheck className="icono" aria-hidden="true" />
-            <span>Reserva confirmada. Te llega un aviso por correo.</span>
-          </p>
-        )}
-        {parametros.cancelada && (
-          <p className="aviso aviso--exito" role="status">
-            <BadgeCheck className="icono" aria-hidden="true" />
-            <span>Reserva cancelada.</span>
-          </p>
-        )}
-        {parametros.error && (
-          <AvisoDeError error={new ErrorDeAplicacion(parametros.error, 'RF-16')} />
-        )}
 
         {espacios.length === 0 ? (
           <div className="vacio">

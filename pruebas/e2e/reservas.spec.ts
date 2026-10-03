@@ -67,7 +67,7 @@ test('reservar, chocar con otra reserva con un mensaje legible, y cancelar', asy
   }
 
   await reservarDesde(72, 76)
-  await expect(page.getByRole('status')).toContainText('Reserva confirmada')
+  await expect(page.getByRole('status').filter({ hasText: 'Reserva confirmada' })).toBeVisible()
   await expect(page.getByRole('table')).toContainText('SUM')
   await expect(page.getByRole('table')).toContainText('3B')
   expect(await desbordaALoAncho(page)).toBe(false)
@@ -78,6 +78,6 @@ test('reservar, chocar con otra reserva con un mensaje legible, y cancelar', asy
   await page.getByRole('dialog').getByRole('button', { name: 'Cerrar diálogo' }).click()
 
   await page.getByRole('button', { name: 'Cancelar', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('Reserva cancelada')
+  await expect(page.getByRole('status').filter({ hasText: 'Reserva cancelada' })).toBeVisible()
   await expect(page.getByRole('table')).toContainText('Cancelada')
 })

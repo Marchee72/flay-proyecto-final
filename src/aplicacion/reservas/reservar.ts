@@ -1,6 +1,8 @@
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import { momentoParaMostrar } from '@/compartido/formato'
+import { ordenarUnidades } from '@/dominio/unidades/division'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
+
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { notificar } from '@/aplicacion/comunicacion/notificar'
@@ -330,13 +332,15 @@ export async function unidadesParaReservar(
     { usuarioId: datos.usuarioId, consorcioId: datos.consorcioId, accion: 'reservar' },
     async (acceso) => {
       if (acceso.roles.includes('administrador')) {
-        return prisma.unidad.findMany({
+        const unidades = await prisma.unidad.findMany({
           where: { bajaDesde: null },
           select: { id: true, designacion: true },
-          orderBy: { designacion: 'asc' },
         })
+        return ordenarUnidades(unidades)
       }
-      return unidadesOcupadasPor(datos.usuarioId, datos.consorcioId, reloj.hoy())
+      const ocupadas = await unidadesOcupadasPor(datos.usuarioId, datos.consorcioId, reloj.hoy())
+      return ordenarUnidades(ocupadas)
     },
   )
 }
+

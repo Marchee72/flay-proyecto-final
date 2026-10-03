@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
-import { BadgeCheck, DoorOpen } from 'lucide-react'
+import { DoorOpen } from 'lucide-react'
 
-import { ErrorDeAplicacion } from '@/compartido/errores'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarEspacios } from '@/aplicacion/reservas/espacios'
@@ -13,14 +12,7 @@ import { ModalEspacio } from './modal-espacio'
 export const metadata: Metadata = { title: 'Espacios comunes — Flay' }
 
 /** Espacios comunes y sus reglas (`RF-15`, `FR-009`). Los ve todo el consorcio; el ABM es del administrador y la baja es logica. */
-export default async function EspaciosPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ consorcio: string }>
-  searchParams: Promise<{ guardado?: string; baja?: string; error?: string }>
-}) {
-  const parametros = await searchParams
+export default async function EspaciosPage({ params }: { params: Promise<{ consorcio: string }> }) {
   const { consorcio: consorcioId } = await params
   const pantalla = await conConsorcio(consorcioId, 'Espacios comunes')
   if ('salida' in pantalla) return pantalla.salida
@@ -44,20 +36,6 @@ export default async function EspaciosPage({
         <p className="apagado">
           Las reglas del reglamento interno, en datos: lo que el sistema aplica al reservar.
         </p>
-
-        {(parametros.guardado || parametros.baja) && (
-          <p className="aviso aviso--exito" role="status">
-            <BadgeCheck className="icono" aria-hidden="true" />
-            <span>
-              {parametros.baja
-                ? 'Espacio dado de baja; las reservas futuras quedaron canceladas y avisadas.'
-                : 'Espacio guardado.'}
-            </span>
-          </p>
-        )}
-        {parametros.error && (
-          <AvisoDeError error={new ErrorDeAplicacion(parametros.error, 'RF-15')} />
-        )}
 
         {administra && (
           <div className="fila-acciones">

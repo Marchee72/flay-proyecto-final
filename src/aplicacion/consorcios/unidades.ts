@@ -532,3 +532,12 @@ async function exigirQueSePuedanDarDeBaja(
     }
   }
 }
+
+export {
+  compararDesignaciones,
+  divisionDe,
+  ordenarUnidades,
+  pisoDe,
+} from '@/dominio/unidades/division'
+export { sumarCoeficientes } from '@/dominio/coeficientes/suma'
+

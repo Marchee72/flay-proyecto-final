@@ -23,7 +23,7 @@ export type Resultado = { mensaje: string }
  * convertido en «hubo un error» (RNF-10, SC-004).
  */
 export async function accionCerrarPeriodo(_previo: Resultado, datos: FormData): Promise<Resultado> {
-  return conSesion(datos, 'cerrado', (usuarioId, consorcioId) =>
+  return conSesion(datos, 'periodo-cerrado', (usuarioId, consorcioId) =>
     cerrarPeriodo(HABILITACIONES, RELOJ, {
       usuarioId,
       consorcioId,
@@ -41,6 +41,7 @@ export async function accionLiquidarPeriodo(
       usuarioId,
       consorcioId,
       periodoId: String(datos.get('periodo') ?? ''),
+      totalRevisado: String(datos.get('totalRevisado') ?? ''),
     }),
   )
 }
@@ -90,13 +91,13 @@ export async function accionGenerarDocumentos(
 }
 
 /**
- * Con exito vuelve a la lista con `?hecho=`, que la pagina traduce al aviso
- * verde de arriba: la fila que disparo la accion cambia de botones al
- * re-dibujarse, asi que un mensaje en la fila no sobreviviria.
+ * Con exito vuelve a la lista con `?hecho=`, que la pila de avisos saca como
+ * toast: la fila que disparo la accion cambia de botones al re-dibujarse, asi
+ * que un mensaje en la fila no sobreviviria.
  */
 async function conSesion(
   datos: FormData,
-  hecho: 'cerrado' | 'liquidado' | 'anulado',
+  hecho: 'periodo-cerrado' | 'liquidado' | 'anulado',
   trabajo: (usuarioId: string, consorcioId: string) => Promise<unknown>,
 ): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
@@ -111,5 +112,6 @@ async function conSesion(
   }
 
   revalidatePath('/consorcios/[consorcio]/periodos', 'page')
+  revalidatePath('/consorcios/[consorcio]/periodos/[id]', 'page')
   redirect(`/consorcios/${consorcioId}/periodos?hecho=${hecho}`)
 }

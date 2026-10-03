@@ -65,7 +65,7 @@ test('la novedad del administrador la ve el consorcista, y el contrato no visibl
   await dialogo.getByLabel('Título').fill('Corte de agua el jueves')
   await dialogo.getByLabel('Texto').fill('De 9 a 12 por obras en la calle.')
   await dialogo.getByRole('button', { name: 'Publicar' }).click()
-  await expect(page.getByRole('status')).toContainText('Novedad publicada')
+  await expect(page.getByRole('status').filter({ hasText: 'Novedad publicada' })).toBeVisible()
   await expect(page.getByRole('heading', { name: /Corte de agua el jueves/ })).toBeVisible()
   expect(await desbordaALoAncho(page)).toBe(false)
 
@@ -75,7 +75,7 @@ test('la novedad del administrador la ve el consorcista, y el contrato no visibl
 
   await page.goto(`/bandeja`)
   await page.getByRole('button', { name: 'Enviar avisos ahora' }).click()
-  await expect(page.getByRole('status')).toContainText('Se despachó')
+  await expect(page.getByRole('status').filter({ hasText: 'Se despachó' })).toBeVisible()
 
   await page.context().clearCookies()
   await entrar(page, consorcista.correo)

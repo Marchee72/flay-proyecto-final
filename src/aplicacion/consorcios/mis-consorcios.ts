@@ -1,3 +1,5 @@
+import { cache } from 'react'
+
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { prismaBase } from '@/infraestructura/prisma'
@@ -30,14 +32,16 @@ export async function misConsorcios(
  * Los roles que el usuario tiene sobre un consorcio, para que la pantalla no
  * ofrezca lo que el rol no puede hacer (RNF-03). **No autoriza nada**: la
  * autorizacion sigue estando en el caso de uso, contra la base, en cada
- * operacion. Esto solo decide que se dibuja.
+ * operacion. Esto solo decide que se dibuja. Cacheador por peticion (RNF-06).
  */
-export async function rolesEn(
-  repositorio: RepositorioHabilitaciones,
-  reloj: Reloj,
-  usuarioId: string,
-  consorcioId: string,
-): Promise<string[]> {
-  const acceso = await repositorio.accesoVigente(usuarioId, consorcioId, reloj.hoy())
-  return acceso?.roles ?? []
-}
+export const rolesEn = cache(
+  async (
+    repositorio: RepositorioHabilitaciones,
+    reloj: Reloj,
+    usuarioId: string,
+    consorcioId: string,
+  ): Promise<string[]> => {
+    const acceso = await repositorio.accesoVigente(usuarioId, consorcioId, reloj.hoy())
+    return acceso?.roles ?? []
+  },
+)

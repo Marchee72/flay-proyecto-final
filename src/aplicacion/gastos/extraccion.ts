@@ -1,4 +1,4 @@
-import type { EstadoExtraccion } from '@prisma/client'
+import type { Clasificacion, EstadoExtraccion } from '@prisma/client'
 import { z } from 'zod'
 
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
@@ -228,6 +228,8 @@ export async function confirmarExtraccion(
     importe: string
     fecha: Date
     descripcion: string
+    /** Si no viene, la del rubro (regla RN-04). */
+    clasificacion?: Clasificacion
   },
 ): Promise<{ gastoId: string; camposCorregidos: string[] }> {
   return conAutorizacion(
@@ -283,7 +285,7 @@ export async function confirmarExtraccion(
             rubroId: rubro.id,
             proveedorId: datos.proveedorId ?? null,
             importe: monto,
-            clasificacion: rubro.clasificacion,
+            clasificacion: datos.clasificacion ?? rubro.clasificacion,
             fecha: datos.fecha,
             descripcion: datos.descripcion.trim(),
             cargadoPor: datos.usuarioId,

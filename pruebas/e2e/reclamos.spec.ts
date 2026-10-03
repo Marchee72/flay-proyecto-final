@@ -53,7 +53,7 @@ test('del reclamo del consorcista al cierre del administrador, con historial com
   await expect(
     page.getByRole('heading', { name: 'Filtración en la cocina', level: 1 }),
   ).toBeVisible()
-  await expect(page.getByRole('status')).toContainText('Reclamo registrado')
+  await expect(page.getByRole('status').filter({ hasText: 'Reclamo registrado' })).toBeVisible()
   await expect(page.getByText('Abierto', { exact: true })).toBeVisible()
   expect(await desbordaALoAncho(page)).toBe(false)
   const url = page.url()

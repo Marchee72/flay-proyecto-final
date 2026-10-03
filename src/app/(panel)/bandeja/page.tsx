@@ -1,16 +1,14 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { BadgeCheck, Inbox, Send } from 'lucide-react'
+import { Inbox, Send } from 'lucide-react'
 
-import { ErrorDeAplicacion } from '@/compartido/errores'
 import { fechaParaMostrar, plural } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { verBandeja } from '@/aplicacion/pendientes/bandeja'
 
 import { accionDespachar } from '../comunicacion/acciones'
-import { AvisoDeError } from '../con-consorcio'
 import { Filtros } from '../filtros'
 import { Marco } from '../marco'
 
@@ -25,7 +23,7 @@ export const metadata: Metadata = { title: 'Bandeja — Flay' }
 export default async function BandejaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ consorcio?: string; despachado?: string; error?: string }>
+  searchParams: Promise<{ consorcio?: string }>
 }) {
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) redirect('/ingresar')
@@ -43,16 +41,6 @@ export default async function BandejaPage({
       <p className="apagado">
         Lo que espera una decisión, en todos los consorcios que administrás.
       </p>
-
-      {parametros.despachado && (
-        <p className="aviso aviso--exito" role="status">
-          <BadgeCheck className="icono" aria-hidden="true" />
-          <span>Se despachó lo que había pendiente.</span>
-        </p>
-      )}
-      {parametros.error && (
-        <AvisoDeError error={new ErrorDeAplicacion(parametros.error, 'FR-012')} />
-      )}
 
       {bandeja.consorcios.length > 1 && (
         <Filtros>

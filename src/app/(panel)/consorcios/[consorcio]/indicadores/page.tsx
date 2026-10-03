@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BadgeCheck, Gauge, RefreshCw, TriangleAlert } from 'lucide-react'
+import { Gauge, RefreshCw, TriangleAlert } from 'lucide-react'
 
-import { ErrorDeAplicacion } from '@/compartido/errores'
 import { momentoParaMostrar } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
@@ -51,12 +50,9 @@ const PAGINAS = [
  */
 export default async function IndicadoresPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ consorcio: string }>
-  searchParams: Promise<{ actualizado?: string; error?: string }>
 }) {
-  const parametros = await searchParams
   const { consorcio: consorcioId } = await params
   const pantalla = await conConsorcio(consorcioId, 'Indicadores')
   if ('salida' in pantalla) return pantalla.salida
@@ -86,16 +82,6 @@ export default async function IndicadoresPage({
           La cartera completa, sobre datos del propio sistema. Última actualización:{' '}
           {panel.refrescadoEn ? momentoParaMostrar(panel.refrescadoEn) : 'todavía no se actualizó'}.
         </p>
-
-        {parametros.actualizado && (
-          <p className="aviso aviso--exito" role="status">
-            <BadgeCheck className="icono" aria-hidden="true" />
-            <span>Indicadores actualizados.</span>
-          </p>
-        )}
-        {parametros.error && (
-          <AvisoDeError error={new ErrorDeAplicacion(parametros.error, 'FR-018')} />
-        )}
 
         <div className="kpi">
           <span className="kpi__icono">

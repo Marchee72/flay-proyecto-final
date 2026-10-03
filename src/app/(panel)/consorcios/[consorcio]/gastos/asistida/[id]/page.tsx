@@ -140,7 +140,11 @@ export default async function RevisarExtraccionPage({
               consorcioId={activo.id}
               extraccionId={extraccion.id}
               mesActual={RELOJ.hoy().toISOString().slice(0, 7)}
-              rubros={rubros.map((r) => ({ id: r.id, etiqueta: r.nombre }))}
+              rubros={rubros.map((r) => ({
+                id: r.id,
+                etiqueta: r.nombre,
+                clasificacion: r.clasificacion,
+              }))}
               proveedores={proveedores.map((p) => ({ id: p.id, etiqueta: p.razonSocial }))}
               precargado={precargado}
               accionesExtra={

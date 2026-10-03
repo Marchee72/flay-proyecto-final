@@ -5,6 +5,8 @@ import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { drenar } from '@/aplicacion/pendientes/drenar'
 import { MANEJADORES } from '@/aplicacion/pendientes/manejadores'
 
+import { IndicadorCarga } from './indicador-carga'
+
 /**
  * Raiz del panel: exige sesion y engancha el drenaje oportunista de
  * TrabajoPendiente con `after()`, que corre despues de responder, de modo que
@@ -27,5 +29,10 @@ export default async function PanelLayout({ children }: { children: React.ReactN
     await drenar(MANEJADORES)
   })
 
-  return children
+  return (
+    <>
+      <IndicadorCarga />
+      {children}
+    </>
+  )
 }

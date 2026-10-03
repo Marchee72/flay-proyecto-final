@@ -80,15 +80,15 @@ generales, igual que en cada sección (RN-12).
 
 **Muestra**: tabla de períodos (uno por mes, del más nuevo al más viejo) con estado, cantidad de
 gastos y total de la liquidación vigente con su vencimiento (enlace al detalle).
-**Estados**: `Abierto` (admite gastos) → `Cerrado` (espera liquidación; puede reabrirse) →
-`Liquidado` (no vuelve atrás) · `Anulado`.
+**Estados**: `Abierto` (admite gastos) → `Cerrado` (opcional: congela los gastos; puede
+reabrirse) → `Liquidado` (no vuelve atrás) · `Anulado`. Desde `Abierto` también se liquida directo.
 **Acciones**:
 
 | Acción | Rol | Regla |
 |---|---|---|
 | Período | Administrador | No se abre a mano: nace con el primer gasto que se imputa a ese mes (campo «Período» del alta de gasto). Un período por mes. |
-| Cerrar | Administrador | Desde acá no entran más gastos (RN-03). Se puede reabrir mientras no esté liquidado. |
-| Liquidar | Administrador | Sólo un período cerrado. Ver § 4.1 para el cálculo. Todo en una transacción: cálculo, detalles, estado, cola de documentos y avisos. |
+| Cerrar | Administrador | Opcional. Desde acá no entran más gastos (RN-03). Se puede reabrir mientras no esté liquidado. |
+| Revisar y liquidar | Administrador | Abierto o cerrado. Abre `/periodos/[id]`: los gastos del período, los totales, el vencimiento y el reparto por unidad tal como se emitiría, sin escribir nada (§ 4.1). «Confirmar y liquidar» manda el total revisado; si los gastos cambiaron desde la revisión no se emite. Todo en una transacción: estado, cálculo, detalles, cola de documentos y avisos. Un período abierto pasa directo a liquidado. |
 | Anular liquidación | Administrador | Se anula **la liquidación**, no el período (RN-06). Las imputaciones de pagos se marcan como revertidas —no se borran— y el importe queda como saldo a favor. Una reemisión encuentra el período `liquidado`; el candado contra la emisión doble es un índice único parcial sobre `estado = 'vigente'`. |
 | Exportar CSV de liquidaciones | Administrador, consejo | Por páginas, cada una vuelve a pasar por habilitación y aislamiento. |
 
@@ -104,10 +104,22 @@ en hasta 20 s; el drenaje oportunista de la cola sigue generando mientras alguie
 
 ### 3.4 Expensas — `/expensas` y `/expensas/[detalle]`
 
-**Muestra**: una tabla con las liquidaciones emitidas por unidad: unidad, período, vencimiento, total
-y descarga del PDF (o «En generación»). El detalle muestra el total y el botón de descarga. El PDF
-lista los gastos del consorcio en el período, ordinarios y extraordinarios, por rubro con su
-subtotal y el total de la liquidación, y después la parte de la unidad según su coeficiente.
+**Muestra**: son **dos pantallas según el rol**, en la misma ruta.
+
+*Administrador y consejo* abren con dos tarjetas lado a lado —«Período en curso» (gastos cargados y
+acumulado; está siempre, y cuando no hay ninguno abierto lo dice en vez de desaparecer) y «Última
+liquidación» (total emitido, gastos y vencimiento)—, y debajo una tabla de **todos los períodos**,
+emitidos o no: período, **estado** (Abierto / Cerrado / Liquidado / Anulado, la misma pastilla que
+§ 3.2), vencimiento, total emitido y gastos. El mes emitido enlaza a su liquidación; el que no, a
+Períodos. Las columnas sin dato llevan «—» en escritorio y se omiten en teléfono.
+
+*El consorcista* ve «Período en curso» y la tabla de **sus** expensas: unidad, período, vencimiento,
+total, **estado de cobro** (Pagada / Vencida / Pendiente, por lo imputado contra el total, con el
+saldo que falta en el `title`) y descarga del PDF (o «En generación»). El detalle muestra el total y
+el botón de descarga. El PDF lista los gastos del consorcio en el período, ordinarios y
+extraordinarios, por rubro con su subtotal y el total de la liquidación, y después la parte de la
+unidad según su coeficiente.
+
 **Quién ve qué** (lo decide el caso de uso, no la pantalla): el consorcista, las unidades que ocupa;
 administrador y consejo, todas. Pedir por URL la expensa de otra unidad responde «no encontrado».
 **Acciones**: descargar el PDF (todos); «Registrar pago» desde el detalle (*administrador*).
@@ -406,7 +418,8 @@ propio vencimiento, sin prorrateo de días ni capitalización (29 días de atras
 un mes entero — decisión del 2026-09-10). El desglose se guarda en `InteresLiquidado` y se muestra en
 el detalle.
 
-**Períodos**: `abierto → cerrado → liquidado`; `cerrado → abierto` permitido; `liquidado` no vuelve.
+**Períodos**: `abierto → cerrado → liquidado` o `abierto → liquidado`; `cerrado → abierto` permitido;
+`liquidado` no vuelve.
 
 **Sesión**: 5 intentos fallidos consecutivos bloquean 15 minutos. Invitación vigente 72 horas.
 
@@ -445,14 +458,15 @@ proveedores, reclamos con recorrido, reservas en los próximos sábados y noveda
 | `vecinod5a@flay.demo` | Consorcista en C-D | 5A |
 
 1. **Como `admin1`**: `/consorcios` muestra las dos tarjetas con señales. Entrar a Mitre 456.
-   Resumen → Períodos: abrir el mes, cargar dos gastos (uno manual, uno por carga asistida), cerrar,
-   liquidar. Abrir la liquidación y leer el desglose de interés de 3B. Pagos: registrar un pago
+   Resumen → Períodos: abrir el mes, cargar dos gastos (uno manual, uno por carga asistida), «Revisar y
+   liquidar», revisar el reparto y confirmar. Abrir la liquidación y leer el desglose de interés de 3B. Pagos: registrar un pago
    parcial a 3B y ver la imputación por antigüedad. Reclamos: asignar uno, aplicar la sugerencia.
    Bandeja: «Enviar avisos ahora».
 2. **Como `consejo1`**: mismo consorcio. Ve Morosidad con nómina, Indicadores I-1/I-2/I-4 (no I-3
    ni I-5), Unidades, todas las expensas; el lateral no muestra Usuarios. Intentar registrar un
    gasto: `RolInsuficiente`.
-3. **Como `vecino1a`**: Expensas trae sólo 1A; Pagos abre directo su cuenta; Morosidad sin nómina;
+3. **Como `vecino1a`**: Expensas trae sólo 1A, todas «Pagada» (contra `moroso3b`, que las ve
+   «Vencida»); Pagos abre directo su cuenta; Morosidad sin nómina;
    Reclamos muestra los propios y los generales; puede reservar el SUM. Pegar en la URL el id de la
    expensa de 3B: «no encontrado».
 4. **Como `moroso3b`**: intentar reservar: «La unidad 3B tiene deuda vencida (n períodos)».

@@ -1,5 +1,7 @@
+import { Decimal, importe } from '@/compartido/dinero'
 import { importeSerializado } from '@/compartido/formato'
 import { NoEncontrado } from '@/compartido/errores'
+import { ordenarUnidades } from '@/dominio/unidades/division'
 import type { AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
@@ -17,6 +19,14 @@ import { prisma, prismaBase } from '@/infraestructura/prisma'
 
 const SEGUNDOS_DE_LECTURA = 600
 
+/**
+ * Como viene cobrada **esta** expensa. No es un campo de la liquidacion: sale
+ * de lo imputado contra su total, igual que la morosidad del consorcio
+ * (`saldoImpagoPorUnidad`). Separar `vencida` de `pendiente` es lo que
+ * distingue al que se atraso del que todavia esta en termino.
+ */
+export type EstadoPagoExpensa = 'pagada' | 'vencida' | 'pendiente'
+
 export interface ExpensaVisible {
   detalleId: string
   designacion: string
@@ -24,6 +34,9 @@ export interface ExpensaVisible {
   periodo: string
   vencimiento: string
   totalUnidad: string
+  /** Lo que falta pagar, `'0.00'` si esta saldada. Cadena, como todo importe. */
+  saldo: string
+  estadoPago: EstadoPagoExpensa
   /** Nulo mientras el documento no se genero: la liquidacion ya existe igual. */
   direccion: string | null
 }
@@ -44,10 +57,10 @@ async function unidadesAlcanzables(
   hoy: Date,
 ): Promise<{ id: string; designacion: string }[]> {
   if (roles.includes('administrador') || roles.includes('consejo')) {
-    return prisma.unidad.findMany({
+    const unidades = await prisma.unidad.findMany({
       select: { id: true, designacion: true },
-      orderBy: { designacion: 'asc' },
     })
+    return ordenarUnidades(unidades)
   }
 
   const usuario = await prismaBase.usuario.findUnique({
@@ -65,11 +78,11 @@ async function unidadesAlcanzables(
 
   // El aislamiento vuelve a filtrar: una ocupacion sobre una unidad de otro
   // consorcio no aparece, aunque exista.
-  return prisma.unidad.findMany({
+  const unidades = await prisma.unidad.findMany({
     where: { id: { in: ocupadas.map((fila) => fila.unidad_id) } },
     select: { id: true, designacion: true },
-    orderBy: { designacion: 'asc' },
   })
+  return ordenarUnidades(unidades)
 }
 
 export async function misExpensas(
@@ -89,7 +102,7 @@ export async function misExpensas(
         unidades.map(async (unidad) => ({
           unidadId: unidad.id,
           designacion: unidad.designacion,
-          expensas: await expensasDe(almacen, unidad.id),
+          expensas: await expensasDe(almacen, unidad.id, reloj.hoy()),
         })),
       )
     },
@@ -112,7 +125,14 @@ export async function verExpensa(
 
       const detalle = await prismaBase.detalleLiquidacion.findUnique({
         where: { id: datos.detalleId },
-        include: { liquidacion: { include: { periodo: true } }, unidad: true },
+        include: {
+          liquidacion: { include: { periodo: true } },
+          unidad: true,
+          // La imputacion revertida no descuenta: la anulacion la deja en la
+          // tabla con `revertidaEn` y el saldo vuelve a deber. Lo mismo hacen
+          // `registrarPago`, `liquidarPeriodo` y `saldoImpagoPorUnidad`.
+          imputaciones: { where: { revertidaEn: null } },
+        },
       })
 
       if (
@@ -123,7 +143,7 @@ export async function verExpensa(
         throw new NoEncontrado()
       }
 
-      return aVisible(almacen, detalle)
+      return aVisible(almacen, detalle, reloj.hoy())
     },
   )
 }
@@ -132,27 +152,56 @@ type DetalleConContexto = NonNullable<
   Awaited<
     ReturnType<
       typeof prismaBase.detalleLiquidacion.findFirst<{
-        include: { liquidacion: { include: { periodo: true } }; unidad: true }
+        include: {
+          liquidacion: { include: { periodo: true } }
+          unidad: true
+          imputaciones: { where: { revertidaEn: null } }
+        }
       }>
     >
   >
 >
 
-async function expensasDe(almacen: AlmacenObjetos, unidadId: string): Promise<ExpensaVisible[]> {
+async function expensasDe(
+  almacen: AlmacenObjetos,
+  unidadId: string,
+  hoy: Date,
+): Promise<ExpensaVisible[]> {
   const detalles = await prismaBase.detalleLiquidacion.findMany({
     where: { unidadId, liquidacion: { estado: 'vigente' } },
-    include: { liquidacion: { include: { periodo: true } }, unidad: true },
+    include: {
+      liquidacion: { include: { periodo: true } },
+      unidad: true,
+      // La imputacion revertida no descuenta: la anulacion la deja en la
+      // tabla con `revertidaEn` y el saldo vuelve a deber. Lo mismo hacen
+      // `registrarPago`, `liquidarPeriodo` y `saldoImpagoPorUnidad`.
+      imputaciones: { where: { revertidaEn: null } },
+    },
     orderBy: { liquidacion: { emitidaEn: 'desc' } },
   })
 
-  return Promise.all(detalles.map((detalle) => aVisible(almacen, detalle)))
+  return Promise.all(detalles.map((detalle) => aVisible(almacen, detalle, hoy)))
 }
 
 async function aVisible(
   almacen: AlmacenObjetos,
   detalle: DetalleConContexto,
+  hoy: Date,
 ): Promise<ExpensaVisible> {
   const { periodo } = detalle.liquidacion
+
+  // Lo imputado contra el total, al centavo: el saldo no se guarda en ningun
+  // lado porque cada pago nuevo lo cambia (misma cuenta que `saldoImpagoPorUnidad`).
+  const pagado = detalle.imputaciones.reduce(
+    (total, imputacion) => total.plus(importe(imputacion.importeImputado.toFixed(2))),
+    new Decimal(0),
+  )
+  const saldo = importe(detalle.totalUnidad.toFixed(2)).minus(pagado)
+  const estadoPago: EstadoPagoExpensa = saldo.lessThanOrEqualTo(0)
+    ? 'pagada'
+    : detalle.liquidacion.vencimiento < hoy
+      ? 'vencida'
+      : 'pendiente'
 
   return {
     detalleId: detalle.id,
@@ -161,6 +210,10 @@ async function aVisible(
     periodo: `${String(periodo.mes).padStart(2, '0')}/${periodo.anio}`,
     vencimiento: detalle.liquidacion.vencimiento.toISOString().slice(0, 10),
     totalUnidad: importeSerializado(detalle.totalUnidad),
+    // Nunca negativo en pantalla: un pago de mas es saldo a favor de la unidad,
+    // y vive en el estado de cuenta, no en la expensa que ya quedo saldada.
+    saldo: Decimal.max(saldo, 0).toFixed(2),
+    estadoPago,
     direccion: detalle.claveDocumento
       ? await almacen.resolverLecturaAutorizada(detalle.claveDocumento, SEGUNDOS_DE_LECTURA)
       : null,

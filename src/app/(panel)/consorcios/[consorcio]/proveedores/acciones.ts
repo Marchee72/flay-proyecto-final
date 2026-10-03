@@ -14,11 +14,12 @@ export type Resultado = { mensaje: string }
 export async function accionAltaProveedor(_previo: Resultado, datos: FormData): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) redirect('/ingresar')
+  const consorcioId = String(datos.get('consorcio') ?? '')
 
   try {
     await altaProveedor(HABILITACIONES, RELOJ, {
       usuarioId,
-      consorcioId: String(datos.get('consorcio') ?? ''),
+      consorcioId,
       razonSocial: String(datos.get('razonSocial') ?? ''),
       cuit: String(datos.get('cuit') ?? ''),
       rubroHabitualId: String(datos.get('rubro') ?? '') || null,
@@ -31,5 +32,5 @@ export async function accionAltaProveedor(_previo: Resultado, datos: FormData): 
   }
 
   revalidatePath('/consorcios/[consorcio]/proveedores', 'page')
-  return { mensaje: '' }
+  redirect(`/consorcios/${consorcioId}/proveedores?hecho=proveedor-registrado`)
 }

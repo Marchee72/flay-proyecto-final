@@ -22,6 +22,8 @@ export interface PeriodoDelConsorcio {
   mes: number
   estado: EstadoPeriodo
   gastos: number
+  /** Lo acumulado en gastos del periodo, `'0.00'` sin ninguno. */
+  gastado: string
   /** La liquidacion **vigente**, si la hay: la anulada no cuenta (FR-003b). */
   liquidacion: { id: string; totalGeneral: string; vencimiento: string } | null
 }
@@ -93,6 +95,14 @@ export async function listarPeriodos(
         },
       })
 
+      // Lo gastado sale de **una** agrupacion para todos los periodos, no de
+      // una consulta por fila: con doce meses en pantalla serian doce viajes.
+      const porPeriodo = await prisma.gasto.groupBy({
+        by: ['periodoId'],
+        _sum: { importe: true },
+      })
+      const gastado = new Map(porPeriodo.map((fila) => [fila.periodoId, fila._sum.importe]))
+
       return periodos.map((periodo) => {
         const [vigente] = periodo.liquidaciones
 
@@ -102,6 +112,7 @@ export async function listarPeriodos(
           mes: periodo.mes,
           estado: periodo.estado,
           gastos: periodo._count.gastos,
+          gastado: importeSerializado(gastado.get(periodo.id) ?? '0'),
           liquidacion: vigente
             ? {
                 id: vigente.id,

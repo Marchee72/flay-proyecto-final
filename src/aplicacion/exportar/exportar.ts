@@ -1,6 +1,8 @@
 import { filaCsv } from '@/compartido/csv'
 import { importeSerializado } from '@/compartido/formato'
+import { compararDesignaciones } from '@/dominio/unidades/division'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
+
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { prisma } from '@/infraestructura/prisma'
@@ -123,27 +125,30 @@ export async function paginaExportada(
           })
           return {
             lineas: filas.flatMap((l) =>
-              l.detalles.map((d) =>
-                filaCsv([
-                  l.id,
-                  periodo(l.periodo),
-                  l.estado,
-                  l.emitidaEn.toISOString(),
-                  dia(l.vencimiento),
-                  d.unidad.designacion,
-                  d.coeficienteAplicado.toFixed(8),
-                  importeSerializado(d.importeOrdinario),
-                  importeSerializado(d.importeExtraordinario),
-                  importeSerializado(d.ajusteRedondeo),
-                  importeSerializado(d.deudaAnterior),
-                  importeSerializado(d.interesMora),
-                  importeSerializado(d.saldoAFavorAplicado),
-                  importeSerializado(d.totalUnidad),
-                ]),
-              ),
+              [...l.detalles]
+                .sort((a, b) => compararDesignaciones(a.unidad.designacion, b.unidad.designacion))
+                .map((d) =>
+                  filaCsv([
+                    l.id,
+                    periodo(l.periodo),
+                    l.estado,
+                    l.emitidaEn.toISOString(),
+                    dia(l.vencimiento),
+                    d.unidad.designacion,
+                    d.coeficienteAplicado.toFixed(8),
+                    importeSerializado(d.importeOrdinario),
+                    importeSerializado(d.importeExtraordinario),
+                    importeSerializado(d.ajusteRedondeo),
+                    importeSerializado(d.deudaAnterior),
+                    importeSerializado(d.interesMora),
+                    importeSerializado(d.saldoAFavorAplicado),
+                    importeSerializado(d.totalUnidad),
+                  ]),
+                ),
             ),
             siguiente: filas.length === tamano ? filas[filas.length - 1].id : null,
           }
+
         }
         case 'pagos': {
           const filas = await prisma.pago.findMany({

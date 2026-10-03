@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { cargarDocumento, listarDocumentos } from '@/aplicacion/comunicacion/documentos'
+import { NoEncontrado } from '@/compartido/errores'
 import {
   descartarNovedad,
   listarNovedades,
@@ -9,9 +10,13 @@ import {
 } from '@/aplicacion/comunicacion/novedades'
 import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
-import { NoEncontrado } from '@/compartido/errores'
+import {
+  suscribirNotificaciones,
+  type NotificacionEvento,
+} from '@/aplicacion/comunicacion/eventos-notificaciones'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
+
 
 import { relojFijo } from '../dominio/reloj-fijo'
 import {
@@ -199,6 +204,50 @@ describe('novedades con destinatario, vigencia y descarte', () => {
     await expect(
       descartarNovedad(repo, RELOJ, { usuarioId: ajeno, consorcioId: otroConsorcioId, novedadId }),
     ).rejects.toBeInstanceOf(NoEncontrado)
+  })
+
+  it('soporta vigencia hasta opcional (indefinida) y emite notificacion en tiempo real a los destinatarios', async () => {
+    const eventosVecino: NotificacionEvento[] = []
+    const eventosAdmin: NotificacionEvento[] = []
+    const desuscribirVecino = suscribirNotificaciones(vecino, (e) => eventosVecino.push(e))
+    const desuscribirAdmin = suscribirNotificaciones(administrador, (e) => eventosAdmin.push(e))
+
+    try {
+      const { novedadId } = await publicar({
+        titulo: 'Reglamento de convivencia permanente',
+        cuerpo: 'Horarios de descanso a partir de las 22hs.',
+        vigenteDesde: new Date('2026-09-15'),
+        vigenteHasta: null,
+      })
+
+      const novedadEnBd = await prismaBase.novedad.findUniqueOrThrow({
+        where: { id: novedadId },
+      })
+      expect(novedadEnBd.vigenteHasta).toBeNull()
+
+      const novedadesVecino = await listarNovedades(repo, RELOJ, {
+        usuarioId: vecino,
+        consorcioId,
+      })
+      const nov = novedadesVecino.find((n) => n.id === novedadId)
+      expect(nov).toBeDefined()
+      expect(nov?.estado).toBe('vigente')
+      expect(nov?.vigenteHasta).toBeNull()
+
+      // Comprobar tiempo real: el vecino (destinatario) recibe el evento, el administrador no
+      expect(eventosVecino).toHaveLength(1)
+      expect(eventosVecino[0]).toMatchObject({
+        usuarioId: vecino,
+        notificacion: {
+          titulo: 'Novedad: Reglamento de convivencia permanente',
+          tipo: 'novedad',
+        },
+      })
+      expect(eventosAdmin).toHaveLength(0)
+    } finally {
+      desuscribirVecino()
+      desuscribirAdmin()
+    }
   })
 })
 

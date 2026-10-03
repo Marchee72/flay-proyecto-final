@@ -1,26 +1,39 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { BadgeCheck, Pencil, Siren } from 'lucide-react'
+import { Building, Pencil, Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { coeficienteParaMostrar, fechaParaMostrar } from '@/compartido/formato'
+import { importe } from '@/compartido/dinero'
+import { coeficienteParaMostrar, fechaParaMostrar, plural } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { TIPOS_DE_UNIDAD_ASIGNABLES } from '@/aplicacion/consorcios/tipos-de-unidad'
 import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { divisionDe, pisoDe, sumarCoeficientes } from '@/aplicacion/consorcios/unidades'
 
 import { CargadorDePadron } from './cargador'
+import { Filtros } from '../../../filtros'
+import { Paginacion } from '../../../paginacion'
 
 export const metadata: Metadata = { title: 'Unidades — Flay' }
+
+const POR_PAGINA = 10
+
+type Parametros = {
+  editar?: string
+  piso?: string
+  division?: string
+  pagina?: string
+}
 
 export default async function UnidadesPage({
   params,
   searchParams,
 }: {
   params: Promise<{ consorcio: string }>
-  searchParams: Promise<{ editar?: string; editado?: string }>
+  searchParams: Promise<Parametros>
 }) {
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) redirect('/ingresar')
@@ -67,17 +80,61 @@ export default async function UnidadesPage({
     )
   }
 
+  const pisosDisponibles = Array.from(
+    new Set(
+      consorcio.unidades.map((u) => pisoDe(u.designacion)).filter((p): p is string => p !== null),
+    ),
+  ).sort((a, b) => {
+    if (a === 'PB') return -1
+    if (b === 'PB') return 1
+    const numA = parseInt(a, 10)
+    const numB = parseInt(b, 10)
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB
+    return a.localeCompare(b)
+  })
+
+  const divisionesDisponibles = Array.from(
+    new Set(
+      consorcio.unidades
+        .map((u) => divisionDe(u.designacion))
+        .filter((d): d is string => d !== null),
+    ),
+  ).sort((a, b) => a.localeCompare(b))
+
+  const unidadesFiltradas = consorcio.unidades.filter((u) => {
+    if (parametros.piso && pisoDe(u.designacion) !== parametros.piso) return false
+    if (parametros.division && divisionDe(u.designacion) !== parametros.division) return false
+    return true
+  })
+
+  const sumaFiltrada = sumarCoeficientes(
+    unidadesFiltradas.map((u) => ({
+      designacion: u.designacion,
+      coeficiente: importe(u.coeficiente),
+    })),
+  )
+
+  const paginas = Math.max(1, Math.ceil(unidadesFiltradas.length / POR_PAGINA))
+  const paginaSolicitada = Number(parametros.pagina ?? 1) || 1
+  const paginaActual = Math.min(Math.max(1, paginaSolicitada), paginas)
+  const unidadesEnPagina = unidadesFiltradas.slice(
+    (paginaActual - 1) * POR_PAGINA,
+    paginaActual * POR_PAGINA,
+  )
+
+  const urlParaPagina = (p: number) => {
+    const query = new URLSearchParams()
+    if (parametros.piso) query.set('piso', parametros.piso)
+    if (parametros.division) query.set('division', parametros.division)
+    if (p > 1) query.set('pagina', String(p))
+    const qs = query.toString()
+    return `/consorcios/${consorcio.id}/unidades${qs ? `?${qs}` : ''}`
+  }
+
   return (
     <>
       <h1>Unidades</h1>
       <p className="apagado">El padrón vigente: designación, tipo y coeficiente de cada unidad.</p>
-
-      {parametros.editado && (
-        <p className="aviso aviso--exito" role="status">
-          <BadgeCheck className="icono" aria-hidden="true" />
-          <span>Padrón guardado. Los cambios de coeficiente rigen desde hoy.</span>
-        </p>
-      )}
 
       {administra && consorcio.unidades.length > 0 && (
         <div className="fila-acciones">
@@ -104,35 +161,111 @@ export default async function UnidadesPage({
           <p className="apagado">El administrador todavía no cargó el padrón.</p>
         )
       ) : (
-        <div className="tabla-desplazable">
-          <table>
-            <caption className="ayuda">Padrón vigente</caption>
-            <thead>
-              <tr>
-                <th scope="col">Designación</th>
-                <th scope="col">Tipo</th>
-                <th scope="col" className="numero">
-                  Coeficiente %
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {consorcio.unidades.map((unidad) => (
-                <tr key={unidad.id}>
-                  <td>{unidad.designacion}</td>
-                  <td>{etiquetaDeTipo(unidad.tipo)}</td>
-                  <td className="numero cifra">{coeficienteParaMostrar(unidad.coeficiente)}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colSpan={2}>Total</td>
-                <td className="numero cifra">{coeficienteParaMostrar(consorcio.suma)}</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+        <>
+          <Filtros>
+            <form method="get" className="fila-de-filtros">
+              <div className="campo">
+                <label htmlFor="piso">Piso</label>
+                <select id="piso" name="piso" defaultValue={parametros.piso ?? ''}>
+                  <option value="">Todos</option>
+                  {pisosDisponibles.map((piso) => (
+                    <option key={piso} value={piso}>
+                      {piso === 'PB' ? 'PB' : `Piso ${piso}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="campo">
+                <label htmlFor="division">División</label>
+                <select id="division" name="division" defaultValue={parametros.division ?? ''}>
+                  <option value="">Todas</option>
+                  {divisionesDisponibles.map((div) => (
+                    <option key={div} value={div}>
+                      {div}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button className="boton boton--fantasma" type="submit">
+                Filtrar
+              </button>
+
+              {(parametros.piso || parametros.division) && (
+                <Link
+                  className="boton boton--fantasma"
+                  href={`/consorcios/${consorcio.id}/unidades`}
+                >
+                  Limpiar
+                </Link>
+              )}
+            </form>
+          </Filtros>
+
+          {unidadesFiltradas.length === 0 ? (
+            <div className="vacio">
+              <Building aria-hidden="true" />
+              <p>No hay unidades que coincidan con el filtro.</p>
+              <div className="fila-acciones">
+                <Link
+                  className="boton boton--fantasma"
+                  href={`/consorcios/${consorcio.id}/unidades`}
+                >
+                  Limpiar filtros
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="tabla-desplazable">
+                <table>
+                  <caption className="ayuda">
+                    {plural(unidadesFiltradas.length, 'unidad', 'unidades')} · página {paginaActual}{' '}
+                    de {paginas}
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Designación</th>
+                      <th scope="col">Tipo</th>
+                      <th scope="col" className="numero">
+                        Coeficiente %
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {unidadesEnPagina.map((unidad) => (
+                      <tr key={unidad.id}>
+                        <td>{unidad.designacion}</td>
+                        <td>{etiquetaDeTipo(unidad.tipo)}</td>
+                        <td className="numero cifra">
+                          {coeficienteParaMostrar(unidad.coeficiente)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={2}>
+                        {parametros.piso || parametros.division ? 'Total del filtro' : 'Total'}
+                      </td>
+                      <td className="numero cifra">
+                        {coeficienteParaMostrar(sumaFiltrada.total.toFixed(8))}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              <Paginacion
+                pagina={paginaActual}
+                paginas={paginas}
+                urlParaPagina={urlParaPagina}
+                etiquetaAria="Paginación de unidades"
+              />
+            </>
+          )}
+        </>
       )}
 
       {consorcio.dadasDeBaja.length > 0 && (

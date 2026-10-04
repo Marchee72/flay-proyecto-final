@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
+import { paginasAMostrar } from '@/compartido/paginas'
+
 export interface PaginacionProps {
   pagina: number
   paginas: number
@@ -61,16 +63,4 @@ export function Paginacion({
       </ul>
     </nav>
   )
-}
-
-/**
- * Ventana de hasta 5 páginas centrada en la actual (solo presentación): evita
- * una fila de decenas de enlaces cuando el listado crece.
- */
-export function paginasAMostrar(actual: number, total: number): number[] {
-  const inicio = Math.max(1, Math.min(actual - 2, total - 4))
-  const fin = Math.min(total, inicio + 4)
-  const paginas: number[] = []
-  for (let p = inicio; p <= fin; p++) paginas.push(p)
-  return paginas
 }

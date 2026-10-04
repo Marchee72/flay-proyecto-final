@@ -1,10 +1,12 @@
 'use client'
 
+import { useEffect, useId, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Building2,
   CalendarCheck,
+  ChevronDown,
   FileText,
   House,
   Inbox,
@@ -56,8 +58,11 @@ export function Navegacion({
         Resumen
       </Link>
       {bloquesPara(roles).map((bloque) => (
-        <section key={bloque.titulo} className="lateral__bloque" aria-label={bloque.titulo}>
-          <h2>{bloque.titulo}</h2>
+        <Bloque
+          key={bloque.titulo}
+          titulo={bloque.titulo}
+          contieneActiva={bloque.secciones.some((seccion) => activa(ruta, base, seccion.ruta))}
+        >
           {bloque.secciones.map((seccion) => (
             <Link
               key={seccion.ruta}
@@ -68,9 +73,66 @@ export function Navegacion({
               {seccion.titulo}
             </Link>
           ))}
-        </section>
+        </Bloque>
       ))}
     </nav>
+  )
+}
+
+const CLAVE = (titulo: string) => `flay-bloque-${titulo}`
+
+/**
+ * Un bloque del menu que se pliega hacia su titulo (patron acordeon de la
+ * APG: el boton va dentro del `h2`, asi sigue siendo un encabezado). Plegado
+ * se recuerda en este navegador; si la seccion actual queda adentro de uno
+ * plegado, se abre solo para que la activa se vea.
+ */
+function Bloque({
+  titulo,
+  contieneActiva,
+  children,
+}: {
+  titulo: string
+  contieneActiva: boolean
+  children: React.ReactNode
+}) {
+  const [abierto, setAbierto] = useState(true)
+  const id = useId()
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(CLAVE(titulo)) === 'plegado') setAbierto(false)
+    } catch {
+      // Sin almacenamiento (ventana privada): queda abierto.
+    }
+  }, [titulo])
+  useEffect(() => {
+    if (contieneActiva) setAbierto(true)
+  }, [contieneActiva])
+
+  const alternar = () => {
+    const siguiente = !abierto
+    setAbierto(siguiente)
+    try {
+      if (siguiente) localStorage.removeItem(CLAVE(titulo))
+      else localStorage.setItem(CLAVE(titulo), 'plegado')
+    } catch {
+      // Sin almacenamiento: el pliegue dura hasta recargar.
+    }
+  }
+
+  return (
+    <section className="lateral__bloque" aria-label={titulo}>
+      <h2>
+        <button type="button" aria-expanded={abierto} aria-controls={id} onClick={alternar}>
+          {titulo}
+          <ChevronDown className="icono lateral__chevron" aria-hidden="true" />
+        </button>
+      </h2>
+      <div id={id} className="lateral__enlaces" hidden={!abierto}>
+        {children}
+      </div>
+    </section>
   )
 }
 

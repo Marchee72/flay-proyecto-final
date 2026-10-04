@@ -12,6 +12,7 @@ import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
 import { accionCancelarReserva } from './acciones'
 import { ModalReserva } from './modal-reserva'
 import { Filtros } from '../../../filtros'
+import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Reservas — Flay' }
 
@@ -127,7 +128,7 @@ export default async function ReservasPage({
             <p>Sin reservas en los próximos sesenta días.</p>
           </div>
         ) : (
-          <div className="tabla-desplazable" tabIndex={0} role="region" aria-label="Reservas">
+          <TablaDesplazable tabIndex={0} role="region" aria-label="Reservas">
             <table>
               <caption className="ayuda">
                 Quién reservó se identifica por unidad, no por nombre
@@ -173,7 +174,7 @@ export default async function ReservasPage({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TablaDesplazable>
         )}
       </>
     )

@@ -4,11 +4,18 @@ import { History } from 'lucide-react'
 
 import { momentoParaMostrar } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
-import { listarEspacios } from '@/aplicacion/reservas/espacios'
-import { historialDeReservas, type ReservaDelHistorial } from '@/aplicacion/reservas/reservar'
+import { listarEspacios, suspensionesEnRango } from '@/aplicacion/reservas/espacios'
+import {
+  historialDeReservas,
+  unidadesParaReservar,
+  type ReservaDelHistorial,
+} from '@/aplicacion/reservas/reservar'
 
 import { AvisoDeError, conConsorcio } from '../../../../con-consorcio'
 import { Filtros } from '../../../../filtros'
+import { TablaDesplazable } from '../../../../tabla-desplazable'
+import { CalendarioUso } from './calendario-uso'
+import { construirCalendario } from './calendario'
 
 export const metadata: Metadata = { title: 'Historial de reservas — Flay' }
 
@@ -31,7 +38,7 @@ export default async function HistorialDeReservasPage({
   searchParams,
 }: {
   params: Promise<{ consorcio: string }>
-  searchParams: Promise<{ mes?: string; espacio?: string }>
+  searchParams: Promise<{ mes?: string; espacio?: string; unidad?: string }>
 }) {
   const parametros = await searchParams
   const { consorcio: consorcioId } = await params
@@ -50,9 +57,18 @@ export default async function HistorialDeReservasPage({
   const hasta = new Date(`${siguiente}-01T00:00:00-03:00`)
 
   try {
-    const [espacios, reservas] = await Promise.all([
+    const [espacios, unidades, reservas, tramos] = await Promise.all([
       listarEspacios(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
+      unidadesParaReservar(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
       historialDeReservas(HABILITACIONES, RELOJ, {
+        usuarioId,
+        consorcioId: activo.id,
+        desde,
+        hasta,
+        espacioId: parametros.espacio || undefined,
+        unidadId: parametros.unidad || undefined,
+      }),
+      suspensionesEnRango(HABILITACIONES, RELOJ, {
         usuarioId,
         consorcioId: activo.id,
         desde,
@@ -60,6 +76,7 @@ export default async function HistorialDeReservasPage({
         espacioId: parametros.espacio || undefined,
       }),
     ])
+    const calendario = construirCalendario(mes, reservas, tramos, RELOJ.hoy().toISOString())
 
     return (
       <>
@@ -86,11 +103,24 @@ export default async function HistorialDeReservasPage({
                 ))}
               </select>
             </div>
+            <div className="campo">
+              <label htmlFor="unidad-filtro">Unidad</label>
+              <select id="unidad-filtro" name="unidad" defaultValue={parametros.unidad ?? ''}>
+                <option value="">Todas</option>
+                {unidades.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.designacion}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button className="boton boton--fantasma" type="submit">
               Filtrar
             </button>
           </form>
         </Filtros>
+
+        <CalendarioUso calendario={calendario} />
 
         {reservas.length === 0 ? (
           <div className="vacio">
@@ -98,12 +128,7 @@ export default async function HistorialDeReservasPage({
             <p>Sin reservas en ese mes.</p>
           </div>
         ) : (
-          <div
-            className="tabla-desplazable"
-            tabIndex={0}
-            role="region"
-            aria-label="Historial de reservas"
-          >
+          <TablaDesplazable tabIndex={0} role="region" aria-label="Detalle de reservas">
             <table>
               <thead>
                 <tr>
@@ -131,7 +156,7 @@ export default async function HistorialDeReservasPage({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TablaDesplazable>
         )}
       </>
     )

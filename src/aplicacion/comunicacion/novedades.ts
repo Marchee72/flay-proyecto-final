@@ -1,9 +1,9 @@
-import type { AlcanceNovedad, Prisma } from '@prisma/client'
+import type { AlcanceNovedad, Prisma, Urgencia } from '@prisma/client'
 
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
-import { divisionDe, ordenarUnidades } from '@/dominio/unidades/division'
+import { divisionDe, ordenarUnidades, pisoDe } from '@/dominio/unidades/division'
 
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { habilitadosDelConsorcio, notificar } from '@/aplicacion/comunicacion/notificar'
@@ -33,7 +33,9 @@ export interface NovedadDelConsorcio {
   vigenteDesde: string
   vigenteHasta: string | null
   estado: EstadoNovedad
-  /** Null si va a todo el consorcio; si no, «Unidad 3B» o «División A». */
+  /** Baja, media o alta: tine el aviso y ordena la lectura (RF-18). */
+  severidad: Urgencia
+  /** Null si va a todo el consorcio; si no, «Unidad 3B», «División A» o «Piso 3». */
   destinatario: string | null
 }
 
@@ -48,7 +50,6 @@ export class VigenciaDeNovedadInvalida extends ErrorDeAplicacion {
     super(mensaje, 'RF-18')
   }
 }
-
 
 export class DestinatarioInvalido extends ErrorDeAplicacion {
   constructor(mensaje: string) {
@@ -65,6 +66,8 @@ export async function publicarNovedad(
     titulo: string
     cuerpo: string
     fijada?: boolean
+    /** Por omision, baja. */
+    severidad?: Urgencia
     /** Por omisión, desde hoy. */
     vigenteDesde?: Date
     /** Opcional: si no se indica, la novedad no tiene fecha de caducidad. */
@@ -72,6 +75,7 @@ export async function publicarNovedad(
     alcance?: AlcanceNovedad
     unidadId?: string | null
     division?: string | null
+    piso?: string | null
   },
 ): Promise<{ novedadId: string; avisados: number }> {
   return conAutorizacion(
@@ -99,9 +103,8 @@ export async function publicarNovedad(
         throw new VigenciaDeNovedadInvalida()
       }
 
-
       const alcance = datos.alcance ?? 'general'
-      const destino = await unidadesDestino(alcance, datos.unidadId, datos.division)
+      const destino = await unidadesDestino(alcance, datos.unidadId, datos.division, datos.piso)
 
       return prisma.$transaction(async (tx) => {
         const novedad = await tx.novedad.create({
@@ -110,11 +113,13 @@ export async function publicarNovedad(
             cuerpo,
             publicadaPor: datos.usuarioId,
             fijada: datos.fijada ?? false,
+            severidad: datos.severidad ?? 'baja',
             vigenteDesde,
             vigenteHasta,
             alcance,
             unidadId: alcance === 'unidad' ? destino.unidadIds[0] : null,
             division: alcance === 'division' ? destino.division : null,
+            piso: alcance === 'piso' ? destino.piso : null,
           }),
           select: { id: true },
         })
@@ -149,8 +154,9 @@ async function unidadesDestino(
   alcance: AlcanceNovedad,
   unidadId: string | null | undefined,
   division: string | null | undefined,
-): Promise<{ unidadIds: string[]; division: string | null }> {
-  if (alcance === 'general') return { unidadIds: [], division: null }
+  piso: string | null | undefined,
+): Promise<{ unidadIds: string[]; division: string | null; piso: string | null }> {
+  if (alcance === 'general') return { unidadIds: [], division: null, piso: null }
   if (alcance === 'unidad') {
     // Aislada: una unidad de otro consorcio no aparece.
     const unidad = unidadId
@@ -160,18 +166,26 @@ async function unidadesDestino(
         })
       : null
     if (!unidad) throw new DestinatarioInvalido('Elegí una unidad del consorcio.')
-    return { unidadIds: [unidad.id], division: null }
+    return { unidadIds: [unidad.id], division: null, piso: null }
   }
-  const letra = division?.trim().toUpperCase() ?? ''
   const unidades = await prisma.unidad.findMany({
     where: { bajaDesde: null },
     select: { id: true, designacion: true },
   })
+  if (alcance === 'piso') {
+    const numero = piso?.trim().toUpperCase() ?? ''
+    const delPiso = unidades.filter((u) => numero && pisoDe(u.designacion) === numero)
+    if (delPiso.length === 0) {
+      throw new DestinatarioInvalido('Elegí un piso que exista en el padrón.')
+    }
+    return { unidadIds: delPiso.map((u) => u.id), division: null, piso: numero }
+  }
+  const letra = division?.trim().toUpperCase() ?? ''
   const deLaDivision = unidades.filter((u) => letra && divisionDe(u.designacion) === letra)
   if (deLaDivision.length === 0) {
     throw new DestinatarioInvalido('Elegí una división que exista en el padrón.')
   }
-  return { unidadIds: deLaDivision.map((u) => u.id), division: letra }
+  return { unidadIds: deLaDivision.map((u) => u.id), division: letra, piso: null }
 }
 
 /** Para el formulario de publicacion: las unidades y divisiones del padron. */
@@ -179,7 +193,11 @@ export async function destinatariosPosibles(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
   datos: { usuarioId: string; consorcioId: string },
-): Promise<{ unidades: { id: string; designacion: string }[]; divisiones: string[] }> {
+): Promise<{
+  unidades: { id: string; designacion: string }[]
+  divisiones: string[]
+  pisos: string[]
+}> {
   return conAutorizacion(
     repositorio,
     reloj,
@@ -197,17 +215,21 @@ export async function destinatariosPosibles(
         }),
       )
       const divisiones = [
-
         ...new Set(unidades.map((u) => divisionDe(u.designacion)).filter((d) => d !== null)),
       ].sort()
-      return { unidades, divisiones }
+      const pisos = [
+        ...new Set(unidades.map((u) => pisoDe(u.designacion)).filter((p) => p !== null)),
+      ].sort((a, b) => a.localeCompare(b, 'es', { numeric: true }))
+      return { unidades, divisiones, pisos }
     },
   )
 }
 
 /**
- * `soloVigentes` es la vista del inicio. Quien no administra siempre la recibe
- * asi: vigentes, dirigidas a el y sin las que descarto.
+ * `soloVigentes` es la vista del inicio: vigentes, dirigidas al usuario y sin
+ * las que descarto. La seccion (sin `soloVigentes`) las muestra igual aunque
+ * esten descartadas —descartar solo las quita del inicio, no de Novedades—;
+ * quien no administra ve ademas solo las vigentes que le tocan.
  */
 export async function listarNovedades(
   repositorio: RepositorioHabilitaciones,
@@ -226,6 +248,9 @@ export async function listarNovedades(
       if (!administra || datos.soloVigentes) {
         where.vigenteDesde = { lte: hoy }
         where.AND = [{ OR: [{ vigenteHasta: null }, { vigenteHasta: { gte: hoy } }] }]
+      }
+      // El descarte solo saca la novedad del inicio; en la seccion sigue estando.
+      if (datos.soloVigentes) {
         where.descartes = { none: { usuarioId: datos.usuarioId } }
       }
       if (!administra) {
@@ -233,10 +258,12 @@ export async function listarNovedades(
         const divisiones = [
           ...new Set(mias.map((u) => divisionDe(u.designacion)).filter((d) => d !== null)),
         ]
+        const pisos = [...new Set(mias.map((u) => pisoDe(u.designacion)).filter((p) => p !== null))]
         where.OR = [
           { alcance: 'general' },
           { alcance: 'unidad', unidadId: { in: mias.map((u) => u.id) } },
           { alcance: 'division', division: { in: divisiones } },
+          { alcance: 'piso', piso: { in: pisos } },
         ]
       }
 
@@ -260,19 +287,21 @@ export async function listarNovedades(
             : n.vigenteHasta !== null && n.vigenteHasta < hoy
               ? 'vencida'
               : 'vigente',
+        severidad: n.severidad,
         destinatario:
           n.alcance === 'unidad'
             ? `Unidad ${n.unidad?.designacion ?? ''}`
             : n.alcance === 'division'
               ? `División ${n.division}`
-              : null,
+              : n.alcance === 'piso'
+                ? `Piso ${n.piso}`
+                : null,
       }))
-
     },
   )
 }
 
-/** Cualquiera que la ve puede dejar de verla. Solo para el que la descarta. */
+/** Cualquiera que la ve puede sacarla de su inicio. Solo para el que descarta. */
 export async function descartarNovedad(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,

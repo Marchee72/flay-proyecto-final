@@ -9,6 +9,7 @@ import { AvisoDeError, conConsorcio } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
 import { Alertas, etiquetaDePeriodo } from '../alertas'
 import { BarrasDeGasto } from '../graficos'
+import { TablaDesplazable } from '../../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'I-2 Gasto por rubro — Flay' }
 
@@ -53,12 +54,7 @@ export default async function GastosPage({ params }: { params: Promise<{ consorc
         ) : (
           <>
             <BarrasDeGasto filas={paraDibujar} />
-            <div
-              className="tabla-desplazable"
-              tabIndex={0}
-              role="region"
-              aria-label="Gasto por rubro y período"
-            >
+            <TablaDesplazable tabIndex={0} role="region" aria-label="Gasto por rubro y período">
               <table>
                 <caption className="ayuda">
                   Los mismos datos del gráfico. «Historia insuficiente»: menos de doce períodos con
@@ -103,7 +99,7 @@ export default async function GastosPage({ params }: { params: Promise<{ consorc
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TablaDesplazable>
           </>
         )}
       </>

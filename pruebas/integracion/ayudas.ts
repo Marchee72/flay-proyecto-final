@@ -67,7 +67,7 @@ export async function limpiar() {
   await prismaBase.documentoConsorcio.deleteMany({})
   await prismaBase.novedad.deleteMany({})
   await prismaBase.reserva.deleteMany({})
-  await prismaBase.$executeRawUnsafe('DELETE FROM "SuspensionEspacio"').catch(() => {})
+  await prismaBase.suspensionEspacio.deleteMany({})
   await prismaBase.espacioComun.deleteMany({})
   await prismaBase.reclamo.deleteMany({})
 

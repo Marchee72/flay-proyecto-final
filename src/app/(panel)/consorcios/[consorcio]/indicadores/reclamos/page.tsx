@@ -8,6 +8,7 @@ import { AvisoDeError, conConsorcio } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
 import { Alertas } from '../alertas'
 import { BarrasDeResolucion } from '../graficos'
+import { TablaDesplazable } from '../../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'I-4 Reclamos — Flay' }
 
@@ -63,8 +64,7 @@ export default async function ReclamosIndicadorPage({
               }))}
               metaHoras={metaHoras}
             />
-            <div
-              className="tabla-desplazable"
+            <TablaDesplazable
               tabIndex={0}
               role="region"
               aria-label="Resolución por rubro y urgencia"
@@ -109,7 +109,7 @@ export default async function ReclamosIndicadorPage({
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TablaDesplazable>
           </>
         )}
       </>

@@ -16,6 +16,7 @@ import { divisionDe, pisoDe, sumarCoeficientes } from '@/aplicacion/consorcios/u
 import { CargadorDePadron } from './cargador'
 import { Filtros } from '../../../filtros'
 import { Paginacion } from '../../../paginacion'
+import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Unidades — Flay' }
 
@@ -218,7 +219,7 @@ export default async function UnidadesPage({
             </div>
           ) : (
             <>
-              <div className="tabla-desplazable">
+              <TablaDesplazable paginar={false}>
                 <table>
                   <caption className="ayuda">
                     {plural(unidadesFiltradas.length, 'unidad', 'unidades')} · página {paginaActual}{' '}
@@ -255,7 +256,7 @@ export default async function UnidadesPage({
                     </tr>
                   </tfoot>
                 </table>
-              </div>
+              </TablaDesplazable>
 
               <Paginacion
                 pagina={paginaActual}
@@ -269,7 +270,7 @@ export default async function UnidadesPage({
       )}
 
       {consorcio.dadasDeBaja.length > 0 && (
-        <div className="tabla-desplazable">
+        <TablaDesplazable>
           <table>
             <caption className="ayuda">
               Dadas de baja: ya no se liquidan, pero su historia sigue en pie
@@ -291,7 +292,7 @@ export default async function UnidadesPage({
               ))}
             </tbody>
           </table>
-        </div>
+        </TablaDesplazable>
       )}
     </>
   )

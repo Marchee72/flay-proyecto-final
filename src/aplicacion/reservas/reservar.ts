@@ -269,7 +269,14 @@ export interface ReservaDelHistorial extends ReservaDelConsorcio {
 export async function historialDeReservas(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
-  datos: { usuarioId: string; consorcioId: string; desde: Date; hasta: Date; espacioId?: string },
+  datos: {
+    usuarioId: string
+    consorcioId: string
+    desde: Date
+    hasta: Date
+    espacioId?: string
+    unidadId?: string
+  },
 ): Promise<ReservaDelHistorial[]> {
   return conAutorizacion(
     repositorio,
@@ -284,6 +291,7 @@ export async function historialDeReservas(
       const reservas = await prisma.reserva.findMany({
         where: {
           ...(datos.espacioId ? { espacioId: datos.espacioId } : {}),
+          ...(datos.unidadId ? { unidadId: datos.unidadId } : {}),
           desde: { lt: datos.hasta },
           hasta: { gt: datos.desde },
         },
@@ -343,4 +351,3 @@ export async function unidadesParaReservar(
     },
   )
 }
-

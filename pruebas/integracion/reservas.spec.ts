@@ -6,7 +6,13 @@ import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
-import { altaEspacio, bajaEspacio } from '@/aplicacion/reservas/espacios'
+import {
+  altaEspacio,
+  deshabilitarEspacio,
+  habilitarEspacio,
+  listarEspacios,
+  suspensionesEnRango,
+} from '@/aplicacion/reservas/espacios'
 import {
   cancelarReserva,
   historialDeReservas,
@@ -272,7 +278,7 @@ describe('avisos, aislamiento, baja y auditoria', () => {
     expect(asientos.map((a) => a.operacion)).toEqual(['INSERTA', 'MODIFICA'])
   })
 
-  it('la baja de un espacio cancela las reservas futuras y avisa', async () => {
+  it('deshabilitar abierto cancela y avisa; habilitar reactiva y cierra el tramo', async () => {
     await reservar(repo, RELOJ, {
       usuarioId: vecino.id,
       consorcioId,
@@ -281,15 +287,90 @@ describe('avisos, aislamiento, baja y auditoria', () => {
       desde: enHoras(72),
       hasta: enHoras(74),
     })
-    const { canceladas } = await bajaEspacio(repo, RELOJ, {
+    const { canceladas } = await deshabilitarEspacio(repo, RELOJ, {
       usuarioId: administrador,
       consorcioId,
       espacioId,
+      motivo: 'Reforma del piso',
     })
     expect(canceladas).toBe(1)
     const [reserva] = await prismaBase.reserva.findMany({ where: { espacioId } })
     expect(reserva.estado).toBe('cancelada')
-    expect(reserva.motivoRechazo).toContain('dado de baja')
+    expect(reserva.motivoRechazo).toContain('deshabilitado')
+
+    // Queda inactivo con el tramo abierto y su motivo.
+    const [deshabilitado] = await listarEspacios(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      incluirInactivos: true,
+    })
+    expect(deshabilitado).toMatchObject({ activo: false })
+    expect(deshabilitado.suspension).toMatchObject({ motivo: 'Reforma del piso', hasta: null })
+
+    // Rehabilitar reactiva y le pone fin al tramo (para el calendario).
+    await habilitarEspacio(repo, RELOJ, { usuarioId: administrador, consorcioId, espacioId })
+    const [reactivado] = await listarEspacios(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      incluirInactivos: true,
+    })
+    expect(reactivado).toMatchObject({ activo: true, suspension: null })
+    const [tramo] = await prismaBase.suspensionEspacio.findMany({ where: { espacioId } })
+    expect(tramo.hasta).not.toBeNull()
+  })
+
+  it('deshabilitar con fecha de fin cancela solo lo de la ventana; lo posterior sobrevive', async () => {
+    // Dentro de la ventana (a 72 h) y despues del fin (a 30 dias).
+    const dentro = await reservar(repo, RELOJ, {
+      usuarioId: vecino.id,
+      consorcioId,
+      espacioId,
+      unidadId: unidadA,
+      desde: enHoras(72),
+      hasta: enHoras(74),
+    })
+    const despues = await reservar(repo, RELOJ, {
+      usuarioId: vecino.id,
+      consorcioId,
+      espacioId,
+      unidadId: unidadA,
+      desde: enHoras(24 * 30),
+      hasta: enHoras(24 * 30 + 2),
+    })
+    const { canceladas } = await deshabilitarEspacio(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      espacioId,
+      motivo: 'Suspendido una semana',
+      hasta: enHoras(24 * 7),
+    })
+    expect(canceladas).toBe(1)
+    const estados = await prismaBase.reserva.findMany({
+      where: { id: { in: [dentro.reservaId, despues.reservaId] } },
+      orderBy: { desde: 'asc' },
+    })
+    expect(estados.map((r) => r.estado)).toEqual(['cancelada', 'confirmada'])
+  })
+
+  it('el tramo deshabilitado aparece en el rango del calendario; el consorcista no', async () => {
+    await deshabilitarEspacio(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      espacioId,
+      motivo: 'Reforma',
+    })
+    const rango = {
+      consorcioId,
+      desde: new Date('2026-09-01T03:00:00Z'),
+      hasta: new Date('2026-10-01T03:00:00Z'),
+    }
+    const tramos = await suspensionesEnRango(repo, RELOJ, { ...rango, usuarioId: administrador })
+    expect(tramos).toHaveLength(1)
+    expect(tramos[0]).toMatchObject({ motivo: 'Reforma', hasta: null })
+
+    await expect(
+      suspensionesEnRango(repo, RELOJ, { ...rango, usuarioId: vecino.id }),
+    ).rejects.toBeInstanceOf(RolInsuficiente)
   })
 })
 
@@ -323,5 +404,48 @@ describe('historial de uso', () => {
     await expect(
       historialDeReservas(repo, RELOJ, { ...agosto, usuarioId: vecino.id }),
     ).rejects.toBeInstanceOf(RolInsuficiente)
+  })
+
+  it('el filtro por unidad deja solo las reservas de esa unidad', async () => {
+    const agosto = {
+      consorcioId,
+      desde: new Date('2026-08-01T03:00:00Z'),
+      hasta: new Date('2026-09-01T03:00:00Z'),
+    }
+    // Dos reservas del mismo mes, una por unidad, en franjas que no se solapan
+    // (la exclusion GiST es por espacio, no por unidad).
+    await prismaBase.reserva.createMany({
+      data: [
+        {
+          consorcioId,
+          espacioId,
+          unidadId: unidadA,
+          solicitadaPor: vecino.id,
+          desde: new Date('2026-08-10T21:00:00Z'),
+          hasta: new Date('2026-08-11T01:00:00Z'),
+          estado: 'confirmada',
+        },
+        {
+          consorcioId,
+          espacioId,
+          unidadId: unidadB,
+          solicitadaPor: administrador,
+          desde: new Date('2026-08-12T21:00:00Z'),
+          hasta: new Date('2026-08-13T01:00:00Z'),
+          estado: 'confirmada',
+        },
+      ],
+    })
+
+    const soloA = await historialDeReservas(repo, RELOJ, {
+      ...agosto,
+      usuarioId: administrador,
+      unidadId: unidadA,
+    })
+    expect(soloA).toHaveLength(1)
+    expect(soloA[0]).toMatchObject({ unidad: '1A' })
+
+    const todas = await historialDeReservas(repo, RELOJ, { ...agosto, usuarioId: administrador })
+    expect(todas).toHaveLength(2)
   })
 })

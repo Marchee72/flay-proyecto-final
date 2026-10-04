@@ -148,7 +148,6 @@ export async function paginaExportada(
             ),
             siguiente: filas.length === tamano ? filas[filas.length - 1].id : null,
           }
-
         }
         case 'pagos': {
           const filas = await prisma.pago.findMany({

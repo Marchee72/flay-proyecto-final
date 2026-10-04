@@ -186,6 +186,16 @@ th a:not(.boton):hover,
   flex-direction: column;
   gap: 2px;
   min-height: 0;
+  overflow: hidden;
+}
+.panel > * {
+  flex: none;
+}
+/* El medio: lo unico que desplaza. */
+.panel > .panel__global,
+.panel > .lateral {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   /* Fino y sin pista: solo el pulgar sobre el grafito. */
   scrollbar-width: thin;
@@ -279,12 +289,49 @@ th a:not(.boton):hover,
   gap: 2px;
 }
 .lateral__bloque h2 {
-  margin: var(--e3) var(--e3) 2px;
+  margin: var(--e2) 0 2px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #8a929a;
+}
+/* El titulo del bloque pliega y despliega sus secciones hacia arriba. */
+.lateral__bloque h2 button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 var(--e3);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+.lateral__bloque h2 button:hover {
+  color: #ffffff;
+  background: rgb(255 255 255 / 6%);
+}
+.lateral__chevron {
+  width: 14px;
+  height: 14px;
+  transform: rotate(180deg);
+}
+.lateral__bloque h2 [aria-expanded='false'] .lateral__chevron {
+  transform: none;
+}
+.lateral__enlaces {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.lateral__enlaces[hidden] {
+  display: none;
 }
 .panel__pie {
   margin-top: auto;
@@ -325,6 +372,33 @@ th a:not(.boton):hover,
   min-height: 0;
   overflow-y: auto;
   padding: var(--e5) var(--e5) var(--e6);
+}
+/* Dos superficies seguidas en el flujo de la pagina nunca se tocan (el
+   calendario y la tabla del historial eran el caso visible, pero vale para
+   toda la app). Solo al primer nivel: dentro de una rejilla el hueco lo pone
+   el `gap`. */
+.contenido
+  > :is(
+    .tarjeta,
+    .tabla-desplazable,
+    .grafico,
+    .vacio,
+    .rejilla,
+    .fila-kpi,
+    .tablero,
+    .dos-columnas
+  )
+  + :is(
+    .tarjeta,
+    .tabla-desplazable,
+    .grafico,
+    .vacio,
+    .rejilla,
+    .fila-kpi,
+    .tablero,
+    .dos-columnas
+  ) {
+  margin-top: var(--e5);
 }
 
 /* Conmutador de consorcio: tarjeta con siglas, nombre y direccion enteros. El
@@ -624,6 +698,11 @@ th a:not(.boton):hover,
     animation: none;
   }
 }
+/* El aviso de una accion (guardado, habilitado) usa el mismo emergente que la
+   campana; se apila por encima para no pisarse si los dos aparecen juntos. */
+.emergente--accion {
+  bottom: calc(var(--e5) + 76px);
+}
 
 /* La barra flotante y los atajos de la cabecera son del telefono (abajo). */
 .barra-inferior,
@@ -637,6 +716,15 @@ th a:not(.boton):hover,
   border-radius: var(--radio-grande);
   box-shadow: var(--sombra);
   padding: var(--e5);
+}
+/* Tarjeta de algo apagado (un espacio deshabilitado): gris claro que se despega
+   tanto de la superficie blanca como del fondo de la pagina, mas un borde suave
+   para que se lea «desactivada» aunque quede sola. */
+.tarjeta--inactiva {
+  background: #dde1d8;
+  box-shadow:
+    var(--sombra),
+    inset 0 0 0 1px var(--linea);
 }
 /* Buscador a todo el ancho: el campo crece, los botones quedan al final. */
 .buscador .campo {
@@ -735,6 +823,15 @@ th a:not(.boton):hover,
 .boton--peligro:hover {
   background: var(--rojo-palido);
 }
+/* Exito: verde pleno, para la accion que devuelve algo al servicio (habilitar
+   un espacio). Semaforo de la guia (§3.4): verde = salio bien. */
+.boton--exito {
+  background: var(--verde);
+  color: #ffffff;
+}
+.boton--exito:hover {
+  background: #1d5520;
+}
 .boton[disabled] {
   opacity: 0.5;
   cursor: not-allowed;
@@ -774,6 +871,12 @@ th a:not(.boton):hover,
    telefono (abajo) el chip abre una hoja inferior. */
 .filtros > summary,
 .filtros__encabezado {
+  display: none;
+}
+/* Con JavaScript y en escritorio (`data-auto`, lo pone el componente) el filtro
+   se aplica al cambiar el control: el boton «Filtrar» sobra. Sin JavaScript o
+   en la hoja del telefono el boton es la unica forma de aplicar, y ahi queda. */
+.filtros[data-auto] .fila-de-filtros button[type='submit'] {
   display: none;
 }
 /* Un formulario termina en su fila de acciones, nunca pegada al ultimo
@@ -929,9 +1032,11 @@ form > .fila-acciones {
 }
 
 /* La tabla se desplaza dentro de su contenedor; la pagina nunca (RNF-01). */
+/* Toda tabla desplaza adentro de su caja, a lo ancho y a lo alto, con el
+   encabezado fijo arriba; y pagina de a 20 (`TablaDesplazable`). */
 .tabla-desplazable {
   overflow: auto;
-  max-height: min(65vh, 600px);
+  max-height: min(70vh, 760px);
   /* Contiene a los hijos absolutos (.oculto): sin esto se escapan del
      desplazamiento y ensanchan la pagina en el telefono. */
   position: relative;
@@ -939,6 +1044,11 @@ form > .fila-acciones {
   background: var(--superficie);
   box-shadow: var(--sombra);
   padding: 0 var(--e2);
+}
+/* La fila de otra pagina. `!important` porque en telefono las filas son
+   `display: flex` y le ganarian al `[hidden]` del navegador. */
+.tabla-desplazable tr[hidden] {
+  display: none !important;
 }
 table {
   width: 100%;
@@ -971,6 +1081,44 @@ thead th {
   background: var(--superficie);
   z-index: 2;
   box-shadow: 0 1px 0 var(--linea-suave);
+}
+/* Adentro de la caja solo desplazan las filas: el titulo y el encabezado
+   quedan fijos arriba y el pie (los totales) fijo abajo. Las lineas van
+   pintadas en el fondo de la celda: con bordes colapsados, un borde se queda
+   atras al desplazar, y una sombra deja una raya vertical en cada union de
+   posicion fraccionaria. */
+.tabla-desplazable caption {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 36px;
+  background: var(--superficie);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tabla-desplazable thead,
+.tabla-desplazable tfoot {
+  /* Fijo el grupo entero y no celda por celda: cada celda fija se pinta aparte
+     y en las uniones de posicion fraccionaria quedaba una raya. */
+  position: sticky;
+  z-index: 1;
+}
+.tabla-desplazable thead {
+  top: 0;
+}
+.tabla-desplazable:has(> table > caption) thead {
+  top: 36px;
+}
+.tabla-desplazable tfoot {
+  bottom: 0;
+}
+.tabla-desplazable thead th {
+  background: linear-gradient(to top, var(--linea) 1px, var(--superficie) 1px);
+}
+.tabla-desplazable tfoot td {
+  border-top: 0;
+  background: linear-gradient(to bottom, var(--linea) 1px, var(--superficie) 1px);
 }
 tbody tr:last-child td {
   border-bottom: 0;
@@ -1031,6 +1179,21 @@ tfoot td {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: var(--e3);
+}
+/* En una rejilla las tarjetas ya miden lo mismo (`stretch`), pero su contenido
+   no llena: una tarjeta con una etiqueta de estado empujaba sus botones hacia
+   abajo y los de al lado quedaban altos (auditoria, Espacios). La fila de
+   acciones final se ancla al pie, como en `.tarjeta-consorcio`. */
+.rejilla > .tarjeta {
+  display: flex;
+  flex-direction: column;
+}
+.rejilla > .tarjeta > .fila-acciones:last-child {
+  /* `auto` la empuja al pie cuando la tarjeta tiene aire; el `padding-top`
+     garantiza la separacion del texto en la tarjeta mas alta, donde `auto`
+     colapsa a cero (era el caso del espacio deshabilitado, pegado al detalle). */
+  margin: auto 0 0;
+  padding-top: var(--e4);
 }
 .fila-kpi {
   display: grid;
@@ -1243,6 +1406,41 @@ tfoot td {
   color: var(--verde);
 }
 
+/* Novedades (RF-18): lista separada, cada una plegada en <details>. El borde
+   izquierdo lleva el color de la severidad; la pastilla lo acompana para no
+   depender del color solo (§3.2). */
+.novedades {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+}
+.novedad {
+  border-left: 4px solid var(--linea-suave);
+}
+.novedad--alta {
+  border-left-color: var(--rojo);
+}
+.novedad--media {
+  border-left-color: var(--ambar);
+}
+.novedad--baja {
+  border-left-color: var(--verde);
+}
+.novedad__resumen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e2) var(--e3);
+  cursor: pointer;
+}
+.novedad__resumen > :first-child {
+  margin: 0;
+}
+.novedad[open] .novedad__resumen {
+  margin-bottom: var(--e2);
+}
+
 /* Carga con esqueleto, nunca pantalla en blanco (§3.4). Solo opacity. */
 .esqueleto {
   height: var(--t-ayuda);
@@ -1298,6 +1496,35 @@ tfoot td {
   border-color: var(--grafito);
   color: var(--tinta-clara);
 }
+.paginacion button {
+  cursor: pointer;
+}
+.paginacion button[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.paginacion .icono {
+  width: 18px;
+  height: 18px;
+}
+/* Debajo de la tabla: cuantas se ven a la izquierda, las paginas a la derecha. */
+.paginacion-tabla {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e2) var(--e4);
+  margin: var(--e3) 0 var(--e4);
+}
+.paginacion-tabla .ayuda,
+.paginacion-tabla .paginacion {
+  margin: 0;
+}
+/* Siete botones de 44 entran en 390 px con separacion de 4: sin segunda fila. */
+.paginacion-tabla .paginacion {
+  flex-wrap: nowrap;
+  gap: var(--e1);
+}
 
 /* Progreso de diferidos (documentos, indexacion): barra + texto con
    magnitud exacta + reintento visible (§6, RNF-10). El reintento es un
@@ -1334,9 +1561,22 @@ tfoot td {
      La cabecera sigue ahi para el lector de pantalla; el pie es la ultima
      fila. Las celdas con controles (el padron) se reparten el ancho. */
   .tabla-desplazable {
-    overflow-x: visible;
-    overflow-y: visible;
+    overflow: visible;
     max-height: none;
+  }
+  /* El encabezado sigue oculto a la vista, como el `thead` de arriba: esta
+     regla le gana en especificidad a la fija de escritorio. */
+  .tabla-desplazable thead {
+    position: absolute;
+  }
+  .tabla-desplazable caption,
+  .tabla-desplazable tfoot {
+    position: static;
+    height: auto;
+    white-space: normal;
+  }
+  .tabla-desplazable tfoot td {
+    background: none;
   }
   table {
     display: block;
@@ -2597,6 +2837,9 @@ td select {
     right: var(--e4);
     bottom: 96px;
   }
+  .emergente--accion {
+    bottom: 172px;
+  }
   .barra-inferior {
     display: flex;
     align-items: center;
@@ -2612,7 +2855,7 @@ td select {
     background: var(--grafito);
     box-shadow: 0 16px 36px rgb(21 24 27 / 28%);
   }
-  .barra-inferior nav {
+  .barra-inferior > nav {
     flex: 1;
   }
   .barra-inferior ul {
@@ -2622,7 +2865,7 @@ td select {
     padding: 0;
     list-style: none;
   }
-  .barra-inferior a,
+  .barra-inferior > nav a,
   .menu > summary {
     width: 48px;
     height: 48px;
@@ -2632,12 +2875,12 @@ td select {
     justify-content: center;
     color: #b9c0c7;
   }
-  .barra-inferior a .icono,
+  .barra-inferior > nav a .icono,
   .menu > summary .icono {
     width: 22px;
     height: 22px;
   }
-  .barra-inferior a[aria-current='page'] {
+  .barra-inferior > nav a[aria-current='page'] {
     background: var(--lima-alto);
     color: var(--grafito);
   }
@@ -2664,7 +2907,8 @@ td select {
     background: var(--grafito);
     box-shadow: var(--sombra-alta);
   }
-  .menu .lateral a {
+  .menu .lateral a,
+  .menu .lateral__bloque h2 button {
     min-height: var(--toque);
   }
 }
@@ -3115,5 +3359,86 @@ td select {
   }
   100% {
     background-position: -200% 0;
+  }
+}
+
+/* Espacios: calendario de uso (RF-15) */
+table.calendario {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: separate;
+  border-spacing: var(--e1);
+  table-layout: fixed;
+}
+table.calendario th {
+  text-align: left;
+  font-size: var(--t-ayuda);
+  color: var(--tinta-apagada);
+  padding: 0 var(--e2) var(--e1);
+}
+.calendario__dia {
+  vertical-align: top;
+  height: 96px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-chico);
+  padding: var(--e2);
+  background: var(--superficie);
+}
+.calendario__vacio {
+  border: none;
+  background: transparent;
+}
+.calendario__numero {
+  font-weight: 600;
+  font-size: var(--t-menor);
+}
+.calendario__dia--hoy {
+  outline: 2px solid var(--azul);
+  outline-offset: -2px;
+}
+.calendario__dia--hoy .calendario__numero {
+  color: var(--azul);
+}
+.calendario__dia--off {
+  background: var(--rojo-palido);
+  border-color: var(--rojo-borde);
+}
+.calendario__off {
+  display: block;
+  font-size: var(--t-ayuda);
+  color: var(--rojo);
+  margin-top: 2px;
+}
+.calendario__eventos {
+  list-style: none;
+  margin: var(--e1) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.calendario__evento {
+  font-size: var(--t-ayuda);
+  background: var(--azul-palido);
+  color: var(--tinta);
+  border-radius: 6px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.calendario__evento--anulado {
+  background: var(--gris-palido);
+  color: var(--tinta-apagada);
+  text-decoration: line-through;
+}
+.calendario__hora {
+  font-variant-numeric: tabular-nums;
+  color: var(--tinta-apagada);
+}
+@media (max-width: 760px) {
+  .calendario__dia {
+    height: 84px;
+    padding: var(--e1);
   }
 }

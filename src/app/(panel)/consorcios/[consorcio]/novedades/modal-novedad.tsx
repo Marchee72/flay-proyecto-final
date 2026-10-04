@@ -10,6 +10,7 @@ const SIN_ERROR: Resultado = { mensaje: '' }
 export interface Destinatarios {
   unidades: { id: string; designacion: string }[]
   divisiones: string[]
+  pisos: string[]
 }
 
 /** Publicacion de una novedad en modal (`CU-12`): a quien va y entre que fechas rige. */
@@ -39,7 +40,7 @@ function FormularioNovedad({
   destinatarios: Destinatarios
 }) {
   const [estado, accion, enviando] = useActionState(accionPublicarNovedad, SIN_ERROR)
-  const [alcance, setAlcance] = useState<'general' | 'unidad' | 'division'>('general')
+  const [alcance, setAlcance] = useState<'general' | 'unidad' | 'division' | 'piso'>('general')
   const hayError = estado.mensaje !== ''
   const describe = hayError ? 'error-novedad' : undefined
   return (
@@ -61,6 +62,14 @@ function FormularioNovedad({
         <textarea id="cuerpo" name="cuerpo" rows={5} required />
       </div>
       <div className="campo">
+        <label htmlFor="severidad">Severidad</label>
+        <select id="severidad" name="severidad" defaultValue="baja">
+          <option value="baja">Baja</option>
+          <option value="media">Media</option>
+          <option value="alta">Alta</option>
+        </select>
+      </div>
+      <div className="campo">
         <label htmlFor="alcance">Para</label>
         <select
           id="alcance"
@@ -71,6 +80,7 @@ function FormularioNovedad({
           <option value="general">Todo el consorcio</option>
           <option value="unidad">Una unidad</option>
           {destinatarios.divisiones.length > 0 && <option value="division">Una división</option>}
+          {destinatarios.pisos.length > 0 && <option value="piso">Un piso</option>}
         </select>
       </div>
       {alcance === 'unidad' && (
@@ -97,6 +107,21 @@ function FormularioNovedad({
           </select>
           <p className="ayuda" id="ayuda-division">
             Los departamentos con esa letra en todos los pisos (por ejemplo, 1A, 2A, 3A).
+          </p>
+        </div>
+      )}
+      {alcance === 'piso' && (
+        <div className="campo">
+          <label htmlFor="piso">Piso</label>
+          <select id="piso" name="piso" required aria-describedby="ayuda-piso">
+            {destinatarios.pisos.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+          <p className="ayuda" id="ayuda-piso">
+            Todos los departamentos de ese piso (por ejemplo, 3A, 3B, 3C).
           </p>
         </div>
       )}

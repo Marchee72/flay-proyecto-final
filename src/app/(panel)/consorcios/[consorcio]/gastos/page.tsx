@@ -15,6 +15,7 @@ import { conConsorcio } from '../../../con-consorcio'
 import { ModalGasto } from './modal-gasto'
 import { EnlaceExportar } from '../../../exportar'
 import { Filtros } from '../../../filtros'
+import { TablaDesplazable } from '../../../tabla-desplazable'
 
 import { Paginacion } from '../../../paginacion'
 
@@ -183,12 +184,7 @@ export default async function GastosPage({
           </div>
         ) : (
           <>
-            <div
-              className="tabla-desplazable"
-              tabIndex={0}
-              role="region"
-              aria-label="Gastos del filtro"
-            >
+            <TablaDesplazable tabIndex={0} role="region" aria-label="Gastos del filtro">
               <table>
                 <caption className="ayuda">
                   {plural(listado.cantidad, 'gasto', 'gastos')} · página {listado.pagina} de{' '}
@@ -251,7 +247,7 @@ export default async function GastosPage({
                   </tr>
                 </tfoot>
               </table>
-            </div>
+            </TablaDesplazable>
 
             <Paginacion
               pagina={listado.pagina}

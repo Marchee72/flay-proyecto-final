@@ -55,9 +55,11 @@ export default async function NovedadesPage({
             <p>Sin novedades por ahora.</p>
           </div>
         ) : (
-          novedades.map((n) => (
-            <TarjetaNovedad key={n.id} novedad={n} consorcioId={activo.id} conEstado={administra} />
-          ))
+          <div className="novedades">
+            {novedades.map((n) => (
+              <TarjetaNovedad key={n.id} novedad={n} conEstado={administra} />
+            ))}
+          </div>
         )}
       </>
     )

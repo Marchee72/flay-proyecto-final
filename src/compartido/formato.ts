@@ -72,6 +72,20 @@ export function fechaParaMostrar(iso: string): string {
   return `${dia}/${mes}/${anio}`
 }
 
+/**
+ * Como `fechaParaMostrar` pero en la hora de Argentina (la del consorcio): para
+ * marcas ISO cuyo instante cae en un día distinto en UTC (p. ej. el fin de día
+ * `23:59-03:00`, que en UTC ya es el día siguiente).
+ */
+export function fechaEnArParaMostrar(iso: string): string {
+  return new Intl.DateTimeFormat('es-AR', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(iso))
+}
+
 /** Marca ISO → `12/09/2026 14:05`, en la hora de Argentina, que es la del consorcio. */
 export function momentoParaMostrar(iso: string): string {
   const partes = new Intl.DateTimeFormat('es-AR', {

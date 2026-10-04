@@ -9,6 +9,7 @@ import { verPanel } from '@/aplicacion/indicadores/indicadores'
 
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
 import { accionRefrescar } from './acciones'
+import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Indicadores — Flay' }
 
@@ -106,12 +107,7 @@ export default async function IndicadoresPage({
           </button>
         </form>
 
-        <div
-          className="tabla-desplazable"
-          tabIndex={0}
-          role="region"
-          aria-label="Estado por consorcio"
-        >
+        <TablaDesplazable tabIndex={0} role="region" aria-label="Estado por consorcio">
           <table>
             <caption className="ayuda">Un renglón por consorcio administrado</caption>
             <thead>
@@ -159,7 +155,7 @@ export default async function IndicadoresPage({
               ))}
             </tbody>
           </table>
-        </div>
+        </TablaDesplazable>
 
         <PorIndicador consorcioId={activo.id} administra />
       </>

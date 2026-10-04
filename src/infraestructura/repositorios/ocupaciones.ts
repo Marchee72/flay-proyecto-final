@@ -1,7 +1,6 @@
 import { ordenarUnidades } from '@/dominio/unidades/division'
 import { prismaBase } from '@/infraestructura/prisma'
 
-
 /**
  * Ocupaciones (FR-008). La vigencia es un **rango de fechas** de la base y no
  * dos columnas: es lo que permite la restriccion de exclusion que impide dos
@@ -93,7 +92,6 @@ export async function unidadesOcupadasPor(
       AND o."vigencia" @> ${fecha}::date`
   return ordenarUnidades(filas)
 }
-
 
 /**
  * Los usuarios que ocupan alguna de esas unidades a esa fecha. Los ids tienen

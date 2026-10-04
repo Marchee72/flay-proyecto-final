@@ -12,6 +12,7 @@ import { listarPeriodos, type PeriodoDelConsorcio } from '@/aplicacion/periodos/
 import { conConsorcio } from '../../../con-consorcio'
 import { EstadoDelPeriodo } from '../../../estado-periodo'
 import { Filtros } from '../../../filtros'
+import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Expensas — Flay' }
 
@@ -221,7 +222,7 @@ export default async function ExpensasPage({
             </p>
           </div>
         ) : (
-          <div className="tabla-desplazable">
+          <TablaDesplazable>
             <table>
               <caption>
                 {plural(filas.length, 'liquidación', 'liquidaciones')} en{' '}
@@ -272,7 +273,7 @@ export default async function ExpensasPage({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TablaDesplazable>
         )}
       </>
     )

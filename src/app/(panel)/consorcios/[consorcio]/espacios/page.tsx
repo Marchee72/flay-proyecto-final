@@ -1,12 +1,15 @@
 import type { Metadata } from 'next'
-import { DoorOpen } from 'lucide-react'
+import Link from 'next/link'
+import { CalendarRange, DoorOpen } from 'lucide-react'
 
+import { fechaEnArParaMostrar } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarEspacios } from '@/aplicacion/reservas/espacios'
 
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
-import { accionBajaEspacio } from '../reservas/acciones'
+import { accionHabilitarEspacio } from '../reservas/acciones'
+import { ModalDeshabilitar } from './modal-deshabilitar'
 import { ModalEspacio } from './modal-espacio'
 
 export const metadata: Metadata = { title: 'Espacios comunes — Flay' }
@@ -40,6 +43,13 @@ export default async function EspaciosPage({ params }: { params: Promise<{ conso
         {administra && (
           <div className="fila-acciones">
             <ModalEspacio consorcioId={activo.id} />
+            <Link
+              className="boton boton--fantasma"
+              href={`/consorcios/${activo.id}/reservas/historial`}
+            >
+              <CalendarRange className="icono" aria-hidden="true" />
+              Calendario de uso
+            </Link>
           </div>
         )}
 
@@ -51,9 +61,19 @@ export default async function EspaciosPage({ params }: { params: Promise<{ conso
         ) : (
           <div className="rejilla">
             {espacios.map((e) => (
-              <article className="tarjeta" key={e.id} aria-label={e.nombre}>
+              <article
+                className={e.activo ? 'tarjeta' : 'tarjeta tarjeta--inactiva'}
+                key={e.id}
+                aria-label={e.nombre}
+              >
                 <h2>{e.nombre}</h2>
-                {!e.activo && <p className="etiqueta etiqueta--vencido">Dado de baja</p>}
+                {!e.activo && (
+                  <p className="etiqueta etiqueta--vencido">
+                    Deshabilitado
+                    {e.suspension && ` — ${e.suspension.motivo}`}
+                    {e.suspension?.hasta && ` (hasta ${fechaEnArParaMostrar(e.suspension.hasta)})`}
+                  </p>
+                )}
                 <dl className="definiciones">
                   <dt>Capacidad</dt>
                   <dd>{e.capacidadMaxima ?? 'Sin tope'}</dd>
@@ -66,16 +86,21 @@ export default async function EspaciosPage({ params }: { params: Promise<{ conso
                   <dt>Por mes y unidad</dt>
                   <dd>{e.reservasMaxMesUnidad}</dd>
                 </dl>
-                {administra && e.activo && (
+                {administra && (
                   <div className="fila-acciones">
                     <ModalEspacio consorcioId={activo.id} espacio={e} />
-                    <form action={accionBajaEspacio}>
-                      <input type="hidden" name="consorcio" value={activo.id} />
-                      <input type="hidden" name="espacio" value={e.id} />
-                      <button className="boton boton--peligro" type="submit">
-                        Dar de baja
-                      </button>
-                    </form>
+                    {e.activo ? (
+                      <ModalDeshabilitar consorcioId={activo.id} espacio={e} />
+                    ) : (
+                      <form action={accionHabilitarEspacio}>
+                        <input type="hidden" name="consorcio" value={activo.id} />
+                        <input type="hidden" name="espacio" value={e.id} />
+                        <button className="boton boton--exito" type="submit">
+                          <DoorOpen className="icono" aria-hidden="true" />
+                          Habilitar
+                        </button>
+                      </form>
+                    )}
                   </div>
                 )}
               </article>

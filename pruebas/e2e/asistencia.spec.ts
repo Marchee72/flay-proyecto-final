@@ -143,7 +143,12 @@ test('la lista avanza sola de «Extrayendo…» a «Para revisar» sin recargar'
 
   await entrar(page, escenario.correo)
   await page.goto(`/consorcios/${escenario.consorcioId}/gastos/asistida`)
-  const fila = page.getByRole('row').filter({ has: page.getByText('Extrayendo…') })
+  // Puede haber dos «Extrayendo…»: la huerfana sale de ahi recien cuando el
+  // drenaje disparado al entrar llega a correr, y eso no se ordena con el goto.
+  const fila = page
+    .getByRole('row')
+    .filter({ has: page.getByText('Extrayendo…') })
+    .first()
   await expect(fila).toBeVisible()
   await expect(page.getByRole('status').filter({ hasText: 'en proceso' })).toBeVisible()
   expect(await desbordaALoAncho(page)).toBe(false)

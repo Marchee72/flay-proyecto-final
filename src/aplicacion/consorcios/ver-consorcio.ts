@@ -7,7 +7,6 @@ import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 
-
 /**
  * Lectura de un consorcio con su padron (RF-01, RF-02).
  *

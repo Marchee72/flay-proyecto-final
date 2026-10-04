@@ -17,7 +17,6 @@ import {
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
 
-
 import { relojFijo } from '../dominio/reloj-fijo'
 import {
   crearAdministradora,
@@ -160,6 +159,16 @@ describe('novedades con destinatario, vigencia y descarte', () => {
     )
   })
 
+  it('a un piso: la ven los de esa planta, y nadie mas', async () => {
+    // vecino ocupa 2A; delB ocupa 1B. El piso 1 alcanza a 1A y 1B.
+    await publicar({ titulo: 'Pintura en el piso 1', alcance: 'piso', piso: '1' })
+    expect(await titulos(delB)).toEqual(['Pintura en el piso 1'])
+    expect(await titulos(vecino)).toEqual([])
+    expect(await avisadosDe('Pintura en el piso 1')).toEqual([delB])
+
+    await expect(publicar({ alcance: 'piso', piso: '9' })).rejects.toThrow('piso que exista')
+  })
+
   it('la general la ven todos; la programada y la vencida no le llegan al consorcista', async () => {
     await publicar({ titulo: 'General' })
     await publicar({
@@ -194,11 +203,19 @@ describe('novedades con destinatario, vigencia y descarte', () => {
     ).rejects.toBeInstanceOf(VigenciaDeNovedadInvalida)
   })
 
-  it('descartar la oculta solo para quien descarta; una de otro consorcio no se encuentra', async () => {
+  it('descartar la saca del inicio pero queda en la seccion; una de otro consorcio no se encuentra', async () => {
     const { novedadId } = await publicar({ titulo: 'Asamblea' })
     await descartarNovedad(repo, RELOJ, { usuarioId: vecino, consorcioId, novedadId })
     await descartarNovedad(repo, RELOJ, { usuarioId: vecino, consorcioId, novedadId })
-    expect(await titulos(vecino)).toEqual([])
+    // En el inicio (soloVigentes) ya no la ve; en la seccion Novedades sigue.
+    const inicioVecino = await listarNovedades(repo, RELOJ, {
+      usuarioId: vecino,
+      consorcioId,
+      soloVigentes: true,
+    })
+    expect(inicioVecino.map((n) => n.titulo)).toEqual([])
+    expect(await titulos(vecino)).toEqual(['Asamblea'])
+    // Quien no la descarto la ve en los dos lados.
     expect(await titulos(delB)).toEqual(['Asamblea'])
 
     await expect(

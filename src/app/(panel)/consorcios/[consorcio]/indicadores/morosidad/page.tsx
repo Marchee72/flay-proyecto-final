@@ -10,6 +10,7 @@ import { AvisoDeError, conConsorcio } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
 import { Alertas, etiquetaDePeriodo } from '../alertas'
 import { SerieDeMorosidad } from '../graficos'
+import { TablaDesplazable } from '../../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'I-1 Morosidad — Flay' }
 
@@ -51,12 +52,7 @@ export default async function MorosidadPage({
         ) : (
           <>
             <SerieDeMorosidad serie={puntos} meta={meta} />
-            <div
-              className="tabla-desplazable"
-              tabIndex={0}
-              role="region"
-              aria-label="Morosidad por período"
-            >
+            <TablaDesplazable tabIndex={0} role="region" aria-label="Morosidad por período">
               <table>
                 <caption className="ayuda">
                   Los mismos datos del gráfico, período por período
@@ -94,7 +90,7 @@ export default async function MorosidadPage({
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TablaDesplazable>
           </>
         )}
       </>

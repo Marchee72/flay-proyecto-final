@@ -17,6 +17,7 @@ import { EnlaceExportar } from '../../../exportar'
 import { Filtros } from '../../../filtros'
 import { Paginacion } from '../../../paginacion'
 import { ModalPago } from './modal-pago'
+import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Pagos — Flay' }
 
@@ -205,7 +206,7 @@ export default async function PagosPage({
               </div>
             ) : (
               <>
-                <div className="tabla-desplazable">
+                <TablaDesplazable paginar={false}>
                   <table>
                     <caption className="ayuda">
                       Estado de cuenta: {plural(cuentasFiltradas.length, 'unidad', 'unidades')} ·
@@ -268,7 +269,7 @@ export default async function PagosPage({
                       </tr>
                     </tfoot>
                   </table>
-                </div>
+                </TablaDesplazable>
 
                 <Paginacion
                   pagina={paginaActual}
@@ -295,8 +296,7 @@ export default async function PagosPage({
             </p>
 
             {elegida.movimientos.length > 0 ? (
-              <div
-                className="tabla-desplazable"
+              <TablaDesplazable
                 tabIndex={0}
                 role="region"
                 aria-label={`Movimientos de la unidad ${elegida.designacion}`}
@@ -326,7 +326,7 @@ export default async function PagosPage({
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </TablaDesplazable>
             ) : (
               <div className="vacio">
                 <Wallet aria-hidden="true" />

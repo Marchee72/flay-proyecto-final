@@ -8,6 +8,7 @@ import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verMorosidad } from '@/aplicacion/pagos/estado-de-cuenta'
 
 import { conConsorcio } from '../../../con-consorcio'
+import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Morosidad — Flay' }
 
@@ -78,7 +79,7 @@ export default async function MorosidadPage({
         ) : morosidad.nominada ? (
           <section className="tarjeta">
             <h2>Nómina de deudores</h2>
-            <div className="tabla-desplazable">
+            <TablaDesplazable>
               <table>
                 <caption className="ayuda">
                   {plural(morosidad.deudores.length, 'unidad deudora', 'unidades deudoras')}
@@ -160,7 +161,7 @@ export default async function MorosidadPage({
                   </tr>
                 </tfoot>
               </table>
-            </div>
+            </TablaDesplazable>
           </section>
         ) : (
           <p className="ayuda">

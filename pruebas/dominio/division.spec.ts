@@ -19,10 +19,11 @@ describe('divisionDe (RF-18)', () => {
   })
 })
 
-describe('pisoDe', () => {
-  it('extrae el piso o planta baja', () => {
+describe('pisoDe (RF-18)', () => {
+  it('es el numero (o PB) que precede a la letra, o la designacion sola', () => {
     expect(pisoDe('3A')).toBe('3')
     expect(pisoDe('3-A')).toBe('3')
+    expect(pisoDe('3-B')).toBe('3')
     expect(pisoDe('10 b')).toBe('10')
     expect(pisoDe('PB-B')).toBe('PB')
     expect(pisoDe('pb a')).toBe('PB')

@@ -112,6 +112,8 @@ h3:has(> .icono) {
 .cifra {
   font-family: var(--tipografia-cifra);
   font-variant-numeric: tabular-nums;
+  /* Un importe no se parte: el signo se queda con sus digitos. */
+  white-space: nowrap;
 }
 
 .apagado {
@@ -1148,6 +1150,33 @@ td.numero,
 th.numero {
   text-align: right;
 }
+/* Desglose de una cifra (el interes por unidad, nota 13): plegado mide lo que
+   el importe; en linea ensanchaba la columna hasta romper la tabla. */
+.desglose > summary {
+  cursor: pointer;
+  list-style: none;
+}
+.desglose > summary::-webkit-details-marker {
+  display: none;
+}
+.desglose > summary::after {
+  content: ' ▾';
+  color: var(--tinta-apagada);
+}
+.desglose[open] > summary::after {
+  content: ' ▴';
+}
+.desglose > ul {
+  margin: var(--e1) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--t-ayuda);
+  font-weight: 400;
+  color: var(--tinta-apagada);
+  /* Envuelve adentro de la columna; cada importe sigue entero por `.cifra`. */
+  white-space: normal;
+}
+
 tfoot td {
   font-weight: 700;
   border-top: 1px solid var(--linea);

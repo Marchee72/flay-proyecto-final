@@ -199,9 +199,9 @@ describe('edicion del padron (FR-011)', () => {
     const despues = await leer()
     expect(despues.cuadra).toBe(true)
     expect(despues.unidades.map((u) => [u.designacion, u.tipo, u.coeficiente])).toEqual([
+      ['PB-A', 'departamento', '45.00000000'],
       ['1B', 'local', '45.00000000'],
       ['C1', 'cochera', '10.00000000'],
-      ['PB-A', 'departamento', '45.00000000'],
     ])
     // Cargado y editado el mismo dia: ninguna vigencia que termine antes de empezar.
     const historia = await prismaBase.coeficienteHistorico.findMany({

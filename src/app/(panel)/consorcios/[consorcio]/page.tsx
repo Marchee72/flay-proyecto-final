@@ -21,6 +21,7 @@ import { verResumenConsorcio } from '@/aplicacion/consorcios/resumen'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 
 import { DescartarNovedad } from '../../comunicacion/descartar-novedad'
+import { UrgenciaDeReclamo } from './reclamos/etiquetas'
 import { AvisoDeError, conConsorcio } from '../../con-consorcio'
 
 export const metadata: Metadata = { title: 'Resumen — Flay' }
@@ -142,14 +143,12 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
             </Link>
           </div>
           {novedades.slice(0, NOVEDADES).map((n) => (
-            <article
-              key={n.id}
-              className={n.fijada ? 'novedad-fila novedad-fila--fijada' : 'novedad-fila'}
-            >
+            <article key={n.id} className={`novedad novedad-fila novedad--${n.severidad}`}>
               <div className="novedad-fila__texto">
                 <h3>
                   {n.fijada && <Pin className="icono" aria-label="Fijada" />}
                   {n.titulo}
+                  <UrgenciaDeReclamo urgencia={n.severidad} />
                 </h3>
                 <p>{n.cuerpo}</p>
                 <span className="kpi__detalle">
@@ -157,7 +156,7 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
                   {n.destinatario && ` · ${n.destinatario}`}
                 </span>
               </div>
-              <DescartarNovedad consorcioId={activo.id} novedadId={n.id} soloIcono />
+              <DescartarNovedad consorcioId={activo.id} novedadId={n.id} />
             </article>
           ))}
         </section>

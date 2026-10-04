@@ -5,20 +5,20 @@ import { X } from 'lucide-react'
 import { accionDescartarNovedad } from './acciones'
 
 /**
- * «Descartar» tarda lo que tarda el servidor, asi que la fila se va antes: al
- * apretar se le pone `.descartandose` y la animacion corre mientras la accion
- * viaja. El descarte queda guardado (`NovedadDescartada`), de modo que no
- * vuelve a aparecer en el proximo ingreso.
+ * El aspa de la fila de novedades del inicio: la saca de ahi para quien la
+ * aprieta (en la seccion Novedades sigue estando, que es el archivo).
+ *
+ * El descarte tarda lo que tarda el servidor, asi que la fila se va antes: al
+ * apretar se le pone `.descartandose` al `<article>` y la animacion corre
+ * mientras la accion viaja. Queda guardado en `NovedadDescartada`, de modo que
+ * no vuelve a aparecer en el proximo ingreso.
  */
 export function DescartarNovedad({
   consorcioId,
   novedadId,
-  soloIcono = false,
 }: {
   consorcioId: string
   novedadId: string
-  /** En el resumen el boton es un aspa al costado; en la seccion lleva texto. */
-  soloIcono?: boolean
 }) {
   return (
     <form action={accionDescartarNovedad}>
@@ -26,14 +26,13 @@ export function DescartarNovedad({
       <input type="hidden" name="novedad" value={novedadId} />
       <button
         type="submit"
-        className={soloIcono ? 'boton boton--terciario boton--aspa' : 'boton boton--fantasma'}
-        aria-label={soloIcono ? 'Descartar' : undefined}
+        className="boton boton--terciario boton--aspa"
+        aria-label="Descartar"
         onClick={(evento) =>
           evento.currentTarget.closest('article')?.classList.add('descartandose')
         }
       >
         <X className="icono" aria-hidden="true" />
-        {!soloIcono && 'Descartar'}
       </button>
     </form>
   )

@@ -2936,8 +2936,9 @@ td select {
 }
 
 /* Novedades del inicio: una tarjeta con filas compactas, no una tarjeta por
-   novedad. Filete lima en la fijada, cuerpo a dos lineas y la fecha debajo;
-   «Descartar» es un aspa al costado. */
+   novedad. El filete lo tine la severidad (`.novedad--*`, la misma escala que
+   la seccion), cuerpo a dos lineas y la fecha debajo; «Descartar» es un aspa
+   al costado. */
 .novedades-inicio {
   display: grid;
   gap: var(--e4);
@@ -2948,10 +2949,6 @@ td select {
   align-items: flex-start;
   gap: var(--e3);
   padding-left: var(--e4);
-  border-left: 3px solid var(--linea);
-}
-.novedad-fila--fijada {
-  border-left-color: var(--lima);
 }
 .novedad-fila__texto {
   flex: 1;
@@ -2959,12 +2956,13 @@ td select {
 }
 .novedad-fila h3 {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--e1);
+  gap: var(--e1) var(--e2);
   font-size: var(--t-cuerpo);
   letter-spacing: 0;
 }
-.novedad-fila h3 .icono {
+.novedad-fila h3 > .icono {
   width: 14px;
   height: 14px;
   color: var(--tinta-apagada);

@@ -1,3 +1,5 @@
+import type { Clasificacion } from '@prisma/client'
+
 import { importe } from '@/compartido/dinero'
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
@@ -15,9 +17,11 @@ import { prisma, prismaBase } from '@/infraestructura/prisma'
  * - El periodo tiene que estar **abierto** (regla RN-03). Un gasto que aparece
  *   en un periodo ya liquidado cambiaria una expensa que los consorcistas ya
  *   recibieron.
- * - La clasificacion se **congela en el gasto** (regla RN-04). Se copia del
- *   rubro al registrarlo y despues no lo sigue: si manana el rubro se
- *   reclasifica, una liquidacion vieja no puede cambiar de sentido.
+ * - La clasificacion se **congela en el gasto** (regla RN-04). Sale del rubro,
+ *   que es lo que acierta casi siempre, pero quien carga puede corregirla para
+ *   **ese** gasto: una obra grande imputada a un rubro corriente es
+ *   extraordinaria igual. Lo que se guarda no sigue al rubro: si manana el
+ *   rubro se reclasifica, una liquidacion vieja no puede cambiar de sentido.
  *
  * El importe entra y sale como **cadena**: el tipo numerico nativo no aguanta
  * quince digitos significativos sin perder centavos (medida 3 de § 14.1).
@@ -43,6 +47,8 @@ export async function registrarGasto(
     importe: string
     fecha: Date
     descripcion: string
+    /** Si no viene, la del rubro (regla RN-04). */
+    clasificacion?: Clasificacion
   },
 ): Promise<{ gastoId: string }> {
   return conAutorizacion(
@@ -81,7 +87,7 @@ export async function registrarGasto(
           rubroId: rubro.id,
           proveedorId: datos.proveedorId ?? null,
           importe: monto,
-          clasificacion: rubro.clasificacion,
+          clasificacion: datos.clasificacion ?? rubro.clasificacion,
           fecha: datos.fecha,
           descripcion: datos.descripcion.trim(),
           cargadoPor: datos.usuarioId,

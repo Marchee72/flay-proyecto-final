@@ -103,8 +103,8 @@ test('la propuesta del comprobante se revisa y el gasto nace al confirmar (SC-01
   // a la extraccion y con la correccion registrada.
   await page.getByLabel('Importe').fill('15450.00')
   await page.getByRole('button', { name: 'Registrar', exact: true }).click()
-  await expect(page).toHaveURL(/\/gastos\/[0-9a-f-]+\?.*nuevo=1/)
-  await expect(page.getByRole('status').first()).toContainText('Gasto registrado')
+  await expect(page).toHaveURL(/\/gastos\/[0-9a-f-]+\?hecho=gasto-registrado/)
+  await expect(page.getByRole('status').filter({ hasText: 'Gasto registrado' })).toBeVisible()
 
   const revisada = await prisma.extraccionComprobante.findUniqueOrThrow({
     where: { id: extraccion.id },
@@ -192,8 +192,8 @@ test('sin asistencia el comprobante queda guardado y el gasto se carga a mano', 
   await expect(page.getByRole('button', { name: 'Registrar', exact: true })).toBeVisible()
 
   await page.getByRole('button', { name: 'Descartar', exact: true }).click()
-  await expect(page).toHaveURL(/\/gastos\/asistida\?.*descartada=1/)
-  await expect(page.getByRole('status')).toContainText('Extracción descartada')
+  await expect(page).toHaveURL(/\/gastos\/asistida\?hecho=extraccion-descartada/)
+  await expect(page.getByRole('status').filter({ hasText: 'Extracción descartada' })).toBeVisible()
   const descartada = await prisma.extraccionComprobante.findUniqueOrThrow({
     where: { id: extraccion.id },
   })

@@ -9,8 +9,9 @@ import {
   FileText,
   Megaphone,
   MessageSquareWarning,
-  X,
 } from 'lucide-react'
+
+import { avisar } from '@/app/avisos'
 
 type Notificacion = {
   id: string
@@ -45,8 +46,9 @@ function cuando(iso: string, ahora: number): string {
 
 /**
  * La campana del panel (rediseño 013): contador de sin leer, panel con los
- * ultimos avisos y un aviso emergente cuando llega uno nuevo mientras la
- * pestaña esta abierta. Sondea cada 20 s solo con la pestaña visible, y al
+ * ultimos avisos. Cuando llega uno nuevo con la pestaña abierta lo saca por la
+ * pila de avisos del layout raiz, la misma que usa el resto de la aplicacion.
+ * Sondea cada 20 s solo con la pestaña visible, y al
  * volver a ella. Abrir el panel no marca nada: se marca al tocar un aviso o
  * con «Marcar todo como leído».
  */
@@ -57,10 +59,11 @@ export function Campana() {
   })
   const [abierto, setAbierto] = useState(false)
   const [soloSinLeer, setSoloSinLeer] = useState(false)
-  const [emergente, setEmergente] = useState<Notificacion | null>(null)
   const vistos = useRef<Set<string> | null>(null)
   const raiz = useRef<HTMLDivElement | null>(null)
   const panelId = useId()
+
+  const abrir = useCallback(() => setAbierto(true), [])
 
   const consultar = useCallback(async () => {
     const respuesta = await fetch('/api/notificaciones', { cache: 'no-store' }).catch(() => null)
@@ -69,11 +72,11 @@ export function Campana() {
     // La primera carga solo aprende lo que ya estaba: no es «nuevo».
     if (vistos.current) {
       const llegado = nuevos.notificaciones.find((n) => !n.leida && !vistos.current!.has(n.id))
-      if (llegado) setEmergente(llegado)
+      if (llegado) avisar(llegado.titulo, 'novedad', { etiqueta: 'Ver', alHacerClic: abrir })
     }
     vistos.current = new Set(nuevos.notificaciones.map((n) => n.id))
     setDatos(nuevos)
-  }, [])
+  }, [abrir])
 
   useEffect(() => {
     void consultar()
@@ -90,13 +93,43 @@ export function Campana() {
     }
   }, [consultar])
 
-  // El emergente se va solo a los 8 s; el panel se cierra con Escape o
-  // tocando afuera.
+  // Conexión en tiempo real por Server-Sent Events (SSE).
+  // Al llegar una novedad u otro aviso, actualiza la campana y dispara el toast de inmediato.
   useEffect(() => {
-    if (!emergente) return
-    const t = setTimeout(() => setEmergente(null), 8000)
-    return () => clearTimeout(t)
-  }, [emergente])
+    let fuente: EventSource | null = null
+    try {
+      fuente = new EventSource('/api/notificaciones/stream')
+      fuente.onmessage = (evento) => {
+        try {
+          if (!evento.data || evento.data.startsWith(':')) return
+          const notificacion: Notificacion = JSON.parse(evento.data)
+          setDatos((previo) => {
+            if (previo.notificaciones.some((n) => n.id === notificacion.id)) return previo
+            return {
+              noLeidas: previo.noLeidas + 1,
+              notificaciones: [notificacion, ...previo.notificaciones],
+            }
+          })
+          if (vistos.current) {
+            vistos.current.add(notificacion.id)
+          }
+          avisar(notificacion.titulo, 'novedad', { etiqueta: 'Ver', alHacerClic: abrir })
+        } catch {
+          // Paquete no JSON o keepalive
+        }
+      }
+    } catch {
+      // Si el entorno no soporta EventSource, el sondeo periódico actúa de red
+    }
+
+    return () => {
+      if (fuente) {
+        fuente.close()
+      }
+    }
+  }, [abrir])
+
+  // El panel se cierra con Escape o tocando afuera.
   useEffect(() => {
     if (!abierto) return
     const afuera = (evento: MouseEvent) => {
@@ -213,36 +246,6 @@ export function Campana() {
           </ul>
         )}
       </section>
-
-      {emergente && (
-        <div className="emergente" role="status">
-          <span className={`aviso-tono ${(TIPOS[emergente.tipo] ?? TIPOS.novedad!).tono}`}>
-            <Bell className="icono" aria-hidden="true" />
-          </span>
-          <span className="emergente__texto">
-            <small>Ahora</small>
-            <strong>{emergente.titulo}</strong>
-          </span>
-          <button
-            type="button"
-            className="boton boton--terciario"
-            onClick={() => {
-              setEmergente(null)
-              setAbierto(true)
-            }}
-          >
-            Ver
-          </button>
-          <button
-            type="button"
-            className="panel__icono"
-            aria-label="Cerrar aviso"
-            onClick={() => setEmergente(null)}
-          >
-            <X className="icono" aria-hidden="true" />
-          </button>
-        </div>
-      )}
     </div>
   )
 }

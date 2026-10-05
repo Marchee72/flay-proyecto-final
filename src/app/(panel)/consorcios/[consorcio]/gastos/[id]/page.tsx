@@ -2,14 +2,13 @@ import type { Metadata } from 'next'
 import { FileText, Siren, TriangleAlert } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { fechaParaMostrar, importeParaMostrar } from '@/compartido/formato'
+import { conMayuscula, fechaParaMostrar, importeParaMostrar } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verGasto, type ComprobanteDelGasto } from '@/aplicacion/gastos/ver-gasto'
 
 import { AdjuntarComprobante } from './adjuntar'
 import { conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
-import { Emergente } from '../../../../emergente'
 import { Volver } from '../../../../encabezado-consorcio'
 
 export const metadata: Metadata = { title: 'Gasto — Flay' }
@@ -18,14 +17,11 @@ const MB = 1_048_576
 
 export default async function GastoPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ consorcio: string; id: string }>
-  searchParams: Promise<{ nuevo?: string }>
 }) {
   const { consorcio: consorcioId, id: crudo } = await params
   const id = idONoEncontrado(crudo)
-  const parametros = await searchParams
   const pantalla = await conConsorcio(consorcioId, 'Gasto')
   if ('salida' in pantalla) return pantalla.salida
   const { usuarioId, activo } = pantalla
@@ -59,12 +55,6 @@ export default async function GastoPage({
         {gasto.periodo} · {conMayuscula(gasto.clasificacion)} · {gasto.proveedor ?? 'sin proveedor'}
       </p>
 
-      {parametros.nuevo && (
-        <Emergente tono="verde">
-          Gasto registrado. Si hay comprobante, adjuntarlo a continuación.
-        </Emergente>
-      )}
-
       <div className="tarjeta">
         <p>
           Importe <strong className="cifra">{importeParaMostrar(gasto.importe)}</strong>
@@ -95,12 +85,6 @@ export default async function GastoPage({
       )}
     </>
   )
-}
-
-/** La base guarda `ordinario`/`extraordinario` en minúsculas; en pantalla va
- *  con mayúscula inicial. Solo presentación. */
-function conMayuscula(valor: string): string {
-  return valor.charAt(0).toUpperCase() + valor.slice(1)
 }
 
 /**

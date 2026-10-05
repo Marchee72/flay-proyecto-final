@@ -11,7 +11,6 @@ import { posiblesResponsables } from '@/aplicacion/reclamos/asignar'
 import { verReclamo } from '@/aplicacion/reclamos/consultar'
 
 import { conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
-import { Emergente } from '../../../../emergente'
 import { Volver } from '../../../../encabezado-consorcio'
 import { EstadoDeReclamo, UrgenciaDeReclamo } from '../etiquetas'
 import { AccionesDeReclamo } from './acciones-de-reclamo'
@@ -22,14 +21,11 @@ export const metadata: Metadata = { title: 'Reclamo — Flay' }
 /** Detalle con historial completo, acciones por rol y la sugerencia del triage aparte (`CU-08`, `CU-14`). */
 export default async function ReclamoPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ consorcio: string; id: string }>
-  searchParams: Promise<{ registrado?: string }>
 }) {
   const { consorcio: consorcioId, id: crudo } = await params
   const id = idONoEncontrado(crudo)
-  const parametros = await searchParams
   const pantalla = await conConsorcio(consorcioId, 'Reclamo')
   if ('salida' in pantalla) return pantalla.salida
   const { usuarioId, activo } = pantalla
@@ -55,10 +51,6 @@ export default async function ReclamoPage({
           <EstadoDeReclamo estado={reclamo.estado} />
           <UrgenciaDeReclamo urgencia={reclamo.urgencia} />
         </p>
-
-        {parametros.registrado && (
-          <Emergente tono="verde">Reclamo registrado. La administración lo va a asignar.</Emergente>
-        )}
 
         <section className="tarjeta">
           <p>{reclamo.descripcion}</p>

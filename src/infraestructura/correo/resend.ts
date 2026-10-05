@@ -10,7 +10,13 @@ const REMITENTE = process.env.CORREO_REMITENTE ?? 'Flay <no-responder@flay.ar>'
 
 async function enviar(destino: string, asunto: string, texto: string): Promise<void> {
   const clave = process.env.RESEND_API_KEY
-  if (!clave) throw new Error('Falta RESEND_API_KEY')
+  if (!clave) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[correo] Simulado sin RESEND_API_KEY para ${destino}: ${asunto}`)
+      return
+    }
+    throw new Error('Falta RESEND_API_KEY')
+  }
 
   const { error } = await new Resend(clave).emails.send({
     from: REMITENTE,

@@ -1,10 +1,10 @@
+import type { Clasificacion } from '@prisma/client'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, Receipt, ScanSearch, Siren } from 'lucide-react'
+import { Receipt, ScanSearch, Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { fechaParaMostrar, importeParaMostrar, plural } from '@/compartido/formato'
-import { paginasAMostrar } from '@/compartido/paginas'
+import { conMayuscula, fechaParaMostrar, importeParaMostrar, plural } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarGastos } from '@/aplicacion/gastos/listar-gastos'
@@ -17,11 +17,19 @@ import { EnlaceExportar } from '../../../exportar'
 import { Filtros } from '../../../filtros'
 import { TablaDesplazable } from '../../../tabla-desplazable'
 
+import { Paginacion } from '../../../paginacion'
+
 export const metadata: Metadata = { title: 'Gastos — Flay' }
+
+/** La direccion puede traer cualquier cosa en `?clasificacion=`; solo pasan dos. */
+function esClasificacion(valor: string | undefined): valor is Clasificacion {
+  return valor === 'ordinario' || valor === 'extraordinario'
+}
 
 type Parametros = {
   periodo?: string
   rubro?: string
+  clasificacion?: string
   pagina?: string
   /**
    * `?abrir=1` (desde el Resumen) llega con el modal de alta ya abierto. Es lo
@@ -55,6 +63,9 @@ export default async function GastosPage({
         consorcioId: activo.id,
         periodoId: parametros.periodo || undefined,
         rubroId: parametros.rubro || undefined,
+        clasificacion: esClasificacion(parametros.clasificacion)
+          ? parametros.clasificacion
+          : undefined,
         pagina: Number(parametros.pagina ?? 1) || 1,
       }),
       listarPeriodos(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
@@ -79,7 +90,11 @@ export default async function GastosPage({
               <ModalGasto
                 consorcioId={activo.id}
                 mesActual={mesActual}
-                rubros={rubros.map((rubro) => ({ id: rubro.id, etiqueta: rubro.nombre }))}
+                rubros={rubros.map((rubro) => ({
+                  id: rubro.id,
+                  etiqueta: rubro.nombre,
+                  clasificacion: rubro.clasificacion,
+                }))}
                 proveedores={proveedores.map((proveedor) => ({
                   id: proveedor.id,
                   etiqueta: proveedor.razonSocial,
@@ -126,6 +141,19 @@ export default async function GastosPage({
               </select>
             </div>
 
+            <div className="campo">
+              <label htmlFor="clasificacion">Clasificación</label>
+              <select
+                id="clasificacion"
+                name="clasificacion"
+                defaultValue={parametros.clasificacion ?? ''}
+              >
+                <option value="">Todas</option>
+                <option value="ordinario">Ordinario</option>
+                <option value="extraordinario">Extraordinario</option>
+              </select>
+            </div>
+
             <button className="boton boton--fantasma" type="submit">
               Filtrar
             </button>
@@ -141,7 +169,11 @@ export default async function GastosPage({
                 <ModalGasto
                   consorcioId={activo.id}
                   mesActual={mesActual}
-                  rubros={rubros.map((rubro) => ({ id: rubro.id, etiqueta: rubro.nombre }))}
+                  rubros={rubros.map((rubro) => ({
+                    id: rubro.id,
+                    etiqueta: rubro.nombre,
+                    clasificacion: rubro.clasificacion,
+                  }))}
                   proveedores={proveedores.map((proveedor) => ({
                     id: proveedor.id,
                     etiqueta: proveedor.razonSocial,
@@ -164,6 +196,7 @@ export default async function GastosPage({
                     <th scope="col">Rubro</th>
                     <th scope="col">Proveedor</th>
                     <th scope="col">Detalle</th>
+                    <th scope="col">Clasificación</th>
                     <th scope="col" className="numero">
                       Importe
                     </th>
@@ -183,20 +216,54 @@ export default async function GastosPage({
                           <span className="ayuda"> · {gasto.comprobantes} comprobante(s)</span>
                         )}
                       </td>
+                      <td>{conMayuscula(gasto.clasificacion)}</td>
                       <td className="numero cifra">{importeParaMostrar(gasto.importe)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
+                  {/* Los dos subtotales son los que la liquidacion prorratea por
+                      separado (regla RN-04); se muestran salvo que el filtro ya
+                      acote a una sola clasificacion. */}
+                  {!parametros.clasificacion && (
+                    <>
+                      <tr>
+                        <td colSpan={5}>Ordinario</td>
+                        <td className="numero cifra">
+                          {importeParaMostrar(listado.porClasificacion.ordinario)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td colSpan={5}>Extraordinario</td>
+                        <td className="numero cifra">
+                          {importeParaMostrar(listado.porClasificacion.extraordinario)}
+                        </td>
+                      </tr>
+                    </>
+                  )}
                   <tr>
-                    <td colSpan={4}>Total del filtro</td>
+                    <td colSpan={5}>Total del filtro</td>
                     <td className="numero cifra">{importeParaMostrar(listado.total)}</td>
                   </tr>
                 </tfoot>
               </table>
             </TablaDesplazable>
 
-            <Paginado listado={listado} parametros={parametros} consorcioId={activo.id} />
+            <Paginacion
+              pagina={listado.pagina}
+              paginas={listado.paginas}
+              urlParaPagina={(pagina) => {
+                const busqueda = new URLSearchParams()
+                if (parametros.periodo) busqueda.set('periodo', parametros.periodo)
+                if (parametros.rubro) busqueda.set('rubro', parametros.rubro)
+                if (parametros.clasificacion)
+                  busqueda.set('clasificacion', parametros.clasificacion)
+                if (pagina > 1) busqueda.set('pagina', String(pagina))
+                const qs = busqueda.toString()
+                return `/consorcios/${activo.id}/gastos${qs ? `?${qs}` : ''}`
+              }}
+              etiquetaAria="Paginación de gastos"
+            />
           </>
         )}
       </>
@@ -210,65 +277,4 @@ export default async function GastosPage({
       </p>
     )
   }
-}
-
-function Paginado({
-  listado,
-  parametros,
-  consorcioId,
-}: {
-  listado: { pagina: number; paginas: number }
-  parametros: Parametros
-  consorcioId: string
-}) {
-  if (listado.paginas <= 1) return null
-
-  const direccion = (pagina: number) => {
-    const busqueda = new URLSearchParams({ consorcio: consorcioId, pagina: String(pagina) })
-    if (parametros.periodo) busqueda.set('periodo', parametros.periodo)
-    if (parametros.rubro) busqueda.set('rubro', parametros.rubro)
-    return `/gastos?${busqueda}`
-  }
-
-  const paginas = paginasAMostrar(listado.pagina, listado.paginas)
-
-  return (
-    <nav aria-label="Paginación de gastos">
-      <ul className="paginacion">
-        {listado.pagina > 1 && (
-          <li>
-            <Link href={direccion(listado.pagina - 1)}>
-              <ChevronLeft className="icono" aria-hidden="true" />
-              Anterior
-            </Link>
-          </li>
-        )}
-        {paginas.map((pagina) => (
-          <li key={pagina}>
-            {pagina === listado.pagina ? (
-              <Link
-                href={direccion(pagina)}
-                aria-current="page"
-                aria-label={`Página ${pagina}, página actual`}
-              >
-                {pagina}
-              </Link>
-            ) : (
-              <Link href={direccion(pagina)} aria-label={`Ir a la página ${pagina}`}>
-                {pagina}
-              </Link>
-            )}
-          </li>
-        ))}
-        {listado.pagina < listado.paginas && (
-          <li>
-            <Link href={direccion(listado.pagina + 1)}>
-              Siguiente
-              <ChevronRight className="icono" aria-hidden="true" />
-            </Link>
-          </li>
-        )}
-      </ul>
-    </nav>
-  )
 }

@@ -9,7 +9,6 @@ import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { verBandeja } from '@/aplicacion/pendientes/bandeja'
 
 import { accionDespachar } from '../comunicacion/acciones'
-import { Emergente } from '../emergente'
 import { Filtros } from '../filtros'
 import { Marco } from '../marco'
 
@@ -24,7 +23,7 @@ export const metadata: Metadata = { title: 'Bandeja — Flay' }
 export default async function BandejaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ consorcio?: string; despachado?: string; error?: string }>
+  searchParams: Promise<{ consorcio?: string }>
 }) {
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) redirect('/ingresar')
@@ -42,11 +41,6 @@ export default async function BandejaPage({
       <p className="apagado">
         Lo que espera una decisión, en todos los consorcios que administrás.
       </p>
-
-      {parametros.despachado && (
-        <Emergente tono="verde">Se despachó lo que había pendiente.</Emergente>
-      )}
-      {parametros.error && <Emergente tono="rojo">{parametros.error}</Emergente>}
 
       {bandeja.consorcios.length > 1 && (
         <Filtros>

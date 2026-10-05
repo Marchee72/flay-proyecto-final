@@ -1,5 +1,8 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { Plus_Jakarta_Sans } from 'next/font/google'
+
+import { PilaDeAvisos } from './avisos'
 
 import './globals.css'
 
@@ -20,7 +23,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es" className={fuente.variable}>
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* La pila de avisos se monta una sola vez, aca: asi alcanza al panel,
+            al ingreso y a la landing. Suspense porque lee la direccion. */}
+        <Suspense>
+          <PilaDeAvisos />
+        </Suspense>
+      </body>
     </html>
   )
 }

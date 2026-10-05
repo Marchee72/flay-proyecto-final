@@ -827,7 +827,7 @@ model Novedad {
   publicadaEn   DateTime       @default(now()) @map("publicada_en") @db.Timestamptz(6)
   fijada        Boolean        @default(false)
   vigenteDesde  DateTime       @map("vigente_desde") @db.Date
-  vigenteHasta  DateTime       @map("vigente_hasta") @db.Date
+  vigenteHasta  DateTime?      @map("vigente_hasta") @db.Date
   alcance       AlcanceNovedad @default(general)
   /// Que tan grave es el aviso (RF-18): tine el borde y lleva pastilla con icono.
   severidad     Urgencia       @default(baja)

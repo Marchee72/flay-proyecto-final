@@ -8,7 +8,6 @@ import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarEspacios } from '@/aplicacion/reservas/espacios'
 
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
-import { Emergente } from '../../../emergente'
 import { accionHabilitarEspacio } from '../reservas/acciones'
 import { ModalDeshabilitar } from './modal-deshabilitar'
 import { ModalEspacio } from './modal-espacio'
@@ -16,19 +15,7 @@ import { ModalEspacio } from './modal-espacio'
 export const metadata: Metadata = { title: 'Espacios comunes — Flay' }
 
 /** Espacios comunes y sus reglas (`RF-15`, `FR-009`). Los ve todo el consorcio; el ABM es del administrador y la baja es logica. */
-export default async function EspaciosPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ consorcio: string }>
-  searchParams: Promise<{
-    guardado?: string
-    deshabilitado?: string
-    habilitado?: string
-    error?: string
-  }>
-}) {
-  const parametros = await searchParams
+export default async function EspaciosPage({ params }: { params: Promise<{ consorcio: string }> }) {
   const { consorcio: consorcioId } = await params
   const pantalla = await conConsorcio(consorcioId, 'Espacios comunes')
   if ('salida' in pantalla) return pantalla.salida
@@ -52,17 +39,6 @@ export default async function EspaciosPage({
         <p className="apagado">
           Las reglas del reglamento interno, en datos: lo que el sistema aplica al reservar.
         </p>
-
-        {(parametros.guardado || parametros.deshabilitado || parametros.habilitado) && (
-          <Emergente tono="verde">
-            {parametros.deshabilitado
-              ? 'Espacio deshabilitado; las reservas afectadas quedaron canceladas y avisadas.'
-              : parametros.habilitado
-                ? 'Espacio habilitado; ya se puede reservar.'
-                : 'Espacio guardado.'}
-          </Emergente>
-        )}
-        {parametros.error && <Emergente tono="rojo">{parametros.error}</Emergente>}
 
         {administra && (
           <div className="fila-acciones">

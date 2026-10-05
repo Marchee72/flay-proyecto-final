@@ -60,12 +60,9 @@ function Estado({ e }: { e: ExtraccionEnLista }) {
  */
 export default async function CargaAsistidaPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ consorcio: string }>
-  searchParams: Promise<{ descartada?: string }>
 }) {
-  const parametros = await searchParams
   const { consorcio: consorcioId } = await params
   const pantalla = await conConsorcio(consorcioId, 'Carga asistida')
   if ('salida' in pantalla) return pantalla.salida
@@ -87,12 +84,6 @@ export default async function CargaAsistidaPage({
           Subí el comprobante y el sistema propone proveedor, fecha, importe y rubro. El gasto se
           crea recién cuando lo revisás y confirmás.
         </p>
-        {parametros.descartada && (
-          <p className="aviso aviso--atencion" role="status">
-            <BadgeCheck className="icono" aria-hidden="true" />
-            <span>Extracción descartada. No se creó ningún gasto.</span>
-          </p>
-        )}
         <CargadorDeComprobante consorcioId={activo.id} />
 
         <div className="encabezado-lista">

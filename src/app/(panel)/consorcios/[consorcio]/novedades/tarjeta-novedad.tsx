@@ -24,19 +24,16 @@ const ESTADO: Record<NovedadDelConsorcio['estado'], { texto: string; clase: stri
 export function TarjetaNovedad({
   novedad: n,
   conEstado = false,
-  Titulo = 'h2',
 }: {
   novedad: NovedadDelConsorcio
   conEstado?: boolean
-  /** `h3` cuando va dentro de otra seccion, como en el inicio. */
-  Titulo?: 'h2' | 'h3'
 }) {
   return (
     <details className={`tarjeta novedad novedad--${n.severidad}`}>
       <summary className="novedad__resumen">
-        <Titulo>
+        <h2>
           {n.fijada && <Pin className="icono" aria-label="Fijada" />} {n.titulo}
-        </Titulo>
+        </h2>
         <UrgenciaDeReclamo urgencia={n.severidad} />
       </summary>
       <p className="ayuda">
@@ -48,7 +45,9 @@ export function TarjetaNovedad({
             <span className={`etiqueta ${ESTADO[n.estado].clase}`}>
               {ESTADO[n.estado].texto}
             </span>{' '}
-            del {fechaParaMostrar(n.vigenteDesde)} al {fechaParaMostrar(n.vigenteHasta)}
+            {n.vigenteHasta
+              ? `del ${fechaParaMostrar(n.vigenteDesde)} al ${fechaParaMostrar(n.vigenteHasta)}`
+              : `desde el ${fechaParaMostrar(n.vigenteDesde)} (sin vencimiento)`}
           </>
         )}
       </p>

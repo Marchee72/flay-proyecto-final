@@ -1,5 +1,6 @@
 import type { TipoNotificacion } from '@prisma/client'
 
+import { emitirNotificaciones } from '@/aplicacion/comunicacion/eventos-notificaciones'
 import { prisma } from '@/infraestructura/prisma'
 
 /**
@@ -38,7 +39,7 @@ export async function notificar(tx: Transaccion, avisos: AvisoNuevo[]): Promise<
       entidadTipo: aviso.entidadTipo ?? null,
       entidadId: aviso.entidadId ?? null,
     })),
-    select: { id: true },
+    select: { id: true, usuarioId: true, tipo: true, titulo: true, cuerpo: true, creadoEn: true },
   })
 
   const ids = creadas.map((fila) => fila.id)
@@ -47,6 +48,20 @@ export async function notificar(tx: Transaccion, avisos: AvisoNuevo[]): Promise<
     SELECT 'notificacion'::"TipoTrabajo", jsonb_build_object('notificacionId', id)
     FROM unnest(${ids}::uuid[]) AS id
   `
+
+  emitirNotificaciones(
+    creadas.map((c) => ({
+      usuarioId: c.usuarioId,
+      notificacion: {
+        id: c.id,
+        tipo: c.tipo,
+        titulo: c.titulo,
+        cuerpo: c.cuerpo,
+        creadaEn: c.creadoEn.toISOString(),
+        leida: false,
+      },
+    })),
+  )
 }
 
 /** Los usuarios con habilitacion vigente sobre el consorcio activo: son los que pueden ver. */

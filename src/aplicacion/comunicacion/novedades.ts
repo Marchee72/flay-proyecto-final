@@ -3,7 +3,8 @@ import type { AlcanceNovedad, Prisma, Urgencia } from '@prisma/client'
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
-import { divisionDe, pisoDe } from '@/dominio/unidades/division'
+import { divisionDe, ordenarUnidades, pisoDe } from '@/dominio/unidades/division'
+
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { habilitadosDelConsorcio, notificar } from '@/aplicacion/comunicacion/notificar'
 import { sinConsorcio } from '@/infraestructura/cliente-aislado'
@@ -21,8 +22,6 @@ import { unidadesOcupadasPor, usuariosQueOcupan } from '@/infraestructura/reposi
  * su estado, porque es su pantalla de gestion.
  */
 
-const DIA = 24 * 60 * 60 * 1000
-
 export type EstadoNovedad = 'programada' | 'vigente' | 'vencida'
 
 export interface NovedadDelConsorcio {
@@ -32,7 +31,7 @@ export interface NovedadDelConsorcio {
   publicadaEn: string
   fijada: boolean
   vigenteDesde: string
-  vigenteHasta: string
+  vigenteHasta: string | null
   estado: EstadoNovedad
   /** Baja, media o alta: tine el aviso y ordena la lectura (RF-18). */
   severidad: Urgencia
@@ -47,8 +46,8 @@ export class NovedadIncompleta extends ErrorDeAplicacion {
 }
 
 export class VigenciaDeNovedadInvalida extends ErrorDeAplicacion {
-  constructor() {
-    super('La novedad tiene que terminar hoy o después, y no antes de empezar.', 'RF-18')
+  constructor(mensaje = 'La novedad tiene que terminar hoy o después, y no antes de empezar.') {
+    super(mensaje, 'RF-18')
   }
 }
 
@@ -69,9 +68,10 @@ export async function publicarNovedad(
     fijada?: boolean
     /** Por omision, baja. */
     severidad?: Urgencia
-    /** Por omision, desde hoy y por treinta dias. */
+    /** Por omisión, desde hoy. */
     vigenteDesde?: Date
-    vigenteHasta?: Date
+    /** Opcional: si no se indica, la novedad no tiene fecha de caducidad. */
+    vigenteHasta?: Date | null
     alcance?: AlcanceNovedad
     unidadId?: string | null
     division?: string | null
@@ -92,12 +92,13 @@ export async function publicarNovedad(
       const cuerpo = datos.cuerpo.trim()
       if (!titulo || titulo.length > 140 || !cuerpo) throw new NovedadIncompleta()
       const vigenteDesde = datos.vigenteDesde ?? reloj.hoy()
-      const vigenteHasta = datos.vigenteHasta ?? new Date(vigenteDesde.getTime() + 30 * DIA)
+      const vigenteHasta = datos.vigenteHasta ?? null
       if (
         Number.isNaN(vigenteDesde.getTime()) ||
-        Number.isNaN(vigenteHasta.getTime()) ||
-        vigenteHasta < vigenteDesde ||
-        vigenteHasta < reloj.hoy()
+        (vigenteHasta !== null &&
+          (Number.isNaN(vigenteHasta.getTime()) ||
+            vigenteHasta < vigenteDesde ||
+            vigenteHasta < reloj.hoy()))
       ) {
         throw new VigenciaDeNovedadInvalida()
       }
@@ -207,11 +208,12 @@ export async function destinatariosPosibles(
       accion: 'publicar novedades',
     },
     async () => {
-      const unidades = await prisma.unidad.findMany({
-        where: { bajaDesde: null },
-        select: { id: true, designacion: true },
-        orderBy: { designacion: 'asc' },
-      })
+      const unidades = ordenarUnidades(
+        await prisma.unidad.findMany({
+          where: { bajaDesde: null },
+          select: { id: true, designacion: true },
+        }),
+      )
       const divisiones = [
         ...new Set(unidades.map((u) => divisionDe(u.designacion)).filter((d) => d !== null)),
       ].sort()
@@ -245,7 +247,7 @@ export async function listarNovedades(
 
       if (!administra || datos.soloVigentes) {
         where.vigenteDesde = { lte: hoy }
-        where.vigenteHasta = { gte: hoy }
+        where.AND = [{ OR: [{ vigenteHasta: null }, { vigenteHasta: { gte: hoy } }] }]
       }
       // El descarte solo saca la novedad del inicio; en la seccion sigue estando.
       if (datos.soloVigentes) {
@@ -278,8 +280,13 @@ export async function listarNovedades(
         publicadaEn: n.publicadaEn.toISOString(),
         fijada: n.fijada,
         vigenteDesde: n.vigenteDesde.toISOString().slice(0, 10),
-        vigenteHasta: n.vigenteHasta.toISOString().slice(0, 10),
-        estado: n.vigenteDesde > hoy ? 'programada' : n.vigenteHasta < hoy ? 'vencida' : 'vigente',
+        vigenteHasta: n.vigenteHasta ? n.vigenteHasta.toISOString().slice(0, 10) : null,
+        estado:
+          n.vigenteDesde > hoy
+            ? 'programada'
+            : n.vigenteHasta !== null && n.vigenteHasta < hoy
+              ? 'vencida'
+              : 'vigente',
         severidad: n.severidad,
         destinatario:
           n.alcance === 'unidad'

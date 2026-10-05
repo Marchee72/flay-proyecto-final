@@ -36,8 +36,8 @@ export interface DiaCalendario {
   fecha: string | null
   dia: number
   hoy: boolean
-  deshabilitado: boolean
-  motivos: string[]
+  /** Nombre de cada espacio deshabilitado que solapa el dia; vacio si ninguno. */
+  deshabilitados: string[]
   reservas: EventoReserva[]
 }
 
@@ -84,7 +84,7 @@ export function construirCalendario(
 
   const dias: DiaCalendario[] = []
   for (let i = 0; i < relleno; i++) {
-    dias.push({ fecha: null, dia: 0, hoy: false, deshabilitado: false, motivos: [], reservas: [] })
+    dias.push({ fecha: null, dia: 0, hoy: false, deshabilitados: [], reservas: [] })
   }
   for (let d = 1; d <= diasEnMes; d++) {
     const fecha = `${mes}-${String(d).padStart(2, '0')}`
@@ -95,13 +95,13 @@ export function construirCalendario(
       fecha,
       dia: d,
       hoy: fecha === hoy,
-      deshabilitado: delDia.length > 0,
-      motivos: [...new Set(delDia.map((t) => t.motivo))],
+      // Solo los espacios suspendidos ese dia se muestran deshabilitados, no el dia entero.
+      deshabilitados: [...new Set(delDia.map((t) => t.espacio))],
       reservas: porDia.get(fecha) ?? [],
     })
   }
   while (dias.length % 7 !== 0) {
-    dias.push({ fecha: null, dia: 0, hoy: false, deshabilitado: false, motivos: [], reservas: [] })
+    dias.push({ fecha: null, dia: 0, hoy: false, deshabilitados: [], reservas: [] })
   }
 
   const semanas: DiaCalendario[][] = []

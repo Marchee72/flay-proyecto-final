@@ -1,7 +1,9 @@
 import type { AlcanceReclamo, Urgencia } from '@prisma/client'
 
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
+import { ordenarUnidades } from '@/dominio/unidades/division'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
+
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { sinConsorcio } from '@/infraestructura/cliente-aislado'
@@ -118,13 +120,14 @@ export async function unidadesParaReclamar(
     async (acceso) => {
       const privilegiado = acceso.roles.some((r) => r === 'administrador' || r === 'consejo')
       if (privilegiado) {
-        return prisma.unidad.findMany({
+        const unidades = await prisma.unidad.findMany({
           where: { bajaDesde: null },
           select: { id: true, designacion: true },
-          orderBy: { designacion: 'asc' },
         })
+        return ordenarUnidades(unidades)
       }
-      return unidadesOcupadasPor(datos.usuarioId, datos.consorcioId, reloj.hoy())
+      const ocupadas = await unidadesOcupadasPor(datos.usuarioId, datos.consorcioId, reloj.hoy())
+      return ordenarUnidades(ocupadas)
     },
   )
 }

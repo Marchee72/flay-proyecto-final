@@ -23,5 +23,5 @@ export async function accionRefrescar(datos: FormData): Promise<void> {
     )
   }
   revalidatePath('/consorcios/[consorcio]/indicadores', 'page')
-  redirect(`/consorcios/${consorcioId}/indicadores?actualizado=1`)
+  redirect(`/consorcios/${consorcioId}/indicadores?hecho=indicadores-actualizados`)
 }

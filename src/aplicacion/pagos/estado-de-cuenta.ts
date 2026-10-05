@@ -1,6 +1,8 @@
 import { NoEncontrado } from '@/compartido/errores'
 import { Decimal, importe } from '@/compartido/dinero'
+import { ordenarUnidades } from '@/dominio/unidades/division'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
+
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
@@ -247,11 +249,13 @@ export async function verMorosidad(
         return { nominada: false, agregado }
       }
 
-      const unidades = await prisma.unidad.findMany({
-        where: { id: { in: [...deudas.keys()] } },
-        select: { id: true, designacion: true },
-        orderBy: { designacion: 'asc' },
-      })
+      const unidades = ordenarUnidades(
+        await prisma.unidad.findMany({
+          where: { id: { in: [...deudas.keys()] } },
+          select: { id: true, designacion: true },
+        }),
+      )
+
       // Los ids salen de la consulta aislada de arriba: nunca de un parametro.
       const ocupantes = await ocupantesVigentesDe(
         unidades.map((unidad) => unidad.id),

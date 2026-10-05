@@ -2,7 +2,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { importe } from '@/compartido/dinero'
 import { anularLiquidacion } from '@/aplicacion/liquidacion/anular'
-import { liquidarPeriodo, PeriodoNoCerrado } from '@/aplicacion/liquidacion/liquidar'
+import {
+  GastosCambiaron,
+  liquidarPeriodo,
+  PeriodoNoLiquidable,
+  PeriodoYaLiquidado,
+  previsualizarLiquidacion,
+} from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
 import { cambiarCoeficiente, cargarPadron, editarPadron } from '@/aplicacion/consorcios/unidades'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
@@ -66,7 +72,7 @@ afterEach(async () => {
   await limpiar()
 })
 
-async function periodoConGasto(mes: number, importeGasto = '1000.00') {
+async function periodoConGasto(mes: number, importeGasto = '1000.00', cerrar = true) {
   const { periodoId } = await periodoPara(repo, RELOJ, {
     usuarioId: administrador,
     consorcioId,
@@ -84,7 +90,7 @@ async function periodoConGasto(mes: number, importeGasto = '1000.00') {
     descripcion: `Gasto de ${mes}`,
   })
 
-  await cerrarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
+  if (cerrar) await cerrarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
   return periodoId
 }
 
@@ -113,17 +119,85 @@ describe('emision de la liquidacion', () => {
     expect(detalles[0].totalUnidad.toFixed(2)).toBe('500.00')
   })
 
-  it('un periodo que no esta cerrado no se liquida', async () => {
-    const { periodoId } = await periodoPara(repo, RELOJ, {
+  it('un periodo abierto se liquida sin cerrarlo antes: liquidar lo cierra', async () => {
+    const periodoId = await periodoConGasto(3, '1000.00', false)
+
+    await liquidarPeriodo(repo, RELOJ, {
       usuarioId: administrador,
       consorcioId,
-      anio: 2026,
-      mes: 3,
+      periodoId,
+      totalRevisado: '1000.00',
     })
+
+    const periodo = await prismaBase.periodo.findUniqueOrThrow({ where: { id: periodoId } })
+    expect(periodo.estado).toBe('liquidado')
+  })
+
+  it('un periodo anulado no se liquida', async () => {
+    const periodoId = await periodoConGasto(3, '1000.00', false)
+    await prismaBase.periodo.update({ where: { id: periodoId }, data: { estado: 'anulado' } })
 
     await expect(
       liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId }),
-    ).rejects.toThrow(PeriodoNoCerrado)
+    ).rejects.toThrow(PeriodoNoLiquidable)
+  })
+
+  it('la vista previa da lo mismo que la emision y no escribe nada', async () => {
+    const periodoId = await periodoConGasto(6, '1000.01', false)
+
+    const previa = await previsualizarLiquidacion(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId,
+    })
+
+    expect(previa.totalGeneral).toBe('1000.01')
+    expect(previa.gastos).toHaveLength(1)
+    expect(previa.detalles.map((d) => d.designacion)).toEqual(['1A', '1B'])
+    expect(await prismaBase.liquidacion.count({ where: { periodoId } })).toBe(0)
+    expect((await prismaBase.periodo.findUniqueOrThrow({ where: { id: periodoId } })).estado).toBe(
+      'abierto',
+    )
+
+    const emitida = await liquidarPeriodo(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId,
+      totalRevisado: previa.totalGeneral,
+    })
+
+    const detalles = await prismaBase.detalleLiquidacion.findMany({
+      where: { liquidacionId: emitida.liquidacionId },
+      include: { unidad: { select: { designacion: true } } },
+    })
+    const emitidos = Object.fromEntries(
+      detalles.map((d) => [d.unidad.designacion, d.totalUnidad.toFixed(2)]),
+    )
+    expect(Object.fromEntries(previa.detalles.map((d) => [d.designacion, d.totalUnidad]))).toEqual(
+      emitidos,
+    )
+
+    await expect(
+      previsualizarLiquidacion(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId }),
+    ).rejects.toThrow(PeriodoYaLiquidado)
+  })
+
+  it('si los gastos cambiaron desde la revision, no emite', async () => {
+    const periodoId = await periodoConGasto(7, '1000.00', false)
+
+    await expect(
+      liquidarPeriodo(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        periodoId,
+        totalRevisado: '900.00',
+      }),
+    ).rejects.toThrow(GastosCambiaron)
+
+    expect(await prismaBase.liquidacion.count({ where: { periodoId } })).toBe(0)
+    expect((await prismaBase.periodo.findUniqueOrThrow({ where: { id: periodoId } })).estado).toBe(
+      'abierto',
+    )
   })
 
   /** SC-011: el candado es la base, no el codigo. */

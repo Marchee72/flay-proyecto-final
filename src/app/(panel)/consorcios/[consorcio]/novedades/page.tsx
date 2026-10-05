@@ -6,13 +6,10 @@ import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
-import { Emergente } from '../../../emergente'
 import { ModalNovedad } from './modal-novedad'
 import { TarjetaNovedad } from './tarjeta-novedad'
 
 export const metadata: Metadata = { title: 'Novedades — Flay' }
-
-const DIA = 24 * 60 * 60 * 1000
 
 /**
  * Novedades del consorcio (`RF-18`, `CU-12`): fijadas primero. El consorcista
@@ -21,12 +18,9 @@ const DIA = 24 * 60 * 60 * 1000
  */
 export default async function NovedadesPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ consorcio: string }>
-  searchParams: Promise<{ publicada?: string }>
 }) {
-  const parametros = await searchParams
   const { consorcio: consorcioId } = await params
   const pantalla = await conConsorcio(consorcioId, 'Novedades')
   if ('salida' in pantalla) return pantalla.salida
@@ -46,13 +40,11 @@ export default async function NovedadesPage({
       <>
         <h1>Novedades</h1>
         <p className="apagado">Lo que la administración le dice al consorcio.</p>
-        {parametros.publicada && <Emergente tono="verde">Novedad publicada y avisada.</Emergente>}
         {destinatarios && (
           <div className="fila-acciones">
             <ModalNovedad
               consorcioId={activo.id}
               hoy={hoy.toISOString().slice(0, 10)}
-              enUnMes={new Date(hoy.getTime() + 30 * DIA).toISOString().slice(0, 10)}
               destinatarios={destinatarios}
             />
           </div>

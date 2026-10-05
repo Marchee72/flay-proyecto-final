@@ -1,3 +1,4 @@
+import { ordenarUnidades } from '@/dominio/unidades/division'
 import { prismaBase } from '@/infraestructura/prisma'
 
 /**
@@ -82,14 +83,14 @@ export async function unidadesOcupadasPor(
   consorcioId: string,
   fecha: Date,
 ): Promise<{ id: string; designacion: string }[]> {
-  return prismaBase.$queryRaw<{ id: string; designacion: string }[]>`
+  const filas = await prismaBase.$queryRaw<{ id: string; designacion: string }[]>`
     SELECT un."id", un."designacion" FROM "Ocupacion" o
     JOIN "Usuario" u ON u."persona_id" = o."persona_id"
     JOIN "Unidad" un ON un."id" = o."unidad_id"
     WHERE u."id" = ${usuarioId}::uuid
       AND un."consorcio_id" = ${consorcioId}::uuid
-      AND o."vigencia" @> ${fecha}::date
-    ORDER BY un."designacion"`
+      AND o."vigencia" @> ${fecha}::date`
+  return ordenarUnidades(filas)
 }
 
 /**

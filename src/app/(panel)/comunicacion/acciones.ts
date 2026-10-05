@@ -44,6 +44,18 @@ export async function accionPublicarNovedad(
   if (severidad !== 'baja' && severidad !== 'media' && severidad !== 'alta') {
     return { mensaje: 'Elegí la severidad de la novedad.' }
   }
+  const desdeTexto = texto(datos, 'desde')
+  const hastaTexto = texto(datos, 'hasta')
+  const hoy = RELOJ.hoy()
+  const fechaDesde = desdeTexto ? fecha(desdeTexto) : hoy
+  if (fechaDesde < hoy) {
+    return { mensaje: 'La fecha desde no puede ser anterior a hoy.' }
+  }
+  const fechaHasta = hastaTexto ? fecha(hastaTexto) : null
+  if (fechaHasta && fechaHasta < fechaDesde) {
+    return { mensaje: 'La fecha hasta no puede ser anterior a la fecha desde.' }
+  }
+
   try {
     await publicarNovedad(HABILITACIONES, RELOJ, {
       usuarioId,
@@ -52,8 +64,8 @@ export async function accionPublicarNovedad(
       cuerpo: texto(datos, 'cuerpo'),
       fijada: datos.get('fijada') === 'on',
       severidad: severidad satisfies Urgencia,
-      vigenteDesde: fecha(texto(datos, 'desde')),
-      vigenteHasta: fecha(texto(datos, 'hasta')),
+      vigenteDesde: fechaDesde,
+      vigenteHasta: fechaHasta,
       alcance: alcance satisfies AlcanceNovedad,
       unidadId: texto(datos, 'unidad') || null,
       division: texto(datos, 'division') || null,
@@ -63,8 +75,9 @@ export async function accionPublicarNovedad(
     if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
     throw error
   }
+
   revalidatePath('/consorcios/[consorcio]/novedades', 'page')
-  redirect(`/consorcios/${consorcioId}/novedades?publicada=1`)
+  redirect(`/consorcios/${consorcioId}/novedades?hecho=novedad-publicada`)
 }
 
 /** Dejar de ver una novedad; vuelve a la pagina desde donde se descarto. */
@@ -107,7 +120,7 @@ export async function accionCargarDocumento(
     throw error
   }
   revalidatePath('/consorcios/[consorcio]/documentos', 'page')
-  return { mensaje: '', destino: `/consorcios/${consorcioId}/documentos?cargado=1` }
+  return { mensaje: '', destino: `/consorcios/${consorcioId}/documentos?hecho=documento-cargado` }
 }
 
 export async function accionReindexar(datos: FormData): Promise<void> {
@@ -120,6 +133,7 @@ export async function accionReindexar(datos: FormData): Promise<void> {
     documentoId: texto(datos, 'documento'),
   })
   revalidatePath('/consorcios/[consorcio]/documentos', 'page')
+  redirect(`/consorcios/${consorcioId}/documentos?hecho=documento-reindexado`)
 }
 
 export async function accionDespachar(datos: FormData): Promise<void> {
@@ -136,7 +150,7 @@ export async function accionDespachar(datos: FormData): Promise<void> {
     redirect(`/bandeja?error=${encodeURIComponent(error.mensajeParaUsuario)}`)
   }
   revalidatePath('/bandeja')
-  redirect('/bandeja?despachado=1')
+  redirect('/bandeja?hecho=despachado')
 }
 
 export type ResultadoDeConsultaVisible =

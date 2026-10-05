@@ -9,7 +9,6 @@ import { listarEspacios } from '@/aplicacion/reservas/espacios'
 import { listarReservas, unidadesParaReservar } from '@/aplicacion/reservas/reservar'
 
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
-import { Emergente } from '../../../emergente'
 import { accionCancelarReserva } from './acciones'
 import { ModalReserva } from './modal-reserva'
 import { Filtros } from '../../../filtros'
@@ -29,12 +28,7 @@ export default async function ReservasPage({
   searchParams,
 }: {
   params: Promise<{ consorcio: string }>
-  searchParams: Promise<{
-    espacio?: string
-    confirmada?: string
-    cancelada?: string
-    error?: string
-  }>
+  searchParams: Promise<{ espacio?: string }>
 }) {
   const parametros = await searchParams
   const { consorcio: consorcioId } = await params
@@ -45,7 +39,11 @@ export default async function ReservasPage({
   try {
     const hoy = RELOJ.hoy()
     const [espacios, unidades, roles, reservas] = await Promise.all([
-      listarEspacios(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
+      listarEspacios(HABILITACIONES, RELOJ, {
+        usuarioId,
+        consorcioId: activo.id,
+        incluirInactivos: true,
+      }),
       unidadesParaReservar(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
       rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id),
       listarReservas(HABILITACIONES, RELOJ, {
@@ -57,6 +55,8 @@ export default async function ReservasPage({
       }),
     ])
     const esAdministrador = roles.includes('administrador')
+    // Solo los activos son reservables; el filtro de abajo sí lista los deshabilitados.
+    const activos = espacios.filter((e) => e.activo)
 
     return (
       <>
@@ -84,13 +84,7 @@ export default async function ReservasPage({
           )}
         </div>
 
-        {parametros.confirmada && (
-          <Emergente tono="verde">Reserva confirmada. Te llega un aviso por correo.</Emergente>
-        )}
-        {parametros.cancelada && <Emergente tono="verde">Reserva cancelada.</Emergente>}
-        {parametros.error && <Emergente tono="rojo">{parametros.error}</Emergente>}
-
-        {espacios.length === 0 ? (
+        {activos.length === 0 ? (
           <div className="vacio">
             <CalendarCheck aria-hidden="true" />
             <p>Este consorcio no tiene espacios reservables todavía.</p>
@@ -107,7 +101,7 @@ export default async function ReservasPage({
           <div className="fila-acciones">
             <ModalReserva
               consorcioId={activo.id}
-              espacios={espacios}
+              espacios={activos}
               unidades={unidades}
               espacioInicial={parametros.espacio}
             />
@@ -124,6 +118,7 @@ export default async function ReservasPage({
                 {espacios.map((e) => (
                   <option key={e.id} value={e.id}>
                     {e.nombre}
+                    {!e.activo && ' (deshabilitado)'}
                   </option>
                 ))}
               </select>

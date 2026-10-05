@@ -61,7 +61,7 @@ test('sin asistencia, la pregunta lleva a los documentos y el reclamo se registr
   await dialogo.getByLabel('Detalle').fill('Hay una persona atrapada en el ascensor.')
   await dialogo.getByRole('button', { name: 'Registrar', exact: true }).click()
   await expect(page).toHaveURL(/\/reclamos\/[0-9a-f-]+/)
-  await expect(page.getByRole('status')).toContainText('Reclamo registrado')
+  await expect(page.getByRole('status').filter({ hasText: 'Reclamo registrado' })).toBeVisible()
   const reclamoId = page.url().split('/reclamos/')[1].split('?')[0]
 
   // Lo que importa aca es que el reclamo existe y sigue su curso sin la

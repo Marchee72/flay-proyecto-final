@@ -8,7 +8,6 @@ import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verPanel } from '@/aplicacion/indicadores/indicadores'
 
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
-import { Emergente } from '../../../emergente'
 import { accionRefrescar } from './acciones'
 import { TablaDesplazable } from '../../../tabla-desplazable'
 
@@ -52,12 +51,9 @@ const PAGINAS = [
  */
 export default async function IndicadoresPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ consorcio: string }>
-  searchParams: Promise<{ actualizado?: string; error?: string }>
 }) {
-  const parametros = await searchParams
   const { consorcio: consorcioId } = await params
   const pantalla = await conConsorcio(consorcioId, 'Indicadores')
   if ('salida' in pantalla) return pantalla.salida
@@ -87,9 +83,6 @@ export default async function IndicadoresPage({
           La cartera completa, sobre datos del propio sistema. Última actualización:{' '}
           {panel.refrescadoEn ? momentoParaMostrar(panel.refrescadoEn) : 'todavía no se actualizó'}.
         </p>
-
-        {parametros.actualizado && <Emergente tono="verde">Indicadores actualizados.</Emergente>}
-        {parametros.error && <Emergente tono="rojo">{parametros.error}</Emergente>}
 
         <div className="kpi">
           <span className="kpi__icono">

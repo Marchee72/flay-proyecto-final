@@ -3,7 +3,7 @@
 import { Plus } from 'lucide-react'
 
 import { BotonModal } from '../../../modal'
-import { FormularioGasto, type Opcion } from './formulario'
+import { FormularioGasto, type Opcion, type OpcionRubro } from './formulario'
 
 /**
  * Alta de gasto en modal (guia §3.4, patron «Modal»). Reutiliza el formulario
@@ -20,7 +20,7 @@ export function ModalGasto({
 }: {
   consorcioId: string
   mesActual: string
-  rubros: readonly Opcion[]
+  rubros: readonly OpcionRubro[]
   proveedores: readonly Opcion[]
   abrir?: boolean
 }) {

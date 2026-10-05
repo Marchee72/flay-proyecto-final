@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, type ReactNode } from 'react'
+import { useActionState, useState, type ReactNode } from 'react'
 
 import { accionRegistrarGasto } from './acciones'
 
@@ -9,6 +9,11 @@ const SIN_ERROR = { mensaje: '' }
 export interface Opcion {
   id: string
   etiqueta: string
+}
+
+/** El rubro lleva su clasificacion para poder proponerla (regla RN-04). */
+export interface OpcionRubro extends Opcion {
+  clasificacion: 'ordinario' | 'extraordinario'
 }
 
 /**
@@ -32,7 +37,7 @@ export function FormularioGasto({
   consorcioId: string
   /** `YYYY-MM` de hoy: el mes al que se imputa si nadie elige otro. */
   mesActual: string
-  rubros: readonly Opcion[]
+  rubros: readonly OpcionRubro[]
   proveedores: readonly Opcion[]
   precargado: Readonly<Record<string, string>>
   /** Con extraccion, confirmar crea el gasto **y** ata el comprobante (`004-servicios` RF-06). */
@@ -42,6 +47,17 @@ export function FormularioGasto({
 }) {
   const [estado, accion, enviando] = useActionState(accionRegistrarGasto, SIN_ERROR)
   const hayError = estado.mensaje !== ''
+
+  // La clasificacion la propone el rubro y la puede corregir quien carga: al
+  // cambiar de rubro vuelve a la suya, porque es lo que acierta casi siempre
+  // (regla RN-04). Lo que se guarda queda congelado en el gasto.
+  const rubroInicial = precargado.rubro || (rubros[0]?.id ?? '')
+  const [rubroElegido, setRubroElegido] = useState(rubroInicial)
+  const deRubro = (id: string) =>
+    rubros.find((rubro) => rubro.id === id)?.clasificacion ?? 'ordinario'
+  const [clasificacion, setClasificacion] = useState(
+    precargado.clasificacion ?? deRubro(rubroInicial),
+  )
 
   const marca = (campo: string) =>
     precargado[campo] ? (
@@ -75,7 +91,11 @@ export function FormularioGasto({
         <select
           id="rubro"
           name="rubro"
-          defaultValue={precargado.rubro ?? ''}
+          value={rubroElegido}
+          onChange={(evento) => {
+            setRubroElegido(evento.target.value)
+            setClasificacion(deRubro(evento.target.value))
+          }}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-gasto' : undefined}
@@ -86,6 +106,29 @@ export function FormularioGasto({
             </option>
           ))}
         </select>
+      </div>
+
+      <div className="campo">
+        <label htmlFor="clasificacion">Clasificación</label>
+        {marca('clasificacion')}
+        <select
+          id="clasificacion"
+          name="clasificacion"
+          value={clasificacion}
+          onChange={(evento) =>
+            setClasificacion(evento.target.value as OpcionRubro['clasificacion'])
+          }
+          required
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? 'error-gasto ayuda-clasificacion' : 'ayuda-clasificacion'}
+        >
+          <option value="ordinario">Ordinario</option>
+          <option value="extraordinario">Extraordinario</option>
+        </select>
+        <p className="ayuda" id="ayuda-clasificacion">
+          La propone el rubro. Las ordinarias las paga el ocupante y las extraordinarias el
+          propietario, así que conviene corregirla si este gasto no es lo habitual del rubro.
+        </p>
       </div>
 
       <div className="campo">

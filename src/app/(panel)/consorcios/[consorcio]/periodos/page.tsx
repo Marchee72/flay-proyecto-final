@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BadgeCheck, CalendarDays, Circle, CircleDot, Siren, type LucideIcon } from 'lucide-react'
+import { CalendarDays, Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
@@ -9,30 +9,16 @@ import { listarPeriodos } from '@/aplicacion/periodos/periodos'
 
 import { fechaParaMostrar, importeParaMostrar } from '@/compartido/formato'
 
-import { BotonAnular, BotonCerrar, BotonLiquidar } from './acciones-de-estado'
+import { BotonAnular, BotonCerrar } from './acciones-de-estado'
 import { conConsorcio } from '../../../con-consorcio'
-import { Emergente } from '../../../emergente'
+import { EstadoDelPeriodo } from '../../../estado-periodo'
 import { EnlaceExportar } from '../../../exportar'
 import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Períodos — Flay' }
 
-/** Lo que acaba de pasar, para el aviso de arriba: las acciones redirigen aca. */
-const HECHO: Record<string, string> = {
-  cerrado: 'Período cerrado. Ya se puede liquidar.',
-  liquidado: 'Liquidación emitida. Las expensas ya están en cada unidad.',
-  anulado: 'Liquidación anulada. Los pagos aplicados quedaron como saldo a favor.',
-}
-
-export default async function PeriodosPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ consorcio: string }>
-  searchParams: Promise<{ hecho?: string }>
-}) {
+export default async function PeriodosPage({ params }: { params: Promise<{ consorcio: string }> }) {
   const { consorcio: consorcioId } = await params
-  const hecho = HECHO[(await searchParams).hecho ?? '']
   const pantalla = await conConsorcio(consorcioId, 'Períodos')
   if ('salida' in pantalla) return pantalla.salida
   const { usuarioId, activo } = pantalla
@@ -49,7 +35,6 @@ export default async function PeriodosPage({
       <>
         <h1>Períodos</h1>
         <p className="apagado">Un período por mes; aparece al cargar el primer gasto.</p>
-        {hecho && <Emergente tono="verde">{hecho}</Emergente>}
         <div className="fila-acciones">
           {roles.some((r) => r === 'administrador' || r === 'consejo') && (
             <EnlaceExportar consorcioId={activo.id} tabla="liquidaciones" />
@@ -87,7 +72,18 @@ export default async function PeriodosPage({
                       <td>
                         <EstadoDelPeriodo estado={periodo.estado} />
                       </td>
-                      <td className="numero cifra">{periodo.gastos}</td>
+                      {/* Los gastos se pueden ver siempre, tambien de un periodo
+                          liquidado: la liquidacion no los esconde, solo los
+                          congela (regla RN-03). */}
+                      <td className="numero cifra">
+                        {periodo.gastos > 0 ? (
+                          <Link href={`/consorcios/${activo.id}/gastos?periodo=${periodo.id}`}>
+                            {periodo.gastos}
+                          </Link>
+                        ) : (
+                          periodo.gastos
+                        )}
+                      </td>
                       <td className="numero cifra">
                         {periodo.liquidacion ? (
                           <>
@@ -110,13 +106,13 @@ export default async function PeriodosPage({
                           {periodo.estado === 'abierto' && (
                             <BotonCerrar consorcioId={activo.id} periodoId={periodo.id} />
                           )}
-                          {periodo.estado !== 'abierto' && !periodo.liquidacion && (
-                            <BotonLiquidar
-                              consorcioId={activo.id}
-                              periodoId={periodo.id}
-                              periodoEtiqueta={etiqueta}
-                              cantidadGastos={periodo.gastos}
-                            />
+                          {periodo.estado !== 'anulado' && !periodo.liquidacion && (
+                            <Link
+                              className="boton boton--primario"
+                              href={`/consorcios/${activo.id}/periodos/${periodo.id}`}
+                            >
+                              Revisar y liquidar
+                            </Link>
                           )}
                           {periodo.liquidacion && (
                             <BotonAnular
@@ -153,36 +149,4 @@ export default async function PeriodosPage({
       </p>
     )
   }
-}
-
-/**
- * La base guarda `abierto`/`cerrado`/`liquidado`/`anulado` en minúsculas; en
- * pantalla van con mayúscula inicial y `.etiqueta` (guía §3.4). Abierto es el
- * estado de trabajo (ámbar, admite gastos; sin triángulo, que no es una
- * alerta), Cerrado espera (gris), Liquidado cierra (verde), Anulado advierte
- * (rojo). El icono reutiliza la escala de urgencias de la guía
- * §3.2 con el mismo color: color + icono + palabra, nunca color solo.
- * Solo presentación.
- */
-const ETIQUETA_ESTADO_PERIODO: Record<string, { texto: string; clase: string; Icono: LucideIcon }> =
-  {
-    abierto: { texto: 'Abierto', clase: 'etiqueta--propietario', Icono: CircleDot },
-    cerrado: { texto: 'Cerrado', clase: 'etiqueta--pendiente', Icono: Circle },
-    liquidado: { texto: 'Liquidado', clase: 'etiqueta--rendido', Icono: BadgeCheck },
-    anulado: { texto: 'Anulado', clase: 'etiqueta--vencido', Icono: Siren },
-  }
-
-function EstadoDelPeriodo({ estado }: { estado: string }) {
-  const etiqueta = ETIQUETA_ESTADO_PERIODO[estado] ?? {
-    texto: estado,
-    clase: 'etiqueta--pendiente',
-    Icono: Circle,
-  }
-
-  return (
-    <span className={`etiqueta ${etiqueta.clase}`}>
-      <etiqueta.Icono className="icono" aria-hidden="true" />
-      {etiqueta.texto}
-    </span>
-  )
 }

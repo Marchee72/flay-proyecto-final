@@ -113,6 +113,14 @@ export function plural(cantidad: number, singular: string, plural: string): stri
 }
 
 /**
+ * La base guarda los enum en minusculas (`ordinario`, `vigente`); en pantalla
+ * van con mayuscula inicial. Solo presentacion.
+ */
+export function conMayuscula(valor: string): string {
+  return valor.charAt(0).toUpperCase() + valor.slice(1)
+}
+
+/**
  * Lo que la persona escribe en un campo de importe → la cadena que valida el
  * caso de uso (`12000.50`). Acepta la coma decimal, que es la de acá, y el
  * punto de miles si viene con coma (`12.000,50`). Sin aritmetica: solo texto.

@@ -1,5 +1,6 @@
 import { coeficienteSerializado } from '@/compartido/formato'
 import { sumarCoeficientes, SUMA_EXIGIDA } from '@/dominio/coeficientes/suma'
+import { ordenarUnidades } from '@/dominio/unidades/division'
 import { importe } from '@/compartido/dinero'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
@@ -59,7 +60,7 @@ export async function verConsorcio(
         where: { id: datos.consorcioId },
       })
 
-      const todas = await prisma.unidad.findMany({ orderBy: { designacion: 'asc' } })
+      const todas = ordenarUnidades(await prisma.unidad.findMany())
       const unidades = todas.filter((unidad) => unidad.bajaDesde === null)
 
       const suma = sumarCoeficientes(

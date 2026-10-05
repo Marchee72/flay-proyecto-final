@@ -1,8 +1,14 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { Siren, TriangleAlert } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { coeficienteParaMostrar, fechaParaMostrar, importeParaMostrar } from '@/compartido/formato'
+import {
+  coeficienteParaMostrar,
+  fechaParaMostrar,
+  importeParaMostrar,
+  plural,
+} from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verLiquidacion } from '@/aplicacion/liquidacion/ver-liquidacion'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
@@ -93,6 +99,12 @@ export default async function LiquidacionPage({
           </div>
         )}
 
+        <p>
+          <Link href={`/consorcios/${activo.id}/gastos?periodo=${liquidacion.periodoId}`}>
+            Ver los gastos de {liquidacion.periodo}
+          </Link>
+        </p>
+
         <TablaDesplazable>
           <table>
             <caption className="ayuda">Detalle por unidad</caption>
@@ -135,17 +147,23 @@ export default async function LiquidacionPage({
                   </td>
                   <td className="numero cifra">{importeParaMostrar(detalle.deudaAnterior)}</td>
                   <td className="numero cifra">
-                    {importeParaMostrar(detalle.interesMora)}
-                    {detalle.intereses.length > 0 && (
-                      <span className="ayuda">
-                        {' '}
-                        {detalle.intereses
-                          .map(
-                            (linea) =>
-                              `${importeParaMostrar(linea.capital)} × ${linea.tasaMensual} % × ${linea.meses}`,
-                          )
-                          .join(' + ')}
-                      </span>
+                    {detalle.intereses.length === 0 ? (
+                      importeParaMostrar(detalle.interesMora)
+                    ) : (
+                      /* El desglose se despliega: en linea ensanchaba la
+                         columna hasta romper la tabla (nota 13). */
+                      <details className="desglose">
+                        <summary>{importeParaMostrar(detalle.interesMora)}</summary>
+                        <ul>
+                          {detalle.intereses.map((linea) => (
+                            <li key={`${linea.capital}-${linea.meses}`}>
+                              <span className="cifra">{importeParaMostrar(linea.capital)}</span> ×{' '}
+                              {linea.tasaMensual} % × {plural(linea.meses, 'mes', 'meses')} ={' '}
+                              <span className="cifra">{importeParaMostrar(linea.importe)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
                     )}
                   </td>
                   <td className="numero cifra">{importeParaMostrar(detalle.ajusteRedondeo)}</td>

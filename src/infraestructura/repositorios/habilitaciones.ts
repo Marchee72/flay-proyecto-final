@@ -1,3 +1,5 @@
+import { cache } from 'react'
+
 import type { AccesoVigente, RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import { prismaBase } from '@/infraestructura/prisma'
 
@@ -7,16 +9,49 @@ import { prismaBase } from '@/infraestructura/prisma'
  *
  * Una habilitacion no vigente equivale a inexistente (FR-004): la vigencia se
  * evalua contra la fecha, no contra la existencia de la fila.
+ *
+ * Las consultas estan cacheadas por peticion con `React.cache()` usando el
+ * milisegundo de la fecha para evitar ejecuciones N+1 redundantes durante
+ * el ciclo de vida de una misma solicitud (RNF-06).
  */
 const vigenteA = (fecha: Date) => ({
   vigenciaDesde: { lte: fecha },
   OR: [{ vigenciaHasta: null }, { vigenciaHasta: { gte: fecha } }],
 })
 
-export const repositorioHabilitaciones: RepositorioHabilitaciones = {
-  async accesoVigente(usuarioId, consorcioId, fecha): Promise<AccesoVigente | null> {
+const esSuperAdministradorMemo = cache(
+  async (usuarioId: string, fechaTiempo: number): Promise<boolean> => {
+    const fecha = new Date(fechaTiempo)
+    const fila = await prismaBase.habilitacionPlataforma.findFirst({
+      where: { usuarioId, ...vigenteA(fecha) },
+      select: { id: true },
+    })
+    return fila !== null
+  },
+)
+
+const administradorasDeMemo = cache(
+  async (usuarioId: string, fechaTiempo: number): Promise<string[]> => {
+    const fecha = new Date(fechaTiempo)
+    const filas = await prismaBase.habilitacionAdministradora.findMany({
+      where: { usuarioId, ...vigenteA(fecha) },
+      select: { administradoraId: true },
+      distinct: ['administradoraId'],
+    })
+    return filas.map((f) => f.administradoraId)
+  },
+)
+
+const accesoVigenteMemo = cache(
+  async (
+    usuarioId: string,
+    consorcioId: string,
+    fechaTiempo: number,
+  ): Promise<AccesoVigente | null> => {
+    const fecha = new Date(fechaTiempo)
+
     // 1. Plataforma: vale sobre cualquier consorcio.
-    if (await this.esSuperAdministrador(usuarioId, fecha)) {
+    if (await esSuperAdministradorMemo(usuarioId, fechaTiempo)) {
       return { usuarioId, consorcioId, roles: ['administrador'], origen: 'plataforma' }
     }
 
@@ -47,31 +82,18 @@ export const repositorioHabilitaciones: RepositorioHabilitaciones = {
 
     return { usuarioId, consorcioId, roles: propias.map((h) => h.rol), origen: 'consorcio' }
   },
+)
 
-  async esSuperAdministrador(usuarioId, fecha): Promise<boolean> {
-    const fila = await prismaBase.habilitacionPlataforma.findFirst({
-      where: { usuarioId, ...vigenteA(fecha) },
-      select: { id: true },
-    })
-    return fila !== null
-  },
+const consorciosDeMemo = cache(
+  async (usuarioId: string, fechaTiempo: number): Promise<string[]> => {
+    const fecha = new Date(fechaTiempo)
 
-  async administradorasDe(usuarioId, fecha): Promise<string[]> {
-    const filas = await prismaBase.habilitacionAdministradora.findMany({
-      where: { usuarioId, ...vigenteA(fecha) },
-      select: { administradoraId: true },
-      distinct: ['administradoraId'],
-    })
-    return filas.map((f) => f.administradoraId)
-  },
-
-  async consorciosDe(usuarioId, fecha): Promise<string[]> {
-    if (await this.esSuperAdministrador(usuarioId, fecha)) {
+    if (await esSuperAdministradorMemo(usuarioId, fechaTiempo)) {
       const todos = await prismaBase.consorcio.findMany({ select: { id: true } })
       return todos.map((c) => c.id)
     }
 
-    const administradoras = await this.administradorasDe(usuarioId, fecha)
+    const administradoras = await administradorasDeMemo(usuarioId, fechaTiempo)
 
     const [deEmpresas, propios] = await Promise.all([
       administradoras.length > 0
@@ -88,5 +110,23 @@ export const repositorioHabilitaciones: RepositorioHabilitaciones = {
     ])
 
     return [...new Set([...deEmpresas.map((c) => c.id), ...propios.map((h) => h.consorcioId)])]
+  },
+)
+
+export const repositorioHabilitaciones: RepositorioHabilitaciones = {
+  accesoVigente(usuarioId, consorcioId, fecha) {
+    return accesoVigenteMemo(usuarioId, consorcioId, fecha.getTime())
+  },
+
+  esSuperAdministrador(usuarioId, fecha) {
+    return esSuperAdministradorMemo(usuarioId, fecha.getTime())
+  },
+
+  administradorasDe(usuarioId, fecha) {
+    return administradorasDeMemo(usuarioId, fecha.getTime())
+  },
+
+  consorciosDe(usuarioId, fecha) {
+    return consorciosDeMemo(usuarioId, fecha.getTime())
   },
 }

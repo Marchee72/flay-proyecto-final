@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import NextAuth, { AuthError } from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import { z } from 'zod'
@@ -86,21 +87,21 @@ function origenDe(pedido: Request): string {
 
 /**
  * Identidad de quien pide, o nada. La autorizacion **no** se resuelve aca: esto
- * responde «quien sos», no «que podes hacer».
+ * responde «quien sos», no «que podes hacer». Cacheada por peticion (RNF-06).
  */
-export async function usuarioDeLaSesion(): Promise<string | null> {
+export const usuarioDeLaSesion = cache(async (): Promise<string | null> => {
   const sesion = await auth()
   return sesion?.user?.id ?? null
-}
+})
 
-/** Nombre y apellido para la barra: quien esta adentro tiene que verse. */
-export async function nombreDelUsuario(usuarioId: string): Promise<string> {
+/** Nombre y apellido para la barra: quien esta adentro tiene que verse. Cacheador por peticion. */
+export const nombreDelUsuario = cache(async (usuarioId: string): Promise<string> => {
   const usuario = await prismaBase.usuario.findUnique({
     where: { id: usuarioId },
     select: { persona: { select: { nombre: true, apellido: true } } },
   })
   return usuario ? `${usuario.persona.nombre} ${usuario.persona.apellido}` : ''
-}
+})
 
 /**
  * Traduce el resultado de Auth.js al mensaje unico de FR-001c. Devuelve el

@@ -58,7 +58,11 @@ export default async function HistorialDeReservasPage({
 
   try {
     const [espacios, unidades, reservas, tramos] = await Promise.all([
-      listarEspacios(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
+      listarEspacios(HABILITACIONES, RELOJ, {
+        usuarioId,
+        consorcioId: activo.id,
+        incluirInactivos: true,
+      }),
       unidadesParaReservar(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
       historialDeReservas(HABILITACIONES, RELOJ, {
         usuarioId,
@@ -99,6 +103,7 @@ export default async function HistorialDeReservasPage({
                 {espacios.map((e) => (
                   <option key={e.id} value={e.id}>
                     {e.nombre}
+                    {!e.activo && ' (deshabilitado)'}
                   </option>
                 ))}
               </select>

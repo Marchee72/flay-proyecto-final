@@ -1,5 +1,6 @@
 'use server'
 
+import type { Clasificacion } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -30,6 +31,11 @@ async function quienOpera(): Promise<string> {
  * siempre este envio explicito: ninguna salida automatica crea un gasto
  * (regla RN-14, FR-020, Principio IV).
  */
+/** Solo los dos valores del enum pasan; cualquier otro deja decidir al rubro. */
+function clasificacionDe(valor: string): Clasificacion | undefined {
+  return valor === 'ordinario' || valor === 'extraordinario' ? valor : undefined
+}
+
 export async function accionRegistrarGasto(
   _previo: Resultado,
   datos: FormData,
@@ -51,6 +57,9 @@ export async function accionRegistrarGasto(
     importe: importeDesdeEntrada(String(datos.get('importe') ?? '')),
     fecha: fecha ? new Date(`${fecha}T00:00:00Z`) : RELOJ.hoy(),
     descripcion: String(datos.get('descripcion') ?? ''),
+    // La propone el rubro y quien carga la puede corregir (regla RN-04); si
+    // llega cualquier otra cosa, decide el rubro como antes.
+    clasificacion: clasificacionDe(String(datos.get('clasificacion') ?? '')),
   }
 
   try {
@@ -78,7 +87,7 @@ export async function accionRegistrarGasto(
     throw error
   }
 
-  redirect(`/consorcios/${consorcioId}/gastos/${creado}?nuevo=1`)
+  redirect(`/consorcios/${consorcioId}/gastos/${creado}?hecho=gasto-registrado`)
 }
 
 /**
@@ -145,5 +154,5 @@ export async function accionDescartarExtraccion(datos: FormData): Promise<void> 
     if (!(error instanceof ErrorDeAplicacion)) throw error
   }
   revalidatePath('/consorcios/[consorcio]/gastos/asistida', 'page')
-  redirect(`/consorcios/${consorcioId}/gastos/asistida?descartada=1`)
+  redirect(`/consorcios/${consorcioId}/gastos/asistida?hecho=extraccion-descartada`)
 }

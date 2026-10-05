@@ -3,9 +3,10 @@
 import { put } from '@vercel/blob/client'
 import { useRouter } from 'next/navigation'
 import { useRef, useState, type ReactNode } from 'react'
-import { BadgeCheck, CloudUpload, FileText, TriangleAlert, X } from 'lucide-react'
+import { CloudUpload, FileText, TriangleAlert, X } from 'lucide-react'
 
 import { pesoParaMostrar } from '@/compartido/formato'
+import { avisar } from '@/app/avisos'
 
 /**
  * Subida directa reutilizable (guia § 3.4): el archivo va del navegador al
@@ -41,11 +42,10 @@ export function SubidaDirecta({
   /** Campos adicionales del formulario, que viajan a `confirmar` junto con la clave. */
   children?: ReactNode
   confirmar: (datos: FormData) => Promise<{ mensaje: string; destino?: string }>
-  /** Si la confirmacion no navega, esto se anuncia y el formulario queda listo para el siguiente. */
+  /** Si la confirmacion no navega, esto sale por la pila de avisos y el formulario queda listo para el siguiente. */
   exito?: string
 }) {
   const [mensaje, setMensaje] = useState('')
-  const [logrado, setLogrado] = useState(false)
   const [subiendo, setSubiendo] = useState(false)
   const [progreso, setProgreso] = useState<{ cargado: number; total: number } | null>(null)
   const [archivo, setArchivo] = useState<File | null>(null)
@@ -58,7 +58,6 @@ export function SubidaDirecta({
     const elegido = lista?.[0]
     setArchivo(elegido && elegido.size > 0 ? elegido : null)
     setMensaje('')
-    setLogrado(false)
   }
 
   function quitar() {
@@ -86,7 +85,6 @@ export function SubidaDirecta({
     }
     setSubiendo(true)
     setMensaje('')
-    setLogrado(false)
     setProgreso({ cargado: 0, total: archivo.size })
     try {
       const respuesta = await fetch('/api/objetos/permiso', {
@@ -102,7 +100,7 @@ export function SubidaDirecta({
       })
       const cuerpo = await respuesta.json()
       if (!respuesta.ok) {
-        setMensaje(cuerpo.mensaje ?? 'No se pudo preparar la subida.')
+        avisar(cuerpo.mensaje ?? 'No se pudo preparar la subida.', 'problema')
         return
       }
       await put(cuerpo.clave, archivo, {
@@ -127,10 +125,10 @@ export function SubidaDirecta({
       // El selector queda vacio: `formulario.delete` limpio el FormData, no el <input>.
       elemento.reset()
       setArchivo(null)
-      setLogrado(true)
+      if (exito) avisar(exito)
       router.refresh()
     } catch {
-      setMensaje('La subida no terminó. Revisá la conexión y probá de nuevo.')
+      avisar('La subida no terminó. Revisá la conexión y probá de nuevo.', 'problema')
     } finally {
       setSubiendo(false)
       setProgreso(null)
@@ -211,12 +209,6 @@ export function SubidaDirecta({
       {mensaje && (
         <p className="error" role="alert">
           <TriangleAlert className="icono" aria-hidden="true" /> {mensaje}
-        </p>
-      )}
-      {logrado && exito && (
-        <p className="aviso aviso--exito" role="status">
-          <BadgeCheck className="icono" aria-hidden="true" />
-          <span>{exito}</span>
         </p>
       )}
       <button className="boton boton--primario" type="submit" disabled={subiendo}>

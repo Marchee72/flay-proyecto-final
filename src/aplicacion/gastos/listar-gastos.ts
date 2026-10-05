@@ -1,3 +1,5 @@
+import type { Clasificacion } from '@prisma/client'
+
 import { importeSerializado } from '@/compartido/formato'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
@@ -33,6 +35,11 @@ export interface GastoDelListado {
 export interface ListadoDeGastos {
   gastos: GastoDelListado[]
   total: string
+  /**
+   * El total partido en dos (regla RN-04): es lo que la liquidacion va a
+   * prorratear por separado, asi que conviene verlo antes de emitir.
+   */
+  porClasificacion: { ordinario: string; extraordinario: string }
   cantidad: number
   pagina: number
   paginas: number
@@ -46,6 +53,7 @@ export async function listarGastos(
     consorcioId: string
     periodoId?: string
     rubroId?: string
+    clasificacion?: Clasificacion
     pagina?: number
   },
 ): Promise<ListadoDeGastos> {
@@ -57,11 +65,12 @@ export async function listarGastos(
       const filtro = {
         ...(datos.periodoId ? { periodoId: datos.periodoId } : {}),
         ...(datos.rubroId ? { rubroId: datos.rubroId } : {}),
+        ...(datos.clasificacion ? { clasificacion: datos.clasificacion } : {}),
       }
 
       const pagina = Math.max(1, Math.trunc(datos.pagina ?? 1))
 
-      const [gastos, agregado] = await Promise.all([
+      const [gastos, agregado, porClasificacion] = await Promise.all([
         prisma.gasto.findMany({
           where: filtro,
           orderBy: [{ fecha: 'desc' }, { creadoEn: 'desc' }],
@@ -78,7 +87,19 @@ export async function listarGastos(
           _sum: { importe: true },
           _count: true,
         }),
+        // Los dos subtotales salen de **una** agrupacion, no de dos consultas.
+        prisma.gasto.groupBy({
+          by: ['clasificacion'],
+          where: filtro,
+          _sum: { importe: true },
+        }),
       ])
+
+      const subtotal = (clasificacion: Clasificacion) =>
+        importeSerializado(
+          porClasificacion.find((fila) => fila.clasificacion === clasificacion)?._sum.importe ??
+            '0',
+        )
 
       return {
         gastos: gastos.map((gasto) => ({
@@ -94,6 +115,10 @@ export async function listarGastos(
         // La suma la hace la base en decimal; convertirla a numero para sumarla
         // en el servidor perderia centavos justo en los totales largos.
         total: importeSerializado(agregado._sum.importe ?? '0'),
+        porClasificacion: {
+          ordinario: subtotal('ordinario'),
+          extraordinario: subtotal('extraordinario'),
+        },
         cantidad: agregado._count,
         pagina,
         paginas: Math.max(1, Math.ceil(agregado._count / POR_PAGINA)),

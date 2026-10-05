@@ -96,4 +96,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Dependencias con vulnerabilidades altas
-        run: npm audit --audit-level=high
+        # Solo lo que se despliega: las herramientas de desarrollo (eslint,
+        # typescript-eslint, vitest) arrastran advisories de glob (braces) sin
+        # version parcheada, que no son superficie de ataque en produccion.
+        run: npm audit --omit=dev --audit-level=high

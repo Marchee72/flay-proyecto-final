@@ -52,7 +52,7 @@ export async function accionInvitar(_previo: Resultado, datos: FormData): Promis
     throw error
   }
 
-  redirect(`/consorcios/${consorcio.id}/usuarios?invitado=1`)
+  redirect(`/consorcios/${consorcio.id}/usuarios?hecho=invitado`)
 }
 
 /**
@@ -71,10 +71,12 @@ export async function accionReenviar(datos: FormData): Promise<void> {
     })
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
-    redirect(`/consorcios/${consorcioId}/usuarios?problema=1`)
+    redirect(
+      `/consorcios/${consorcioId}/usuarios?error=${encodeURIComponent('No pudimos reenviar esa invitación.')}`,
+    )
   }
 
-  redirect(`/consorcios/${consorcioId}/usuarios?reenviado=1`)
+  redirect(`/consorcios/${consorcioId}/usuarios?hecho=invitacion-reenviada`)
 }
 
 /** Base del enlace de invitacion, tomada del pedido que la origina. */

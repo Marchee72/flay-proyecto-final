@@ -17,22 +17,15 @@ export interface Destinatarios {
 export function ModalNovedad({
   consorcioId,
   hoy,
-  enUnMes,
   destinatarios,
 }: {
   consorcioId: string
   hoy: string
-  enUnMes: string
   destinatarios: Destinatarios
 }) {
   return (
     <BotonModal etiqueta="Publicar novedad" titulo="Publicar una novedad">
-      <FormularioNovedad
-        consorcioId={consorcioId}
-        hoy={hoy}
-        enUnMes={enUnMes}
-        destinatarios={destinatarios}
-      />
+      <FormularioNovedad consorcioId={consorcioId} hoy={hoy} destinatarios={destinatarios} />
     </BotonModal>
   )
 }
@@ -40,12 +33,10 @@ export function ModalNovedad({
 function FormularioNovedad({
   consorcioId,
   hoy,
-  enUnMes,
   destinatarios,
 }: {
   consorcioId: string
   hoy: string
-  enUnMes: string
   destinatarios: Destinatarios
 }) {
   const [estado, accion, enviando] = useActionState(accionPublicarNovedad, SIN_ERROR)
@@ -136,23 +127,17 @@ function FormularioNovedad({
       )}
       <div className="campo">
         <label htmlFor="desde">Se muestra desde</label>
-        <input id="desde" name="desde" type="date" defaultValue={hoy} required />
+        <input id="desde" name="desde" type="date" defaultValue={hoy} min={hoy} required />
       </div>
       <div className="campo">
-        <label htmlFor="hasta">Hasta</label>
-        <input
-          id="hasta"
-          name="hasta"
-          type="date"
-          defaultValue={enUnMes}
-          min={hoy}
-          required
-          aria-describedby="ayuda-hasta"
-        />
+        <label htmlFor="hasta">Hasta (opcional)</label>
+        <input id="hasta" name="hasta" type="date" min={hoy} aria-describedby="ayuda-hasta" />
         <p className="ayuda" id="ayuda-hasta">
-          Después de esa fecha deja de aparecer en Novedades y en el inicio.
+          Opcional. Después de esa fecha deja de aparecer; si no se indica, queda vigente
+          indefinidamente.
         </p>
       </div>
+
       <div className="campo">
         <label>
           <input type="checkbox" name="fijada" /> Fijar arriba del listado

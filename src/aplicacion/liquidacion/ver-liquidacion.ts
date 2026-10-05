@@ -1,5 +1,6 @@
 import { importeSerializado } from '@/compartido/formato'
 import { NoEncontrado } from '@/compartido/errores'
+import { compararDesignaciones } from '@/dominio/unidades/division'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
@@ -38,6 +39,8 @@ export interface LiquidacionConDetalle {
   id: string
   estado: string
   periodo: string
+  /** Para enlazar a los gastos que la formaron, que se siguen pudiendo ver. */
+  periodoId: string
   vencimiento: string
   totalOrdinario: string
   totalExtraordinario: string
@@ -77,16 +80,21 @@ export async function verLiquidacion(
 
       if (!liquidacion) throw new NoEncontrado()
 
+      const detallesOrdenados = [...liquidacion.detalles].sort((a, b) =>
+        compararDesignaciones(a.unidad.designacion, b.unidad.designacion),
+      )
+
       return {
         id: liquidacion.id,
         estado: liquidacion.estado,
         periodo: `${String(liquidacion.periodo.mes).padStart(2, '0')}/${liquidacion.periodo.anio}`,
+        periodoId: liquidacion.periodoId,
         vencimiento: liquidacion.vencimiento.toISOString().slice(0, 10),
         totalOrdinario: importeSerializado(liquidacion.totalOrdinario),
         totalExtraordinario: importeSerializado(liquidacion.totalExtraordinario),
         totalGeneral: importeSerializado(liquidacion.totalGeneral),
         anulaA: liquidacion.anulaAId,
-        detalles: liquidacion.detalles.map((detalle) => ({
+        detalles: detallesOrdenados.map((detalle) => ({
           id: detalle.id,
           designacion: detalle.unidad.designacion,
           coeficienteAplicado: detalle.coeficienteAplicado.toFixed(8),

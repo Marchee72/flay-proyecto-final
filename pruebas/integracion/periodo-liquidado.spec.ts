@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { RolInsuficiente } from '@/compartido/errores'
 import { PeriodoNoAdmiteGastos } from '@/dominio/periodos/estado'
+import { listarGastos } from '@/aplicacion/gastos/listar-gastos'
 import { ImporteInvalido, registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { periodoPara, listarPeriodos } from '@/aplicacion/periodos/periodos'
 import { prismaBase } from '@/infraestructura/prisma'
@@ -141,6 +142,32 @@ describe('gastos y estado del periodo (regla RN-03, SC-012)', () => {
     }
 
     expect(await prismaBase.gasto.count()).toBe(0)
+  })
+
+  /**
+   * El complemento de SC-012: liquidar **congela** los gastos, no los esconde.
+   * Es la rendicion de cuentas del mes, y se consulta para siempre. Si alguna
+   * vez se filtrara por estado en el listado, esta prueba se entera.
+   */
+  it('los gastos de un periodo liquidado se siguen viendo', async () => {
+    const { gastoId } = await registrar()
+    await ponerEstado('liquidado')
+
+    const listado = await listarGastos(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId,
+    })
+
+    expect(listado.cantidad).toBe(1)
+    expect(listado.gastos.map((gasto) => gasto.id)).toEqual([gastoId])
+    expect(listado.total).toBe('15000.00')
+
+    // Y el periodo sigue ofreciendose en el filtro, con su cuenta.
+    const periodos = await listarPeriodos(repo, RELOJ, { usuarioId: administrador, consorcioId })
+    expect(periodos).toContainEqual(
+      expect.objectContaining({ id: periodoId, estado: 'liquidado', gastos: 1 }),
+    )
   })
 
   it('cerrado y anulado tampoco admiten gastos', async () => {

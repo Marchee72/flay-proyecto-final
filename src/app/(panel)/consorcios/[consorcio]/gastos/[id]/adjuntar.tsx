@@ -3,7 +3,8 @@
 import { put } from '@vercel/blob/client'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { TriangleAlert } from 'lucide-react'
+
+import { avisar } from '@/app/avisos'
 
 import { accionConfirmarComprobante } from '../acciones'
 
@@ -23,7 +24,6 @@ export function AdjuntarComprobante({
   gastoId: string
 }) {
   const [mensaje, setMensaje] = useState('')
-  const [subido, setSubido] = useState(false)
   const [subiendo, setSubiendo] = useState(false)
   const router = useRouter()
 
@@ -32,13 +32,11 @@ export function AdjuntarComprobante({
     const archivo = new FormData(evento.currentTarget).get('archivo')
 
     if (!(archivo instanceof File) || archivo.size === 0) {
-      setSubido(false)
       setMensaje('Falta el archivo: seleccionar un comprobante para subir.')
       return
     }
 
     setSubiendo(true)
-    setSubido(false)
     setMensaje('')
 
     try {
@@ -58,8 +56,7 @@ export function AdjuntarComprobante({
 
       // El rechazo llega antes de subir nada: 26 MB no viajan (SC-006c).
       if (!respuesta.ok) {
-        setSubido(false)
-        setMensaje(cuerpo.mensaje ?? 'No se pudo preparar la subida.')
+        avisar(cuerpo.mensaje ?? 'No se pudo preparar la subida.', 'problema')
         return
       }
 
@@ -75,15 +72,16 @@ export function AdjuntarComprobante({
         clave: cuerpo.clave,
       })
 
-      setMensaje(confirmacion.mensaje || 'Comprobante subido.')
-      setSubido(!confirmacion.mensaje)
-      // Sin recarga completa: se revalida el detalle (Server Component) para
-      // mostrar el comprobante nuevo y se anuncia con `role="status"`.
-      if (!confirmacion.mensaje) router.refresh()
+      // Lo que devuelve la accion es validacion y va al campo; el exito sale por
+      // la pila y se revalida el detalle (Server Component) sin recarga completa.
+      setMensaje(confirmacion.mensaje)
+      if (!confirmacion.mensaje) {
+        avisar('Comprobante subido.')
+        router.refresh()
+      }
     } catch {
       // Si la confirmacion no llegó, el trabajo pendiente la reintenta (FR-006b).
-      setSubido(false)
-      setMensaje('La subida falló. Volver a intentar; el gasto ya quedó registrado.')
+      avisar('La subida falló. Volver a intentar; el gasto ya quedó registrado.', 'problema')
     } finally {
       setSubiendo(false)
     }
@@ -102,17 +100,11 @@ export function AdjuntarComprobante({
         <p className="ayuda">PDF, JPEG, PNG, WebP, HEIC o TIFF, hasta 25 MB.</p>
       </div>
 
-      {mensaje &&
-        (subido ? (
-          <p className="aviso aviso--atencion" role="status">
-            <TriangleAlert className="icono" aria-hidden="true" />
-            <span>{mensaje}</span>
-          </p>
-        ) : (
-          <p className="error" role="alert">
-            {mensaje}
-          </p>
-        ))}
+      {mensaje && (
+        <p className="error" role="alert">
+          {mensaje}
+        </p>
+      )}
 
       <button className="boton boton--primario" type="submit" disabled={subiendo}>
         {subiendo ? 'Subiendo…' : 'Subir'}

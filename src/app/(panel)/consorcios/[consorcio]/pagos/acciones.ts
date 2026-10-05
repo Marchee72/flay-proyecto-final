@@ -37,5 +37,5 @@ export async function accionRegistrarPago(_previo: Resultado, datos: FormData): 
   }
 
   revalidatePath('/consorcios/[consorcio]/pagos', 'page')
-  redirect(`/consorcios/${consorcioId}/pagos?registrado=1`)
+  redirect(`/consorcios/${consorcioId}/pagos?hecho=pago-registrado`)
 }

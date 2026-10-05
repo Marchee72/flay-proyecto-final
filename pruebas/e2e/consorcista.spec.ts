@@ -36,8 +36,11 @@ test('el listado muestra el gasto con su importe y el total', async ({ page }) =
 
   await expect(page.getByRole('heading', { name: 'Gastos', level: 1 })).toBeVisible()
   await expect(page.getByRole('cell', { name: 'Mantenimiento de ascensores' })).toBeVisible()
-  // Importe exacto, como cadena: el total de una sola fila es esa fila.
-  await expect(page.locator('tfoot .cifra')).toHaveText('$ 184.320,75')
+  // Importe exacto, como cadena: el total de una sola fila es esa fila. El pie
+  // ademas desglosa Ordinario y Extraordinario (RN-04), asi que se apunta al total.
+  await expect(
+    page.locator('tfoot tr').filter({ hasText: 'Total del filtro' }).locator('.cifra'),
+  ).toHaveText('$ 184.320,75')
 })
 
 test('el listado no desborda a lo ancho: la tabla se desplaza sola (RNF-01)', async ({ page }) => {

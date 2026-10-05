@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Siren, Wallet } from 'lucide-react'
 
+import { Decimal, importe } from '@/compartido/dinero'
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { fechaParaMostrar, importeParaMostrar, plural } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
@@ -9,14 +10,27 @@ import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { misExpensas } from '@/aplicacion/liquidacion/ver-expensa'
 import { verEstadoDeCuenta } from '@/aplicacion/pagos/estado-de-cuenta'
 import { MEDIOS_DE_PAGO } from '@/aplicacion/pagos/registrar'
+import { divisionDe, pisoDe } from '@/aplicacion/consorcios/unidades'
 
 import { conConsorcio } from '../../../con-consorcio'
-import { Emergente } from '../../../emergente'
 import { EnlaceExportar } from '../../../exportar'
+import { Filtros } from '../../../filtros'
+import { Paginacion } from '../../../paginacion'
 import { ModalPago } from './modal-pago'
 import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Pagos — Flay' }
+
+const POR_PAGINA = 10
+
+type Parametros = {
+  registrado?: string
+  unidad?: string
+  abrir?: string
+  piso?: string
+  division?: string
+  pagina?: string
+}
 
 /**
  * Estado de cuenta por unidad (`FR-028`, `CU-04`): liquidaciones, pagos
@@ -28,7 +42,7 @@ export default async function PagosPage({
   searchParams,
 }: {
   params: Promise<{ consorcio: string }>
-  searchParams: Promise<{ registrado?: string; unidad?: string; abrir?: string }>
+  searchParams: Promise<Parametros>
 }) {
   const { consorcio: consorcioId } = await params
   const parametros = await searchParams
@@ -50,6 +64,62 @@ export default async function PagosPage({
         }),
       ),
     )
+
+    const pisosDisponibles = Array.from(
+      new Set(cuentas.map((c) => pisoDe(c.designacion)).filter((p): p is string => p !== null)),
+    ).sort((a, b) => {
+      if (a === 'PB') return -1
+      if (b === 'PB') return 1
+      const numA = parseInt(a, 10)
+      const numB = parseInt(b, 10)
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB
+      return a.localeCompare(b)
+    })
+
+    const divisionesDisponibles = Array.from(
+      new Set(cuentas.map((c) => divisionDe(c.designacion)).filter((d): d is string => d !== null)),
+    ).sort((a, b) => a.localeCompare(b))
+
+    const cuentasFiltradas = cuentas.filter((c) => {
+      if (parametros.piso && pisoDe(c.designacion) !== parametros.piso) return false
+      if (parametros.division && divisionDe(c.designacion) !== parametros.division) return false
+      return true
+    })
+
+    const totalSaldo = cuentasFiltradas
+      .reduce((acc, c) => acc.plus(importe(c.saldo)), new Decimal(0))
+      .toFixed(2)
+
+    const totalAFavor = cuentasFiltradas
+      .reduce((acc, c) => acc.plus(importe(c.saldoAFavor)), new Decimal(0))
+      .toFixed(2)
+
+    const paginas = Math.max(1, Math.ceil(cuentasFiltradas.length / POR_PAGINA))
+    const paginaSolicitada = Number(parametros.pagina ?? 1) || 1
+    const paginaActual = Math.min(Math.max(1, paginaSolicitada), paginas)
+    const cuentasEnPagina = cuentasFiltradas.slice(
+      (paginaActual - 1) * POR_PAGINA,
+      paginaActual * POR_PAGINA,
+    )
+
+    const urlParaPagina = (p: number) => {
+      const query = new URLSearchParams()
+      if (parametros.piso) query.set('piso', parametros.piso)
+      if (parametros.division) query.set('division', parametros.division)
+      if (parametros.unidad) query.set('unidad', parametros.unidad)
+      if (p > 1) query.set('pagina', String(p))
+      const qs = query.toString()
+      return `/consorcios/${activo.id}/pagos${qs ? `?${qs}` : ''}`
+    }
+
+    const enlaceUnidad = (uId: string) => {
+      const query = new URLSearchParams()
+      if (parametros.piso) query.set('piso', parametros.piso)
+      if (parametros.division) query.set('division', parametros.division)
+      if (paginaActual > 1) query.set('pagina', String(paginaActual))
+      query.set('unidad', uId)
+      return `/consorcios/${activo.id}/pagos?${query.toString()}#movimientos`
+    }
 
     // Una tabla con el saldo de cada unidad; el detalle de movimientos, de a
     // una (`?unidad=`). Con una sola unidad —el consorcista— se abre sola.
@@ -79,63 +149,137 @@ export default async function PagosPage({
           )}
         </div>
 
-        {parametros.registrado && (
-          <Emergente tono="verde">Pago registrado e imputado a lo más viejo primero.</Emergente>
-        )}
-
         {cuentas.length === 0 ? (
           <div className="vacio">
             <Wallet aria-hidden="true" />
             <p>Sin movimientos todavía. Cuando se emita la primera liquidación, aparece acá.</p>
           </div>
         ) : (
-          <TablaDesplazable>
-            <table>
-              <caption>Estado de cuenta: {plural(cuentas.length, 'unidad', 'unidades')}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Unidad</th>
-                  <th scope="col" className="numero">
-                    Saldo
-                  </th>
-                  <th scope="col" className="numero">
-                    A favor
-                  </th>
-                  <th scope="col">Último movimiento</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cuentas.map((cuenta) => {
-                  const ultimo = cuenta.movimientos.at(-1)
-                  return (
-                    <tr key={cuenta.unidadId}>
-                      <td>
-                        <Link
-                          href={`/consorcios/${activo.id}/pagos?unidad=${cuenta.unidadId}#movimientos`}
-                          aria-current={cuenta.unidadId === elegida?.unidadId ? 'true' : undefined}
-                        >
-                          {cuenta.designacion}
-                        </Link>
-                      </td>
-                      <td className="numero cifra">{importeParaMostrar(cuenta.saldo)}</td>
-                      <td className="numero cifra">
-                        {cuenta.saldoAFavor === '0.00'
-                          ? '—'
-                          : importeParaMostrar(cuenta.saldoAFavor)}
-                      </td>
-                      <td>
-                        {ultimo ? (
-                          `${fechaParaMostrar(ultimo.fecha)} · ${ultimo.concepto}`
-                        ) : (
-                          <span className="ayuda">Sin movimientos</span>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </TablaDesplazable>
+          <>
+            <Filtros>
+              <form method="get" className="fila-de-filtros">
+                <div className="campo">
+                  <label htmlFor="piso">Piso</label>
+                  <select id="piso" name="piso" defaultValue={parametros.piso ?? ''}>
+                    <option value="">Todos</option>
+                    {pisosDisponibles.map((piso) => (
+                      <option key={piso} value={piso}>
+                        {piso === 'PB' ? 'PB' : `Piso ${piso}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="campo">
+                  <label htmlFor="division">División</label>
+                  <select id="division" name="division" defaultValue={parametros.division ?? ''}>
+                    <option value="">Todas</option>
+                    {divisionesDisponibles.map((div) => (
+                      <option key={div} value={div}>
+                        {div}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button className="boton boton--fantasma" type="submit">
+                  Filtrar
+                </button>
+
+                {(parametros.piso || parametros.division) && (
+                  <Link className="boton boton--fantasma" href={`/consorcios/${activo.id}/pagos`}>
+                    Limpiar
+                  </Link>
+                )}
+              </form>
+            </Filtros>
+
+            {cuentasFiltradas.length === 0 ? (
+              <div className="vacio">
+                <Wallet aria-hidden="true" />
+                <p>No hay unidades que coincidan con el filtro.</p>
+                <div className="fila-acciones">
+                  <Link className="boton boton--fantasma" href={`/consorcios/${activo.id}/pagos`}>
+                    Limpiar filtros
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <>
+                <TablaDesplazable paginar={false}>
+                  <table>
+                    <caption className="ayuda">
+                      Estado de cuenta: {plural(cuentasFiltradas.length, 'unidad', 'unidades')} ·
+                      página {paginaActual} de {paginas}
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Unidad</th>
+                        <th scope="col" className="numero">
+                          Saldo
+                        </th>
+                        <th scope="col" className="numero">
+                          A favor
+                        </th>
+                        <th scope="col">Último movimiento</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cuentasEnPagina.map((cuenta) => {
+                        const ultimo = cuenta.movimientos.at(-1)
+                        return (
+                          <tr key={cuenta.unidadId}>
+                            <td>
+                              <Link
+                                href={enlaceUnidad(cuenta.unidadId)}
+                                aria-current={
+                                  cuenta.unidadId === elegida?.unidadId ? 'true' : undefined
+                                }
+                              >
+                                {cuenta.designacion}
+                              </Link>
+                            </td>
+                            <td className="numero cifra">{importeParaMostrar(cuenta.saldo)}</td>
+                            <td className="numero cifra">
+                              {cuenta.saldoAFavor === '0.00'
+                                ? '—'
+                                : importeParaMostrar(cuenta.saldoAFavor)}
+                            </td>
+                            <td>
+                              {ultimo ? (
+                                `${fechaParaMostrar(ultimo.fecha)} · ${ultimo.concepto}`
+                              ) : (
+                                <span className="ayuda">Sin movimientos</span>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <td>
+                          {parametros.piso || parametros.division ? 'Total del filtro' : 'Total'}
+                        </td>
+                        <td className="numero cifra">{importeParaMostrar(totalSaldo)}</td>
+                        <td className="numero cifra">
+                          {totalAFavor === '0.00' ? '—' : importeParaMostrar(totalAFavor)}
+                        </td>
+                        <td />
+                      </tr>
+                    </tfoot>
+                  </table>
+                </TablaDesplazable>
+
+                <Paginacion
+                  pagina={paginaActual}
+                  paginas={paginas}
+                  urlParaPagina={urlParaPagina}
+                  etiquetaAria="Paginación de estado de cuenta"
+                />
+              </>
+            )}
+          </>
         )}
 
         {elegida && (

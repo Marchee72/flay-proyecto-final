@@ -239,6 +239,8 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
   **NO DEBE** agregar transiciones desde `liquidado`. `002-nucleo` construyó sólo la apertura y el listado; esta etapa completa
   el resto. El contrato (valores del enum y transiciones válidas) vive en `src/dominio/contratos`
   desde `002` (M-04) y ambas etapas lo comparten: ninguna prueba fabrica un estado fuera de ese contrato.
+  *Enmienda 2026-10-03*: también vale `abierto → liquidado`; liquidar un período abierto lo cierra
+  en el mismo paso, y cerrar antes queda como opción (FR-013b).
 - **FR-002**: Un período cerrado **DEBE** rechazar toda alta o modificación de gasto (regla RN-03
   § 7.2).
 - **FR-002b**: El consorcio **DEBE** tener un **día de vencimiento** propio —el 10, por ejemplo— y
@@ -290,6 +292,9 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
   § 7.2).
 - **FR-013**: Toda la liquidación —cálculo, persistencia, cambio de estado del período y asiento de
   auditoría— **DEBE** ocurrir en una **única transacción** (§ 12.6).
+- **FR-013b** *(2026-10-03)*: Antes de emitir, el administrador **DEBE** poder revisar los gastos
+  del período, los totales, el vencimiento y el reparto por unidad tal como se emitiría, sin que se
+  escriba nada. La emisión **DEBE** rechazarse si el total de gastos difiere del revisado (RF-07).
 - **FR-014**: La liquidación de un consorcio de 100 unidades **DEBE** completarse en menos de 30
   segundos (RNF-07), sin contar la generación de documentos.
 - **FR-015**: La emisión **DEBE** dejar encoladas las notificaciones en estado pendiente, sin

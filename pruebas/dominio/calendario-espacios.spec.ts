@@ -28,10 +28,15 @@ const reserva = (id: string, desdeIso: string): ReservaDelHistorial =>
     cumplida: true,
   }) as ReservaDelHistorial
 
-const tramo = (desde: string, hasta: string | null, motivo: string): TramoDeshabilitado => ({
+const tramo = (
+  desde: string,
+  hasta: string | null,
+  motivo: string,
+  espacio = 'SUM',
+): TramoDeshabilitado => ({
   id: 's1',
   espacioId: 'e1',
-  espacio: 'SUM',
+  espacio,
   desde,
   hasta,
   motivo,
@@ -58,15 +63,34 @@ describe('construirCalendario', () => {
     expect(dia('2026-09-14').reservas).toHaveLength(0)
   })
 
-  it('sombrea los dias del tramo deshabilitado, con su motivo, y no los de afuera', () => {
-    expect(dia('2026-09-11')).toMatchObject({ deshabilitado: true, motivos: ['Reforma'] })
-    expect(dia('2026-09-12').deshabilitado).toBe(false)
-    expect(dia('2026-09-20').deshabilitado).toBe(false)
+  it('marca el espacio deshabilitado en los dias del tramo, y no afuera', () => {
+    expect(dia('2026-09-11').deshabilitados).toEqual(['SUM'])
+    expect(dia('2026-09-12').deshabilitados).toHaveLength(0)
+    expect(dia('2026-09-20').deshabilitados).toHaveLength(0)
   })
 
   it('marca hoy', () => {
     expect(dia('2026-09-15').hoy).toBe(true)
     expect(dia('2026-09-16').hoy).toBe(false)
+  })
+})
+
+describe('construirCalendario con dos espacios deshabilitados el mismo dia', () => {
+  // Solo los espacios suspendidos ese dia aparecen, uno por espacio; el dia no se marca entero.
+  const cal = construirCalendario(
+    '2026-09',
+    [],
+    [
+      tramo('2026-09-10T03:00:00.000Z', '2026-09-12T03:00:00.000Z', 'Reforma', 'SUM'),
+      tramo('2026-09-10T03:00:00.000Z', '2026-09-11T03:00:00.000Z', 'Pintura', 'Quincho'),
+    ],
+    '2026-09-15T12:00:00.000Z',
+  )
+  const dia = (fecha: string) => cal.semanas.flat().find((d) => d.fecha === fecha)!
+
+  it('el 10 lista los dos espacios; el 11 solo el que sigue en tramo', () => {
+    expect(dia('2026-09-10').deshabilitados).toEqual(['SUM', 'Quincho'])
+    expect(dia('2026-09-11').deshabilitados).toEqual(['SUM'])
   })
 })
 

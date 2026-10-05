@@ -3426,10 +3426,6 @@ table.calendario th {
 .calendario__dia--hoy .calendario__numero {
   color: var(--azul);
 }
-.calendario__dia--off {
-  background: var(--rojo-palido);
-  border-color: var(--rojo-borde);
-}
 .calendario__off {
   display: block;
   font-size: var(--t-ayuda);

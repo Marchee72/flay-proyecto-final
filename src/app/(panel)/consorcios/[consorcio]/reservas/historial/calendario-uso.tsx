@@ -31,16 +31,14 @@ export function CalendarioUso({ calendario }: { calendario: Calendario }) {
                 ) : (
                   <td
                     key={j}
-                    className={`calendario__dia${dia.deshabilitado ? ' calendario__dia--off' : ''}${
-                      dia.hoy ? ' calendario__dia--hoy' : ''
-                    }`}
+                    className={`calendario__dia${dia.hoy ? ' calendario__dia--hoy' : ''}`}
                   >
                     <span className="calendario__numero">{dia.dia}</span>
-                    {dia.deshabilitado && (
-                      <span className="calendario__off" title={dia.motivos.join(' · ')}>
-                        Deshabilitado{dia.motivos.length > 0 && `: ${dia.motivos.join(' · ')}`}
+                    {dia.deshabilitados.map((espacio) => (
+                      <span key={espacio} className="calendario__off">
+                        {espacio} — deshabilitado
                       </span>
-                    )}
+                    ))}
                     <ul className="calendario__eventos">
                       {dia.reservas.map((r) => (
                         <li

@@ -39,7 +39,11 @@ export default async function ReservasPage({
   try {
     const hoy = RELOJ.hoy()
     const [espacios, unidades, roles, reservas] = await Promise.all([
-      listarEspacios(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
+      listarEspacios(HABILITACIONES, RELOJ, {
+        usuarioId,
+        consorcioId: activo.id,
+        incluirInactivos: true,
+      }),
       unidadesParaReservar(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
       rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id),
       listarReservas(HABILITACIONES, RELOJ, {
@@ -51,6 +55,8 @@ export default async function ReservasPage({
       }),
     ])
     const esAdministrador = roles.includes('administrador')
+    // Solo los activos son reservables; el filtro de abajo sí lista los deshabilitados.
+    const activos = espacios.filter((e) => e.activo)
 
     return (
       <>
@@ -78,7 +84,7 @@ export default async function ReservasPage({
           )}
         </div>
 
-        {espacios.length === 0 ? (
+        {activos.length === 0 ? (
           <div className="vacio">
             <CalendarCheck aria-hidden="true" />
             <p>Este consorcio no tiene espacios reservables todavía.</p>
@@ -95,7 +101,7 @@ export default async function ReservasPage({
           <div className="fila-acciones">
             <ModalReserva
               consorcioId={activo.id}
-              espacios={espacios}
+              espacios={activos}
               unidades={unidades}
               espacioInicial={parametros.espacio}
             />
@@ -112,6 +118,7 @@ export default async function ReservasPage({
                 {espacios.map((e) => (
                   <option key={e.id} value={e.id}>
                     {e.nombre}
+                    {!e.activo && ' (deshabilitado)'}
                   </option>
                 ))}
               </select>

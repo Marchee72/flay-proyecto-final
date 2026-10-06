@@ -78,6 +78,8 @@ test('reservar, chocar con otra reserva con un mensaje legible, y cancelar', asy
   await page.getByRole('dialog').getByRole('button', { name: 'Cerrar diálogo' }).click()
 
   await page.getByRole('button', { name: 'Cancelar', exact: true }).click()
-  await expect(page.getByRole('status').filter({ hasText: 'Reserva cancelada' })).toBeVisible()
+  // El aviso de la accion («Reserva cancelada.») y, si ya llego, el de la campana
+  // («Reserva cancelada: SUM»): se acota al primero para no chocar con el segundo.
+  await expect(page.getByRole('status').filter({ hasText: 'Reserva cancelada.' })).toBeVisible()
   await expect(page.getByRole('table')).toContainText('Cancelada')
 })

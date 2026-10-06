@@ -122,8 +122,12 @@ test('una sugerencia no ejecuta nada: manda el pedido y la tarjeta espera el cli
 
   await panel.getByRole('button', { name: 'Confirmar' }).click()
   await expect(panel.getByText('Resuelta.')).toBeVisible()
-  // `Resuelta.` se marca también si la confirmación falló: se espera el efecto, no el cartel.
+  // `Resuelta.` se marca también si la confirmación falló: se espera el efecto, no el cartel, y
+  // si no llega el mensaje dice qué avisó la pantalla.
+  const avisos = await page.locator('[role=status], [role=alert]').allTextContents()
   await expect
-    .poll(() => prisma.reclamo.count({ where: { consorcioId: escenario.consorcioId } }))
+    .poll(() => prisma.reclamo.count({ where: { consorcioId: escenario.consorcioId } }), {
+      message: `avisos en pantalla: ${avisos.join(' | ')}`,
+    })
     .toBe(1)
 })

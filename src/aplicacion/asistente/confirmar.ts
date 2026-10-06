@@ -27,8 +27,10 @@ export type ResultadoConfirmacion = {
 }
 
 async function propuestaDelUsuario(usuarioId: string, propuestaId: string) {
+  // La conversacion que TIENE la propuesta: un usuario junta varias (cada cambio de alcance abre
+  // un hilo) y `findFirst({ usuarioId })` solo podia dar con la propuesta si tocaba esa.
   const conv = await prisma.conversacionAsistente.findFirst({
-    where: { usuarioId },
+    where: { usuarioId, mensajes: { some: { id: propuestaId } } },
     include: { mensajes: { where: { id: propuestaId } } },
   })
   return conv?.mensajes[0] ?? null

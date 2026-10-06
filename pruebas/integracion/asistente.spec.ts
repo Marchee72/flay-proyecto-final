@@ -254,6 +254,19 @@ describe('escrituras con confirmacion (Principio IV, FR-008)', () => {
     )
   })
 
+  it('confirma la propuesta aunque el usuario tenga otras conversaciones, sin importar cual sea la primera', async () => {
+    // Cambiar de alcance o de pagina abre un hilo nuevo: el usuario junta varios.
+    await pedir(administrador, 'ver_espacios')
+    await pedir(administrador, 'ver_espacios')
+    const p = await pedir(
+      administrador,
+      `deshabilitar_espacio espacioId=${espacioId} motivo=pintura`,
+    )
+    if (p.modo !== 'propuesta') throw new Error('se esperaba una propuesta')
+    const r = await confirmar(administrador, p.propuestaId)
+    expect(r.ejecutada).toBe(true)
+  })
+
   it('una escritura sobre otro consorcio propio se confirma sobre ese consorcio', async () => {
     const otro = await prismaBase.espacioComun.findFirstOrThrow({
       where: { consorcioId: otroConsorcioId },

@@ -131,7 +131,7 @@ export async function accionDeshabilitarEspacio(
     throw error
   }
   revalidatePath('/consorcios/[consorcio]/espacios', 'page')
-  redirect(`/consorcios/${consorcioId}/espacios?deshabilitado=1`)
+  redirect(`/consorcios/${consorcioId}/espacios?hecho=espacio-baja`)
 }
 
 export async function accionHabilitarEspacio(datos: FormData): Promise<void> {
@@ -152,5 +152,5 @@ export async function accionHabilitarEspacio(datos: FormData): Promise<void> {
     )
   }
   revalidatePath('/consorcios/[consorcio]/espacios', 'page')
-  redirect(`/consorcios/${consorcioId}/espacios?hecho=espacio-baja`)
+  redirect(`/consorcios/${consorcioId}/espacios?hecho=espacio-alta`)
 }

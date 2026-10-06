@@ -3465,3 +3465,166 @@ table.calendario th {
     padding: var(--e1);
   }
 }
+
+/* Asistente conversacional (RF-27): lanzador flotante y panel de chat. */
+.asistente__lanzador {
+  position: fixed;
+  right: var(--e5);
+  bottom: var(--e5);
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 999px;
+  background: var(--grafito);
+  color: var(--tinta-clara);
+  box-shadow: var(--sombra-alta);
+  cursor: pointer;
+}
+.asistente {
+  position: fixed;
+  right: var(--e5);
+  bottom: calc(var(--e5) + 72px);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  width: min(560px, calc(100vw - 2 * var(--e4)));
+  height: min(76vh, 720px);
+  background: var(--superficie);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra-alta);
+  overflow: hidden;
+}
+.asistente__cabeza {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  padding: var(--e3) var(--e4);
+  background: var(--grafito);
+  color: var(--tinta-clara);
+}
+.asistente__hilo {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--e4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+}
+.asistente__msg {
+  max-width: 100%;
+}
+.asistente__msg--usuario {
+  align-self: flex-end;
+  background: var(--azul-palido);
+  color: var(--tinta);
+  padding: var(--e2) var(--e3);
+  border-radius: var(--radio-chico);
+}
+.asistente__barra {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  padding: var(--e3);
+  border-top: 1px solid var(--linea);
+}
+.asistente__entrada {
+  flex: 1;
+  padding: var(--e2) var(--e3);
+  border: 1px solid var(--linea-control);
+  border-radius: var(--radio-chico);
+  font: inherit;
+}
+.asistente__enlaces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+}
+.asistente__enlaces:not(:empty) {
+  margin-top: var(--e2);
+}
+.asistente__ir {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e1);
+  padding: var(--e1) var(--e3);
+  border-radius: 999px;
+  background: var(--superficie-hundida);
+  color: var(--tinta);
+  font-size: 0.9em;
+  text-decoration: none;
+}
+.asistente__ir:hover {
+  text-decoration: underline;
+}
+.asistente__fuentes {
+  margin: var(--e2) 0 0;
+  padding-left: var(--e4);
+  font-size: 0.9em;
+}
+/* Alcance, contexto, paso en curso, texto que llega y pastillas (RF-27). */
+.asistente__alcance {
+  margin-left: auto;
+  min-height: var(--toque);
+  max-width: 55%;
+  padding: 0 var(--e2);
+  border: 1px solid var(--linea-control);
+  border-radius: var(--radio-chico);
+  background: var(--superficie);
+  color: var(--tinta);
+  font: inherit;
+}
+.asistente__contexto {
+  margin: 0;
+  padding: var(--e2) var(--e4) 0;
+}
+.asistente__paso {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  margin: 0;
+}
+/* El cursor de lo que todavia esta llegando: un bloque, no un caracter, para que nadie lo lea. */
+.asistente__parcial::after {
+  content: '';
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: currentColor;
+  animation: latir 0.9s step-end infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .asistente__parcial::after {
+    animation: none;
+  }
+}
+.asistente__sugerencias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+}
+.asistente__ir--boton {
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9em;
+}
+@media (max-width: 760px) {
+  .asistente {
+    right: var(--e4);
+    left: var(--e4);
+    width: auto;
+    height: 68vh;
+    bottom: calc(var(--e4) + 64px + var(--e2) + 56px + var(--e2));
+  }
+  /* Por encima de la barra inferior flotante (64 px + su margen). */
+  .asistente__lanzador {
+    right: var(--e4);
+    bottom: calc(var(--e4) + 64px + var(--e2));
+  }
+}

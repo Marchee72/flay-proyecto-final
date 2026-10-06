@@ -1,11 +1,108 @@
 import { createHash } from 'node:crypto'
 
 import {
+  type AccionDelAgente,
   type Asistencia,
   DIMENSIONES_VECTOR,
   disponible,
+  type HerramientaDisponible,
+  type Sugerencia,
   type UrgenciaSugerida,
 } from '@/dominio/contratos/asistencia'
+
+/** Lo que la determinista responde ante un pedido ajeno al dominio de Flay (SC-006). */
+export const NEGATIVA_FUERA_DE_DOMINIO =
+  'Solo puedo ayudarte con cosas de tu consorcio: expensas, reservas, reclamos, novedades y la documentación.'
+
+/** Palabra clave del pedido → herramienta de lectura. El orden importa: gana la primera. */
+const RUTEO_LECTURA: [patron: RegExp, herramienta: string][] = [
+  [/morosidad|deuda|debo|mora|moroso/, 'ver_morosidad'],
+  [/expensa/, 'ver_expensas'],
+  [/saldo|estado de cuenta|cuenta/, 'ver_estado_cuenta'],
+  [/reglamento|document|acta|contrato/, 'consultar_reglamentos'],
+  [/indicador/, 'ver_indicador_morosidad'],
+  [/bandeja/, 'ver_bandeja'],
+  [/notificaci/, 'ver_mis_notificaciones'],
+  [/usuarios/, 'ver_usuarios'],
+  [/proveedor/, 'ver_proveedores'],
+  [/periodo|período/, 'ver_periodos'],
+  [/padron|padrón/, 'ver_padron'],
+  [/gasto/, 'ver_gastos'],
+  [/novedad/, 'ver_novedades'],
+  [/reclamo/, 'ver_reclamos'],
+  [/reserva|reservar|espacio|salon|salón|sum|quincho|parrilla/, 'ver_reservas'],
+  [/mis unidades|mi unidad|unidad/, 'ver_mis_unidades'],
+  [/resumen|edificio|consorcio\b/, 'ver_resumen'],
+  [/consorcios|administr/, 'listar_mis_consorcios'],
+]
+
+/**
+ * Palabra clave de la conversacion → pastillas. Se filtran contra las herramientas
+ * ofrecidas, asi un consorcista nunca recibe «deshabilitar».
+ */
+const RUTEO_SUGERENCIAS: [patron: RegExp, sugerencias: Sugerencia[]][] = [
+  [
+    /rompi|roto|rota|perdida|filtra|terraza|ascensor/,
+    [
+      {
+        etiqueta: 'Levantar un reclamo',
+        pedido: 'crear_reclamo titulo="Algo roto" descripcion="Se rompió algo y hay que revisarlo"',
+        herramienta: 'crear_reclamo',
+      },
+      {
+        etiqueta: 'Deshabilitar el espacio',
+        pedido: 'deshabilitar_espacio',
+        herramienta: 'deshabilitar_espacio',
+      },
+      { etiqueta: 'Ver los espacios', pedido: 'ver_espacios', herramienta: 'ver_espacios' },
+    ],
+  ],
+  [
+    /reserva|espacio|salon|salón|sum|quincho/,
+    [{ etiqueta: 'Ver los espacios', pedido: 'ver_espacios', herramienta: 'ver_espacios' }],
+  ],
+]
+
+/** Pares `clave=valor` o `clave="valor con espacios"` del texto → argumentos. */
+function argumentosDe(texto: string): Record<string, unknown> {
+  const args: Record<string, unknown> = {}
+  const re = /(\w+)=("([^"]*)"|(\S+))/g
+  for (let m = re.exec(texto); m; m = re.exec(texto)) args[m[1]] = m[3] ?? m[4]
+  return args
+}
+
+/**
+ * Agente determinista: predecible, no inteligente. Rutea por palabra clave a una
+ * herramienta de lectura; para escrituras, el texto nombra la herramienta y sus
+ * argumentos como `herramienta clave=valor ...` (así las pruebas controlan los
+ * argumentos sin un modelo). Si el ultimo turno es resultado de herramienta,
+ * responde con ese resultado y corta el bucle.
+ */
+function decidir(
+  historial: { rol: string; texto?: string; nombre?: string; resultado?: string }[],
+  herramientas: HerramientaDisponible[],
+): AccionDelAgente {
+  const ultimo = historial[historial.length - 1]
+  if (!ultimo) return { tipo: 'responder', texto: NEGATIVA_FUERA_DE_DOMINIO }
+  if (ultimo.rol === 'herramienta') {
+    return { tipo: 'responder', texto: ultimo.resultado ?? '' }
+  }
+  const texto = (ultimo.texto ?? '').toLowerCase()
+  const ofrecidas = new Set(herramientas.map((h) => h.nombre))
+
+  // Escritura (o lectura) nombrada explicitamente: `nombre_herramienta clave=valor`.
+  const nombrada = texto.match(/^\s*([a-z_]+)\b/)?.[1]
+  if (nombrada && ofrecidas.has(nombrada)) {
+    return { tipo: 'invocar', nombre: nombrada, argumentos: argumentosDe(ultimo.texto ?? '') }
+  }
+
+  for (const [patron, herramienta] of RUTEO_LECTURA) {
+    if (patron.test(texto) && ofrecidas.has(herramienta)) {
+      return { tipo: 'invocar', nombre: herramienta, argumentos: argumentosDe(ultimo.texto ?? '') }
+    }
+  }
+  return { tipo: 'responder', texto: NEGATIVA_FUERA_DE_DOMINIO }
+}
 
 /**
  * La implementacion determinista: la que corren las pruebas (RNF-15, research
@@ -162,6 +259,28 @@ export const asistenciaDeterminista: Asistencia = {
         citas: [mejor.numero],
         sinRespaldo: false,
       })
+    },
+  },
+
+  agente: {
+    async conversar(_contexto, historial, herramientas, emitir) {
+      const accion = decidir(historial, herramientas)
+      if (accion.tipo === 'responder') {
+        // Tres trozos: lo bastante para que las pruebas vean que llega en partes.
+        const t = accion.texto
+        const paso = Math.max(1, Math.ceil(t.length / 3))
+        for (let i = 0; i < t.length; i += paso) emitir(t.slice(i, i + paso))
+      }
+      return disponible(accion)
+    },
+    async sugerir(_contexto, historial, herramientas) {
+      const texto = historial
+        .map((t) => ('texto' in t ? t.texto : ''))
+        .join(' ')
+        .toLowerCase()
+      const ofrecidas = new Set(herramientas.map((h) => h.nombre))
+      const hallada = RUTEO_SUGERENCIAS.find(([patron]) => patron.test(texto))?.[1] ?? []
+      return disponible(hallada.filter((s) => !s.herramienta || ofrecidas.has(s.herramienta)))
     },
   },
 }

@@ -107,10 +107,74 @@ export interface GeneradorRespuesta {
   ): Promise<Resultado<RespuestaFundada>>
 }
 
-/** Las cuatro juntas: lo que el punto de composicion elige y los casos de uso reciben. */
+/**
+ * La quinta interfaz (RF-27, CU-16): el asistente conversacional. Decide el
+ * proximo paso de una conversacion —responder en texto o invocar una
+ * herramienta— pero **nunca ejecuta** nada por si misma. La ejecucion de una
+ * escritura ocurre fuera, tras confirmacion humana (Principio IV). Como las
+ * otras cuatro, no lanza por indisponibilidad: devuelve `{ disponible: false }`.
+ */
+
+export interface HerramientaDisponible {
+  nombre: string
+  descripcion: string
+  /** JSON Schema de los parametros que la herramienta acepta. */
+  parametros: unknown
+}
+
+export type TurnoConversacion =
+  | { rol: 'usuario'; texto: string }
+  | { rol: 'asistente'; texto: string }
+  /** Resultado de una herramienta ya consultada; `resultado` viene minimizado. */
+  | { rol: 'herramienta'; nombre: string; resultado: string }
+
+export type AccionDelAgente =
+  | { tipo: 'responder'; texto: string }
+  | { tipo: 'invocar'; nombre: string; argumentos: Record<string, unknown> }
+
+export interface Sugerencia {
+  /** Lo que se ve en la pastilla. */
+  etiqueta: string
+  /** El mensaje que se manda al tocarla: un turno de usuario mas, nada ejecutado. */
+  pedido: string
+  /** La herramienta que haria falta; `conversar` descarta la pastilla si no esta ofrecida. */
+  herramienta?: string
+}
+
+/** `consorcios` solo viaja en modo «todos»: los del alcance del usuario. */
+export interface ContextoAgente {
+  hoy: string
+  rolTexto: string
+  consorcios?: { id: string; nombre: string }[]
+}
+
+export interface AgenteConversacional {
+  /**
+   * `contexto.hoy` es la fecha actual (zona de Argentina) para interpretar
+   * «el sabado»; `rolTexto` describe el rol del usuario para el tono, no para
+   * autorizar: la autorizacion la hacen los casos de uso. `emitir` recibe el
+   * texto a medida que llega; si el turno termina en `invocar`, quien llama
+   * descarta lo emitido.
+   */
+  conversar(
+    contexto: ContextoAgente,
+    historial: TurnoConversacion[],
+    herramientas: HerramientaDisponible[],
+    emitir: (fragmento: string) => void,
+  ): Promise<Resultado<AccionDelAgente>>
+  /** Hasta tres proximos pasos concretos, sobre las herramientas ya filtradas por rol. */
+  sugerir(
+    contexto: ContextoAgente,
+    historial: TurnoConversacion[],
+    herramientas: HerramientaDisponible[],
+  ): Promise<Resultado<Sugerencia[]>>
+}
+
+/** Las cinco juntas: lo que el punto de composicion elige y los casos de uso reciben. */
 export interface Asistencia {
   extractor: ExtractorDocumental
   clasificador: ClasificadorTexto
   vectores: GeneradorVectores
   respuestas: GeneradorRespuesta
+  agente: AgenteConversacional
 }

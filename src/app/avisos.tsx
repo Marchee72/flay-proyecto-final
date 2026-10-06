@@ -36,6 +36,7 @@ const HECHO: Record<string, string | undefined> = {
   'reserva-confirmada': 'Reserva confirmada. Te llega un aviso por correo.',
   'reserva-cancelada': 'Reserva cancelada.',
   'espacio-guardado': 'Espacio guardado.',
+  'espacio-alta': 'Espacio habilitado; vuelve a admitir reservas.',
   'espacio-baja': 'Espacio dado de baja; las reservas futuras quedaron canceladas y avisadas.',
   'novedad-publicada': 'Novedad publicada y avisada.',
   'documento-cargado':

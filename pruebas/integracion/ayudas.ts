@@ -62,6 +62,8 @@ export const habilitarEnConsorcio = (
 export async function limpiar() {
   // 004-servicios: primero lo que referencia gastos, comprobantes, unidades y
   // proveedores. Historial, sugerencia y fragmentos caen en cascada.
+  // RF-27: la conversacion referencia al consorcio con RESTRICT; los mensajes caen en cascada.
+  await prismaBase.conversacionAsistente.deleteMany({})
   await prismaBase.extraccionComprobante.deleteMany({})
   await prismaBase.consultaDocumental.deleteMany({})
   await prismaBase.documentoConsorcio.deleteMany({})

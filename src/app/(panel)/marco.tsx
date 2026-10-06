@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Building2, Inbox, LogOut } from 'lucide-react'
@@ -5,7 +6,10 @@ import { Building2, Inbox, LogOut } from 'lucide-react'
 import { nombreDelUsuario, usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 
 import { salir } from './acciones'
+import { Asistente } from './asistente/asistente'
 import { Campana } from './campana'
+import { consorciosAlAlcance } from './con-consorcio'
+import { NOMBRE_GALLETA_CONSORCIO } from './consorcio-activo'
 import { BarraInferior, Navegacion, NavegacionGlobal } from './navegacion'
 import { SelectorDeConsorcio, type ConsorcioOpcion } from './selector-consorcio'
 
@@ -35,6 +39,13 @@ export async function Marco({
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) redirect('/ingresar')
   const nombre = await nombreDelUsuario(usuarioId)
+
+  // El asistente esta en todo el panel. Dentro de un consorcio se ancla a ese; afuera,
+  // al ultimo usado (galleta, validada contra el alcance) o al primero.
+  const alAlcance = await consorciosAlAlcance(usuarioId)
+  const recordado = (await cookies()).get(NOMBRE_GALLETA_CONSORCIO)?.value
+  const anclaId =
+    consorcio?.activoId ?? alAlcance.find((c) => c.id === recordado)?.id ?? alAlcance[0]?.id
 
   return (
     <div className="marco">
@@ -83,6 +94,8 @@ export async function Marco({
       </aside>
 
       <main className="contenido">{children}</main>
+
+      {anclaId && <Asistente consorcios={alAlcance} anclaId={anclaId} enCartera={!consorcio} />}
 
       {consorcio && <BarraInferior base={consorcio.base} roles={consorcio.roles} />}
     </div>

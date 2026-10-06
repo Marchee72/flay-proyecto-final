@@ -31,4 +31,12 @@ export const asistenciaNula: Asistencia = {
       return noDisponible(`${MOTIVO} Abrí el documento y buscá en él.`)
     },
   },
+  agente: {
+    async conversar() {
+      return noDisponible(`${MOTIVO} Usá las secciones del panel para lo que necesites.`)
+    },
+    async sugerir() {
+      return noDisponible(MOTIVO)
+    },
+  },
 }

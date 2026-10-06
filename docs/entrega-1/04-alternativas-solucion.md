@@ -42,6 +42,7 @@ Cada requerimiento funcional se justifica contra un objetivo del punto 3; ningun
 | RF-24 | Ordenar los proveedores por costo acumulado y recurrencia de contratación | OBJ-4.3 | Administrador |
 | RF-25 | Informar el tiempo medio de resolución de reclamos por tipo y urgencia | OBJ-4.4 | Administrador |
 | RF-26 | Registrar en bitácora de auditoría toda operación que modifique datos económicos | Seguridad | Sistema |
+| RF-27 | Consultar y operar, en lenguaje natural, sobre lo que cada usuario ya puede ver y hacer en la interfaz según su rol, con confirmación humana explícita de toda operación que modifique datos | OBJ-5.3 | Consorcista, Administrador |
 
 ### 4.1.2 Requerimientos no funcionales
 
@@ -150,6 +151,7 @@ Todos los requerimientos funcionales del punto 4.1.1, agrupados en módulos:
 | Reservas de espacios comunes | RF-15, RF-16 |
 | Proveedores | RF-17 |
 | Comunicación y documentación | RF-18, RF-19, RF-20 |
+| Asistente conversacional | RF-27 |
 | Notificaciones | RF-14 |
 | Indicadores de gestión | RF-21, RF-22, RF-23, RF-24, RF-25 |
 | Auditoría | RF-26 |

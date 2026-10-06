@@ -76,4 +76,14 @@ export const ASISTENCIA: Asistencia = {
       return impl.respuestas.responder(pregunta, contexto)
     },
   },
+  agente: {
+    async conversar(contexto, historial, herramientas, emitir) {
+      const impl = await resolverAsistencia()
+      return impl.agente.conversar(contexto, historial, herramientas, emitir)
+    },
+    async sugerir(contexto, historial, herramientas) {
+      const impl = await resolverAsistencia()
+      return impl.agente.sugerir(contexto, historial, herramientas)
+    },
+  },
 }

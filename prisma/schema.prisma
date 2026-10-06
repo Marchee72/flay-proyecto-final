@@ -72,6 +72,7 @@ model Consorcio {
   documentos     DocumentoConsorcio[]
   consultas      ConsultaDocumental[]
   extracciones   ExtraccionComprobante[]
+  conversaciones ConversacionAsistente[]
 
   @@index([administradoraId])
 }
@@ -939,6 +940,55 @@ model ConsultaDocumental {
   consorcio Consorcio @relation(fields: [consorcioId], references: [id])
 
   @@index([consorcioId, consultadoEn])
+}
+
+/// Hilo entre un usuario y el asistente conversacional (RF-27, CU-16). Aislado
+/// por consorcio; los mensajes cuelgan de aca y se leen siempre por su hilo.
+/// `consorcioId` es el ancla: el consorcio desde el que se abrio el hilo. En modo «todos los
+/// consorcios» no limita lo que se consulta (cada herramienta resuelve y re-autoriza el suyo, FR-011).
+model ConversacionAsistente {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId   String   @map("consorcio_id") @db.Uuid
+  usuarioId     String   @map("usuario_id") @db.Uuid
+  creadaEn      DateTime @default(now()) @map("creada_en") @db.Timestamptz(6)
+  actualizadaEn DateTime @default(now()) @updatedAt @map("actualizada_en") @db.Timestamptz(6)
+
+  consorcio Consorcio          @relation(fields: [consorcioId], references: [id])
+  mensajes  MensajeAsistente[]
+
+  @@index([consorcioId, usuarioId, actualizadaEn])
+}
+
+/// Turno de una conversacion con el asistente. Sin consorcio_id: se alcanza por
+/// su conversacion, que si esta aislada. Un turno del asistente puede portar una
+/// propuesta de escritura cuyo estado respalda la confirmacion idempotente (FR-008).
+model MensajeAsistente {
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversacionId  String           @map("conversacion_id") @db.Uuid
+  rol             RolMensaje
+  contenido       String           @db.Text
+  /// Para rol=herramienta: { nombre, resultado } ya minimizado (lo que vio el modelo).
+  herramienta     Json?            @db.JsonB
+  /// Para una escritura propuesta: { herramienta, argumentos } validados en servidor.
+  propuesta       Json?            @db.JsonB
+  estadoPropuesta EstadoPropuesta? @map("estado_propuesta")
+  creadoEn        DateTime         @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  conversacion ConversacionAsistente @relation(fields: [conversacionId], references: [id], onDelete: Cascade)
+
+  @@index([conversacionId, creadoEn])
+}
+
+enum RolMensaje {
+  usuario
+  asistente
+  herramienta
+}
+
+enum EstadoPropuesta {
+  pendiente
+  confirmada
+  descartada
 }
 
 /// Datos propuestos a partir de un comprobante (RF-06, CU-13) — **economica**.

@@ -151,7 +151,7 @@ comprensibles (RNF-10), auditoría registrada si toca datos económicos, documen
 
 ## Lo que no se adivina leyendo el código
 
-Veintitrés decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
+Veintiséis decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
 
 1. **El orden de las semillas y las pruebas.** `npm run test:integracion` **vacía** las tablas de
    negocio, semilla incluida: en una base compartida no hay forma de distinguir lo sembrado de lo
@@ -265,6 +265,13 @@ Veintitrés decisiones que costaron una vuelta y conviene no volver a tomar desd
     tiene que seguir ahí con el formulario abierto. La regla: si nace de una acción recién disparada y
     no hace falta después de leerse, es toast; si no, se queda donde está.
 
+
+26. **En cartera, una lectura sin consorcio se abre en abanico.** Si el asistente está en modo «todos» y
+    el modelo omite `consorcioId`, `conversar` corre la herramienta una vez por consorcio donde el rol
+    alcanza (`ejecutarEnAbanico`), cada una con su propio `enConsorcio` y su reautorización, y le devuelve
+    al modelo `[{ consorcio, datos | error }]`. El cruce («en total», rankings) lo hace el modelo, no un
+    `IN` nuestro: por eso no entra nada a la lista blanca de `filtro-unico.spec.ts`. Es un solo salto
+    (`MAX_SALTOS` no se toca) y de mejor esfuerzo. Una escritura de un solo consorcio se ofrece también en cartera, pero solo con el consorcio nombrado: se enruta a ese (`conversar` + `confirmar`, cada uno reautoriza) y sin nombrarlo se pregunta cuál (SC-010). Las personas hablan con nombres: el prompt le pide al modelo resolver nombre→id con las lecturas, nunca pedir un id.
 
 ## Notas
 

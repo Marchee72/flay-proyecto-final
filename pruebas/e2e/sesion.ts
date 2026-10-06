@@ -323,6 +323,7 @@ export async function limpiarServicios(
       },
     },
   })
+  await prisma.conversacionAsistente.deleteMany({ where: { consorcioId: escenario.consorcioId } })
   await prisma.extraccionComprobante.deleteMany({ where: { consorcioId: escenario.consorcioId } })
   await prisma.consultaDocumental.deleteMany({ where: { consorcioId: escenario.consorcioId } })
   await prisma.documentoConsorcio.deleteMany({ where: { consorcioId: escenario.consorcioId } })

@@ -732,6 +732,7 @@ Verificación de que cada requerimiento tiene diseño y de que ningún objetivo 
 | RF-24 | OBJ-4.3 | `v_desempeno_proveedor` | CU-11 | 3 |
 | RF-25 | OBJ-4.4 | `v_resolucion_reclamos` | CU-11 | 3 |
 | RF-26 | Seguridad | Auditoria | Transversal | 1 |
+| RF-27 | OBJ-5.3 | ConversacionAsistente, MensajeAsistente | CU-16 | 3 |
 
 ### Cobertura de objetivos
 

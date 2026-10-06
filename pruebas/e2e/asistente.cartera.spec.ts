@@ -113,9 +113,8 @@ test('en cartera una lectura sin consorcio nombrado responde con los dos consorc
 
   await panel.getByLabel('Tu consulta').fill('ver_reclamos')
   await panel.getByRole('button', { name: 'Enviar' }).click()
-  await expect(panel.getByText(/Mitre 456/).first()).toBeVisible()
-  await expect(panel.getByText(/San Martin 7890/).first()).toBeVisible()
-  // Un botón por consorcio, distinguibles por nombre.
+  // Un botón por consorcio, distinguibles por nombre (el nombre suelto también está en el
+  // selector de alcance, oculto: `getByText` caería ahí).
   await expect(panel.getByRole('link', { name: /Ver en .* · Mitre 456/ })).toBeVisible()
   await expect(panel.getByRole('link', { name: /Ver en .* · San Martin 7890/ })).toBeVisible()
 })

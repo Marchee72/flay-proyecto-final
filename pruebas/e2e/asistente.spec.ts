@@ -122,5 +122,8 @@ test('una sugerencia no ejecuta nada: manda el pedido y la tarjeta espera el cli
 
   await panel.getByRole('button', { name: 'Confirmar' }).click()
   await expect(panel.getByText('Resuelta.')).toBeVisible()
-  expect(await prisma.reclamo.count({ where: { consorcioId: escenario.consorcioId } })).toBe(1)
+  // `Resuelta.` se marca también si la confirmación falló: se espera el efecto, no el cartel.
+  await expect
+    .poll(() => prisma.reclamo.count({ where: { consorcioId: escenario.consorcioId } }))
+    .toBe(1)
 })

@@ -6,9 +6,8 @@ import { Decimal, importe } from '@/compartido/dinero'
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { fechaParaMostrar, importeParaMostrar, plural } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
-import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
-import { misExpensas } from '@/aplicacion/liquidacion/ver-expensa'
-import { verEstadoDeCuenta } from '@/aplicacion/pagos/estado-de-cuenta'
+import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
+import { resumenDeCuentas, verEstadoDeCuenta } from '@/aplicacion/pagos/estado-de-cuenta'
 import { MEDIOS_DE_PAGO } from '@/aplicacion/pagos/registrar'
 import { divisionDe, pisoDe } from '@/aplicacion/consorcios/unidades'
 
@@ -50,20 +49,10 @@ export default async function PagosPage({
   if ('salida' in pantalla) return pantalla.salida
   const { usuarioId, activo } = pantalla
   try {
-    const [roles, unidades] = await Promise.all([
+    const [roles, cuentas] = await Promise.all([
       rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id),
-      misExpensas(ALMACEN, HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
+      resumenDeCuentas(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
     ])
-
-    const cuentas = await Promise.all(
-      unidades.map((unidad) =>
-        verEstadoDeCuenta(HABILITACIONES, RELOJ, {
-          usuarioId,
-          consorcioId: activo.id,
-          unidadId: unidad.unidadId,
-        }),
-      ),
-    )
 
     const pisosDisponibles = Array.from(
       new Set(cuentas.map((c) => pisoDe(c.designacion)).filter((p): p is string => p !== null)),
@@ -122,10 +111,18 @@ export default async function PagosPage({
     }
 
     // Una tabla con el saldo de cada unidad; el detalle de movimientos, de a
-    // una (`?unidad=`). Con una sola unidad —el consorcista— se abre sola.
-    const elegida =
-      cuentas.find((cuenta) => cuenta.unidadId === parametros.unidad) ??
-      (cuentas.length === 1 ? cuentas[0] : undefined)
+    // una (`?unidad=`) y solo de esa, para no traer los movimientos de todas.
+    // Con una sola unidad —el consorcista— se abre sola.
+    const elegidaId =
+      cuentas.find((cuenta) => cuenta.unidadId === parametros.unidad)?.unidadId ??
+      (cuentas.length === 1 ? cuentas[0]!.unidadId : undefined)
+    const elegida = elegidaId
+      ? await verEstadoDeCuenta(HABILITACIONES, RELOJ, {
+          usuarioId,
+          consorcioId: activo.id,
+          unidadId: elegidaId,
+        })
+      : undefined
 
     return (
       <>
@@ -226,7 +223,7 @@ export default async function PagosPage({
                     </thead>
                     <tbody>
                       {cuentasEnPagina.map((cuenta) => {
-                        const ultimo = cuenta.movimientos.at(-1)
+                        const ultimo = cuenta.ultimoMovimiento
                         return (
                           <tr key={cuenta.unidadId}>
                             <td>

@@ -4,7 +4,7 @@ import { Decimal, importe } from '@/compartido/dinero'
 import { anularLiquidacion } from '@/aplicacion/liquidacion/anular'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
-import { verEstadoDeCuenta, verMorosidad } from '@/aplicacion/pagos/estado-de-cuenta'
+import { resumenDeCuentas, verEstadoDeCuenta, verMorosidad } from '@/aplicacion/pagos/estado-de-cuenta'
 import { registrarPago } from '@/aplicacion/pagos/registrar'
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
 import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
@@ -268,6 +268,64 @@ describe('morosidad por rol (FR-029, SC-015)', () => {
       unidadesEnMora: 2,
       unidadesTotales: 2,
       deudaTotal: '1000.00',
+    })
+  })
+
+  /**
+   * La tabla de pagos arma el saldo de cada unidad con `resumenDeCuentas`, en
+   * consultas acotadas y no una por unidad (el N+1 agotaba el pool contra la
+   * base administrada). Esta prueba fija que lo que devuelve en masa es lo mismo
+   * que el estado de cuenta unidad por unidad: saldo, saldo a favor y el ultimo
+   * movimiento.
+   */
+  describe('resumen de cuentas en masa (FR-028)', () => {
+    it('sin liquidaciones, cada unidad arranca en cero y sin movimientos', async () => {
+      const resumen = await resumenDeCuentas(repo, RELOJ, { usuarioId: administrador, consorcioId })
+      expect(resumen.map((r) => r.designacion)).toEqual(['1A', '1B'])
+      for (const fila of resumen) {
+        expect(fila.saldo).toBe('0.00')
+        expect(fila.saldoAFavor).toBe('0.00')
+        expect(fila.ultimoMovimiento).toBeNull()
+      }
+    })
+
+    it('coincide con el estado de cuenta unidad por unidad', async () => {
+      await emitirMes(1)
+      await emitirMes(2)
+      await pagar('800.00') // 1A: paga enero (500) y 300 a febrero; 1B queda debiendo todo
+
+      const resumen = await resumenDeCuentas(repo, RELOJ, { usuarioId: administrador, consorcioId })
+      expect(resumen.map((r) => r.designacion)).toEqual(['1A', '1B'])
+
+      for (const fila of resumen) {
+        const cuenta = await verEstadoDeCuenta(repo, RELOJ, {
+          usuarioId: administrador,
+          consorcioId,
+          unidadId: fila.unidadId,
+        })
+        const ultimo = cuenta.movimientos.at(-1)
+        expect(fila.saldo).toBe(cuenta.saldo)
+        expect(fila.saldoAFavor).toBe(cuenta.saldoAFavor)
+        expect(fila.ultimoMovimiento).toEqual(
+          ultimo ? { fecha: ultimo.fecha, concepto: ultimo.concepto } : null,
+        )
+      }
+    })
+
+    it('el consorcista solo ve su unidad en el resumen', async () => {
+      await emitirMes(1)
+      const vecino = await crearUsuario('Caro')
+      await registrarOcupacion(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        unidadId: unidadA,
+        personaId: vecino.personaId,
+        tipo: 'propietario',
+        desde: new Date('2026-01-01'),
+      })
+
+      const resumen = await resumenDeCuentas(repo, RELOJ, { usuarioId: vecino.id, consorcioId })
+      expect(resumen.map((r) => r.designacion)).toEqual(['1A'])
     })
   })
 

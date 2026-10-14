@@ -4,7 +4,11 @@ import { Decimal, importe } from '@/compartido/dinero'
 import { anularLiquidacion } from '@/aplicacion/liquidacion/anular'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
-import { resumenDeCuentas, verEstadoDeCuenta, verMorosidad } from '@/aplicacion/pagos/estado-de-cuenta'
+import {
+  resumenDeCuentas,
+  verEstadoDeCuenta,
+  verMorosidad,
+} from '@/aplicacion/pagos/estado-de-cuenta'
 import { registrarPago } from '@/aplicacion/pagos/registrar'
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
 import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'

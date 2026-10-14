@@ -153,7 +153,11 @@ export async function resumenDeCuentas(
   return conAutorizacion(
     repositorio,
     reloj,
-    { usuarioId: datos.usuarioId, consorcioId: datos.consorcioId, accion: 'ver el estado de cuenta' },
+    {
+      usuarioId: datos.usuarioId,
+      consorcioId: datos.consorcioId,
+      accion: 'ver el estado de cuenta',
+    },
     async (acceso) => {
       const unidades = await unidadesAlcanzables(datos.usuarioId, acceso.roles, reloj.hoy())
       if (unidades.length === 0) return []
@@ -191,7 +195,15 @@ export async function resumenDeCuentas(
         ultimo: { momento: Date; fecha: string; concepto: string } | null
       }
       const porUnidad = new Map<string, Acumulado>(
-        ids.map((id) => [id, { total: new Decimal(0), imputado: new Decimal(0), saldoAFavor: new Decimal(0), ultimo: null }]),
+        ids.map((id) => [
+          id,
+          {
+            total: new Decimal(0),
+            imputado: new Decimal(0),
+            saldoAFavor: new Decimal(0),
+            ultimo: null,
+          },
+        ]),
       )
 
       const anotar = (acc: Acumulado, momento: Date, fecha: string, concepto: string) => {
@@ -220,7 +232,12 @@ export async function resumenDeCuentas(
           acc.imputado,
         )
         acc.saldoAFavor = acc.saldoAFavor.plus(importe(pago.saldoAFavor.toFixed(2)))
-        anotar(acc, pago.creadoEn, pago.fechaPago.toISOString().slice(0, 10), `Pago (${pago.medio})`)
+        anotar(
+          acc,
+          pago.creadoEn,
+          pago.fechaPago.toISOString().slice(0, 10),
+          `Pago (${pago.medio})`,
+        )
       }
 
       return unidades.map((unidad) => {

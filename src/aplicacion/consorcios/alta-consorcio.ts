@@ -79,6 +79,19 @@ export async function altaConsorcio(
         })),
       )
 
+      const hoy = reloj.hoy()
+
+      // Los identificadores se generan aca para escribir las dos tablas de
+      // unidades con dos sentencias y no con dos por unidad: contra una base
+      // administrada, N altas de a una no entran en el tope de 5 s de la
+      // transaccion interactiva (CLAUDE.md pt 11). Es lo mismo que `cargarPadron`.
+      const filas = unidades.map((unidad) => ({
+        id: crypto.randomUUID(),
+        designacion: unidad.designacion,
+        tipo: unidad.tipo ?? TIPO_UNIDAD_POR_OMISION,
+        coeficiente: unidad.coeficiente,
+      }))
+
       const consorcio = await prismaBase.$transaction(async (tx) => {
         const creado = await tx.consorcio.create({
           data: {
@@ -95,30 +108,25 @@ export async function altaConsorcio(
             usuarioId: datos.usuarioId,
             consorcioId: creado.id,
             rol: 'administrador',
-            vigenciaDesde: reloj.hoy(),
+            vigenciaDesde: hoy,
           },
         })
 
-        for (const unidad of unidades) {
-          const creada = await tx.unidad.create({
-            data: {
-              consorcioId: creado.id,
-              designacion: unidad.designacion,
-              tipo: unidad.tipo ?? TIPO_UNIDAD_POR_OMISION,
-              coeficiente: unidad.coeficiente,
-            },
-          })
+        // `altaConsorcio` trabaja por encima del aislamiento sobre el cliente
+        // crudo, asi que el `consorcioId` va explicito (no lo inyecta la extension).
+        await tx.unidad.createMany({
+          data: filas.map((fila) => ({ ...fila, consorcioId: creado.id })),
+        })
 
-          // Toda unidad nace con su fila de historia: es lo que permite
-          // reconstruir una liquidacion pasada (regla RN-02).
-          await tx.coeficienteHistorico.create({
-            data: {
-              unidadId: creada.id,
-              coeficiente: unidad.coeficiente,
-              vigenciaDesde: reloj.hoy(),
-            },
-          })
-        }
+        // Toda unidad nace con su fila de historia: es lo que permite
+        // reconstruir una liquidacion pasada (regla RN-02).
+        await tx.coeficienteHistorico.createMany({
+          data: filas.map((fila) => ({
+            unidadId: fila.id,
+            coeficiente: fila.coeficiente,
+            vigenciaDesde: hoy,
+          })),
+        })
 
         return creado
       })

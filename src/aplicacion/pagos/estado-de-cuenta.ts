@@ -5,6 +5,7 @@ import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios
 
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
+import { unidadesAlcanzables } from '@/aplicacion/liquidacion/ver-expensa'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 import {
   ocupaUnidad,
@@ -122,6 +123,135 @@ export async function verEstadoDeCuenta(
       }
 
       return estadoDe(unidad)
+    },
+  )
+}
+
+export interface ResumenDeCuenta {
+  unidadId: string
+  designacion: string
+  saldo: string
+  saldoAFavor: string
+  /** El movimiento mas reciente —expensa o pago—, o nulo si no hubo ninguno. */
+  ultimoMovimiento: { fecha: string; concepto: string } | null
+}
+
+/**
+ * Saldo de cada unidad alcanzable, en consultas acotadas y no una por unidad.
+ *
+ * La tabla de pagos solo necesita saldo, saldo a favor y el ultimo movimiento
+ * de cada unidad; el detalle completo de movimientos es de una sola unidad y lo
+ * trae `verEstadoDeCuenta`. Calcular el estado completo de todas disparaba `4N`
+ * consultas en paralelo que agotaban el pool contra la base administrada. Se
+ * entra por `Liquidacion` —aislada— para los detalles, igual que la morosidad.
+ */
+export async function resumenDeCuentas(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: { usuarioId: string; consorcioId: string },
+): Promise<ResumenDeCuenta[]> {
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    {
+      usuarioId: datos.usuarioId,
+      consorcioId: datos.consorcioId,
+      accion: 'ver el estado de cuenta',
+    },
+    async (acceso) => {
+      const unidades = await unidadesAlcanzables(datos.usuarioId, acceso.roles, reloj.hoy())
+      if (unidades.length === 0) return []
+      const ids = unidades.map((unidad) => unidad.id)
+
+      const [liquidaciones, pagos] = await Promise.all([
+        prisma.liquidacion.findMany({
+          where: { estado: 'vigente' },
+          select: {
+            emitidaEn: true,
+            vencimiento: true,
+            periodo: { select: { anio: true, mes: true } },
+            detalles: { select: { unidadId: true, totalUnidad: true } },
+          },
+        }),
+        // Por `unidadId` sobre los ids aislados de arriba, nunca un parametro
+        // (mismo resguardo que la nomina de morosidad).
+        prismaBase.pago.findMany({
+          where: { unidadId: { in: ids } },
+          select: {
+            unidadId: true,
+            medio: true,
+            creadoEn: true,
+            fechaPago: true,
+            saldoAFavor: true,
+            imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
+          },
+        }),
+      ])
+
+      type Acumulado = {
+        total: Decimal
+        imputado: Decimal
+        saldoAFavor: Decimal
+        ultimo: { momento: Date; fecha: string; concepto: string } | null
+      }
+      const porUnidad = new Map<string, Acumulado>(
+        ids.map((id) => [
+          id,
+          {
+            total: new Decimal(0),
+            imputado: new Decimal(0),
+            saldoAFavor: new Decimal(0),
+            ultimo: null,
+          },
+        ]),
+      )
+
+      const anotar = (acc: Acumulado, momento: Date, fecha: string, concepto: string) => {
+        if (!acc.ultimo || momento.getTime() > acc.ultimo.momento.getTime()) {
+          acc.ultimo = { momento, fecha, concepto }
+        }
+      }
+
+      for (const liquidacion of liquidaciones) {
+        const concepto =
+          `Expensas ${String(liquidacion.periodo.mes).padStart(2, '0')}/` +
+          `${liquidacion.periodo.anio}`
+        const fecha = liquidacion.vencimiento.toISOString().slice(0, 10)
+        for (const detalle of liquidacion.detalles) {
+          const acc = porUnidad.get(detalle.unidadId)
+          if (!acc) continue // detalle de una unidad fuera del alcance del usuario
+          acc.total = acc.total.plus(importe(detalle.totalUnidad.toFixed(2)))
+          anotar(acc, liquidacion.emitidaEn, fecha, concepto)
+        }
+      }
+
+      for (const pago of pagos) {
+        const acc = porUnidad.get(pago.unidadId)!
+        acc.imputado = pago.imputaciones.reduce(
+          (total, i) => total.plus(importe(i.importeImputado.toFixed(2))),
+          acc.imputado,
+        )
+        acc.saldoAFavor = acc.saldoAFavor.plus(importe(pago.saldoAFavor.toFixed(2)))
+        anotar(
+          acc,
+          pago.creadoEn,
+          pago.fechaPago.toISOString().slice(0, 10),
+          `Pago (${pago.medio})`,
+        )
+      }
+
+      return unidades.map((unidad) => {
+        const acc = porUnidad.get(unidad.id)!
+        return {
+          unidadId: unidad.id,
+          designacion: unidad.designacion,
+          saldo: acc.total.minus(acc.imputado).toFixed(DECIMALES_IMPORTE),
+          saldoAFavor: acc.saldoAFavor.toFixed(DECIMALES_IMPORTE),
+          ultimoMovimiento: acc.ultimo
+            ? { fecha: acc.ultimo.fecha, concepto: acc.ultimo.concepto }
+            : null,
+        }
+      })
     },
   )
 }

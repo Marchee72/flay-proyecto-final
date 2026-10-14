@@ -129,6 +129,33 @@ describe('alta de consorcio', () => {
     ).rejects.toBeInstanceOf(RolInsuficiente)
   })
 
+  it('crea el padron en la misma alta, cada unidad con su fila de historia (FR-011c)', async () => {
+    // Doce unidades, con el ajuste de redondeo en la primera para cerrar en
+    // 100,00000000 exacto. Entran por lote (dos `createMany`), no de a una: es
+    // lo que evita pasarse del tope de la transaccion contra la base administrada.
+    const unidades = Array.from({ length: 12 }, (_, i) => ({
+      designacion: `${Math.floor(i / 4) + 1}${'ABCD'[i % 4]}`,
+      coeficiente: i === 0 ? '8.33333337' : '8.33333333',
+    }))
+
+    const { consorcioId } = await altaConsorcio(repositorioHabilitaciones, RELOJ, {
+      ...datosConsorcio(superAdmin, delta),
+      unidades,
+    })
+
+    const creadas = await prismaBase.unidad.findMany({
+      where: { consorcioId },
+      select: { id: true, designacion: true },
+    })
+    expect(creadas).toHaveLength(12)
+    expect(creadas.map((u) => u.designacion).sort()).toContain('1A')
+
+    const historia = await prismaBase.coeficienteHistorico.count({
+      where: { unidadId: { in: creadas.map((u) => u.id) } },
+    })
+    expect(historia).toBe(12)
+  })
+
   it('rechaza un CUIT repetido con mensaje para el usuario final', async () => {
     const datos = datosConsorcio(superAdmin, delta)
     await altaConsorcio(repositorioHabilitaciones, RELOJ, datos)

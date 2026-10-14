@@ -51,7 +51,7 @@ export interface UnidadConExpensas {
  * Las unidades que el usuario puede ver: todas si es administrador o consejo,
  * y solo las que ocupa si es consorcista.
  */
-async function unidadesAlcanzables(
+export async function unidadesAlcanzables(
   usuarioId: string,
   roles: readonly string[],
   hoy: Date,

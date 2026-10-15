@@ -16,7 +16,7 @@ const COMPROMETIDAS = [
   '@react-pdf/renderer',
   'recharts',
   'lucide-react',
-  '@vercel/blob',
+  '@aws-sdk/client-s3',
   'resend',
   '@google/genai',
   'unpdf',

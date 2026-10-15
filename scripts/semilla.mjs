@@ -26,16 +26,31 @@ import { sembrarServicios } from '../pruebas/fixtures/servicios-13-4.ts'
 import { sembrarRubros } from '../prisma/semilla-rubros.ts'
 import { sembrarDemo } from './semilla-demo.ts'
 
-// `.env.local` es donde `vercel env pull` deja el token del almacen: sin el,
-// el reglamento queda registrado pero sin archivo y la indexacion falla.
+// `.env.local` es donde se dejan las credenciales de R2: sin ellas, el
+// reglamento queda registrado pero sin archivo y la indexacion falla.
 for (const archivo of ['.env', '.env.local']) {
   if (existsSync(archivo)) process.loadEnvFile(archivo)
 }
 
-/** El reglamento va al almacen de objetos si hay token; si no, queda registrado igual. */
+/** El reglamento va al almacen de objetos si hay credenciales; si no, queda registrado igual. */
 async function guardarEnAlmacen(clave, bytes, tipoContenido) {
-  const { put } = await import('@vercel/blob')
-  await put(clave, bytes, { access: 'public', contentType: tipoContenido, addRandomSuffix: false })
+  const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3')
+  const cliente = new S3Client({
+    region: 'auto',
+    endpoint: process.env.R2_ENDPOINT,
+    credentials: {
+      accessKeyId: process.env.R2_ACCESS_KEY_ID,
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+    },
+  })
+  await cliente.send(
+    new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET,
+      Key: clave,
+      Body: bytes,
+      ContentType: tipoContenido,
+    }),
+  )
 }
 
 try {
@@ -58,7 +73,7 @@ try {
       contenido: readFileSync('datos-cliente/reglamento/reglamento-copropiedad.md'),
       tipoContenido: 'text/markdown',
     },
-    guardar: process.env.BLOB_READ_WRITE_TOKEN ? guardarEnAlmacen : undefined,
+    guardar: process.env.R2_ENDPOINT ? guardarEnAlmacen : undefined,
     claveDerivada,
   })
   console.log(

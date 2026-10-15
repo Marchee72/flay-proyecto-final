@@ -1,10 +1,10 @@
 'use client'
 
-import { put } from '@vercel/blob/client'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 import { avisar } from '@/app/avisos'
+import { subirAlAlmacen } from '@/app/(panel)/subida'
 
 import { accionConfirmarComprobante } from '../acciones'
 
@@ -60,11 +60,7 @@ export function AdjuntarComprobante({
         return
       }
 
-      await put(cuerpo.clave, archivo, {
-        access: 'public',
-        token: cuerpo.credencial,
-        contentType: archivo.type,
-      })
+      await subirAlAlmacen(cuerpo.credencial, archivo)
 
       const confirmacion = await accionConfirmarComprobante({
         consorcioId,

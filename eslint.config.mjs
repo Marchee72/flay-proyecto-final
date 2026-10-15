@@ -26,7 +26,7 @@ const FUERA_DEL_DOMINIO = [
     message: 'El dominio no conoce el mecanismo de autenticacion.',
   },
   {
-    group: ['@vercel/blob', 'resend', '@react-pdf/*', 'recharts', '@node-rs/*'],
+    group: ['@aws-sdk/*', 'resend', '@react-pdf/*', 'recharts', '@node-rs/*'],
     message:
       'El dominio no conoce proveedores externos. Definir un puerto en src/dominio/contratos.',
   },

@@ -1,12 +1,12 @@
 'use client'
 
-import { put } from '@vercel/blob/client'
 import { useRouter } from 'next/navigation'
 import { useRef, useState, type ReactNode } from 'react'
 import { CloudUpload, FileText, TriangleAlert, X } from 'lucide-react'
 
 import { pesoParaMostrar } from '@/compartido/formato'
 import { avisar } from '@/app/avisos'
+import { subirAlAlmacen } from '@/app/(panel)/subida'
 
 /**
  * Subida directa reutilizable (guia § 3.4): el archivo va del navegador al
@@ -103,12 +103,9 @@ export function SubidaDirecta({
         avisar(cuerpo.mensaje ?? 'No se pudo preparar la subida.', 'problema')
         return
       }
-      await put(cuerpo.clave, archivo, {
-        access: 'public',
-        token: cuerpo.credencial,
-        contentType: archivo.type,
-        onUploadProgress: ({ loaded, total }) => setProgreso({ cargado: loaded, total }),
-      })
+      await subirAlAlmacen(cuerpo.credencial, archivo, (cargado, total) =>
+        setProgreso({ cargado, total }),
+      )
       formulario.delete('archivo')
       formulario.set('consorcio', consorcioId)
       formulario.set('clave', cuerpo.clave)

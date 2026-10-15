@@ -2,7 +2,7 @@ import type { Asistencia } from '@/dominio/contratos/asistencia'
 import type { GeneradorDeDocumentos } from '@/dominio/contratos/documentos'
 import { asistenciaNula } from '@/infraestructura/asistencia/nula'
 import { argon2id } from '@/infraestructura/contrasenas/argon2'
-import { almacenBlob } from '@/infraestructura/objetos/blob'
+import { almacenR2 } from '@/infraestructura/objetos/r2'
 import { relojDelSistema } from '@/infraestructura/reloj'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
 
@@ -18,7 +18,7 @@ import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habili
 export const HABILITACIONES = repositorioHabilitaciones
 export const RELOJ = relojDelSistema
 export const DERIVADOR = argon2id
-export const ALMACEN = almacenBlob
+export const ALMACEN = almacenR2
 
 /**
  * Generador de PDF cargado bajo demanda: evita que `@react-pdf/renderer` y sus

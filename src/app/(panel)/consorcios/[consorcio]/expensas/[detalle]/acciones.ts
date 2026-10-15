@@ -7,11 +7,11 @@ import { HABILITACIONES, PROCESADOR_PAGOS, RELOJ } from '@/aplicacion/dependenci
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { iniciarPagoEnLinea } from '@/aplicacion/pagos/iniciar-pago-en-linea'
 
-export type ResultadoInicioPago = { mensaje: string }
+export type ResultadoInicioPago = { mensaje: string; urlPago?: string }
 
 /**
  * Server Action para iniciar el pago en linea de una expensa (`RF-28`, D-1, D-3).
- * Redirige al checkout pro de Mercado Pago.
+ * Devuelve la URL de redireccion para abrir el checkout pro de Mercado Pago.
  */
 export async function accionPagarExpensaEnLinea(
   _previo: ResultadoInicioPago,
@@ -26,7 +26,6 @@ export async function accionPagarExpensaEnLinea(
   const urlPublica = process.env.URL_PUBLICA || 'http://localhost:3000'
   const urlBaseRetorno = `${urlPublica}/consorcios/${consorcioId}/expensas/${detalleId}`
 
-  let urlPago: string
   try {
     const inicio = await iniciarPagoEnLinea(HABILITACIONES, RELOJ, PROCESADOR_PAGOS, {
       usuarioId,
@@ -34,13 +33,11 @@ export async function accionPagarExpensaEnLinea(
       detalleLiquidacionId: detalleId,
       urlBaseRetorno,
     })
-    urlPago = inicio.urlPago
+    return { mensaje: '', urlPago: inicio.urlPago }
   } catch (error) {
     if (error instanceof ErrorDeAplicacion) {
       return { mensaje: error.mensajeParaUsuario }
     }
     throw error
   }
-
-  redirect(urlPago)
 }

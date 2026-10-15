@@ -1,12 +1,10 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useState } from 'react'
 import { CreditCard, ExternalLink, Loader2 } from 'lucide-react'
 
 import { importeParaMostrar } from '@/compartido/formato'
-import { accionPagarExpensaEnLinea, type ResultadoInicioPago } from './acciones'
-
-const SIN_ERROR: ResultadoInicioPago = { mensaje: '' }
+import { accionPagarExpensaEnLinea } from './acciones'
 
 export function BotonPagoEnLinea({
   consorcioId,
@@ -17,19 +15,46 @@ export function BotonPagoEnLinea({
   detalleId: string
   saldoExigible: string
 }) {
-  const [estado, accion, enviando] = useActionState(accionPagarExpensaEnLinea, SIN_ERROR)
-  const hayError = estado.mensaje !== ''
+  const [enviando, setEnviando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const manejarPago = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setError(null)
+    setEnviando(true)
+
+    // Abre la pestaña en blanco inmediatamente dentro del evento de usuario para que el navegador no bloquee el popup
+    const nuevaPestana = typeof window !== 'undefined' ? window.open('about:blank', '_blank') : null
+
+    const formData = new FormData()
+    formData.append('consorcio', consorcioId)
+    formData.append('detalle', detalleId)
+
+    try {
+      const resultado = await accionPagarExpensaEnLinea({ mensaje: '' }, formData)
+      if (resultado.urlPago && nuevaPestana) {
+        nuevaPestana.location.href = resultado.urlPago
+      } else {
+        nuevaPestana?.close()
+        if (resultado.mensaje) {
+          setError(resultado.mensaje)
+        }
+      }
+    } catch {
+      nuevaPestana?.close()
+      setError('Ocurrió un error inesperado al conectar con Mercado Pago.')
+    } finally {
+      setEnviando(false)
+    }
+  }
 
   return (
-    <form action={accion} className="pago-en-linea-form">
-      <input type="hidden" name="consorcio" value={consorcioId} />
-      <input type="hidden" name="detalle" value={detalleId} />
-
+    <form onSubmit={manejarPago} className="pago-en-linea-form">
       <button
         type="submit"
         className="boton boton--primario"
         disabled={enviando}
-        aria-describedby={hayError ? 'error-pago-en-linea' : 'ayuda-pago-en-linea'}
+        aria-describedby={error ? 'error-pago-en-linea' : 'ayuda-pago-en-linea'}
       >
         {enviando ? (
           <>
@@ -46,12 +71,12 @@ export function BotonPagoEnLinea({
       </button>
 
       <p id="ayuda-pago-en-linea" className="ayuda apagado">
-        Pago seguro a través de Mercado Pago (Checkout Pro).
+        Pago seguro a través de Mercado Pago (Checkout Pro) · se abre en una nueva pestaña.
       </p>
 
-      {hayError && (
+      {error && (
         <p id="error-pago-en-linea" className="error" role="alert">
-          {estado.mensaje}
+          {error}
         </p>
       )}
     </form>

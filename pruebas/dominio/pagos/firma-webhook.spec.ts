@@ -27,8 +27,7 @@ describe('verificarFirmaWebhookMercadoPago', () => {
       ahoraMs,
     })
 
-    // Falla intencional solicitada para verificar el comportamiento del pipeline en CI
-    expect(valido).toBe(false)
+    expect(valido).toBe(true)
   })
 
   it('rechaza una firma con secreto incorrecto', () => {

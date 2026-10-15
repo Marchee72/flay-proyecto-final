@@ -1,5 +1,6 @@
 import { NoEncontrado } from '@/compartido/errores'
 import { Decimal, importe } from '@/compartido/dinero'
+import { saldosDeUnidad } from '@/dominio/liquidacion/saldo'
 import { ordenarUnidades } from '@/dominio/unidades/division'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 
@@ -304,50 +305,80 @@ export async function saldoImpagoPorUnidad(
       periodo: { select: { anio: true, mes: true } },
       detalles: {
         select: {
+          id: true,
           unidadId: true,
           totalUnidad: true,
+          deudaAnterior: true,
+          interesMora: true,
           imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
         },
       },
     },
   })
 
+  const porUnidadId = new Map<
+    string,
+    {
+      detalleId: string
+      periodo: string
+      totalUnidad: string
+      deudaAnterior: string
+      interesMora: string
+      imputado: string
+      vencimiento: Date
+    }[]
+  >()
+
+  for (const liquidacion of liquidaciones) {
+    const periodoStr = `${String(liquidacion.periodo.mes).padStart(2, '0')}/${liquidacion.periodo.anio}`
+    for (const d of liquidacion.detalles) {
+      const suyos = porUnidadId.get(d.unidadId) ?? []
+      const pagado = d.imputaciones.reduce(
+        (total, i) => total.plus(importe(i.importeImputado.toFixed(2))),
+        new Decimal(0),
+      )
+      suyos.push({
+        detalleId: d.id,
+        periodo: periodoStr,
+        totalUnidad: d.totalUnidad.toFixed(DECIMALES_IMPORTE),
+        deudaAnterior: d.deudaAnterior.toFixed(DECIMALES_IMPORTE),
+        interesMora: d.interesMora.toFixed(DECIMALES_IMPORTE),
+        imputado: pagado.toFixed(DECIMALES_IMPORTE),
+        vencimiento: liquidacion.vencimiento,
+      })
+      porUnidadId.set(d.unidadId, suyos)
+    }
+  }
+
   const porUnidad = new Map<
     string,
     { deuda: Decimal; vencidos: number; periodos: PeriodoImpago[] }
   >()
 
-  for (const { detalle, liquidacion } of liquidaciones.flatMap((liquidacion) =>
-    liquidacion.detalles.map((detalle) => ({ detalle, liquidacion })),
-  )) {
-    const pagado = detalle.imputaciones.reduce(
-      (total, i) => total.plus(importe(i.importeImputado.toFixed(2))),
-      new Decimal(0),
-    )
-    const saldo = importe(detalle.totalUnidad.toFixed(2)).minus(pagado)
-    if (saldo.lessThanOrEqualTo(0)) continue
+  for (const [unidadId, lista] of porUnidadId.entries()) {
+    const saldos = saldosDeUnidad(lista)
+    if (importe(saldos.saldoTotal).lessThanOrEqualTo(0)) continue
 
-    const actual = porUnidad.get(detalle.unidadId) ?? {
-      deuda: new Decimal(0),
-      vencidos: 0,
-      periodos: [],
-    }
-    porUnidad.set(detalle.unidadId, {
-      deuda: actual.deuda.plus(saldo),
-      vencidos: actual.vencidos + 1,
-      periodos: [
-        ...actual.periodos,
-        {
-          periodo: `${String(liquidacion.periodo.mes).padStart(2, '0')}/${liquidacion.periodo.anio}`,
-          vencimiento: liquidacion.vencimiento.toISOString().slice(0, 10),
-          saldo: saldo.toFixed(DECIMALES_IMPORTE),
-        },
-      ],
+    const mapPeriodo = new Map(lista.map((x) => [x.detalleId, x.periodo]))
+
+    const periodosImpagos: PeriodoImpago[] = saldos.detalles
+      .filter((d) => importe(d.saldo).greaterThan(0))
+      .map((d) => ({
+        periodo: mapPeriodo.get(d.detalleId)!,
+        vencimiento: d.vencimiento.toISOString().slice(0, 10),
+        saldo: d.saldo,
+      }))
+
+    porUnidad.set(unidadId, {
+      deuda: importe(saldos.saldoTotal),
+      vencidos: periodosImpagos.length,
+      periodos: periodosImpagos,
     })
   }
 
   return porUnidad
 }
+
 
 export async function verMorosidad(
   repositorio: RepositorioHabilitaciones,

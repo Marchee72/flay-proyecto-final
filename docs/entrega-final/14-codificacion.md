@@ -119,6 +119,7 @@ modo que desarrollo, verificación y demostración corren la misma. Las transiti
 | Iconos de interfaz | Lucide (`lucide-react`) | 0.525.0 | ISC | Set abierto de trazo consistente 24px (urgencias, estados, navegación); se verifica contra `package-lock` junto al resto |
 | Pruebas automatizadas | Vitest y Playwright | Vitest 3.2.7 + `@vitest/coverage-v8` 3.2.7 / Playwright 1.63.0 + `@axe-core/playwright` 4.9.0 | MIT y Apache-2.0 | Vitest ejercita el dominio sin base de datos (punto 8.3.3); Playwright cubre extremo a extremo y verifica RNF-01 sobre ventana de teléfono |
 | Análisis estático y formato | ESLint y Prettier | ESLint 9.20.0 + Prettier 3.4.2 + `eslint-config-prettier` 10.0.1 + `@typescript-eslint` 8.20.0 | MIT | Verificación automática en cada envío (punto 8.3.5) y sede de la medida 4 de contención |
+| Pasarela de pagos en línea | Mercado Pago Checkout Pro (Sandbox) vía API REST oficial | Cliente directo con `fetch` nativo sobre `api.mercadopago.com` | Licencia de servicio | RF-28: Cobro en línea de expensas delegando la captura de datos sensibles de tarjetas directamente en la pasarela externa. En modo Sandbox para el escenario académico, sin manipular datos de tarjetas (cumplimiento PCI-DSS por diseño). Cifrado simétrico AES-256-GCM para tokens de administradora y validación de webhooks con firma HMAC-SHA256 |
 
 Ninguna de las licencias listadas es recíproca fuerte, conforme exige el punto 5.3.4. La verificación
 del inventario completo, incluidas las dependencias transitivas, se realiza antes de cada entrega.
@@ -437,6 +438,30 @@ queda debajo del límite, aunque no es la cifra que RNF-06 compromete.
 Que el listado paginado cueste lo mismo en la página 5 que en la primera es efecto del índice
 `(consorcio_id, periodo_id, rubro_id)`: el filtro por consorcio que impone el aislamiento entra por
 la cabecera del índice y no obliga a recorrer la tabla.
+
+---
+
+## 14.6 Elección de la pasarela de pagos en línea (RF-28)
+
+Para satisfacer el requerimiento de cobro en línea de expensas (`RF-28`), se evaluaron las alternativas de procesamiento de pagos vigentes en el mercado argentino.
+
+### Alternativas evaluadas
+
+1. **Integración con Checkout transparente (API directa de captura de tarjetas)**: exige implementar formularios de captura de números de tarjeta, código de seguridad y vencimiento dentro de Flay. Esta opción queda descartada categóricamente por imponer certificación de seguridad PCI-DSS de nivel alto y aumentar exponencialmente la superficie de riesgo legal y técnico ante incidentes de fuga de datos de tarjetas.
+2. **Pasarela de cobro delegada mediante redirección (Mercado Pago Checkout Pro)**: el usuario es redirigido a la pasarela externa segura del procesador de pagos para completar la transacción (tarjeta de débito/crédito, dinero en cuenta o transferencia), sin que ningún dato de tarjeta toque los servidores de Flay.
+
+### Justificación de Mercado Pago Checkout Pro (Sandbox)
+
+Se adopta **Mercado Pago Checkout Pro en modo Sandbox**, fundamentado en:
+
+1. **Cumplimiento de seguridad y alcance PCI-DSS**: al delegar el flujo de pago íntegramente en la pasarela externa mediante redirección (`init_point` / `sandbox_init_point`), Flay no almacena, procesa ni transmite números de tarjetas de crédito o débito ni códigos CVV.
+2. **Disponibilidad y familiaridad en Argentina**: Mercado Pago es la plataforma de pagos de mayor adopción entre consorcistas y administradoras en el mercado local, soportando múltiples medios de pago unificados en una sola integración.
+3. **Entorno de pruebas (*Sandbox*) exhaustivo**: permite simular compras aprobadas, canceladas o pendientes mediante cuentas de prueba (*test users*) sin incurrir en transacciones financieras reales ni costos de comisiones bancarias durante las evaluaciones académicas.
+4. **Seguridad criptográfica de extremo a extremo**:
+   - Las credenciales privadas (`access_token` y `secreto_webhook`) se configuran por administradora y se almacenan en reposo con cifrado simétrico **AES-256-GCM** autenticado, exponiendo únicamente los últimos 4 caracteres en la interfaz.
+   - Las notificaciones entrantes vía Webhook se validan mediante firma criptográfica **HMAC-SHA256** (`x-signature` y `x-request-id`) con ventana de tolerancia temporal de 5 minutos contra ataques de repetición (*replay attacks*).
+   - Para prevenir cualquier suplantación o fraude, el sistema realiza una consulta obligatoria y directa a la API oficial (`GET /v1/payments/{id}`) con el Access Token del servidor para constatar el importe real y estado de aprobación antes de efectuar la imputación.
+5. **Aislamiento y no acoplamiento**: el procesador se consume detrás de la interfaz de dominio `ProcesadorDePagos`, proveyendo implementaciones intercambiables: `procesadorMercadoPago` (producción/sandbox real), `procesadorDePrueba` (doble determinístico en memoria para tests) y `procesadorNulo` (degradación controlada conforme a RNF-14).
 
 ---
 

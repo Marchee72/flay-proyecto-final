@@ -3,6 +3,7 @@ import type { MedioDePago } from '@prisma/client'
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import { Decimal, importe } from '@/compartido/dinero'
 import { imputar, type DetalleImpago } from '@/dominio/liquidacion/imputacion'
+import { saldosDeUnidad } from '@/dominio/liquidacion/saldo'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
@@ -52,6 +53,56 @@ export interface PagoRegistrado {
   saldoAFavor: string
 }
 
+export type TransaccionPrisma = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
+
+/**
+ * Operacion atomica de creacion de pago con sus imputaciones.
+ * Compartida entre el registro manual del administrador (`RF-09`) y la
+ * confirmacion de cobro en linea (`RF-28`).
+ */
+export async function imputarYRegistrar(
+  tx: TransaccionPrisma,
+  datos: {
+    unidadId: string
+    importe: string
+    fechaPago: Date
+    medio: MedioDePago
+    referencia?: string | null
+    registradoPor: string
+    impagos: readonly DetalleImpago[]
+  },
+): Promise<PagoRegistrado> {
+  const reparto = imputar(datos.importe, datos.impagos)
+
+  const creado = await tx.pago.create({
+    data: sinConsorcio({
+      unidadId: datos.unidadId,
+      fechaPago: datos.fechaPago,
+      importe: datos.importe,
+      medio: datos.medio,
+      referencia: datos.referencia ?? null,
+      saldoAFavor: reparto.sobrante,
+      registradoPor: datos.registradoPor,
+    }),
+  })
+
+  if (reparto.imputaciones.length > 0) {
+    await tx.pagoImputacion.createMany({
+      data: reparto.imputaciones.map((imputacion) => ({
+        pagoId: creado.id,
+        detalleLiquidacionId: imputacion.detalleId,
+        importeImputado: imputacion.importeImputado,
+      })),
+    })
+  }
+
+  return {
+    pagoId: creado.id,
+    imputaciones: reparto.imputaciones,
+    saldoAFavor: reparto.sobrante,
+  }
+}
+
 export async function registrarPago(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
@@ -84,47 +135,26 @@ export async function registrarPago(
       if (!unidad) throw new NoEncontrado()
 
       const impagos = await detallesImpagosDe(unidad.id)
-      const reparto = imputar(datos.importe, impagos)
 
-      const pago = await prisma.$transaction(async (tx) => {
-        const creado = await tx.pago.create({
-          data: sinConsorcio({
-            unidadId: unidad.id,
-            fechaPago: datos.fechaPago,
-            importe: datos.importe,
-            medio: datos.medio,
-            referencia: datos.referencia ?? null,
-            saldoAFavor: reparto.sobrante,
-            registradoPor: datos.usuarioId,
-          }),
+      return prisma.$transaction(async (tx) => {
+        return imputarYRegistrar(tx, {
+          unidadId: unidad.id,
+          importe: datos.importe,
+          fechaPago: datos.fechaPago,
+          medio: datos.medio,
+          referencia: datos.referencia,
+          registradoPor: datos.usuarioId,
+          impagos,
         })
-
-        if (reparto.imputaciones.length > 0) {
-          await tx.pagoImputacion.createMany({
-            data: reparto.imputaciones.map((imputacion) => ({
-              pagoId: creado.id,
-              detalleLiquidacionId: imputacion.detalleId,
-              importeImputado: imputacion.importeImputado,
-            })),
-          })
-        }
-
-        return creado
       })
-
-      return {
-        pagoId: pago.id,
-        imputaciones: reparto.imputaciones,
-        saldoAFavor: reparto.sobrante,
-      }
     },
   )
 }
 
 /**
  * Lo que la unidad debe, liquidacion por liquidacion, con su vencimiento: es
- * la entrada de `imputar`. El saldo de un detalle es su total menos lo ya
- * imputado y no revertido, el mismo criterio que usa la emision.
+ * la entrada de `imputar`. Calcula el saldo propio por periodo aplicando la
+ * regla de arrastre (RN-08 ampliada).
  */
 export async function detallesImpagosDe(unidadId: string): Promise<DetalleImpago[]> {
   const detalles = await prisma.detalleLiquidacion.findMany({
@@ -132,22 +162,31 @@ export async function detallesImpagosDe(unidadId: string): Promise<DetalleImpago
     select: {
       id: true,
       totalUnidad: true,
+      deudaAnterior: true,
+      interesMora: true,
       liquidacion: { select: { vencimiento: true } },
       imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
     },
   })
 
-  return detalles
-    .map((detalle) => {
-      const pagado = detalle.imputaciones.reduce(
-        (total, imputacion) => total.plus(importe(imputacion.importeImputado.toFixed(2))),
-        new Decimal(0),
-      )
-      return {
-        detalleId: detalle.id,
-        saldo: importe(detalle.totalUnidad.toFixed(2)).minus(pagado).toFixed(DECIMALES_IMPORTE),
-        vencimiento: detalle.liquidacion.vencimiento,
-      }
-    })
+  const formateados = detalles.map((d) => ({
+    detalleId: d.id,
+    totalUnidad: d.totalUnidad.toFixed(DECIMALES_IMPORTE),
+    deudaAnterior: d.deudaAnterior.toFixed(DECIMALES_IMPORTE),
+    interesMora: d.interesMora.toFixed(DECIMALES_IMPORTE),
+    vencimiento: d.liquidacion.vencimiento,
+    imputado: d.imputaciones
+      .reduce((total, i) => total.plus(importe(i.importeImputado.toFixed(2))), new Decimal(0))
+      .toFixed(DECIMALES_IMPORTE),
+  }))
+
+  const saldos = saldosDeUnidad(formateados)
+
+  return saldos.detalles
     .filter((detalle) => importe(detalle.saldo).greaterThan(0))
+    .map((detalle) => ({
+      detalleId: detalle.detalleId,
+      saldo: detalle.saldo,
+      vencimiento: detalle.vencimiento,
+    }))
 }

@@ -103,7 +103,7 @@ const DEL_ADMINISTRADOR = [
     ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/indicadores/gastos`,
   },
   { nombre: 'espacios comunes', ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/espacios` },
-  { nombre: 'avisos pendientes', ruta: (e: Escenario) => `/bandeja` },
+  { nombre: 'avisos pendientes', ruta: () => `/bandeja` },
   {
     nombre: 'carga asistida',
     ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/gastos/asistida`,

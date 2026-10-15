@@ -397,6 +397,16 @@ flowchart TD
    - Si el importe cancela toda la deuda exigible y existe un excedente dinerario, el remanente no se pierde: se computa automáticamente como **saldo a favor** de la unidad y se descontará en el casillero correspondiente de la próxima liquidación de expensas.
 6. La pantalla confirmará la operación con el aviso: *«Pago registrado e imputado a lo más viejo primero»*.
 
+#### Configuración de la pasarela de pagos en línea (RF-28)
+Para permitir que los consorcistas abonen sus expensas de forma directa y digital mediante pasarela externa (Mercado Pago Checkout Pro en entorno Sandbox):
+1. Diríjase al menú **Pagos** (`/pagos`).
+2. En la parte superior, presione el botón **Configurar pasarela** (o **Pasarela configurada (••••1234)** si ya estuviera establecida) para abrir el diálogo accesible `ModalConfiguracionPasarela`.
+3. Complete los datos provistos por la pasarela de cobros:
+   - **Access Token:** Clave de acceso privada de la administradora (ejemplo: `TEST-...`).
+   - **Webhook Secret:** Clave secreta compartida utilizada para verificar la firma criptográfica HMAC-SHA256 de las notificaciones entrantes.
+4. Presione **Guardar credenciales**.
+5. **Seguridad y Criptografía (D-5, D-6):** Las credenciales nunca se persisten en texto claro; se almacenan cifradas en reposo con el algoritmo estándar **AES-256-GCM** mediante una clave simétrica del servidor (`MP_CLAVE_CIFRADO`). En la interfaz solo se exhiben los últimos 4 caracteres del token como referencia de auditoría visual.
+
 ---
 
 ### 16.2.7 Gestión de reclamos y asignación a proveedores de mantenimiento
@@ -732,7 +742,25 @@ Flay implementa un modelo de transparencia total (requerimiento RF-10). Ya no es
 
 ---
 
-### 16.4.5 Cómo hacer un reclamo y seguir su estado en tiempo real
+### 16.4.5 Cómo pagar tus expensas en línea (Mercado Pago / Checkout Pro)
+
+Flay permite abonar las expensas mensuales de forma 100 % digital mediante la pasarela segura integrada (requerimiento **RF-28** y caso de uso **CU-17**):
+
+1. Ingresá a la sección **Expensas** (`/expensas`) y abrí el detalle de la última expensa emitida de tu unidad (`/expensas/[detalle]`).
+2. **Cálculo del saldo consolidado exigible (D-1, D-2, D-3):**
+   - El sistema calcula y fija en el servidor el saldo exigible exacto, consolidando la expensa corriente emitida junto con todos los períodos anteriores adeudados y los intereses punitorios vigentes devengados (calculados sobre el saldo propio de cada mes impago sin capitalización de intereses, conforme a **RN-08**).
+   - El importe no es editable por el usuario, evitando errores de tipeo o transferencias parciales incompletas.
+3. Si la administración configuró la pasarela de cobros, verás el botón **Pagar expensas en línea**.
+4. Al presionar el botón, Flay registra un intento de pago e interactúa de servidor a servidor con la pasarela para abrir el **Checkout Pro** seguro (mediante redirección externa).
+5. **Aboná en la pasarela:** Completá el pago con el medio de tu preferencia (tarjeta de débito/crédito, dinero en cuenta o transferencia en Sandbox). Flay **nunca tiene acceso a los datos de tus tarjetas** (cumplimiento PCI-DSS).
+6. **Acreditación e imputación instantánea (D-4):**
+   - Al concluir el pago en la pasarela, regresarás automáticamente a la pantalla de tu expensa en Flay.
+   - El sistema consulta directamente la API de la pasarela y procesa el webhook firmado criptográficamente, confirmando la cobranza en el acto.
+   - El pago queda asentado bajo el medio `mercado_pago`, imputando en cascada la deuda más antigua primero y emitiendo el comprobante de cancelación. Verás el aviso accesible en verde: *«Pago acreditado e imputado correctamente. ¡Muchas gracias!»*.
+
+---
+
+### 16.4.6 Cómo hacer un reclamo y seguir su estado en tiempo real
 
 Si detectás un problema en el edificio (ejemplo: filtración en una pared, ascensor con ruidos anómalos, cerradura de acceso trabada o luminaria quemada):
 
@@ -755,7 +783,7 @@ Si detectás un problema en el edificio (ejemplo: filtración en una pared, asce
 
 ---
 
-### 16.4.6 Cómo reservar un espacio común (SUM, quincho, parrilla)
+### 16.4.7 Cómo reservar un espacio común (SUM, quincho, parrilla)
 
 1. Ingresá a la sección **Reservas** (`/reservas`).
 2. Seleccioná el espacio que deseás utilizar en el menú desplegable (por ejemplo: *Quincho con parrillero*).
@@ -771,7 +799,7 @@ Si detectás un problema en el edificio (ejemplo: filtración en una pared, asce
 
 ---
 
-### 16.4.7 Cómo consultar el reglamento del edificio con inteligencia artificial
+### 16.4.8 Cómo consultar el reglamento del edificio con inteligencia artificial
 
 ¿Tenés dudas sobre el horario tope para escuchar música, las normas para mudar muebles un fin de semana o los requisitos para tener mascotas? Ahora podés preguntarle directamente al reglamento del consorcio sin tener que leer un documento legal de 80 páginas.
 
@@ -789,7 +817,7 @@ Si detectás un problema en el edificio (ejemplo: filtración en una pared, asce
 
 ---
 
-### 16.4.8 Gestión de datos personales y preferencias de notificación
+### 16.4.9 Gestión de datos personales y preferencias de notificación
 
 1. Hacé clic en tu nombre en la barra de navegación superior y seleccioná **Mi perfil**.
 2. Podés verificar y actualizar:
@@ -874,12 +902,13 @@ El contenido de este manual implementa y garantiza la trazabilidad con los reque
    - `RF-06`: Digitalización y carga asistida de comprobantes con extracción por visión computacional (§ 16.3.1).
    - `RF-07`, `RF-08`: Liquidación de expensas, distribución de gastos y emisión de expensas en PDF (§ 16.2.5).
    - `RF-09`, `RF-10`: Registro de cobranzas, imputación de pagos y auditoría pública de comprobantes (§ 16.2.6 y § 16.4.3).
-   - `RF-11`, `RF-12`, `RF-13`: Gestión de reclamos, seguimiento por estados e historial de intervenciones (§ 16.2.7 y § 16.4.5).
+   - `RF-11`, `RF-12`, `RF-13`: Gestión de reclamos, seguimiento por estados e historial de intervenciones (§ 16.2.7 y § 16.4.6).
    - `RF-14`: Triage de reclamos asistido por modelos de lenguaje (§ 16.3.3).
-   - `RF-15`, `RF-16`: Administración de espacios comunes y régimen de reservas con regla de no morosidad (§ 16.2.8 y § 16.4.6).
+   - `RF-15`, `RF-16`: Administración de espacios comunes y régimen de reservas con regla de no morosidad (§ 16.2.8 y § 16.4.7).
    - `RF-18`, `RF-19`: Publicación de circulares, novedades y archivo de documentación reglamentaria (§ 16.2.9).
-   - `RF-20`: Búsqueda documental semántica y consulta interactiva con citas verificables (§ 16.4.7).
+   - `RF-20`: Búsqueda documental semántica y consulta interactiva con citas verificables (§ 16.4.8).
    - `RF-21`: Panel de analítica estratégica con 6 indicadores de gestión y refresco de vistas materializadas (§ 16.2.10).
+   - `RF-28`: Pago en línea de expensas mediante pasarela de cobro externa integrada con redirección y webhook criptográfico (§ 16.2.6 y § 16.4.5).
 
 2. **Requerimientos No Funcionales (RNF):**
    - `RNF-01`: Interfaz de usuario responsiva adaptable a pantallas de teléfonos móviles desde 390 px.
@@ -898,7 +927,7 @@ El contenido de este manual implementa y garantiza la trazabilidad con los reque
    - `RN-04`, `RN-05`: Diferenciación legal entre expensas ordinarias (ocupante) y extraordinarias (propietario) conforme a Ley 27.551.
    - `RN-06`: Período liquidable una sola vez; corrección mediante anulación e índice único parcial en base de datos.
    - `RN-07`: Cuadratura al centavo con asignación del ajuste de redondeo a la unidad de mayor coeficiente y tolerancia cero.
-   - `RN-08`: Imputación automática a la deuda más antigua, amortizando intereses punitorios primero y capital después.
+   - `RN-08`: Imputación automática a la deuda más antigua, amortizando intereses punitorios primero y capital después, calculados sobre el saldo propio de cada liquidación impaga sin capitalización de intereses.
    - `RN-09`: Prohibición de ocupaciones vigentes superpuestas del mismo tipo en una misma unidad.
    - `RN-10`: Prohibición de reservas horarias superpuestas sobre un mismo espacio común.
    - `RN-11`: Responsable asignado obligatorio para reclamos a partir del estado de asignación.
@@ -908,7 +937,7 @@ El contenido de este manual implementa y garantiza la trazabilidad con los reque
    - `RN-15`: Auditoría obligatoria e inviolable por disparadores de base de datos sobre operaciones económicas.
 
 4. **Fuentes documentales del proyecto:**
-   - [`CLAUDE.md`](file:///C:/Users/march/orca/workspaces/proyecto-final/encantado/CLAUDE.md): Directivas técnicas e invariantes de desarrollo.
-   - [`.specify/memory/constitution.md`](file:///C:/Users/march/orca/workspaces/proyecto-final/encantado/.specify/memory/constitution.md): Principios no negociables de aislamiento, exactitud monetaria y gobierno.
-   - [`docs/entrega-3/12-diseno.md`](file:///C:/Users/march/orca/workspaces/proyecto-final/encantado/docs/entrega-3/12-diseno.md): Casos de uso `CU-01` a `CU-15`, diagramas de flujo y arquitectura en capas.
-   - [`docs/entrega-final/17-cronograma-capacitacion.md`](file:///C:/Users/march/orca/workspaces/proyecto-final/encantado/docs/entrega-final/17-cronograma-capacitacion.md): Plan de capacitación y articulación con Grupo Delta.
+   - [`CLAUDE.md`](file:///C:/Users/march/source/repos/proyecto-final/CLAUDE.md): Directivas técnicas e invariantes de desarrollo.
+   - [`.specify/memory/constitution.md`](file:///C:/Users/march/source/repos/proyecto-final/.specify/memory/constitution.md): Principios no negociables de aislamiento, exactitud monetaria y gobierno.
+   - [`docs/entrega-3/12-diseno.md`](file:///C:/Users/march/source/repos/proyecto-final/docs/entrega-3/12-diseno.md): Casos de uso `CU-01` a `CU-17`, diagramas de flujo y arquitectura en capas.
+   - [`docs/entrega-final/17-cronograma-capacitacion.md`](file:///C:/Users/march/source/repos/proyecto-final/docs/entrega-final/17-cronograma-capacitacion.md): Plan de capacitación y articulación con Grupo Delta.

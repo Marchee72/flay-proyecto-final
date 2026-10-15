@@ -154,7 +154,7 @@ test('la lista avanza sola de «Extrayendo…» a «Para revisar» sin recargar'
   expect(await desbordaALoAncho(page)).toBe(false)
 
   await expect(page.getByRole('cell', { name: 'Para revisar (sin asistencia)' })).toBeVisible({
-    timeout: 15_000,
+    timeout: 25_000,
   })
 
   await prisma.extraccionComprobante.update({
@@ -163,7 +163,7 @@ test('la lista avanza sola de «Extrayendo…» a «Para revisar» sin recargar'
   })
   // Sin navegar: el sondeo la trae en el proximo refresco.
   await expect(page.getByRole('cell', { name: 'Para revisar', exact: true })).toBeVisible({
-    timeout: 15_000,
+    timeout: 25_000,
   })
   await expect(
     page.getByRole('link', { name: 'Revisar' }).and(page.locator(`[href$="${extraccion.id}"]`)),

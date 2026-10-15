@@ -247,8 +247,18 @@ export async function sembrarExpensa(escenario: Escenario): Promise<Expensa> {
 }
 
 export async function limpiarExpensa(escenario: Escenario): Promise<void> {
-  await prisma.$executeRaw`DELETE FROM "Notificacion"`
-  await prisma.trabajoPendiente.deleteMany({ where: { tipo: 'documento_expensa' } })
+  await prisma.notificacion.deleteMany({ where: { usuarioId: escenario.usuarioId } })
+  const detalles = await prisma.detalleLiquidacion.findMany({
+    where: { liquidacion: { consorcioId: escenario.consorcioId } },
+    select: { id: true },
+  })
+  if (detalles.length > 0) {
+    const ids = detalles.map((d) => d.id)
+    await prisma.$executeRaw`
+      DELETE FROM "TrabajoPendiente"
+      WHERE tipo = 'documento_expensa'
+        AND carga->>'detalleId' = ANY(${ids})`
+  }
   await prisma.interesLiquidado.deleteMany({
     where: { detalle: { liquidacion: { consorcioId: escenario.consorcioId } } },
   })
@@ -315,14 +325,51 @@ export async function limpiarServicios(
   escenario: Escenario,
   extras: { usuarioId: string; personaId: string; correo: string }[] = [],
 ): Promise<void> {
-  await prisma.$executeRaw`DELETE FROM "Notificacion"`
-  await prisma.trabajoPendiente.deleteMany({
-    where: {
-      tipo: {
-        in: ['notificacion', 'triage_reclamo', 'extraccion_comprobante', 'indexar_documento'],
-      },
-    },
-  })
+  const usuarios = [escenario.usuarioId, ...extras.map((e) => e.usuarioId)]
+  await prisma.notificacion.deleteMany({ where: { usuarioId: { in: usuarios } } })
+
+  const [extracciones, reclamos, documentos] = await Promise.all([
+    prisma.extraccionComprobante.findMany({
+      where: { consorcioId: escenario.consorcioId },
+      select: { id: true },
+    }),
+    prisma.reclamo.findMany({
+      where: { consorcioId: escenario.consorcioId },
+      select: { id: true },
+    }),
+    prisma.documentoConsorcio.findMany({
+      where: { consorcioId: escenario.consorcioId },
+      select: { id: true },
+    }),
+  ])
+
+  if (extracciones.length > 0) {
+    const ids = extracciones.map((e) => e.id)
+    await prisma.$executeRaw`
+      DELETE FROM "TrabajoPendiente"
+      WHERE tipo = 'extraccion_comprobante'
+        AND carga->>'extraccionId' = ANY(${ids})`
+  }
+  if (reclamos.length > 0) {
+    const ids = reclamos.map((r) => r.id)
+    await prisma.$executeRaw`
+      DELETE FROM "TrabajoPendiente"
+      WHERE tipo = 'triage_reclamo'
+        AND carga->>'reclamoId' = ANY(${ids})`
+  }
+  if (documentos.length > 0) {
+    const ids = documentos.map((d) => d.id)
+    await prisma.$executeRaw`
+      DELETE FROM "TrabajoPendiente"
+      WHERE tipo = 'indexar_documento'
+        AND carga->>'documentoId' = ANY(${ids})`
+  }
+  if (usuarios.length > 0) {
+    await prisma.$executeRaw`
+      DELETE FROM "TrabajoPendiente"
+      WHERE tipo = 'notificacion'
+        AND carga->>'destinatarioId' = ANY(${usuarios})`
+  }
   await prisma.conversacionAsistente.deleteMany({ where: { consorcioId: escenario.consorcioId } })
   await prisma.extraccionComprobante.deleteMany({ where: { consorcioId: escenario.consorcioId } })
   await prisma.consultaDocumental.deleteMany({ where: { consorcioId: escenario.consorcioId } })

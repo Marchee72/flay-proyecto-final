@@ -43,6 +43,7 @@ Cada requerimiento funcional se justifica contra un objetivo del punto 3; ningun
 | RF-25 | Informar el tiempo medio de resolución de reclamos por tipo y urgencia | OBJ-4.4 | Administrador |
 | RF-26 | Registrar en bitácora de auditoría toda operación que modifique datos económicos | Seguridad | Sistema |
 | RF-27 | Consultar y operar, en lenguaje natural, sobre lo que cada usuario ya puede ver y hacer en la interfaz según su rol, con confirmación humana explícita de toda operación que modifique datos | OBJ-5.3 | Consorcista, Administrador |
+| RF-28 | Permitir el cobro en línea de expensas mediante pasarela de pagos externa con redirección, imputando automáticamente el saldo consolidado al confirmar | OBJ-4.1 | Consorcista / Administrador |
 
 ### 4.1.2 Requerimientos no funcionales
 
@@ -146,7 +147,7 @@ Todos los requerimientos funcionales del punto 4.1.1, agrupados en módulos:
 | Consorcios y unidades funcionales | RF-01, RF-02 |
 | Gastos y comprobantes | RF-04, RF-05, RF-06, RF-10 |
 | Liquidación de expensas | RF-07, RF-08 |
-| Pagos y morosidad | RF-09 |
+| Pagos y morosidad | RF-09, RF-28 |
 | Reclamos | RF-11, RF-12, RF-13 |
 | Reservas de espacios comunes | RF-15, RF-16 |
 | Proveedores | RF-17 |
@@ -160,7 +161,7 @@ Todos los requerimientos funcionales del punto 4.1.1, agrupados en módulos:
 
 | Función excluida | Motivo |
 |---|---|
-| Pasarela de pagos integrada | Requiere contrato con un procesador de pagos y habilitación bancaria por consorcio. El sistema registra el pago; no lo procesa |
+| Procesamiento directo de tarjetas de crédito/débito en la aplicación | Requiere certificación PCI-DSS; el cobro en línea se delega enteramente en la pasarela externa mediante redirección sin almacenar ni manipular datos de tarjetas (RF-28) |
 | Aplicación móvil nativa | El diseño adaptable cubre el caso de uso. Una aplicación nativa duplicaría el esfuerzo de construcción y mantenimiento sin resolver un problema identificado |
 | Contabilidad completa e integración impositiva | Excede el alcance de un sistema de administración de consorcios y exige competencia contable que el equipo no tiene |
 | Liquidación de sueldos del personal de edificios | Se mantiene en el sistema de liquidación de haberes actual; el sistema registra el gasto resultante |

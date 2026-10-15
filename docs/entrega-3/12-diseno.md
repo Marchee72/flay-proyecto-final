@@ -173,6 +173,7 @@ flowchart TB
         CU13["CU-13 Extraer datos<br/>del comprobante"]
         CU14["CU-14 Clasificar<br/>reclamo"]
         CU15["CU-15 Notificar<br/>por correo"]
+        CU17["CU-17 Pagar expensa<br/>en línea"]
     end
 
     ADM --> CU01
@@ -188,6 +189,7 @@ flowchart TB
     CON --> CU07
     CON --> CU09
     CON --> CU10
+    CON --> CU17
     SIS --> CU13
     SIS --> CU14
     SIS --> CU15
@@ -352,6 +354,40 @@ Es el caso de uso central del sistema y el de mayor riesgo según el punto 11.
 |---|---|---|
 | 2a | Ningún fragmento supera el umbral de pertinencia | El sistema responde que no encontró respaldo en la documentación cargada y sugiere consultar a la administración. Se marca `sin_respaldo`. **El sistema no responde sin fundamento documental** |
 | 3a | El servicio no está disponible | Se ofrece la búsqueda por texto y la descarga de los documentos (RNF-14) |
+
+### 4.7 CU-17 — Pagar expensa en línea
+
+Permite a los consorcistas abonar de forma inmediata el saldo exigible consolidado de su última expensa mediante pasarela de pagos externa con redirección, imputando el cobro en el sistema sin intermediación manual.
+
+| | |
+|---|---|
+| **Actor principal** | Consorcista / Administrador |
+| **Requerimientos** | RF-28, RN-08 |
+| **Objetivo que satisface** | OBJ-4.1 |
+| **Precondiciones** | La expensa seleccionada es la última emitida vigente de la unidad funcional. Posee saldo exigible consolidado mayor a cero. La administradora del consorcio tiene credenciales de pasarela configuradas y activas |
+| **Postcondición de éxito** | El saldo exigible queda saldado e imputado sobre los períodos pendientes en orden de antigüedad; se crea el registro de pago asociado; el intento de pago pasa a estado aprobado; el estado de cuenta y morosidad de la unidad quedan actualizados |
+| **Postcondición de fracaso** | El intento de pago se marca como rechazado o vencido; ningún importe se imputa ni se modifica la deuda de la unidad |
+
+**Flujo principal**
+
+1. El usuario visualiza la última expensa vigente y solicita el pago en línea.
+2. El sistema valida las precondiciones, calcula el saldo exigible consolidado (saldo propio del período más deudas arrastradas pendientes de períodos anteriores sin doble cómputo), genera un intento de pago con vigencia de 24 horas y solicita a la pasarela de pagos externa la creación de una preferencia de cobro con URL de retorno y webhook de notificación.
+3. El sistema redirige al usuario a la pasarela de pagos externa.
+4. El usuario efectúa el pago en la pasarela externa.
+5. La pasarela notifica el evento al webhook del sistema y/o redirige al usuario de vuelta a la URL de retorno del sistema con el identificador del cobro.
+6. El sistema valida la firma criptográfica digital (HMAC-SHA256) de la notificación y consulta directamente a la API oficial de la pasarela con su credencial privada para constatar la aprobación e importe exacto acreditado.
+7. En una transacción atómica y bajo aislamiento de consorcio, el sistema aprueba el intento de pago, genera el registro de pago y ejecuta la imputación automática cubriendo primero intereses de mora y capital por antigüedad (RN-08).
+8. El usuario visualiza la confirmación y la expensa con su estado actualizado a pagada.
+
+**Flujos alternativos**
+
+| # | Condición | Comportamiento |
+|---|---|---|
+| 2a | La expensa no es la última vigente | Se rechaza la operación informando que solo se puede abonar la última expensa emitida, dado que la deuda de períodos previos se encuentra consolidada en ella |
+| 2b | La expensa ya está saldada | Se informa que no posee saldo pendiente de pago |
+| 2c | La pasarela no está configurada | Se informa que el cobro en línea no se encuentra habilitado para el consorcio y se sugiere contactar a la administración |
+| 6a | Firma de notificación inválida | El webhook rechaza la solicitud con código 401 por seguridad |
+| 6b | Pago rechazado o cancelado | El intento se marca como rechazado y se notifica al usuario sin alterar saldos |
 
 ---
 
@@ -733,6 +769,7 @@ Verificación de que cada requerimiento tiene diseño y de que ningún objetivo 
 | RF-25 | OBJ-4.4 | `v_resolucion_reclamos` | CU-11 | 3 |
 | RF-26 | Seguridad | Auditoria | Transversal | 1 |
 | RF-27 | OBJ-5.3 | ConversacionAsistente, MensajeAsistente | CU-16 | 3 |
+| RF-28 | OBJ-4.1 | IntentoDePago, Pago, PagoImputacion, CredencialPagoAdministradora | CU-17 | 3 |
 
 ### Cobertura de objetivos
 
@@ -747,7 +784,7 @@ Verificación de que cada requerimiento tiene diseño y de que ningún objetivo 
 | OBJ-3.1 Estado, responsable y fecha | RF-11, RF-13 | Cubierto |
 | OBJ-3.2 Clasificación al ingresar | RF-12 | Cubierto |
 | OBJ-3.3 Notificación de cambios | RF-14 | Cubierto |
-| OBJ-4.1 Morosidad en tiempo real | RF-09, RF-22 | Cubierto |
+| OBJ-4.1 Morosidad en tiempo real y cobro en línea | RF-09, RF-22, RF-28 | Cubierto |
 | OBJ-4.2 Evolución del gasto y desvíos | RF-23 | Cubierto |
 | OBJ-4.3 Histórico por proveedor | RF-17, RF-24 | Cubierto |
 | OBJ-4.4 Tiempo de resolución | RF-25 | Cubierto |

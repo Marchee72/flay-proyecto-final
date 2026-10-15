@@ -6,6 +6,7 @@ import { coeficienteSerializado, importeSerializado } from '@/compartido/formato
 import { imputar } from '@/dominio/liquidacion/imputacion'
 import { interesPorMora, type DeudaVencida } from '@/dominio/liquidacion/interes'
 import { prorratear, type UnidadDelPadron } from '@/dominio/liquidacion/prorrateo'
+import { saldosDeUnidad } from '@/dominio/liquidacion/saldo'
 import { transicionValida } from '@/dominio/periodos/estado'
 import { ordenarUnidades } from '@/dominio/unidades/division'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
@@ -128,17 +129,15 @@ async function calcular(reloj: Reloj, consorcioId: string, periodoId: string) {
   const hoy = reloj.hoy()
   const tasa = importe(consorcio.tasaMoraMensual.toFixed(4))
 
-  // Deuda previa por unidad: lo impago de las liquidaciones **vigentes**.
   const deudaPorUnidad = await deudaVigentePorUnidad(periodoId)
   const saldosPorUnidad = await saldosAFavorPorUnidad()
 
   const detalles = reparto.detalles.map((detalle) => {
-    const deudas = deudaPorUnidad.get(detalle.unidadId) ?? []
+    const infoDeuda = deudaPorUnidad.get(detalle.unidadId)
+    const deudas = infoDeuda?.deudasParaInteres ?? []
     const interes = interesPorMora(deudas, tasa, hoy)
 
-    const deudaAnterior = deudas
-      .reduce((total, deuda) => total.plus(importe(deuda.capital)), new Decimal(0))
-      .toFixed(DECIMALES_IMPORTE)
+    const deudaAnterior = infoDeuda?.deudaTotal ?? '0.00'
 
     // El saldo a favor se aplica **despues** del interes: el interes corre
     // sobre lo que estuvo impago y el saldo a favor es plata que ya entro
@@ -442,9 +441,14 @@ async function avisarALosHabilitados(
  * Lo impago por unidad, liquidacion por liquidacion: capital y **su propio**
  * vencimiento, que es lo que el interes necesita (`FR-024`).
  */
+interface DeudaVigenteUnidad {
+  deudasParaInteres: DeudaVencida[]
+  deudaTotal: string
+}
+
 async function deudaVigentePorUnidad(
   periodoExcluido: string,
-): Promise<Map<string, DeudaVencida[]>> {
+): Promise<Map<string, DeudaVigenteUnidad>> {
   // Por `Liquidacion`, que si esta aislada: `DetalleLiquidacion` no lleva
   // `consorcio_id` y consultarla directo trae la deuda de todos los consorcios
   // (Principio I, RT-04).
@@ -455,43 +459,73 @@ async function deudaVigentePorUnidad(
       vencimiento: true,
       detalles: {
         select: {
+          id: true,
           unidadId: true,
           totalUnidad: true,
+          deudaAnterior: true,
+          interesMora: true,
           imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
         },
       },
     },
   })
 
-  const detalles = liquidaciones.flatMap((liquidacion) =>
-    liquidacion.detalles.map((detalle) => ({
-      ...detalle,
-      liquidacionId: liquidacion.id,
-      liquidacion: { vencimiento: liquidacion.vencimiento },
-    })),
-  )
+  const porUnidadId = new Map<
+    string,
+    {
+      detalleId: string
+      liquidacionId: string
+      totalUnidad: string
+      deudaAnterior: string
+      interesMora: string
+      imputado: string
+      vencimiento: Date
+    }[]
+  >()
 
-  const porUnidad = new Map<string, DeudaVencida[]>()
-
-  for (const detalle of detalles) {
-    const pagado = detalle.imputaciones.reduce(
-      (total, imputacion) => total.plus(importe(imputacion.importeImputado.toFixed(2))),
-      new Decimal(0),
-    )
-
-    const saldo = importe(detalle.totalUnidad.toFixed(2)).minus(pagado)
-    if (saldo.lessThanOrEqualTo(0)) continue
-
-    const suyas = porUnidad.get(detalle.unidadId) ?? []
-    suyas.push({
-      liquidacionId: detalle.liquidacionId,
-      capital: saldo.toFixed(DECIMALES_IMPORTE),
-      vencimiento: detalle.liquidacion.vencimiento,
-    })
-    porUnidad.set(detalle.unidadId, suyas)
+  for (const liquidacion of liquidaciones) {
+    for (const d of liquidacion.detalles) {
+      const suyos = porUnidadId.get(d.unidadId) ?? []
+      const pagado = d.imputaciones.reduce(
+        (total, i) => total.plus(importe(i.importeImputado.toFixed(2))),
+        new Decimal(0),
+      )
+      suyos.push({
+        detalleId: d.id,
+        liquidacionId: liquidacion.id,
+        totalUnidad: d.totalUnidad.toFixed(DECIMALES_IMPORTE),
+        deudaAnterior: d.deudaAnterior.toFixed(DECIMALES_IMPORTE),
+        interesMora: d.interesMora.toFixed(DECIMALES_IMPORTE),
+        imputado: pagado.toFixed(DECIMALES_IMPORTE),
+        vencimiento: liquidacion.vencimiento,
+      })
+      porUnidadId.set(d.unidadId, suyos)
+    }
   }
 
-  return porUnidad
+  const resultado = new Map<string, DeudaVigenteUnidad>()
+
+  for (const [unidadId, lista] of porUnidadId.entries()) {
+    const saldos = saldosDeUnidad(lista)
+    if (importe(saldos.saldoTotal).lessThanOrEqualTo(0)) continue
+
+    const mapLiquidacionId = new Map(lista.map((x) => [x.detalleId, x.liquidacionId]))
+
+    const deudasParaInteres: DeudaVencida[] = saldos.detalles
+      .filter((d) => importe(d.capitalPendiente).greaterThan(0))
+      .map((d) => ({
+        liquidacionId: mapLiquidacionId.get(d.detalleId)!,
+        capital: d.capitalPendiente,
+        vencimiento: d.vencimiento,
+      }))
+
+    resultado.set(unidadId, {
+      deudasParaInteres,
+      deudaTotal: saldos.saldoTotal,
+    })
+  }
+
+  return resultado
 }
 
 /** Lo que cada unidad tiene a favor y todavia no se aplico (`FR-026b`). */

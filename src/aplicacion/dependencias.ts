@@ -1,5 +1,6 @@
 import type { Asistencia } from '@/dominio/contratos/asistencia'
 import type { GeneradorDeDocumentos } from '@/dominio/contratos/documentos'
+import type { ProcesadorDePagos } from '@/dominio/contratos/procesador-pagos'
 import { asistenciaNula } from '@/infraestructura/asistencia/nula'
 import { argon2id } from '@/infraestructura/contrasenas/argon2'
 import { almacenR2 } from '@/infraestructura/objetos/r2'
@@ -85,5 +86,32 @@ export const ASISTENCIA: Asistencia = {
       const impl = await resolverAsistencia()
       return impl.agente.sugerir(contexto, historial, herramientas)
     },
+  },
+}
+
+async function resolverProcesadorPagos(): Promise<ProcesadorDePagos> {
+  if (process.env.FLAY_PROCESADOR_PAGOS === 'determinista' || process.env.NODE_ENV === 'test') {
+    const { procesadorDePrueba } = await import('@/infraestructura/pagos/procesador-de-prueba')
+    return procesadorDePrueba
+  }
+  if (process.env.MP_CLAVE_CIFRADO) {
+    const { procesadorMercadoPago } = await import('@/infraestructura/pagos/mercado-pago')
+    return procesadorMercadoPago
+  }
+  const { procesadorNulo } = await import('@/infraestructura/pagos/procesador-nulo')
+  return procesadorNulo
+}
+
+/**
+ * Pasarela de pagos despachada bajo demanda (`RF-28`, punto 14.1).
+ */
+export const PROCESADOR_PAGOS: ProcesadorDePagos = {
+  async crearPreferencia(datos) {
+    const impl = await resolverProcesadorPagos()
+    return impl.crearPreferencia(datos)
+  },
+  async consultarPago(datos) {
+    const impl = await resolverProcesadorPagos()
+    return impl.consultarPago(datos)
   },
 }

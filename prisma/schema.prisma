@@ -73,6 +73,7 @@ model Consorcio {
   consultas      ConsultaDocumental[]
   extracciones   ExtraccionComprobante[]
   conversaciones ConversacionAsistente[]
+  intentosDePago IntentoDePago[]
 
   @@index([administradoraId])
 }
@@ -89,6 +90,7 @@ model Administradora {
 
   consorcios     Consorcio[]
   habilitaciones HabilitacionAdministradora[]
+  credencialPago CredencialPagoAdministradora?
 }
 
 /// Efecto externo que fallo y hay que reintentar: correo o confirmacion de
@@ -270,6 +272,7 @@ model Unidad {
   reclamos    Reclamo[]
   reservas    Reserva[]
   novedades   Novedad[]
+  intentosDePago IntentoDePago[]
 
   @@unique([consorcioId, designacion])
   @@index([consorcioId])
@@ -527,8 +530,9 @@ model DetalleLiquidacion {
 
   liquidacion  Liquidacion        @relation(fields: [liquidacionId], references: [id])
   unidad       Unidad             @relation(fields: [unidadId], references: [id])
-  intereses    InteresLiquidado[]
-  imputaciones PagoImputacion[]
+  intereses      InteresLiquidado[]
+  imputaciones   PagoImputacion[]
+  intentosDePago IntentoDePago[]
 
   @@unique([liquidacionId, unidadId])
   @@index([unidadId])
@@ -576,6 +580,7 @@ model Pago {
   consorcio    Consorcio        @relation(fields: [consorcioId], references: [id])
   unidad       Unidad           @relation(fields: [unidadId], references: [id])
   imputaciones PagoImputacion[]
+  intentoDePago IntentoDePago?
 
   @@index([consorcioId])
   @@index([unidadId, fechaPago])
@@ -586,6 +591,7 @@ enum MedioDePago {
   efectivo
   deposito
   debito
+  mercado_pago
 }
 
 /// Aplicacion de un pago a un detalle — **economica** (regla RN-08 § 7.2).
@@ -1040,4 +1046,57 @@ enum EstadoExtraccion {
 model RefrescoIndicadores {
   id           Int      @id @default(1)
   refrescadoEn DateTime @map("refrescado_en") @db.Timestamptz(6)
+}
+
+/// Credencial de cobro de pasarela de pago para una administradora — **economica** (`RF-28`).
+///
+/// Los tokens se almacenan cifrados con AES-256-GCM (`MP_CLAVE_CIFRADO`) y solo
+/// se descifran en el servidor al interactuar con la pasarela.
+model CredencialPagoAdministradora {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  administradoraId      String   @unique @map("administradora_id") @db.Uuid
+  accessTokenCifrado    String   @map("access_token_cifrado") @db.Text
+  secretoWebhookCifrado String   @map("secreto_webhook_cifrado") @db.Text
+  ultimosCuatro         String   @map("ultimos_cuatro") @db.Text
+  cargadoPor            String   @map("cargado_por") @db.Uuid
+  creadoEn              DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn         DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  administradora Administradora @relation(fields: [administradoraId], references: [id])
+}
+
+enum EstadoIntentoPago {
+  iniciado
+  aprobado
+  rechazado
+  vencido
+}
+
+/// Intento de pago de expensas en linea — **economica** (`RF-28`).
+///
+/// Raiz aislada por consorcio: lleva `consorcio_id` y queda filtrada por la extension (RN-12).
+model IntentoDePago {
+  id                   String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId          String            @map("consorcio_id") @db.Uuid
+  unidadId             String            @map("unidad_id") @db.Uuid
+  detalleLiquidacionId String            @map("detalle_liquidacion_id") @db.Uuid
+  importe              Decimal           @db.Decimal(14, 2)
+  estado               EstadoIntentoPago @default(iniciado)
+  preferenciaId        String?           @map("preferencia_id") @db.Text
+  urlPago              String?           @map("url_pago") @db.Text
+  pagoExternoId        String?           @unique @map("pago_externo_id") @db.Text
+  pagoId               String?           @unique @map("pago_id") @db.Uuid
+  iniciadoPor          String            @map("iniciado_por") @db.Uuid
+  venceEn              DateTime          @map("vence_en") @db.Timestamptz(6)
+  creadoEn             DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn        DateTime          @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio          Consorcio          @relation(fields: [consorcioId], references: [id])
+  unidad             Unidad             @relation(fields: [unidadId], references: [id])
+  detalleLiquidacion DetalleLiquidacion @relation(fields: [detalleLiquidacionId], references: [id])
+  pago               Pago?              @relation(fields: [pagoId], references: [id])
+
+  @@index([consorcioId])
+  @@index([unidadId])
+  @@index([detalleLiquidacionId])
 }

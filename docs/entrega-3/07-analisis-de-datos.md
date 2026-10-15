@@ -35,7 +35,7 @@ sea.
 | RN-05 | Las expensas ordinarias son a cargo del ocupante; las extraordinarias, del propietario, conforme a la Ley 27.551 | Se calculan dos subtotales por unidad en `DetalleLiquidacion` |
 | RN-06 | Un período solo puede liquidarse una vez. Corregir exige anular la liquidación y emitir una nueva, dejando ambas registradas | Estado del período; `Liquidacion` con estado y referencia a la liquidación que anula |
 | RN-07 | La suma de los importes de `DetalleLiquidacion` debe igualar el total de `Liquidacion`, con tolerancia cero | Verificación posterior al cálculo, con ajuste de redondeo asignado a la unidad de mayor coeficiente |
-| RN-08 | Un pago se imputa a una o varias liquidaciones de una misma unidad, en orden de antigüedad | Tabla de imputación `PagoImputacion` |
+| RN-08 | Un pago se imputa en orden de antigüedad sobre el saldo propio de cada liquidación (total menos deuda anterior arrastrada), cubriendo primero intereses de mora y luego capital, de modo que abonar la última expensa cancela los períodos pendientes sin doble cómputo ni capitalización de intereses | Tabla de imputación `PagoImputacion` y cálculo de saldo propio por liquidación |
 | RN-09 | Una unidad no puede tener dos ocupaciones vigentes del mismo tipo en la misma fecha | Restricción de exclusión sobre el rango de vigencia |
 | RN-10 | Una reserva no puede superponerse con otra confirmada del mismo espacio común | Restricción de exclusión sobre el rango horario |
 | RN-11 | Un reclamo siempre tiene un estado y, salvo en el estado inicial, un responsable asignado | Verificación en la transición de estado |
@@ -105,7 +105,7 @@ erDiagram
 | Personas y accesos | `Persona`, `Usuario`, `Ocupacion`, `Habilitacion` | RF-03 |
 | Gastos | `RubroGasto`, `Proveedor`, `Gasto`, `Comprobante` | RF-04, RF-05, RF-10, RF-17 |
 | Liquidación | `Periodo`, `Liquidacion`, `DetalleLiquidacion` | RF-07, RF-08 |
-| Cobranzas | `Pago`, `PagoImputacion` | RF-09 |
+| Cobranzas y pagos en línea | `Pago`, `PagoImputacion`, `IntentoDePago`, `CredencialPagoAdministradora` | RF-09, RF-28 |
 | Reclamos | `Reclamo`, `ReclamoHistorial` | RF-11, RF-13 |
 | Reservas | `Reserva` | RF-16 |
 | Comunicación | `Novedad`, `DocumentoConsorcio`, `Notificacion` | RF-14, RF-18, RF-19 |
@@ -333,16 +333,18 @@ Restricción: `UQ (consorcio_id, anio, mes)`. Materializa RN-03 y RN-06.
 
 Restricción: `UQ (liquidacion_id, unidad_id)`.
 
-### Pago y PagoImputacion
+### Cobranzas, pagos e integración con pasarela
 
 | `Pago` | Tipo | Restricción | Descripción |
 |---|---|---|---|
 | id | uuid | PK | Identificador |
+| consorcio_id | uuid | FK, NN | Consorcio (aislado por contexto) |
 | unidad_id | uuid | FK, NN | Unidad que paga |
 | fecha_pago | fecha | NN | Fecha efectiva |
 | importe | decimal(14,2) | NN | Importe recibido |
-| medio | enumerado | NN | transferencia, efectivo, depósito, débito |
-| referencia | texto(120) | | Número de operación |
+| medio | enumerado | NN | transferencia, efectivo, depósito, debito, mercado_pago |
+| referencia | texto(120) | | Número de operación o identificador externo |
+| saldo_a_favor | decimal(14,2) | NN, def 0 | Excedente no imputado a favor de la unidad |
 | registrado_por | uuid | FK, NN | Usuario que lo registró |
 
 | `PagoImputacion` | Tipo | Restricción | Descripción |
@@ -351,10 +353,41 @@ Restricción: `UQ (liquidacion_id, unidad_id)`.
 | pago_id | uuid | FK, NN | Pago |
 | detalle_liquidacion_id | uuid | FK, NN | Detalle al que se imputa |
 | importe_imputado | decimal(14,2) | NN | Parte del pago aplicada |
+| revertida_en | marca temporal | | Fecha de anulación si fue revertida |
 
 La imputación como entidad separada permite que un pago cubra parcialmente varios meses y que un mes
 se cancele con varios pagos, que es el comportamiento real de la cobranza de expensas. Materializa
-RN-08.
+RN-08: la imputación se aplica por antigüedad cubriendo primero interés de mora y luego capital, de
+modo que el pago de la última expensa vigente cancela también los períodos impagos arrastrados sin
+doble cómputo de deuda ni capitalización de intereses.
+
+| `CredencialPagoAdministradora` | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| id | uuid | PK | Identificador |
+| administradora_id | uuid | FK, NN, Único | Administradora titular de la cuenta |
+| access_token_cifrado | texto | NN | Token de acceso a la API cifrado simétricamente con AES-256-GCM |
+| secreto_webhook_cifrado | texto | NN | Clave secreta para validación de firma HMAC-SHA256 cifrada |
+| ultimos_cuatro | texto(4) | NN | Últimos 4 caracteres del token para visualización segura |
+| creado_en / actualizado_en | marca temporal | NN | Fechas de auditoría |
+
+| `IntentoDePago` | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| id | uuid | PK | Identificador (referencia externa en pasarela) |
+| consorcio_id | uuid | FK, NN | Consorcio (aislado) |
+| unidad_id | uuid | FK, NN | Unidad funcional |
+| detalle_liquidacion_id | uuid | FK, NN | Última expensa vigente al iniciar |
+| importe | decimal(14,2) | NN | Saldo exigible consolidado fijado por el servidor |
+| estado | enumerado | NN | iniciado, aprobado, rechazado, vencido |
+| preferencia_id | texto | | Identificador de preferencia en pasarela |
+| url_pago | texto | | URL de redirección al checkout |
+| pago_externo_id | texto | Único (parcial) | Identificador del cobro en la pasarela |
+| pago_id | uuid | FK, Único (parcial) | Pago generado al confirmarse |
+| iniciado_por | uuid | FK, NN | Usuario que inició el pago |
+| vence_en | marca temporal | NN | Expiración del intento (24 horas) |
+
+La tabla `IntentoDePago` posee un índice único parcial `(detalle_liquidacion_id) WHERE estado = 'iniciado'`
+para garantizar que no coexistan múltiples transacciones abiertas sobre la misma expensa, y
+disparador `fn_auditar()` para trazabilidad en `BitacoraAuditoria` (RN-15).
 
 ### Reclamo y ReclamoHistorial
 

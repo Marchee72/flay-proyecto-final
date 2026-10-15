@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Siren, Wallet } from 'lucide-react'
+import { CheckCircle, Siren, Wallet } from 'lucide-react'
 
 import { Decimal, importe } from '@/compartido/dinero'
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { fechaParaMostrar, importeParaMostrar, plural } from '@/compartido/formato'
+import { verEstadoCredencialPago } from '@/aplicacion/administradoras/credenciales-pago'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { resumenDeCuentas, verEstadoDeCuenta } from '@/aplicacion/pagos/estado-de-cuenta'
@@ -15,6 +16,7 @@ import { conConsorcio } from '../../../con-consorcio'
 import { EnlaceExportar } from '../../../exportar'
 import { Filtros } from '../../../filtros'
 import { Paginacion } from '../../../paginacion'
+import { ModalConfiguracionPasarela } from './modal-configuracion-pasarela'
 import { ModalPago } from './modal-pago'
 import { TablaDesplazable } from '../../../tabla-desplazable'
 
@@ -24,6 +26,7 @@ const POR_PAGINA = 10
 
 type Parametros = {
   registrado?: string
+  hecho?: string
   unidad?: string
   abrir?: string
   piso?: string
@@ -53,6 +56,13 @@ export default async function PagosPage({
       rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id),
       resumenDeCuentas(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
     ])
+
+    const estadoPasarela = roles.includes('administrador')
+      ? await verEstadoCredencialPago(HABILITACIONES, RELOJ, {
+          usuarioId,
+          consorcioId: activo.id,
+        }).catch(() => null)
+      : null
 
     const pisosDisponibles = Array.from(
       new Set(cuentas.map((c) => pisoDe(c.designacion)).filter((p): p is string => p !== null)),
@@ -128,6 +138,21 @@ export default async function PagosPage({
       <>
         <h1>Pagos</h1>
         <p className="apagado">Estado de cuenta por unidad.</p>
+
+        {parametros.hecho === 'pasarela-configurada' && (
+          <p className="aviso aviso--exito" role="status">
+            <CheckCircle className="icono" aria-hidden="true" />
+            <span>Credenciales de pasarela de pagos guardadas correctamente.</span>
+          </p>
+        )}
+
+        {parametros.hecho === 'pago-registrado' && (
+          <p className="aviso aviso--exito" role="status">
+            <CheckCircle className="icono" aria-hidden="true" />
+            <span>El pago fue registrado e imputado correctamente.</span>
+          </p>
+        )}
+
         <div className="fila-acciones">
           {roles.includes('administrador') && (
             <ModalPago
@@ -139,6 +164,13 @@ export default async function PagosPage({
               medios={MEDIOS_DE_PAGO}
               hoy={RELOJ.hoy().toISOString().slice(0, 10)}
               abrir={parametros.abrir === '1'}
+            />
+          )}
+          {roles.includes('administrador') && estadoPasarela && (
+            <ModalConfiguracionPasarela
+              consorcioId={activo.id}
+              configurada={estadoPasarela.configurado}
+              ultimosCuatro={estadoPasarela.ultimosCuatro}
             />
           )}
           {roles.some((r) => r === 'administrador' || r === 'consejo') && (

@@ -24,35 +24,46 @@ export class ErrorProcesadorPago extends ErrorDeAplicacion {
 
 export class ProcesadorMercadoPago implements ProcesadorDePagos {
   async crearPreferencia(datos: DatosPreferencia): Promise<ResultadoPreferencia> {
+    const esHttps = datos.urlRetorno.startsWith('https://')
+    const payload: Record<string, unknown> = {
+      items: [
+        {
+          id: datos.intentoId,
+          title: datos.titulo,
+          quantity: 1,
+          unit_price: Number(datos.importe),
+          currency_id: 'ARS',
+        },
+      ],
+      external_reference: datos.intentoId,
+      payment_methods: {
+        excluded_payment_types: [{ id: 'ticket' }, { id: 'atm' }],
+      },
+      back_urls: {
+        success: datos.urlRetorno,
+        pending: datos.urlRetorno,
+        failure: datos.urlRetorno,
+      },
+      expiration_date_to: datos.venceEn.toISOString(),
+    }
+
+    // Mercado Pago exige HTTPS para auto_return; en HTTP o localhost se omite para evitar error 400
+    if (esHttps) {
+      payload.auto_return = 'approved'
+    }
+
+    // notification_url solo se envia si es HTTPS publicamente accesible
+    if (datos.urlNotificacion && datos.urlNotificacion.startsWith('https://')) {
+      payload.notification_url = datos.urlNotificacion
+    }
+
     const respuesta = await fetch(`${URL_BASE}/checkout/preferences`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${datos.credenciales.accessToken}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        items: [
-          {
-            id: datos.intentoId,
-            title: datos.titulo,
-            quantity: 1,
-            unit_price: Number(datos.importe),
-            currency_id: 'ARS',
-          },
-        ],
-        external_reference: datos.intentoId,
-        payment_methods: {
-          excluded_payment_types: [{ id: 'ticket' }, { id: 'atm' }],
-        },
-        notification_url: datos.urlNotificacion,
-        back_urls: {
-          success: datos.urlRetorno,
-          pending: datos.urlRetorno,
-          failure: datos.urlRetorno,
-        },
-        auto_return: 'approved',
-        expiration_date_to: datos.venceEn.toISOString(),
-      }),
+      body: JSON.stringify(payload),
     })
 
     if (!respuesta.ok) {

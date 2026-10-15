@@ -40,4 +40,11 @@ describe('cifrado AES-256-GCM', () => {
     const claveCorta = Buffer.from('clave-corta-invalida').toString('base64')
     expect(() => cifrarTexto(textoSecreto, claveCorta)).toThrow(/32 bytes/)
   })
+
+  it('admite clave en formato hexadecimal de 64 caracteres (32 bytes)', () => {
+    const claveHex = randomBytes(32).toString('hex')
+    const empaquetado = cifrarTexto(textoSecreto, claveHex)
+    const recuperado = descifrarTexto(empaquetado, claveHex)
+    expect(recuperado).toBe(textoSecreto)
+  })
 })

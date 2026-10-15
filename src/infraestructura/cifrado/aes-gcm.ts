@@ -11,8 +11,12 @@ const ALGORITMO = 'aes-256-gcm'
 const LONGITUD_CLAVE_BYTES = 32
 const LONGITUD_IV_BYTES = 12
 
-function validarClave(claveBase64: string): Buffer {
-  const buffer = Buffer.from(claveBase64, 'base64')
+function validarClave(clave: string): Buffer {
+  const claveLimpia = clave.trim()
+  const buffer = /^[0-9a-fA-F]{64}$/.test(claveLimpia)
+    ? Buffer.from(claveLimpia, 'hex')
+    : Buffer.from(claveLimpia, 'base64')
+
   if (buffer.length !== LONGITUD_CLAVE_BYTES) {
     throw new Error(
       `La clave de cifrado debe tener exactamente ${LONGITUD_CLAVE_BYTES} bytes (recibidos: ${buffer.length}).`,

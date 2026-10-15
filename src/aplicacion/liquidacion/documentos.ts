@@ -11,17 +11,17 @@ import type {
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
-import { drenar, type Manejador } from '@/aplicacion/pendientes/drenar'
+import { reintentarAhora, type Manejador } from '@/aplicacion/pendientes/drenar'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 
 /**
  * Generacion diferida del documento de expensa (`FR-016`, `FR-019`, research
  * R-01 y R-02).
  *
- * La emision encolo un trabajo por unidad. Dos caminos lo drenan: el
- * oportunista de `002` —el siguiente pedido despacha un lote— y el disparo
- * explicito de abajo, acotado por tiempo, que es el que cierra las 96 unidades
- * sin depender de que alguien navegue (SC-007).
+ * La emision encolo un trabajo por unidad, y los drena el `after()` del panel:
+ * cada pedido despacha un lote. Mientras el administrador mira la liquidacion,
+ * `EnVivo` refresca cada pocos segundos y cada refresco empuja un lote, asi que
+ * las 96 unidades cierran solas sin volver a apretar nada (SC-007, decision 21).
  *
  * Una falla en un documento se reintenta con la espera creciente de la cola y
  * **no** toca la liquidacion ya emitida: el detalle sigue ahi, con
@@ -172,25 +172,51 @@ function agruparGastos(
   return grupos
 }
 
-/** Como maximo por disparo: un pedido web no puede durar minutos. */
-const PRESUPUESTO_MS = 20_000
-
 export interface ProgresoDeDocumentos {
   generados: number
   total: number
+  /** Trabajos `documento_expensa` de esta liquidacion aun por despachar. */
+  enCola: number
+  /** Los que agotaron sus reintentos: faltan por un problema, no por demora. */
+  agotados: number
 }
 
 /**
- * Disparo explicito del administrador: drena la cola hasta agotar el
- * presupuesto de tiempo o los trabajos, y devuelve cuantos documentos hay
- * sobre cuantos faltan (`FR-016`, SC-007). Se puede apretar de nuevo.
+ * Como van los documentos de una liquidacion: cuantos salieron, cuantos quedan
+ * en cola y cuantos se trabaron (`FR-016`, SC-007).
+ *
+ * No hay disparo explicito: la cola la drena el `after()` del panel en cada
+ * pedido, y `EnVivo` la empuja refrescando mientras `enCola > 0` (decision 21).
+ * `enCola`/`agotados` salen de `TrabajoPendiente` por su `liquidacionId`, que es
+ * de un solo consorcio; el cliente crudo alcanza, como en el manejador (SC-003).
  */
-export async function generarDocumentos(
-  manejador: Manejador,
+export async function progresoDe(liquidacionId: string): Promise<ProgresoDeDocumentos> {
+  const porLiquidacion = (estado: 'pendiente' | 'agotado') => ({
+    tipo: 'documento_expensa' as const,
+    estado,
+    carga: { path: ['liquidacionId'], equals: liquidacionId },
+  })
+
+  const [total, generados, enCola, agotados] = await Promise.all([
+    prisma.detalleLiquidacion.count({ where: { liquidacionId } }),
+    prisma.detalleLiquidacion.count({ where: { liquidacionId, claveDocumento: { not: null } } }),
+    prismaBase.trabajoPendiente.count({ where: porLiquidacion('pendiente') }),
+    prismaBase.trabajoPendiente.count({ where: porLiquidacion('agotado') }),
+  ])
+
+  return { generados, total, enCola, agotados }
+}
+
+/**
+ * Reintento explicito de los documentos agotados de **una** liquidacion: los
+ * revive con el proximo intento ahora y el sondeo de `EnVivo` los despacha
+ * (decision 21). Devuelve cuantos revivio.
+ */
+export async function reintentarDocumentos(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
   datos: { usuarioId: string; consorcioId: string; liquidacionId: string },
-): Promise<ProgresoDeDocumentos> {
+): Promise<number> {
   return conAutorizacion(
     repositorio,
     reloj,
@@ -198,26 +224,25 @@ export async function generarDocumentos(
       usuarioId: datos.usuarioId,
       consorcioId: datos.consorcioId,
       rolesPermitidos: ['administrador'],
-      accion: 'generar los documentos',
+      accion: 'reintentar los documentos',
     },
     async () => {
-      const inicio = Date.now()
-
-      while (Date.now() - inicio < PRESUPUESTO_MS) {
-        const { despachados, fallidos } = await drenar({ documento_expensa: manejador })
-        if (despachados + fallidos === 0) break
-      }
-
-      return progresoDe(datos.liquidacionId)
+      // La liquidacion se lee por la extension aislada: si no es de este consorcio, no existe.
+      const propia = await prisma.liquidacion.findFirst({
+        where: { id: datos.liquidacionId },
+        select: { id: true },
+      })
+      if (!propia) return 0
+      const agotados = await prismaBase.trabajoPendiente.findMany({
+        where: {
+          tipo: 'documento_expensa',
+          estado: 'agotado',
+          carga: { path: ['liquidacionId'], equals: datos.liquidacionId },
+        },
+        select: { id: true },
+      })
+      for (const trabajo of agotados) await reintentarAhora(trabajo.id)
+      return agotados.length
     },
   )
-}
-
-export async function progresoDe(liquidacionId: string): Promise<ProgresoDeDocumentos> {
-  const [total, generados] = await Promise.all([
-    prisma.detalleLiquidacion.count({ where: { liquidacionId } }),
-    prisma.detalleLiquidacion.count({ where: { liquidacionId, claveDocumento: { not: null } } }),
-  ])
-
-  return { generados, total }
 }

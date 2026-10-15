@@ -653,7 +653,9 @@ th a:not(.boton):hover,
 .pila-avisos {
   position: fixed;
   right: var(--e5);
-  bottom: var(--e5);
+  /* Por encima del lanzador del asistente (56 px en el mismo rincon), para no
+     taparle a cada aviso su boton de cerrar. */
+  bottom: calc(var(--e5) + 72px);
   z-index: 30;
   display: flex;
   flex-direction: column-reverse;
@@ -921,6 +923,16 @@ form > .fila-acciones {
 .resumen__valor {
   font-size: var(--t-titulo3);
   font-weight: 700;
+}
+/* El Total manda: la card va en grafito, con la cifra en blanco y el rotulo lima. */
+.resumen__item--total {
+  background: var(--grafito);
+}
+.resumen__item--total .resumen__rotulo {
+  color: var(--lima-alto);
+}
+.resumen__item--total .resumen__valor {
+  color: #fff;
 }
 .fila-acciones {
   display: flex;
@@ -1555,9 +1567,9 @@ tfoot td {
   gap: var(--e1);
 }
 
-/* Progreso de diferidos (documentos, indexacion): barra + texto con
-   magnitud exacta + reintento visible (§6, RNF-10). El reintento es un
-   `.boton--fantasma` dentro de `.progreso`; nada avanza solo. */
+/* Progreso de diferidos (documentos de expensa, indexacion): barra + texto con
+   magnitud exacta (§6, RNF-10). La barra avanza sola mientras `EnVivo` sondea y
+   drena la cola (decision 21); lo que se trabo se reintenta desde la bandeja. */
 .progreso {
   display: grid;
   gap: var(--e2);
@@ -2864,7 +2876,8 @@ td select {
   .pila-avisos {
     left: var(--e4);
     right: var(--e4);
-    bottom: 96px;
+    /* Por encima del lanzador flotante del asistente, como el panel. */
+    bottom: calc(var(--e4) + 64px + var(--e2) + 56px + var(--e2));
   }
   .emergente--accion {
     bottom: 172px;
@@ -3626,5 +3639,154 @@ table.calendario th {
   .asistente__lanzador {
     right: var(--e4);
     bottom: calc(var(--e4) + 64px + var(--e2));
+  }
+}
+
+/* Indicador en vivo de los documentos de expensa: una fila (liquidacion). */
+.docs-vivo {
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  min-height: var(--toque);
+  margin-top: var(--e4);
+  padding: 0 var(--e4);
+  background: var(--superficie);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+}
+.docs-vivo .icono {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.docs-vivo form {
+  margin: 0 0 0 auto;
+}
+.docs-vivo__giro {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--linea);
+  border-top-color: var(--verde);
+  animation: docs-vivo-giro 0.9s linear infinite;
+}
+@keyframes docs-vivo-giro {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .docs-vivo__giro {
+    animation: none;
+  }
+}
+.docs-vivo__titulo {
+  font-weight: 600;
+  font-size: var(--t-menor);
+  white-space: nowrap;
+}
+.docs-vivo__cifra,
+.docs-vivo__nota {
+  font-size: var(--t-menor);
+  color: var(--tinta-apagada);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.docs-vivo__nota {
+  font-size: var(--t-ayuda);
+}
+.docs-vivo__ok {
+  color: var(--verde);
+}
+.docs-vivo__alerta {
+  color: var(--ambar);
+}
+.docs-vivo__barra {
+  flex: 1;
+  min-width: 48px;
+  height: 8px;
+  border-radius: var(--pastilla);
+  background: var(--gris-palido);
+  overflow: hidden;
+}
+.docs-vivo__barra > i {
+  display: block;
+  height: 100%;
+  background: var(--lima);
+  border-radius: var(--pastilla);
+  transition: width 0.4s ease;
+}
+.docs-vivo__barra--mal > i {
+  background: var(--ambar);
+}
+@media (max-width: 760px) {
+  .docs-vivo {
+    flex-wrap: wrap;
+    padding: var(--e2) var(--e4);
+  }
+  .docs-vivo__nota {
+    display: none;
+  }
+  .docs-vivo__barra {
+    flex-basis: 100%;
+    order: 5;
+  }
+}
+
+/* Tarjeta de expensa: una banda grafito con el total en blanco (el total manda),
+   y debajo el cuerpo con el estado y las acciones. Un solo primario: descargar;
+   el pago queda secundario (demotado) y ver gastos es enlace. */
+.expensa-banda {
+  padding: 0;
+  overflow: hidden;
+  display: grid;
+}
+.expensa-banda__cab {
+  background: var(--grafito);
+  color: #fff;
+  padding: var(--e5);
+  display: grid;
+  gap: var(--e1);
+}
+.expensa-banda__rotulo {
+  font-size: var(--t-menor);
+  color: var(--lima-alto);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+.expensa-banda__cifra {
+  font-size: var(--t-titulo1);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: #fff;
+}
+.expensa-banda__cuerpo {
+  padding: var(--e5);
+  display: grid;
+  gap: var(--e4);
+}
+.expensa-banda__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e2);
+  align-items: center;
+}
+/* El pago va secundario al lado del primario de descargar. */
+.exp-pago .boton--primario {
+  background: var(--superficie);
+  border: 1px solid var(--linea);
+  color: var(--tinta);
+}
+.exp-pago .boton--primario:hover {
+  background: var(--superficie-hundida);
+}
+@media (max-width: 760px) {
+  .expensa-banda__acciones > .boton,
+  .exp-pago,
+  .exp-pago .boton {
+    width: 100%;
   }
 }

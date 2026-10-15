@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
 import type { ExpensaParaDocumento, GeneradorDeDocumentos } from '@/dominio/contratos/documentos'
 import { NoEncontrado } from '@/compartido/errores'
-import { generarDocumentos, manejadorDocumentoExpensa } from '@/aplicacion/liquidacion/documentos'
+import { manejadorDocumentoExpensa, progresoDe } from '@/aplicacion/liquidacion/documentos'
+import { drenar, type Manejador } from '@/aplicacion/pendientes/drenar'
 import { generadorPdf } from '@/infraestructura/documentos/expensa'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
@@ -95,6 +96,20 @@ async function emitirSobre(unidades: readonly { designacion: string; coeficiente
   return liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
 }
 
+/**
+ * Drena la cola en bucle hasta que no queda nada vencido, que es lo que hace el
+ * sondeo de `EnVivo` a traves del `after()` del panel: el proceso avanza solo,
+ * sin disparo explicito (decision 21). Un trabajo que fallo queda con su espera
+ * creciente y el bucle lo deja ahi, igual que en produccion.
+ */
+async function generarTodo(manejador: Manejador, liquidacionId: string) {
+  for (let i = 0; i < 50; i++) {
+    const { despachados, fallidos } = await drenar({ documento_expensa: manejador })
+    if (despachados + fallidos === 0) break
+  }
+  return progresoDe(liquidacionId)
+}
+
 describe('generacion diferida (SC-007)', () => {
   it('sobre 96 unidades aparecen 96 documentos, ni uno menos', async () => {
     const emitida = await emitirSobre(JUEGO.consorcios[1].unidades)
@@ -104,21 +119,12 @@ describe('generacion diferida (SC-007)', () => {
     })
     expect(encolados).toBe(96)
 
-    // Cada disparo esta acotado por tiempo y el administrador puede apretar de
-    // nuevo (research R-02): contra la base remota, un disparo no alcanza para
-    // los 96, y eso es lo esperado. Lo que se prueba es que converge.
+    // El drenaje avanza de a lotes y converge sin que nadie vuelva a apretar un
+    // boton: eso es lo que se prueba (research R-02, decision 21).
     const manejador = manejadorDocumentoExpensa(generadorDoble(), almacenDoble)
-    let progreso = { generados: 0, total: 96 }
+    const progreso = await generarTodo(manejador, emitida.liquidacionId)
 
-    for (let disparo = 0; disparo < 6 && progreso.generados < progreso.total; disparo++) {
-      progreso = await generarDocumentos(manejador, repo, RELOJ, {
-        usuarioId: administrador,
-        consorcioId,
-        liquidacionId: emitida.liquidacionId,
-      })
-    }
-
-    expect(progreso).toEqual({ generados: 96, total: 96 })
+    expect(progreso).toEqual({ generados: 96, total: 96, enCola: 0, agotados: 0 })
     expect(guardados).toHaveLength(96)
     expect(guardados[0]).toMatch(new RegExp(`^expensas/${consorcioId}/${emitida.liquidacionId}/`))
     // Noventa y seis documentos son unos trescientos viajes a la base remota:
@@ -128,14 +134,13 @@ describe('generacion diferida (SC-007)', () => {
   it('una falla en un documento deja los otros intactos y la liquidacion valida (FR-019)', async () => {
     const emitida = await emitirSobre(JUEGO.consorcios[0].unidades)
 
-    const progreso = await generarDocumentos(
+    const progreso = await generarTodo(
       manejadorDocumentoExpensa(generadorDoble('2B'), almacenDoble),
-      repo,
-      RELOJ,
-      { usuarioId: administrador, consorcioId, liquidacionId: emitida.liquidacionId },
+      emitida.liquidacionId,
     )
 
-    expect(progreso).toEqual({ generados: 11, total: 12 })
+    // Once salen; el que fallo queda en cola con su espera creciente, no agotado.
+    expect(progreso).toEqual({ generados: 11, total: 12, enCola: 1, agotados: 0 })
 
     // El trabajo que fallo queda pendiente con su error, para reintentar; la
     // liquidacion sigue vigente como si nada.
@@ -194,7 +199,7 @@ describe('los gastos del periodo en el documento (FR-017)', () => {
     })
 
     const recibidos: ExpensaParaDocumento[] = []
-    await generarDocumentos(
+    await generarTodo(
       manejadorDocumentoExpensa(
         {
           async expensa(datos) {
@@ -204,9 +209,7 @@ describe('los gastos del periodo en el documento (FR-017)', () => {
         },
         almacenDoble,
       ),
-      repo,
-      RELOJ,
-      { usuarioId: administrador, consorcioId, liquidacionId },
+      liquidacionId,
     )
 
     const liquidacion = await prismaBase.liquidacion.findUniqueOrThrow({
@@ -247,11 +250,9 @@ describe('quien ve que (FR-018, SC-008)', () => {
   it('el consorcista ve la de su unidad y otra responde «no encontrado»', async () => {
     const emitida = await emitirSobre(JUEGO.consorcios[0].unidades)
 
-    await generarDocumentos(
+    await generarTodo(
       manejadorDocumentoExpensa(generadorDoble(), almacenDoble),
-      repo,
-      RELOJ,
-      { usuarioId: administrador, consorcioId, liquidacionId: emitida.liquidacionId },
+      emitida.liquidacionId,
     )
 
     const detalles = await prismaBase.detalleLiquidacion.findMany({

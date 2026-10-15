@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Siren, TriangleAlert } from 'lucide-react'
+import { CircleCheck, RotateCw, Siren, TriangleAlert } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import {
@@ -11,12 +11,14 @@ import {
 } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verLiquidacion } from '@/aplicacion/liquidacion/ver-liquidacion'
+import { progresoDe, type ProgresoDeDocumentos } from '@/aplicacion/liquidacion/documentos'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 
-import { BotonGenerarDocumentos } from '../../periodos/acciones-de-estado'
 import { conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
+import { EnVivo } from '../../../../en-vivo'
 import { Volver } from '../../../../encabezado-consorcio'
 import { TablaDesplazable } from '../../../../tabla-desplazable'
+import { accionReintentarDocumentos } from './acciones'
 
 export const metadata: Metadata = { title: 'Liquidación — Flay' }
 
@@ -42,8 +44,12 @@ export default async function LiquidacionPage({
       consorcioId: activo.id,
       liquidacionId: id,
     })
-    const generados = liquidacion.detalles.filter((d) => d.tieneDocumento).length
-    const roles = await rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id)
+    const [progreso, roles] = await Promise.all([
+      progresoDe(id),
+      rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id),
+    ])
+    const administra = roles.includes('administrador')
+    const propsDocs = { progreso, administra, consorcioId: activo.id, liquidacionId: id }
 
     return (
       <>
@@ -78,7 +84,7 @@ export default async function LiquidacionPage({
                 {importeParaMostrar(liquidacion.totalExtraordinario)}
               </span>
             </div>
-            <div className="resumen__item" role="listitem">
+            <div className="resumen__item resumen__item--total" role="listitem">
               <span className="resumen__rotulo">Total</span>
               <span className="resumen__valor cifra">
                 {importeParaMostrar(liquidacion.totalGeneral)}
@@ -87,17 +93,7 @@ export default async function LiquidacionPage({
           </div>
         </div>
 
-        {liquidacion.estado === 'vigente' && (
-          <div className="tarjeta">
-            <p>
-              Documentos: <strong>{generados}</strong> de {liquidacion.detalles.length}
-              {generados === liquidacion.detalles.length && ' · todos generados'}
-            </p>
-            {roles.includes('administrador') && generados < liquidacion.detalles.length && (
-              <BotonGenerarDocumentos consorcioId={activo.id} liquidacionId={liquidacion.id} />
-            )}
-          </div>
-        )}
+        {liquidacion.estado === 'vigente' && <DocsEnVivo {...propsDocs} />}
 
         <p>
           <Link href={`/consorcios/${activo.id}/gastos?periodo=${liquidacion.periodoId}`}>
@@ -137,7 +133,15 @@ export default async function LiquidacionPage({
             <tbody>
               {liquidacion.detalles.map((detalle) => (
                 <tr key={detalle.id}>
-                  <td>{detalle.designacion}</td>
+                  <td>
+                    {detalle.tieneDocumento ? (
+                      <Link href={`/consorcios/${activo.id}/expensas/${detalle.id}`}>
+                        {detalle.designacion}
+                      </Link>
+                    ) : (
+                      detalle.designacion
+                    )}
+                  </td>
                   <td className="numero cifra">
                     {coeficienteParaMostrar(detalle.coeficienteAplicado)}
                   </td>
@@ -202,4 +206,117 @@ function EstadoDeLaLiquidacion({ estado }: { estado: string }) {
   }
 
   return <span className={`etiqueta ${etiqueta.clase}`}>{etiqueta.texto}</span>
+}
+
+/* ---- Indicador en vivo de los documentos ---- */
+type PropsDocs = {
+  progreso: ProgresoDeDocumentos
+  administra: boolean
+  consorcioId: string
+  liquidacionId: string
+}
+
+function estadoDocs(progreso: ProgresoDeDocumentos, administra: boolean) {
+  const { generados, total, enCola, agotados } = progreso
+  const pct = total ? Math.round((generados / total) * 100) : 0
+  const fase =
+    generados === total
+      ? 'listo'
+      : administra && enCola > 0
+        ? 'corriendo'
+        : administra && agotados > 0
+          ? 'trabado'
+          : 'simple'
+  return { ...progreso, pct, fase }
+}
+
+function BarraDocs({ pct, mal }: { pct: number; mal?: boolean }) {
+  return (
+    <div
+      className={`docs-vivo__barra${mal ? ' docs-vivo__barra--mal' : ''}`}
+      role="progressbar"
+      aria-valuenow={pct}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label="Documentos generados"
+    >
+      <i style={{ width: `${pct}%` }} />
+    </div>
+  )
+}
+
+function ReintentarDocs({
+  consorcioId,
+  liquidacionId,
+  etiqueta = 'Reintentar',
+}: {
+  consorcioId: string
+  liquidacionId: string
+  etiqueta?: string
+}) {
+  return (
+    <form action={accionReintentarDocumentos}>
+      <input type="hidden" name="consorcio" value={consorcioId} />
+      <input type="hidden" name="liquidacion" value={liquidacionId} />
+      <button className="boton boton--fantasma" type="submit">
+        <RotateCw className="icono" aria-hidden="true" />
+        {etiqueta}
+      </button>
+    </form>
+  )
+}
+
+/**
+ * Cómo van los documentos de la liquidación, en una fila. Mientras queden
+ * trabajos en cola y quien mira administre, monta `EnVivo`: cada refresco pasa
+ * por el `after()` del panel que drena un lote (decisión 21). Si alguno se
+ * agotó, el administrador reintenta desde acá. El consorcista solo ve el conteo.
+ */
+function DocsEnVivo({ progreso, administra, consorcioId, liquidacionId }: PropsDocs) {
+  const e = estadoDocs(progreso, administra)
+  return (
+    <div className="docs-vivo" role="status" aria-live="polite">
+      {e.fase === 'corriendo' && <EnVivo />}
+      {e.fase === 'listo' && (
+        <>
+          <CircleCheck className="icono docs-vivo__ok" aria-hidden="true" />
+          <span className="docs-vivo__titulo">{e.total} documentos generados</span>
+        </>
+      )}
+      {e.fase === 'simple' && (
+        <span className="docs-vivo__cifra">
+          Documentos: <strong>{e.generados}</strong> de {e.total}
+        </span>
+      )}
+      {e.fase === 'corriendo' && (
+        <>
+          <span className="docs-vivo__giro" aria-hidden="true" />
+          <span className="docs-vivo__titulo">Generando documentos</span>
+          <span className="docs-vivo__cifra">
+            {e.generados} / {e.total}
+          </span>
+          <BarraDocs pct={e.pct} />
+          <span className="docs-vivo__nota">Sigue solo, podés salir</span>
+          {e.agotados > 0 && (
+            <ReintentarDocs consorcioId={consorcioId} liquidacionId={liquidacionId} />
+          )}
+        </>
+      )}
+      {e.fase === 'trabado' && (
+        <>
+          <TriangleAlert className="icono docs-vivo__alerta" aria-hidden="true" />
+          <span className="docs-vivo__titulo">Se detuvo: faltan {e.total - e.generados}</span>
+          <span className="docs-vivo__cifra">
+            {e.generados} / {e.total}
+          </span>
+          <BarraDocs pct={e.pct} mal />
+          <ReintentarDocs
+            consorcioId={consorcioId}
+            liquidacionId={liquidacionId}
+            etiqueta="Continuar"
+          />
+        </>
+      )}
+    </div>
+  )
 }

@@ -9,8 +9,6 @@ import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { anularLiquidacion } from '@/aplicacion/liquidacion/anular'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
-import { generarDocumentos } from '@/aplicacion/liquidacion/documentos'
-import { MANEJADORES } from '@/aplicacion/pendientes/manejadores'
 
 /** Un archivo «use server» solo exporta funciones asincronicas. */
 export type Resultado = { mensaje: string }
@@ -57,37 +55,6 @@ export async function accionAnularLiquidacion(
       liquidacionId: String(datos.get('liquidacion') ?? ''),
     }),
   )
-}
-
-export async function accionGenerarDocumentos(
-  _previo: Resultado,
-  datos: FormData,
-): Promise<Resultado> {
-  const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
-
-  try {
-    const progreso = await generarDocumentos(
-      MANEJADORES.documento_expensa!,
-      HABILITACIONES,
-      RELOJ,
-      {
-        usuarioId,
-        consorcioId: String(datos.get('consorcio') ?? ''),
-        liquidacionId: String(datos.get('liquidacion') ?? ''),
-      },
-    )
-    revalidatePath('/consorcios/[consorcio]/liquidaciones', 'page')
-    return {
-      mensaje:
-        progreso.generados === progreso.total
-          ? ''
-          : `${progreso.generados} de ${progreso.total} documentos. Volver a pulsar para seguir.`,
-    }
-  } catch (error) {
-    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
-    throw error
-  }
 }
 
 /**

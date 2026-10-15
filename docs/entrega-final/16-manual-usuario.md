@@ -313,10 +313,10 @@ Antes de confirmar la escritura en la base de datos, el motor suma todos los imp
 2. El período pasa a estado `Liquidado` (etiqueta verde con icono de verificación).
 3. **Generación asincrónica de documentos PDF:**
    - La pantalla redirige automáticamente al detalle de la liquidación emitida (`/liquidaciones/[id]`).
-   - El sistema muestra el contador de documentos generados: *«Documentos: 0 de 12»* (en Las Heras 2140) o *«Documentos: 0 de 96»* (en Belgrano 1250).
-   - Presione el botón **Generar documentos** (`BotonGenerarDocumentos`).
-   - La generación se ejecuta en bloques optimizados de 20 segundos para evitar saturar el hilo de Node.js y sortear los límites de tiempo de espera del proxy web. Para 12 unidades, la totalidad de los comprobantes se genera en un solo disparo; para 96 unidades, se completa en dos disparos sucesivos.
-   - Los archivos PDF generados mediante el motor `@react-pdf/renderer` se depositan de manera segura en el almacenamiento de objetos del sistema (S3 o MinIO local).
+   - El sistema muestra una **barra de progreso en tiempo real** con la magnitud exacta: *«Generando documentos — 0 de 12»* (en Las Heras 2140) o *«Generando documentos — 0 de 96»* (en Belgrano 1250).
+   - **No hay que apretar ningún botón ni volver a hacerlo:** la generación avanza sola en segundo plano mientras la pantalla está abierta. Cada refresco empuja un lote de la cola de trabajos (`TrabajoPendiente`) y la barra sube hasta completarse; se puede cerrar la pantalla y el proceso continúa de manera oportunista con la navegación de cualquier usuario del panel.
+   - Los archivos PDF generados mediante el motor `@react-pdf/renderer` se depositan de manera segura en el almacenamiento de objetos del sistema.
+   - Si algún documento agota sus reintentos por una falla externa, la pantalla lo informa (*«Faltan N documentos por un problema»*) con un enlace a la **bandeja** para reintentarlos; la liquidación contable ya emitida nunca se ve afectada (FR-019).
 
 #### Etapa 6: Publicación y despacho de avisos por correo electrónico
 1. Con la liquidación en estado `Vigente`, los consorcistas habilitados pueden visualizar de inmediato su liquidación general y su expensa individual ingresando al portal.

@@ -6,7 +6,6 @@ import { X } from 'lucide-react'
 import {
   accionAnularLiquidacion,
   accionCerrarPeriodo,
-  accionGenerarDocumentos,
   accionLiquidarPeriodo,
   type Resultado,
 } from './acciones'
@@ -108,26 +107,6 @@ export function BotonAnular({
       ]}
       etiquetaConfirmar="Confirmar anulación"
       trabajando="Anulando…"
-    />
-  )
-}
-
-export function BotonGenerarDocumentos({
-  consorcioId,
-  liquidacionId,
-}: {
-  consorcioId: string
-  liquidacionId: string
-}) {
-  return (
-    <Boton
-      accion={accionGenerarDocumentos}
-      consorcioId={consorcioId}
-      campo="liquidacion"
-      valor={liquidacionId}
-      etiqueta="Generar los documentos"
-      trabajando="Generando…"
-      primario
     />
   )
 }

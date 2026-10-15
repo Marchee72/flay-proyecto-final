@@ -180,31 +180,51 @@ no lo encuentra y la notificación se descarta. **No se agrega ninguna consulta 
 
 Hoy, al liquidar, `totalUnidad` de la nueva expensa ya incluye `deudaAnterior` (saldo impago de las
 liquidaciones vigentes previas) e `interesMora`, pero los detalles anteriores **siguen vigentes con
-su saldo**. `imputar` recorre todos por antigüedad, así que pagar el total de la última deja una
-deuda fantasma igual al arrastre, que además vuelve a arrastrarse en la siguiente liquidación.
+su saldo**, y cinco lugares calculan el saldo de un detalle como `totalUnidad − imputado`
+(`registrar.ts`, `liquidar.ts`, `ver-expensa.ts`, `estado-de-cuenta.ts` ×2). Resultado: la deuda
+arrastrada se cuenta dos veces. Pagar el total de la última deja una deuda fantasma igual al
+arrastre; la liquidación siguiente vuelve a arrastrarla y además le cobra interés al interés,
+contradiciendo la decisión del 2026-09-10 (interés **simple, sin capitalizar, por liquidación desde
+su propio vencimiento**, `interes.ts`).
 
-Regla nueva (RN-08 ampliada, en el dominio, con TDD):
+### Regla (RN-08 ampliada, en el dominio, TDD)
 
-- Una expensa cuyo `deudaAnterior > 0` **absorbe** los saldos de las expensas vigentes anteriores de
-  la misma unidad que estaban impagas al momento de liquidarse.
-- El saldo exigible de la unidad es el saldo de su **última** expensa vigente; las absorbidas no
-  suman deuda propia.
-- Al imputar un pago, primero se cancelan los saldos de las expensas absorbidas (por antigüedad),
-  y lo que se imputa contra ellas **reduce el saldo de la expensa que las absorbe en el mismo
-  importe**; luego se imputa el resto contra la parte propia de la última (ordinario, extraordinario
-  e interés). Lo que excede el saldo exigible es `sobrante` → `saldoAFavor`, como hoy.
-- La promesa de la prueba se mantiene: `suma(imputaciones) + sobrante = importe`, tolerancia cero.
-- La regla vale para **ambos** caminos (registro manual y pago en línea): una sola regla de
-  imputación.
+**El saldo de un detalle es su parte propia**: lo que esa liquidación le cargó por primera vez.
+
+```
+propio(d)  = totalUnidad − deudaAnterior          (ordinario + extraordinario + interés liquidado
+                                                   + redondeo − saldo a favor aplicado)
+saldo(d)   = propio(d) − imputado(d)
+```
+
+Con eso:
+
+- `Σ saldo(d)` de la unidad es exactamente lo que debe, y coincide con `totalUnidad` de la **última**
+  expensa menos lo pagado desde su emisión. Ese es el **saldo exigible**, el único importe que se
+  puede pagar en línea (D-1, D-3).
+- `imputar` **no cambia**: sigue recorriendo por antigüedad, ahora sobre saldos propios. Pagar el
+  saldo exigible cancela primero los meses arrastrados y después el mes actual: todo queda en cero
+  (D-2), con una imputación por mes, que es la trazabilidad que muestra la morosidad.
+- Dentro de un detalle, lo imputado cubre **primero su interés liquidado y después el capital**.
+  `deudaVigentePorUnidad` arrastra `Σ saldo(d)` como `deudaAnterior`, pero calcula interés solo
+  sobre el **capital pendiente** de cada detalle, desde su propio vencimiento: el interés impago se
+  arrastra sin devengar interés.
+- Si un saldo a favor aplicado deja `propio(d) < 0` (cubrió deuda vieja), el negativo se compensa
+  contra los saldos más antiguos de la unidad, por antigüedad. Ningún saldo devuelto es negativo.
+- Los datos históricos son compatibles: un pago ya imputado por antigüedad bajo la regla vieja
+  queda bien medido con la nueva.
+
+La función pura vive en `src/dominio/liquidacion/saldo.ts` (`saldosDeUnidad`) y la usan los cinco
+lugares de arriba; ningún otro sitio calcula un saldo.
 
 Casos de prueba mínimos: una sola expensa; última con un mes arrastrado; con tres meses
 arrastrados; pago parcial (cubre parte del arrastre — solo posible por registro manual, el pago en
-línea es siempre por el saldo exigible); pago exacto; pago con sobrante; arrastre ya
-parcialmente pagado antes de la nueva liquidación.
+línea es siempre por el saldo exigible); pago exacto; pago con sobrante; arrastre ya parcialmente
+pagado antes de la nueva liquidación; interés cubierto antes que capital; saldo a favor que deja
+`propio` negativo; capital pendiente para interés sin capitalizar.
 
-> El plan de implementación debe empezar por estas pruebas, porque corrigen también el registro
-> manual existente y afectan `deudaVigentePorUnidad` en `liquidar.ts` (que no debe volver a contar
-> lo absorbido).
+> La implementación empieza por estas pruebas, porque corrigen también el registro manual
+> existente, el estado de cuenta, la morosidad y la liquidación siguiente.
 
 ## 5. Flujo de datos
 

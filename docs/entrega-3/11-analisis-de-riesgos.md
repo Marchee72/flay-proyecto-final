@@ -48,6 +48,7 @@ crítico.
 | **RT-08** | Pérdida o corrupción de datos por un error en una migración de esquema | 2 | 5 | 10 | Alto |
 | **RT-09** | La extracción de comprobantes carga un importe erróneo que llega a una liquidación emitida | 2 | 5 | 10 | Alto |
 | **RT-10** | Los coeficientes migrados desde los reglamentos en papel contienen errores y no suman 100 % | 4 | 3 | 12 | Alto |
+| **RT-11** | Suplantación, manipulación o desincronización en notificaciones de cobranza de la pasarela de pagos | 2 | 5 | 10 | Alto |
 
 ### Riesgos de gestión y de proyecto
 
@@ -226,6 +227,16 @@ bajos, sin acción.
 | **Plan de contingencia** | El integrante disponible sostiene el camino crítico —liquidación e indicadores— y se difiere todo lo demás según el punto 10.8 |
 | **Responsable** | Ambos |
 
+### RT-11 — Suplantación o desincronización de pagos en pasarela externa · Exposición 10 · Alto
+
+| | |
+|---|---|
+| **Estrategia** | Evitar y mitigar |
+| **Detonante** | Notificación webhook entrante con firma manipulada, discrepancia en el importe cobrado o evento no recibido |
+| **Acciones preventivas** | 1. Validación criptográfica estricta de firma digital HMAC-SHA256 con ventana de tolerancia temporal (5 minutos) para neutralizar ataques de repetición (*replay attacks*). 2. Consulta obligatoria y directa a la API oficial de la pasarela con credencial privada del servidor para verificar el estado real y el importe acreditado antes de cualquier registro (tolerancia cero a fraude). 3. Aislamiento estricto por consorcio: el intento de pago se valida contra el consorcio destinatario y la credencial de su administradora. 4. Idempotencia y transacción atómica: la confirmación actualiza el intento y registra la imputación en un único bloque transaccional. 5. Sincronización en la vista de retorno: al redirigir al usuario, el servidor sondea la pasarela para confirmar inmediatamente el cobro sin quedar supeditado a la latencia del webhook. |
+| **Plan de contingencia** | Si la pasarela rechaza la transacción o expira (24 horas), el intento pasa al estado correspondiente y permite reintentar el pago con saldo actualizado sin duplicar cobros. El administrador conserva la capacidad de registrar cobros manuales conforme a RF-09. |
+| **Responsable** | Integrante 2 |
+
 ## 11.5 Riesgos que se aceptan sin acción
 
 | ID | Riesgo | Fundamento de la aceptación |
@@ -267,7 +278,7 @@ bajos, sin acción.
 | Nivel | Cantidad | Riesgos |
 |---|---:|---|
 | Crítico | 3 | RT-01, RG-01, RN-01 |
-| Alto | 7 | RT-04, RT-08, RT-09, RT-10, RG-02, RG-03, RG-05, RN-03 |
+| Alto | 8 | RT-04, RT-08, RT-09, RT-10, RT-11, RG-02, RG-03, RG-05, RN-03 |
 | Moderado | 12 | RT-02, RT-03, RT-05, RT-06, RT-07, RG-04, RG-06, RG-07, RG-08, RN-02, RN-04, RN-05, RN-06 |
 | **Reserva de contingencia total** | **214 h** | 40 h a RT-01, 80 h a RG-01, 94 h sin asignar |
 

@@ -7,6 +7,7 @@ import { ErrorDeAplicacion } from '@/compartido/errores'
 import { importeDesdeEntrada } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { guardarCredencialesPago } from '@/aplicacion/administradoras/credenciales-pago'
 import { medioDesdeFormulario, registrarPago } from '@/aplicacion/pagos/registrar'
 
 export type Resultado = { mensaje: string }
@@ -38,4 +39,35 @@ export async function accionRegistrarPago(_previo: Resultado, datos: FormData): 
 
   revalidatePath('/consorcios/[consorcio]/pagos', 'page')
   redirect(`/consorcios/${consorcioId}/pagos?hecho=pago-registrado`)
+}
+
+/**
+ * Configuracion de credenciales de pasarela de pago (`RF-28`, D-5, D-6).
+ * Cifra simetricamente las credenciales con AES-256-GCM.
+ */
+export async function accionGuardarCredencialesPago(
+  _previo: Resultado,
+  datos: FormData,
+): Promise<Resultado> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) redirect('/ingresar')
+
+  const consorcioId = String(datos.get('consorcio') ?? '')
+  const accessToken = String(datos.get('accessToken') ?? '').trim()
+  const secretoWebhook = String(datos.get('secretoWebhook') ?? '').trim()
+
+  try {
+    await guardarCredencialesPago(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      accessToken,
+      secretoWebhook,
+    })
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
+    throw error
+  }
+
+  revalidatePath('/consorcios/[consorcio]/pagos', 'page')
+  redirect(`/consorcios/${consorcioId}/pagos?hecho=pasarela-configurada`)
 }

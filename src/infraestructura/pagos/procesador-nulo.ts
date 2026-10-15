@@ -1,6 +1,5 @@
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import type {
-  DatosPreferencia,
   ProcesadorDePagos,
   ResultadoConsultaPago,
   ResultadoPreferencia,
@@ -18,14 +17,11 @@ export class ProcesadorDePagosDeshabilitado extends ErrorDeAplicacion {
 }
 
 export class ProcesadorNulo implements ProcesadorDePagos {
-  async crearPreferencia(_datos: DatosPreferencia): Promise<ResultadoPreferencia> {
+  async crearPreferencia(): Promise<ResultadoPreferencia> {
     throw new ProcesadorDePagosDeshabilitado()
   }
 
-  async consultarPago(_datos: {
-    credenciales: { accessToken: string }
-    pagoExternoId: string
-  }): Promise<ResultadoConsultaPago> {
+  async consultarPago(): Promise<ResultadoConsultaPago> {
     throw new ProcesadorDePagosDeshabilitado()
   }
 }

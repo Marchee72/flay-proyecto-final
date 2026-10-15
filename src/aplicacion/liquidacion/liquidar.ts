@@ -528,7 +528,6 @@ async function deudaVigentePorUnidad(
   return resultado
 }
 
-
 /** Lo que cada unidad tiene a favor y todavia no se aplico (`FR-026b`). */
 async function saldosAFavorPorUnidad(): Promise<Map<string, Decimal>> {
   const pagos = await prisma.pago.findMany({

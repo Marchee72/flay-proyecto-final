@@ -1,5 +1,7 @@
+import { createHmac } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { POST as webhookRoute } from '@/app/api/pagos/webhook/route'
 import {
   guardarCredencialesPago,
   verEstadoCredencialPago,
@@ -9,9 +11,7 @@ import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
-import {
-  confirmarPagoEnLinea,
-} from '@/aplicacion/pagos/confirmar-pago-en-linea'
+import { confirmarPagoEnLinea } from '@/aplicacion/pagos/confirmar-pago-en-linea'
 import {
   ExpensaNoEsUltimaVigente,
   ExpensaSinSaldoPendiente,
@@ -91,7 +91,6 @@ beforeEach(async () => {
   })
 })
 
-
 afterEach(async () => {
   await prismaBase.$executeRaw`DELETE FROM "IntentoDePago"`
   await prismaBase.$executeRaw`DELETE FROM "CredencialPagoAdministradora"`
@@ -108,7 +107,6 @@ afterEach(async () => {
   await prismaBase.$executeRaw`DELETE FROM "Unidad"`
   await limpiar()
 })
-
 
 async function emitirMes(mes: number, gastoMonto = '1000.00') {
   const { periodoId } = await periodoPara(repo, RELOJ, {
@@ -408,5 +406,114 @@ describe('pago en linea de expensas (RF-28)', () => {
     `
     expect(logsIntento.length).toBeGreaterThanOrEqual(1)
   })
-})
 
+  describe('Webhook de Mercado Pago (POST /api/pagos/webhook)', () => {
+    it('rechaza con 400 si falta el parametro consorcio', async () => {
+      const req = new Request('http://localhost/api/pagos/webhook', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+
+      const res = await webhookRoute(req)
+      expect(res.status).toBe(400)
+    })
+
+    it('rechaza con 404 si el consorcio no existe', async () => {
+      const req = new Request(
+        'http://localhost/api/pagos/webhook?consorcio=00000000-0000-0000-0000-000000000000',
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({}),
+        },
+      )
+
+      const res = await webhookRoute(req)
+      expect(res.status).toBe(404)
+    })
+
+    it('rechaza con 401 si la firma x-signature no es valida', async () => {
+      await guardarCredencialesPago(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        accessToken: 'TEST-TOKEN-1234',
+        secretoWebhook: 'WEBHOOK-SECRET-1234',
+      })
+
+      const req = new Request(`http://localhost/api/pagos/webhook?consorcio=${consorcioId}`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-signature': 'ts=1700000000,v1=invalido',
+          'x-request-id': 'req-123',
+        },
+        body: JSON.stringify({
+          action: 'payment.created',
+          type: 'payment',
+          data: { id: '999999' },
+        }),
+      })
+
+      const res = await webhookRoute(req)
+      expect(res.status).toBe(401)
+    })
+
+    it('procesa el pago correctamente cuando la firma es valida', async () => {
+      const secretoWebhook = 'MI-SECRETO-WEBHOOK-SEGURO'
+      await guardarCredencialesPago(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        accessToken: 'TEST-TOKEN-1234',
+        secretoWebhook,
+      })
+
+      const liq = await emitirMes(1, '1000.00')
+      const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+        where: { liquidacionId: liq.liquidacionId, unidadId: unidadA },
+      })
+
+      const inicio = await iniciarPagoEnLinea(repo, RELOJ, procesadorDePrueba, {
+        usuarioId: inquilino,
+        consorcioId,
+        detalleLiquidacionId: detalle.id,
+        urlBaseRetorno: 'https://consorcio.app/volver',
+      })
+
+      const pagoExternoId = `pago_simulado_${inicio.intentoId}`
+      const requestId = 'req-abc-123'
+      const ts = Math.floor(Date.now() / 1000).toString()
+      const manifest = `id:${pagoExternoId};request-id:${requestId};ts:${ts};`
+      const hash = createHmac('sha256', secretoWebhook).update(manifest).digest('hex')
+      const xSignature = `ts=${ts},v1=${hash}`
+
+      const req = new Request(`http://localhost/api/pagos/webhook?consorcio=${consorcioId}`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-signature': xSignature,
+          'x-request-id': requestId,
+        },
+        body: JSON.stringify({
+          action: 'payment.created',
+          type: 'payment',
+          data: { id: pagoExternoId },
+        }),
+      })
+
+      const res = await webhookRoute(req)
+      expect(res.status).toBe(200)
+      const data = await res.json()
+      expect(data.recibido).toBe(true)
+      expect(data.estado).toBe('aprobado')
+      expect(data.pagoId).toBeTruthy()
+
+      // Verificar que el intento paso a aprobado
+      const intentoDb = await prismaBase.intentoDePago.findUniqueOrThrow({
+        where: { id: inicio.intentoId },
+      })
+      expect(intentoDb.estado).toBe('aprobado')
+      expect(intentoDb.pagoId).toBe(data.pagoId)
+    })
+  })
+})

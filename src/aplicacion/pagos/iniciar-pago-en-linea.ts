@@ -6,6 +6,7 @@ import type { Reloj } from '@/dominio/contratos/reloj'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import { saldosDeUnidad } from '@/dominio/liquidacion/saldo'
 import { ocupaUnidad } from '@/infraestructura/repositorios/ocupaciones'
+import { sinConsorcio } from '@/infraestructura/cliente-aislado'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 import { obtenerCredencialesDescifradas } from '@/aplicacion/administradoras/credenciales-pago'
 
@@ -162,17 +163,16 @@ export async function iniciarPagoEnLinea(
 
       const venceEn = new Date(ahora.getTime() + HORAS_VENCIMIENTO_INTENTO * 60 * 60 * 1000)
 
-      // Crear intento de pago
-      const intento = await prismaBase.intentoDePago.create({
-        data: {
-          consorcioId: datos.consorcioId,
+      // Crear intento de pago con aislamiento por consorcio
+      const intento = await prisma.intentoDePago.create({
+        data: sinConsorcio({
           unidadId: detalle.unidadId,
           detalleLiquidacionId: detalle.id,
           importe: saldos.saldoExigible,
           iniciadoPor: datos.usuarioId,
           venceEn,
           estado: 'iniciado',
-        },
+        }),
       })
 
       const urlPublica =
@@ -217,4 +217,93 @@ export async function iniciarPagoEnLinea(
       }
     },
   )
+}
+
+export interface DisponibilidadPagoEnLinea {
+  pagable: boolean
+  motivo?:
+    | 'no-es-ultima'
+    | 'saldada'
+    | 'pasarela-no-configurada'
+    | 'no-encontrada'
+    | 'no-autorizado'
+  saldoExigible?: string
+}
+
+export async function consultarDisponibilidadPagoEnLinea(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: {
+    usuarioId: string
+    consorcioId: string
+    detalleLiquidacionId: string
+  },
+): Promise<DisponibilidadPagoEnLinea> {
+  const detalle = await prisma.detalleLiquidacion.findFirst({
+    where: { id: datos.detalleLiquidacionId },
+    include: {
+      unidad: true,
+      liquidacion: { include: { consorcio: true } },
+    },
+  })
+
+  if (!detalle || detalle.liquidacion.estado !== 'vigente') {
+    return { pagable: false, motivo: 'no-encontrada' }
+  }
+
+  const todosDetalles = await prisma.detalleLiquidacion.findMany({
+    where: {
+      unidadId: detalle.unidadId,
+      liquidacion: { estado: 'vigente' },
+    },
+    include: {
+      liquidacion: { select: { vencimiento: true } },
+      imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
+    },
+    orderBy: { liquidacion: { vencimiento: 'asc' } },
+  })
+
+  if (todosDetalles.length === 0) {
+    return { pagable: false, motivo: 'no-encontrada' }
+  }
+
+  const ultimo = todosDetalles[todosDetalles.length - 1]
+  if (ultimo.id !== detalle.id) {
+    return { pagable: false, motivo: 'no-es-ultima' }
+  }
+
+  const saldos = saldosDeUnidad(
+    todosDetalles.map((d) => ({
+      detalleId: d.id,
+      totalUnidad: d.totalUnidad.toFixed(DECIMALES_IMPORTE),
+      deudaAnterior: d.deudaAnterior.toFixed(DECIMALES_IMPORTE),
+      interesMora: d.interesMora.toFixed(DECIMALES_IMPORTE),
+      vencimiento: d.liquidacion.vencimiento,
+      imputado: d.imputaciones
+        .reduce((tot, i) => tot.plus(importe(i.importeImputado.toFixed(2))), new Decimal(0))
+        .toFixed(DECIMALES_IMPORTE),
+    })),
+  )
+
+  if (importe(saldos.saldoExigible).lessThanOrEqualTo(0)) {
+    return { pagable: false, motivo: 'saldada', saldoExigible: '0.00' }
+  }
+
+  const credencial = await prismaBase.credencialPagoAdministradora.findUnique({
+    where: { administradoraId: detalle.liquidacion.consorcio.administradoraId },
+    select: { id: true },
+  })
+
+  if (!credencial) {
+    return {
+      pagable: false,
+      motivo: 'pasarela-no-configurada',
+      saldoExigible: saldos.saldoExigible,
+    }
+  }
+
+  return {
+    pagable: true,
+    saldoExigible: saldos.saldoExigible,
+  }
 }

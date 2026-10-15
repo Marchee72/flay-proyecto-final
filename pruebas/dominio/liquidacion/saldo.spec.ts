@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { importe } from '@/compartido/dinero'
 import { imputar } from '@/dominio/liquidacion/imputacion'
 import { saldosDeUnidad, type DetalleHistoricoUnidad } from '@/dominio/liquidacion/saldo'
 
@@ -164,4 +163,3 @@ describe('saldosDeUnidad — regla de arrastre y saldo propio (RN-08 ampliada)',
     ])
   })
 })
-

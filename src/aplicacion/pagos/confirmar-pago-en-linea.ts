@@ -1,5 +1,6 @@
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import type { ProcesadorDePagos } from '@/dominio/contratos/procesador-pagos'
+import { verificarFirmaWebhookMercadoPago } from '@/dominio/pagos/firma-webhook'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 import { enConsorcio } from '@/infraestructura/cliente-aislado'
 import { obtenerCredencialesDescifradas } from '@/aplicacion/administradoras/credenciales-pago'
@@ -34,8 +35,9 @@ export async function confirmarPagoEnLinea(
     intentoId?: string
   },
 ): Promise<ResultadoConfirmacionPago> {
+  const id = datos.consorcioId
   const consorcio = await prismaBase.consorcio.findUnique({
-    where: { id: datos.consorcioId },
+    where: { id },
     select: { id: true, administradoraId: true },
   })
 
@@ -150,4 +152,93 @@ export async function confirmarPagoEnLinea(
       mensaje: 'Pago acreditado e imputado correctamente.',
     }
   })
+}
+
+export class FirmaWebhookInvalida extends ErrorDeAplicacion {
+  constructor() {
+    super('Firma de la notificacion invalida.', 'RF-28')
+  }
+}
+
+export class PasarelaNoConfiguradaWebhook extends ErrorDeAplicacion {
+  constructor() {
+    super('La pasarela de pagos no esta configurada para este consorcio.', 'RF-28')
+  }
+}
+
+export interface ParametrosProcesarWebhook {
+  consorcioId: string
+  xSignature?: string | null
+  xRequestId?: string | null
+  body: Record<string, unknown>
+}
+
+export interface ResultadoProcesamientoWebhook {
+  recibido: true
+  ignorado?: boolean
+  motivo?: string
+  estado?: string
+  pagoId?: string | null
+}
+
+export async function procesarWebhookPago(
+  procesador: ProcesadorDePagos,
+  datos: ParametrosProcesarWebhook,
+): Promise<ResultadoProcesamientoWebhook> {
+  const id = datos.consorcioId
+  const consorcio = await prismaBase.consorcio.findUnique({
+    where: { id },
+    select: { id: true, administradoraId: true },
+  })
+
+  if (!consorcio) {
+    throw new NoEncontrado()
+  }
+
+  const credenciales = await obtenerCredencialesDescifradas(consorcio.administradoraId)
+  if (!credenciales || !credenciales.secretoWebhook) {
+    throw new PasarelaNoConfiguradaWebhook()
+  }
+
+  const dataObj = datos.body?.data as { id?: string | number } | undefined
+  const dataId = dataObj?.id ? String(dataObj.id) : datos.body?.id ? String(datos.body.id) : null
+  const tipo =
+    (datos.body?.type as string) || (datos.body?.topic as string) || (datos.body?.action as string)
+
+  if (!dataId) {
+    return { recibido: true, ignorado: true }
+  }
+
+  const firmaValida = verificarFirmaWebhookMercadoPago({
+    xSignature: datos.xSignature,
+    xRequestId: datos.xRequestId,
+    dataId,
+    secreto: credenciales.secretoWebhook,
+  })
+
+  if (!firmaValida) {
+    throw new FirmaWebhookInvalida()
+  }
+
+  if (tipo && tipo !== 'payment' && !tipo.startsWith('payment.')) {
+    return { recibido: true, ignorado: true }
+  }
+
+  try {
+    const resultado = await confirmarPagoEnLinea(procesador, {
+      consorcioId: datos.consorcioId,
+      pagoExternoId: dataId,
+    })
+
+    return {
+      recibido: true,
+      estado: resultado.estado,
+      pagoId: resultado.pagoId,
+    }
+  } catch (error) {
+    if (error instanceof PagoExternoNoEncontrado || error instanceof NoEncontrado) {
+      return { recibido: true, ignorado: true, motivo: error.message }
+    }
+    throw error
+  }
 }

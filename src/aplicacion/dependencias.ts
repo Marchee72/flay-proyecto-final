@@ -115,4 +115,3 @@ export const PROCESADOR_PAGOS: ProcesadorDePagos = {
     return impl.consultarPago(datos)
   },
 }
-

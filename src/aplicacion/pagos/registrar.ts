@@ -1,4 +1,4 @@
-import type { Prisma, MedioDePago } from '@prisma/client'
+import type { MedioDePago } from '@prisma/client'
 
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import { Decimal, importe } from '@/compartido/dinero'
@@ -53,13 +53,15 @@ export interface PagoRegistrado {
   saldoAFavor: string
 }
 
+export type TransaccionPrisma = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
+
 /**
  * Operacion atomica de creacion de pago con sus imputaciones.
  * Compartida entre el registro manual del administrador (`RF-09`) y la
  * confirmacion de cobro en linea (`RF-28`).
  */
 export async function imputarYRegistrar(
-  tx: Prisma.TransactionClient,
+  tx: TransaccionPrisma,
   datos: {
     unidadId: string
     importe: string
@@ -188,4 +190,3 @@ export async function detallesImpagosDe(unidadId: string): Promise<DetalleImpago
       vencimiento: detalle.vencimiento,
     }))
 }
-

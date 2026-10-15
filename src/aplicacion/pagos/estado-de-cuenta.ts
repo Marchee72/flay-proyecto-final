@@ -379,7 +379,6 @@ export async function saldoImpagoPorUnidad(
   return porUnidad
 }
 
-
 export async function verMorosidad(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,

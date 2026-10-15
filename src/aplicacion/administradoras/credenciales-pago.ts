@@ -55,8 +55,9 @@ export async function verEstadoCredencialPago(
       accion: 'ver credenciales de pago',
     },
     async () => {
+      const id = datos.consorcioId
       const consorcio = await prisma.consorcio.findFirst({
-        where: { id: datos.consorcioId },
+        where: { id },
         select: { administradoraId: true },
       })
       if (!consorcio) throw new NoEncontrado()
@@ -109,8 +110,9 @@ export async function guardarCredencialesPago(
         throw new CredencialInvalida('El Secreto de Webhook no es valido.')
       }
 
+      const id = datos.consorcioId
       const consorcio = await prisma.consorcio.findFirst({
-        where: { id: datos.consorcioId },
+        where: { id },
         select: { administradoraId: true },
       })
       if (!consorcio) throw new NoEncontrado()

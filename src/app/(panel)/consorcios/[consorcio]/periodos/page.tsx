@@ -31,6 +31,14 @@ export default async function PeriodosPage({ params }: { params: Promise<{ conso
 
     const administra = roles.includes('administrador')
 
+    // Solo la liquidación más reciente se puede anular (RN-06); el servidor
+    // lo exige igual, esto evita ofrecer un botón que sería rechazado.
+    const ultimaLiquidada = periodos
+      .filter((p) => p.liquidacion)
+      .reduce<
+        (typeof periodos)[number] | null
+      >((max, p) => (!max || p.anio > max.anio || (p.anio === max.anio && p.mes > max.mes) ? p : max), null)
+
     return (
       <>
         <h1>Períodos</h1>
@@ -114,7 +122,7 @@ export default async function PeriodosPage({ params }: { params: Promise<{ conso
                               Revisar y liquidar
                             </Link>
                           )}
-                          {periodo.liquidacion && (
+                          {periodo.liquidacion && periodo.id === ultimaLiquidada?.id && (
                             <BotonAnular
                               consorcioId={activo.id}
                               liquidacionId={periodo.liquidacion.id}

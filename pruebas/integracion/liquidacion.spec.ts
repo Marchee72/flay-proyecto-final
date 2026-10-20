@@ -287,20 +287,39 @@ describe('unidad dada de baja (FR-011)', () => {
 describe('anulacion y reemision (FR-003b)', () => {
   it('lo pagado vuelve como saldo a favor y la reemisión lo aplica al total (FR-027)', async () => {
     const periodoId = await periodoConGasto(6) // 1A debe 500 (50% de 1000)
-    const primera = await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
-
-    const unidad1A = await prismaBase.unidad.findFirstOrThrow({ where: { consorcioId, designacion: '1A' } })
-    const pago = await registrarPago(repo, RELOJ, {
-      usuarioId: administrador, consorcioId, unidadId: unidad1A.id,
-      importe: '500.00', fechaPago: new Date('2026-07-05'), medio: 'transferencia',
+    const primera = await liquidarPeriodo(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId,
     })
 
-    await anularLiquidacion(repo, RELOJ, { usuarioId: administrador, consorcioId, liquidacionId: primera.liquidacionId })
+    const unidad1A = await prismaBase.unidad.findFirstOrThrow({
+      where: { consorcioId, designacion: '1A' },
+    })
+    const pago = await registrarPago(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidadId: unidad1A.id,
+      importe: '500.00',
+      fechaPago: new Date('2026-07-05'),
+      medio: 'transferencia',
+    })
+
+    await anularLiquidacion(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      liquidacionId: primera.liquidacionId,
+    })
 
     const pagoTrasAnular = await prismaBase.pago.findUniqueOrThrow({ where: { id: pago.pagoId } })
     expect(pagoTrasAnular.saldoAFavor.toFixed(2)).toBe('500.00')
 
-    const segunda = await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId, totalRevisado: '1000.00' })
+    const segunda = await liquidarPeriodo(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId,
+      totalRevisado: '1000.00',
+    })
     const detalle1A = await prismaBase.detalleLiquidacion.findFirstOrThrow({
       where: { liquidacionId: segunda.liquidacionId, unidadId: unidad1A.id },
     })
@@ -310,15 +329,28 @@ describe('anulacion y reemision (FR-003b)', () => {
 
   it('anular reabre el período y la reemisión procede (FR-003b)', async () => {
     const periodoId = await periodoConGasto(6)
-    const primera = await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
+    const primera = await liquidarPeriodo(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId,
+    })
 
-    await anularLiquidacion(repo, RELOJ, { usuarioId: administrador, consorcioId, liquidacionId: primera.liquidacionId })
+    await anularLiquidacion(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      liquidacionId: primera.liquidacionId,
+    })
 
     // El período vuelve a abierto: anular permite corregir ese mes.
     const periodo = await prismaBase.periodo.findUniqueOrThrow({ where: { id: periodoId } })
     expect(periodo.estado).toBe('abierto')
 
-    const segunda = await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId, totalRevisado: '1000.00' })
+    const segunda = await liquidarPeriodo(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId,
+      totalRevisado: '1000.00',
+    })
     expect(segunda.liquidacionId).not.toBe(primera.liquidacionId)
 
     const todas = await prismaBase.liquidacion.findMany({
@@ -331,14 +363,22 @@ describe('anulacion y reemision (FR-003b)', () => {
 
   it('solo se puede anular la última liquidación (RN-06)', async () => {
     const enero = await periodoConGasto(1)
-    const primeroEnero = await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId: enero })
+    const primeroEnero = await liquidarPeriodo(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId: enero,
+    })
 
     const marzo = await periodoConGasto(3)
     await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId: marzo })
 
     // Enero ya no es la última: marzo tiene una liquidación vigente posterior.
     await expect(
-      anularLiquidacion(repo, RELOJ, { usuarioId: administrador, consorcioId, liquidacionId: primeroEnero.liquidacionId }),
+      anularLiquidacion(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        liquidacionId: primeroEnero.liquidacionId,
+      }),
     ).rejects.toBeInstanceOf(LiquidacionNoEsLaUltima)
   })
 })

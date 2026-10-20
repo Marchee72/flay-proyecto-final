@@ -54,7 +54,12 @@ export async function anularLiquidacion(
     async () => {
       const liquidacion = await prisma.liquidacion.findFirst({
         where: { id: datos.liquidacionId },
-        select: { id: true, estado: true, periodoId: true, periodo: { select: { anio: true, mes: true } } },
+        select: {
+          id: true,
+          estado: true,
+          periodoId: true,
+          periodo: { select: { anio: true, mes: true } },
+        },
       })
 
       if (!liquidacion) throw new LiquidacionInexistente()
@@ -106,7 +111,10 @@ export async function anularLiquidacion(
 
         // Única vía que saca un período de `liquidado`: anular lo reabre para corregir
         // y reemitir (D2). La máquina de estados genérica sigue sin poder hacerlo.
-        await tx.periodo.update({ where: { id: liquidacion.periodoId }, data: { estado: 'abierto' } })
+        await tx.periodo.update({
+          where: { id: liquidacion.periodoId },
+          data: { estado: 'abierto' },
+        })
 
         return { imputacionesRevertidas: count }
       })

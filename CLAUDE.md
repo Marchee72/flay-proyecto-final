@@ -195,9 +195,12 @@ Veintiséis decisiones que costaron una vuelta y conviene no volver a tomar desd
     ~250 ms. `cargarPadron` y `liquidarPeriodo` generan los identificadores en memoria y usan
     `createMany`: dos sentencias, no doscientas. La semilla ya lo hacía; los casos de uso no.
 12. **El candado de la emisión doble es un índice único parcial**, `UNIQUE (periodo_id) WHERE
-    estado = 'vigente'`, no el estado del período. Un período liquidado nunca vuelve atrás (contrato
-    de `002`), y lo que se anula es la `Liquidacion`: una reemisión legítima encuentra el período en
-    `liquidado` igual. Por eso `liquidarPeriodo` rechaza sólo `abierto` y `anulado`.
+    estado = 'vigente'`, no el estado del período. Lo que se anula es la `Liquidacion`, y
+    sólo la **última vigente** (`LiquidacionNoEsLaUltima`, RN-06): una posterior ya arrastró su deuda en
+    `deudaAnterior`. Anular **reabre el período a `abierto`** en la misma transacción, para corregir los
+    gastos y reemitir; la máquina de estados genérica sigue estricta (`liquidado: []`) y `liquidarPeriodo`
+    ya no tiene el atajo de reemitir desde `liquidado`. Corregir un mes anterior a la última liquidación va
+    como ajuste en el período siguiente.
 13. **El interés se guarda desglosado** en `InteresLiquidado`, una fila por liquidación impaga con
     capital, tasa y meses. El total solo no se puede rehacer: apenas llega un pago posterior, ya no
     se sabe qué estaba impago al emitir.

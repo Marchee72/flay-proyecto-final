@@ -81,7 +81,7 @@ generales, igual que en cada sección (RN-12).
 **Muestra**: tabla de períodos (uno por mes, del más nuevo al más viejo) con estado, cantidad de
 gastos y total de la liquidación vigente con su vencimiento (enlace al detalle).
 **Estados**: `Abierto` (admite gastos) → `Cerrado` (opcional: congela los gastos; puede
-reabrirse) → `Liquidado` (no vuelve atrás) · `Anulado`. Desde `Abierto` también se liquida directo.
+reabrirse) → `Liquidado` (solo vuelve a `Abierto` al anular su última liquidación) · `Anulado`. Desde `Abierto` también se liquida directo.
 **Acciones**:
 
 | Acción | Rol | Regla |
@@ -89,7 +89,7 @@ reabrirse) → `Liquidado` (no vuelve atrás) · `Anulado`. Desde `Abierto` tamb
 | Período | Administrador | No se abre a mano: nace con el primer gasto que se imputa a ese mes (campo «Período» del alta de gasto). Un período por mes. |
 | Cerrar | Administrador | Opcional. Desde acá no entran más gastos (RN-03). Se puede reabrir mientras no esté liquidado. |
 | Revisar y liquidar | Administrador | Abierto o cerrado. Abre `/periodos/[id]`: los gastos del período, los totales, el vencimiento y el reparto por unidad tal como se emitiría, sin escribir nada (§ 4.1). «Confirmar y liquidar» manda el total revisado; si los gastos cambiaron desde la revisión no se emite. Todo en una transacción: estado, cálculo, detalles, cola de documentos y avisos. Un período abierto pasa directo a liquidado. |
-| Anular liquidación | Administrador | Se anula **la liquidación**, no el período (RN-06). Las imputaciones de pagos se marcan como revertidas —no se borran— y el importe queda como saldo a favor. Una reemisión encuentra el período `liquidado`; el candado contra la emisión doble es un índice único parcial sobre `estado = 'vigente'`. |
+| Anular liquidación | Administrador | Se anula **la liquidación**, no el período (RN-06). Las imputaciones de pagos se marcan como revertidas —no se borran— y el importe queda como saldo a favor. Solo la última vigente (`LiquidacionNoEsLaUltima`); anular **reabre el período** a `abierto` para corregir y reemitir. El candado contra la emisión doble es un índice único parcial sobre `estado = 'vigente'`. |
 | Exportar CSV de liquidaciones | Administrador, consejo | Por páginas, cada una vuelve a pasar por habilitación y aislamiento. |
 
 ### 3.3 Liquidación — `/liquidaciones/[id]`
@@ -397,7 +397,7 @@ La vinculación de un consorcista a su unidad (ocupación, RN-09) no se hace des
 | RN-03 | Un gasto pertenece a un consorcio y un período, y no se modifica una vez liquidado. | Sólo se carga en período `abierto`; cerrar es el candado. |
 | RN-04 | Todo gasto es ordinario o extraordinario. | Se copia del rubro al registrar y se congela. |
 | RN-05 | Ordinarias a cargo del ocupante, extraordinarias del propietario (Ley 27.551). | Dos subtotales por unidad en la liquidación. |
-| RN-06 | Un período se liquida una vez; corregir es anular y reemitir, con ambas registradas. | Se anula la `Liquidacion`, no el período; índice único parcial sobre la vigente. |
+| RN-06 | Un período se liquida una vez; corregir es anular y reemitir, con ambas registradas. | Se anula la `Liquidacion` (solo la última) y el período se reabre; índice único parcial sobre la vigente. |
 | RN-07 | La suma de los detalles iguala el total con tolerancia cero. | Redondeo sólo al final; la diferencia va a la unidad de mayor coeficiente en `ajusteRedondeo`; más de un centavo por unidad **aborta**. |
 | RN-08 | Un pago se imputa por antigüedad a liquidaciones de la misma unidad. | `imputar` en el dominio; sobrante a saldo a favor. |
 | RN-09 | Una unidad no tiene dos ocupaciones vigentes del mismo tipo el mismo día. | Restricción de exclusión sobre el rango. |

@@ -29,6 +29,15 @@ export class LiquidacionInexistente extends ErrorDeAplicacion {
   }
 }
 
+export class LiquidacionNoEsLaUltima extends ErrorDeAplicacion {
+  constructor() {
+    super(
+      'Solo se puede anular la última liquidación. Para corregir un mes anterior, hacé el ajuste en el período siguiente.',
+      'RN-06',
+    )
+  }
+}
+
 export async function anularLiquidacion(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
@@ -46,11 +55,27 @@ export async function anularLiquidacion(
     async () => {
       const liquidacion = await prisma.liquidacion.findFirst({
         where: { id: datos.liquidacionId },
-        select: { id: true, estado: true },
+        select: { id: true, estado: true, periodo: { select: { anio: true, mes: true } } },
       })
 
       if (!liquidacion) throw new LiquidacionInexistente()
       if (liquidacion.estado === 'anulada') throw new LiquidacionYaAnulada()
+
+      // Una liquidación posterior ya arrastró esta deuda en su `deudaAnterior`:
+      // anular una anterior corrompería la cadena.
+      const posterior = await prisma.liquidacion.findFirst({
+        where: {
+          estado: 'vigente',
+          periodo: {
+            OR: [
+              { anio: { gt: liquidacion.periodo.anio } },
+              { anio: liquidacion.periodo.anio, mes: { gt: liquidacion.periodo.mes } },
+            ],
+          },
+        },
+        select: { id: true },
+      })
+      if (posterior) throw new LiquidacionNoEsLaUltima()
 
       return prisma.$transaction(async (tx) => {
         const { count } = await tx.pagoImputacion.updateMany({

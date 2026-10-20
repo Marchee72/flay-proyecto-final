@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { importe } from '@/compartido/dinero'
-import { anularLiquidacion } from '@/aplicacion/liquidacion/anular'
+import { anularLiquidacion, LiquidacionNoEsLaUltima } from '@/aplicacion/liquidacion/anular'
 import {
   GastosCambiaron,
   liquidarPeriodo,
@@ -318,6 +318,19 @@ describe('anulacion y reemision (FR-003b)', () => {
       select: { estado: true },
     })
     expect(todas.map((l) => l.estado)).toEqual(['anulada', 'vigente'])
+  })
+
+  it('solo se puede anular la última liquidación (RN-06)', async () => {
+    const enero = await periodoConGasto(1)
+    const primeroEnero = await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId: enero })
+
+    const marzo = await periodoConGasto(3)
+    await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId: marzo })
+
+    // Enero ya no es la última: marzo tiene una liquidación vigente posterior.
+    await expect(
+      anularLiquidacion(repo, RELOJ, { usuarioId: administrador, consorcioId, liquidacionId: primeroEnero.liquidacionId }),
+    ).rejects.toBeInstanceOf(LiquidacionNoEsLaUltima)
   })
 })
 

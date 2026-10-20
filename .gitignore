@@ -26,6 +26,7 @@ coverage/
 
 # Sesiones visuales locales
 .superpowers/
+.impeccable/
 
 # Next.js y despliegue
 /out/

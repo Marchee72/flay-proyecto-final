@@ -133,32 +133,39 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
       </div>
 
       {novedades.length > 0 && (
-        <section className="tarjeta novedades-inicio" aria-labelledby="titulo-novedades">
-          <div className="tablero__fila">
-            <h2 id="titulo-novedades" className="tablero__titulo">
+        <section className="novedades-baraja" aria-labelledby="titulo-novedades">
+          <div className="novedades-baraja__cabecera">
+            <h2 id="titulo-novedades" className="novedades-baraja__titulo">
               <Megaphone className="icono" aria-hidden="true" /> Novedades
             </h2>
             <Link className="enlace-seco" href={`${base}/novedades`}>
               {novedades.length > NOVEDADES ? `Ver las ${novedades.length}` : 'Ver todas'}
             </Link>
           </div>
-          {novedades.slice(0, NOVEDADES).map((n) => (
-            <article key={n.id} className={`novedad novedad-fila novedad--${n.severidad}`}>
-              <div className="novedad-fila__texto">
-                <h3>
-                  {n.fijada && <Pin className="icono" aria-label="Fijada" />}
-                  {n.titulo}
-                  <UrgenciaDeReclamo urgencia={n.severidad} />
-                </h3>
-                <p>{n.cuerpo}</p>
-                <span className="kpi__detalle">
-                  {fechaParaMostrar(n.publicadaEn)}
-                  {n.destinatario && ` · ${n.destinatario}`}
-                </span>
-              </div>
-              <DescartarNovedad consorcioId={activo.id} novedadId={n.id} />
-            </article>
-          ))}
+          <div className="novedades-baraja__pila-contenedor">
+            {novedades.length > 2 && (
+              <div className="novedades-baraja__capa-fondo-2" aria-hidden="true" />
+            )}
+            {novedades.length > 1 && (
+              <div className="novedades-baraja__capa-fondo-1" aria-hidden="true" />
+            )}
+            {novedades.slice(0, 1).map((n) => (
+              <article key={n.id} className="novedades-baraja__tarjeta-frente">
+                <UrgenciaDeReclamo urgencia={n.severidad} />
+                <div className="novedades-baraja__texto">
+                  <h3 className="novedades-baraja__titulo-item">
+                    {n.fijada && <Pin className="icono" aria-label="Fijada" />}
+                    {n.titulo}
+                  </h3>
+                  <p className="novedades-baraja__cuerpo-item">{n.cuerpo}</p>
+                </div>
+                {novedades.length > 1 && (
+                  <span className="novedades-baraja__badge-conteo">1 de {novedades.length}</span>
+                )}
+                <DescartarNovedad consorcioId={activo.id} novedadId={n.id} />
+              </article>
+            ))}
+          </div>
         </section>
       )}
 

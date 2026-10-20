@@ -38,7 +38,7 @@ prorrateo, intereses e imputación (§ 8.3.3), y el paquete 4.2 se hace **en par
 - Q: ¿De dónde sale la fecha de vencimiento? → A: Día fijo por consorcio; la fecha se copia a la liquidación al emitirla.
 - Q: El excedente de un pago queda en `Pago.saldo_a_favor`, ¿y después? → A: Se aplica solo a la liquidación siguiente de esa unidad, sin intervención del administrador.
 - Q: Con «mes vencido completo», ¿los meses se cuentan por liquidación impaga o sobre el saldo total? → A: Por cada liquidación impaga, desde **su propio** vencimiento.
-- Q: `FR-003` anula para corregir, pero el contrato de `002` dice que un período liquidado no vuelve atrás. ¿Qué se anula? → A: La **liquidación**, no el período. El período queda `liquidado`; el contrato de `002` no se toca.
+- Q: `FR-003` anula para corregir, pero el contrato de `002` dice que un período liquidado no vuelve atrás. ¿Qué se anula? → A: La **liquidación**, no el período. Anular **reabre el período a `abierto`** para corregir y reemitir, y solo alcanza a la última liquidación vigente (`LiquidacionNoEsLaUltima`, RN-06); la máquina de estados genérica de `002` no se toca.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -205,10 +205,12 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
 - **La unidad de mayor coeficiente empatada entre dos unidades.** El desempate es determinístico y
   documentado —el identificador menor—, para que dos ejecuciones den el mismo resultado.
 - **Dos liquidaciones del mismo período disparadas en paralelo.** La segunda encuentra el período
-  en estado liquidado y aborta; el estado del período es el candado (regla RN-06 § 7.2).
-- **Emitir de nuevo después de anular.** El período sigue en `liquidado`: el candado que impide la
-  emisión doble no puede ser el estado del período, porque una reemisión legítima lo encuentra
-  igual. Lo que decide es que **no haya otra liquidación emitida** para ese período (FR-003b).
+  en estado liquidado y aborta; el candado de último recurso es el índice único parcial sobre la
+  liquidación vigente (regla RN-06 § 7.2).
+- **Emitir de nuevo después de anular.** Anular reabre el período a `abierto`: se corrigen
+  los gastos y se reemite desde ahí. Solo se puede anular la **última** liquidación vigente
+  (`LiquidacionNoEsLaUltima`, RN-06), porque una posterior ya arrastró su deuda. El candado de la
+  emisión doble es que **no haya otra liquidación emitida** para ese período (FR-003b).
 - **El servicio de correo caído al emitir.** La liquidación se emite igual. La notificación queda
   encolada en estado pendiente y se despacha cuando el servicio vuelva o cuando `004-servicios`
   construya el despachador (hallazgo 2, RNF-14).
@@ -234,9 +236,10 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
 #### Bloque A — Períodos y control de estado (paquete 4.1)
 
 - **FR-001**: El período **DEBE** tener la máquina de estados completa: abierto → cerrado →
-  liquidado, más anulado. `anulado` es para un período que se descarta **sin liquidar**; un período
-  liquidado no vuelve atrás, y el contrato de `002` ya lo dice con `liquidado: []`. Esta etapa
-  **NO DEBE** agregar transiciones desde `liquidado`. `002-nucleo` construyó sólo la apertura y el listado; esta etapa completa
+  liquidado, más anulado. `anulado` es para un período que se descarta **sin liquidar**; la máquina
+  de estados genérica no reabre un período liquidado, y el contrato de `002` ya lo dice con
+  `liquidado: []`. Esta etapa **NO DEBE** agregar transiciones desde `liquidado`: la reapertura la hace
+  únicamente `anularLiquidacion` (FR-003b), no la vía genérica. `002-nucleo` construyó sólo la apertura y el listado; esta etapa completa
   el resto. El contrato (valores del enum y transiciones válidas) vive en `src/dominio/contratos`
   desde `002` (M-04) y ambas etapas lo comparten: ninguna prueba fabrica un estado fuera de ese contrato.
   *Enmienda 2026-10-03*: también vale `abierto → liquidado`; liquidar un período abierto lo cierra
@@ -251,8 +254,9 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
   liquidación y emitir una nueva, quedando ambas registradas y la nueva referenciando a la que
   anula (regla RN-06 § 7.2).
 - **FR-003b**: Lo que se anula es la **`Liquidacion`**, que tiene su propio estado —emitida,
-  anulada—, **no el período**, que queda `liquidado` para siempre. Anular no reabre nada: no
-  devuelve el período a `cerrado` ni admite gastos nuevos. Es lo que hace compatible la regla RN-06
+  anulada—, y solo la **última vigente** (`LiquidacionNoEsLaUltima`, RN-06). Anular
+  **reabre el período a `abierto`** en la misma transacción, para corregir los gastos y reemitir; la
+  corrección de meses anteriores va como ajuste en el período siguiente. Es lo que hace compatible la regla RN-06
   (§ 7.2) con el contrato que `002` declaró compartido (M-04), y lo que sostiene la promesa de que
   lo que ya se le mandó a los consorcistas no se reescribe: se reemplaza a la vista.
 
@@ -411,8 +415,8 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
 - **SC-011**: Un período **no puede tener dos liquidaciones emitidas a la vez**: un segundo intento
   falla en el **100 %** de los casos, incluida la ejecución concurrente —dos ejecuciones
   simultáneas contra el mismo período en prueba de integración con barrera, exactamente una emite—
-  (M-07, regla RN-06 § 7.2). Después de **anular**, una reemisión sí procede aunque el período siga
-  en `liquidado`: el candado es la liquidación emitida, no el estado del período (FR-003b).
+  (M-07, regla RN-06 § 7.2). Después de **anular**, el período se reabre a `abierto` y la reemisión
+  procede: el candado es la liquidación emitida (FR-003b).
 - **SC-012**: Cada operación sobre las **5** entidades económicas de la etapa deja exactamente un
   asiento de auditoría. Cero operaciones sin asiento.
 - **SC-013**: Una emisión con el servicio de correo caído **igual emite**, y deja la notificación

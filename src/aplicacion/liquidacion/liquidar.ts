@@ -79,12 +79,10 @@ async function calcular(reloj: Reloj, consorcioId: string, periodoId: string) {
   const periodo = await prisma.periodo.findFirst({ where: { id: periodoId } })
   if (!periodo) throw new PeriodoNoLiquidable('inexistente')
 
-  // `liquidado` **tambien** admite emitir: es el estado en el que queda un
-  // periodo cuya liquidacion se anulo, y reemitir es justamente lo que la
-  // regla RN-06 manda para corregir (FR-003b). Lo que impide la emision doble
-  // no es este estado sino el indice unico parcial de la base. `abierto` se
-  // liquida directo: liquidar lo cierra (RF-07).
-  if (periodo.estado !== 'liquidado' && !transicionValida(periodo.estado, 'liquidado')) {
+  // Un periodo liquidado no se reliquida: para corregir hay que anular, lo que
+  // lo reabre (D2). El candado contra la emision doble sigue siendo el indice
+  // unico parcial de la base.
+  if (!transicionValida(periodo.estado, 'liquidado')) {
     throw new PeriodoNoLiquidable(periodo.estado)
   }
 

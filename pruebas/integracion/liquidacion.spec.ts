@@ -11,6 +11,7 @@ import {
 } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
 import { cambiarCoeficiente, cargarPadron, editarPadron } from '@/aplicacion/consorcios/unidades'
+import { registrarPago } from '@/aplicacion/pagos/registrar'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { prismaBase } from '@/infraestructura/prisma'
@@ -284,32 +285,40 @@ describe('unidad dada de baja (FR-011)', () => {
 })
 
 describe('anulacion y reemision (FR-003b)', () => {
-  it('anular no toca el periodo, y la reemision procede igual', async () => {
+  it('lo pagado vuelve como saldo a favor y la reemisión lo aplica al total (FR-027)', async () => {
+    const periodoId = await periodoConGasto(6) // 1A debe 500 (50% de 1000)
+    const primera = await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
+
+    const unidad1A = await prismaBase.unidad.findFirstOrThrow({ where: { consorcioId, designacion: '1A' } })
+    const pago = await registrarPago(repo, RELOJ, {
+      usuarioId: administrador, consorcioId, unidadId: unidad1A.id,
+      importe: '500.00', fechaPago: new Date('2026-07-05'), medio: 'transferencia',
+    })
+
+    await anularLiquidacion(repo, RELOJ, { usuarioId: administrador, consorcioId, liquidacionId: primera.liquidacionId })
+
+    const pagoTrasAnular = await prismaBase.pago.findUniqueOrThrow({ where: { id: pago.pagoId } })
+    expect(pagoTrasAnular.saldoAFavor.toFixed(2)).toBe('500.00')
+
+    const segunda = await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId, totalRevisado: '1000.00' })
+    const detalle1A = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+      where: { liquidacionId: segunda.liquidacionId, unidadId: unidad1A.id },
+    })
+    expect(detalle1A.saldoAFavorAplicado.toFixed(2)).toBe('500.00')
+    expect(detalle1A.totalUnidad.toFixed(2)).toBe('0.00')
+  })
+
+  it('anular reabre el período y la reemisión procede (FR-003b)', async () => {
     const periodoId = await periodoConGasto(6)
+    const primera = await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
 
-    const primera = await liquidarPeriodo(repo, RELOJ, {
-      usuarioId: administrador,
-      consorcioId,
-      periodoId,
-    })
+    await anularLiquidacion(repo, RELOJ, { usuarioId: administrador, consorcioId, liquidacionId: primera.liquidacionId })
 
-    await anularLiquidacion(repo, RELOJ, {
-      usuarioId: administrador,
-      consorcioId,
-      liquidacionId: primera.liquidacionId,
-    })
-
-    // El periodo sigue liquidado: lo que se anulo es la emision.
+    // El período vuelve a abierto: anular permite corregir ese mes.
     const periodo = await prismaBase.periodo.findUniqueOrThrow({ where: { id: periodoId } })
-    expect(periodo.estado).toBe('liquidado')
+    expect(periodo.estado).toBe('abierto')
 
-    // Y la reemision entra, porque ya no hay otra vigente.
-    const segunda = await liquidarPeriodo(repo, RELOJ, {
-      usuarioId: administrador,
-      consorcioId,
-      periodoId,
-    })
-
+    const segunda = await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId, totalRevisado: '1000.00' })
     expect(segunda.liquidacionId).not.toBe(primera.liquidacionId)
 
     const todas = await prismaBase.liquidacion.findMany({

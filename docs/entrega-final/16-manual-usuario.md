@@ -276,7 +276,7 @@ stateDiagram-v2
     }
     
     Liquidado --> Anulada: Accion "Anular liquidacion" (RN-06, indice unico parcial)
-    Anulada --> Cerrado: Correccion de gastos y reemision
+    Anulada --> Abierto: Periodo reabierto, correccion de gastos y reemision
 ```
 
 #### Etapa 1: Apertura del período y verificación de gastos acumulados
@@ -338,7 +338,7 @@ Si con posterioridad a la emisión se detecta un error de fondo (por ejemplo: la
      CREATE UNIQUE INDEX idx_liquidacion_periodo_vigente 
      ON liquidacion (periodo_id) WHERE estado = 'vigente';
      ```
-   - Al quedar la liquidación anterior en estado `anulada`, el índice se libera. El período retorna al estado `Cerrado`.
+   - Al quedar la liquidación anterior en estado `anulada`, el índice se libera. El período se reabre y retorna al estado `Abierto`. Solo se puede anular la **última** liquidación vigente (`LiquidacionNoEsLaUltima`, RN-06): un error en un mes anterior se corrige como ajuste en el período siguiente.
    - La administración procede a corregir los gastos en el período, y vuelve a presionar **Liquidar expensas**.
    - El sistema emite una nueva liquidación `Vigente` con nuevo identificador y referencia correlativa, preservando ambas para cualquier cotejo contable o requerimiento pericial.
 

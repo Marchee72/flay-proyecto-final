@@ -35,10 +35,13 @@ incidente (`FR-010`).
 
 ## `anularLiquidacion`
 
-Rol: `administrador`. Marca la liquidación `anulada`, revierte sus imputaciones marcándolas
-—nunca borrándolas— y deja los pagos con saldo disponible (`FR-027`). **No toca el período**, que
-sigue en `liquidado` (`FR-003b`). Después de esto, `liquidarPeriodo` vuelve a estar permitido y la
-nueva liquidación referencia a la anulada.
+Rol: `administrador`. **Precondición**: solo se anula la **última vigente**; si existe una vigente de
+un período posterior se rechaza con `LiquidacionNoEsLaUltima` (`RN-06`), porque esa ya arrastró la
+deuda de esta en `deudaAnterior`. Marca la liquidación `anulada`, revierte sus imputaciones
+marcándolas —nunca borrándolas— y deja los pagos con saldo disponible (`FR-027`). **Reabre el
+período a `abierto`** en la misma transacción (`FR-003b`), para corregir los gastos. Después de esto,
+`liquidarPeriodo` vuelve a estar permitido y la nueva liquidación referencia a la anulada, aplicando
+el saldo a favor.
 
 ## `generarDocumentos`
 

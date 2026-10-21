@@ -65,8 +65,15 @@ export class ArgumentoInvalido extends Error {}
 export const vacio = { type: 'object', properties: {} as Record<string, unknown> }
 export const DIA = 86_400_000
 
+/** Fecha-hora sin designador de zona (`2026-10-22T15:00` o con segundos), que Node tomaria como local del servidor. */
+const SIN_ZONA = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/
+
 export const aFecha = (v: unknown): Date => {
-  const d = new Date(String(v))
+  const s = String(v)
+  // Sin zona (ni `Z` ni offset) se interpreta como hora de Argentina (UTC-3), no
+  // la del servidor. Solo-fecha (`YYYY-MM-DD`) y cadenas con zona quedan intactas.
+  const m = SIN_ZONA.exec(s)
+  const d = new Date(m ? `${s}${m[1] ? '' : ':00'}-03:00` : s)
   if (Number.isNaN(d.getTime())) throw new ArgumentoInvalido('Fecha inválida.')
   return d
 }

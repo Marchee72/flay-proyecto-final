@@ -110,7 +110,7 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
         <div>
           <h1>Resumen</h1>
           <p className="apagado">
-            {activo.direccion}
+            {activo.direccion} · {activo.localidad}
             {resumen.periodoAbierto && ` · período abierto ${resumen.periodoAbierto.etiqueta}`}
           </p>
         </div>

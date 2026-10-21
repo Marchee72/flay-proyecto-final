@@ -9,6 +9,7 @@ export interface NotificacionEvento {
     cuerpo: string
     creadaEn: string
     leida: boolean
+    consorcio: string | null
   }
 }
 

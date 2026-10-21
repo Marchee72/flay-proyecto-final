@@ -140,6 +140,36 @@ describe('saldosDeUnidad — regla de arrastre y saldo propio (RN-08 ampliada)',
     expect(resultado.saldoExigible).toBe('3000.00')
   })
 
+  it('expensa saldada: un pago total deja cada detalle y el total en 0 (nota #4)', () => {
+    // mes1 propio 100 impago; mes2 propio 120 con deudaAnterior 100 -> total 220.
+    // El pago total (220) imputa 100 a mes1 y 120 a mes2: todo queda saldado.
+    // Con `totalUnidad − imputado` mes2 mostraba 220 − 120 = 100 "pendiente"
+    // aunque esta todo pago; con el des-arrastre ambos quedan en 0.
+    const detalles = [
+      d('mes1', '100.00', '0.00', '0.00', '100.00', '2026-01-10'),
+      d('mes2', '220.00', '100.00', '0.00', '120.00', '2026-02-10'),
+    ]
+    const resultado = saldosDeUnidad(detalles)
+
+    expect(resultado.detalles[0].saldo).toBe('0.00')
+    expect(resultado.detalles[1].saldo).toBe('0.00')
+    expect(resultado.saldoTotal).toBe('0.00')
+  })
+
+  it('el mismo arrastre con pago parcial reparte y deja el resto en el ultimo (nota #4)', () => {
+    // Pago parcial de 150 sobre el mismo escenario: 100 a mes1 y 50 a mes2.
+    // mes1 queda saldado y mes2 debe sus 70 propios restantes.
+    const detalles = [
+      d('mes1', '100.00', '0.00', '0.00', '100.00', '2026-01-10'),
+      d('mes2', '220.00', '100.00', '0.00', '50.00', '2026-02-10'),
+    ]
+    const resultado = saldosDeUnidad(detalles)
+
+    expect(resultado.detalles[0].saldo).toBe('0.00')
+    expect(resultado.detalles[1].saldo).toBe('70.00')
+    expect(resultado.saldoTotal).toBe('70.00')
+  })
+
   it('imputar el saldo exigible cancela todos los periodos adeudados y el actual', () => {
     // Enero 1000 impago. Febrero arrastra 1000 + 100 interes + 1500 propio = 2600.
     const detalles = [

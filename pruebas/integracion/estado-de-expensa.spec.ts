@@ -157,7 +157,53 @@ describe('estado de cobro de la expensa (CU-06)', () => {
     expect(porDetalle.get(miaEnAgosto.id)?.estadoPago).toBe('pagada')
     expect(porDetalle.get(miaEnAgosto.id)?.saldo).toBe('0.00')
     expect(porDetalle.get(miaEnSeptiembre.id)?.estadoPago).toBe('pendiente')
-    expect(porDetalle.get(miaEnSeptiembre.id)?.saldo).toBe(miaEnSeptiembre.totalUnidad.toFixed(2))
+    // Des-arrastre: septiembre debe SOLO su parte propia (total menos el
+    // arrastre de agosto, que ya se pago), no su `totalUnidad` inflado (nota #4).
+    expect(porDetalle.get(miaEnSeptiembre.id)?.saldo).toBe(
+      miaEnSeptiembre.totalUnidad.minus(miaEnSeptiembre.deudaAnterior).toFixed(2),
+    )
+  })
+
+  it('pagar la ultima expensa, que arrastra la anterior, deja ambas en 0 y pagadas (nota #4, RN-08)', async () => {
+    // Agosto impago; septiembre lo arrastra, asi que el total de septiembre es
+    // el saldo exigible de la unidad. Pagarlo entero cancela los dos meses.
+    const agosto = await emitir(8)
+    const septiembre = await emitir(9)
+
+    const miaAgosto = agosto.find((d) => d.unidad.designacion === '1A')!
+    const miaSeptiembre = septiembre.find((d) => d.unidad.designacion === '1A')!
+
+    const vecina = await crearUsuario('Nadia')
+    await registrarOcupacion(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidadId: miaAgosto.unidadId,
+      personaId: vecina.personaId,
+      tipo: 'propietario',
+      desde: new Date('2026-01-01'),
+    })
+
+    await registrarPago(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidadId: miaAgosto.unidadId,
+      importe: miaSeptiembre.totalUnidad.toFixed(2),
+      fechaPago: new Date('2026-09-15'),
+      medio: 'transferencia',
+    })
+
+    const [unidad] = await misExpensas(almacenDoble, repo, RELOJ, {
+      usuarioId: vecina.id,
+      consorcioId,
+    })
+    const porDetalle = new Map(unidad.expensas.map((e) => [e.detalleId, e]))
+
+    // Antes del arreglo septiembre seguia mostrando el arrastre de agosto como
+    // pendiente aunque estaba todo pago (saldo = totalUnidad − imputado).
+    expect(porDetalle.get(miaAgosto.id)?.estadoPago).toBe('pagada')
+    expect(porDetalle.get(miaAgosto.id)?.saldo).toBe('0.00')
+    expect(porDetalle.get(miaSeptiembre.id)?.estadoPago).toBe('pagada')
+    expect(porDetalle.get(miaSeptiembre.id)?.saldo).toBe('0.00')
   })
 
   it('un pago parcial sobre una expensa vencida la deja vencida, con el saldo que falta', async () => {

@@ -258,6 +258,7 @@ describe('novedades con destinatario, vigencia y descarte', () => {
         notificacion: {
           titulo: 'Novedad: Reglamento de convivencia permanente',
           tipo: 'novedad',
+          consorcio: 'Mitre 456',
         },
       })
       expect(eventosAdmin).toHaveLength(0)

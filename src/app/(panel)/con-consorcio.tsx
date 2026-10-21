@@ -8,7 +8,12 @@ import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 
-export type ConsorcioAlcanzable = { id: string; nombre: string; direccion: string }
+export type ConsorcioAlcanzable = {
+  id: string
+  nombre: string
+  direccion: string
+  localidad: string
+}
 
 /**
  * Los consorcios al alcance, una sola vez por pedido: el armazon de

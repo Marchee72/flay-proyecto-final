@@ -45,13 +45,35 @@ async function estadoDe(unidad: { id: string; designacion: string }): Promise<Es
   const [detalles, pagos] = await Promise.all([
     prismaBase.detalleLiquidacion.findMany({
       where: { unidadId: unidad.id, liquidacion: { estado: 'vigente' } },
-      include: { liquidacion: { include: { periodo: true } } },
+      include: {
+        liquidacion: { include: { periodo: true } },
+        imputaciones: { where: { revertidaEn: null } },
+      },
     }),
     prismaBase.pago.findMany({
       where: { unidadId: unidad.id },
       include: { imputaciones: { where: { revertidaEn: null } } },
     }),
   ])
+
+  // La parte propia (des-arrastrada) de cada expensa: `totalUnidad` arrastra la
+  // deuda anterior, y contarla como importe del movimiento sumaria el arrastre
+  // tantas veces como meses lo acarrean. Con el propio, el saldo corrido cuadra
+  // con lo que realmente se debe (RN-08, nota #4).
+  const propioPorDetalle = new Map(
+    saldosDeUnidad(
+      detalles.map((detalle) => ({
+        detalleId: detalle.id,
+        totalUnidad: detalle.totalUnidad.toFixed(2),
+        deudaAnterior: detalle.deudaAnterior.toFixed(2),
+        interesMora: detalle.interesMora.toFixed(2),
+        imputado: detalle.imputaciones
+          .reduce((total, i) => total.plus(importe(i.importeImputado.toFixed(2))), new Decimal(0))
+          .toFixed(2),
+        vencimiento: detalle.liquidacion.vencimiento,
+      })),
+    ).detalles.map((d) => [d.detalleId, importe(d.propio)]),
+  )
 
   const movimientos = [
     ...detalles.map((detalle) => ({
@@ -60,7 +82,7 @@ async function estadoDe(unidad: { id: string; designacion: string }): Promise<Es
       concepto:
         `Expensas ${String(detalle.liquidacion.periodo.mes).padStart(2, '0')}/` +
         `${detalle.liquidacion.periodo.anio}`,
-      importe: importe(detalle.totalUnidad.toFixed(2)),
+      importe: propioPorDetalle.get(detalle.id) ?? new Decimal(0),
     })),
     ...pagos.map((pago) => ({
       momento: pago.creadoEn,
@@ -171,7 +193,16 @@ export async function resumenDeCuentas(
             emitidaEn: true,
             vencimiento: true,
             periodo: { select: { anio: true, mes: true } },
-            detalles: { select: { unidadId: true, totalUnidad: true } },
+            detalles: {
+              select: {
+                id: true,
+                unidadId: true,
+                totalUnidad: true,
+                deudaAnterior: true,
+                interesMora: true,
+                imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
+              },
+            },
           },
         }),
         // Por `unidadId` sobre los ids aislados de arriba, nunca un parametro
@@ -184,27 +215,20 @@ export async function resumenDeCuentas(
             creadoEn: true,
             fechaPago: true,
             saldoAFavor: true,
-            imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
           },
         }),
       ])
 
       type Acumulado = {
-        total: Decimal
-        imputado: Decimal
+        // Un historico por unidad para des-arrastrar el saldo con `saldosDeUnidad`,
+        // igual que la morosidad: `totalUnidad` arrastra la deuda anterior y
+        // restarle lo imputado la contaria de mas (RN-08, nota #4).
+        detalles: Parameters<typeof saldosDeUnidad>[0][number][]
         saldoAFavor: Decimal
         ultimo: { momento: Date; fecha: string; concepto: string } | null
       }
       const porUnidad = new Map<string, Acumulado>(
-        ids.map((id) => [
-          id,
-          {
-            total: new Decimal(0),
-            imputado: new Decimal(0),
-            saldoAFavor: new Decimal(0),
-            ultimo: null,
-          },
-        ]),
+        ids.map((id) => [id, { detalles: [], saldoAFavor: new Decimal(0), ultimo: null }]),
       )
 
       const anotar = (acc: Acumulado, momento: Date, fecha: string, concepto: string) => {
@@ -221,17 +245,25 @@ export async function resumenDeCuentas(
         for (const detalle of liquidacion.detalles) {
           const acc = porUnidad.get(detalle.unidadId)
           if (!acc) continue // detalle de una unidad fuera del alcance del usuario
-          acc.total = acc.total.plus(importe(detalle.totalUnidad.toFixed(2)))
+          acc.detalles.push({
+            detalleId: detalle.id,
+            totalUnidad: detalle.totalUnidad.toFixed(2),
+            deudaAnterior: detalle.deudaAnterior.toFixed(2),
+            interesMora: detalle.interesMora.toFixed(2),
+            imputado: detalle.imputaciones
+              .reduce(
+                (total, i) => total.plus(importe(i.importeImputado.toFixed(2))),
+                new Decimal(0),
+              )
+              .toFixed(2),
+            vencimiento: liquidacion.vencimiento,
+          })
           anotar(acc, liquidacion.emitidaEn, fecha, concepto)
         }
       }
 
       for (const pago of pagos) {
         const acc = porUnidad.get(pago.unidadId)!
-        acc.imputado = pago.imputaciones.reduce(
-          (total, i) => total.plus(importe(i.importeImputado.toFixed(2))),
-          acc.imputado,
-        )
         acc.saldoAFavor = acc.saldoAFavor.plus(importe(pago.saldoAFavor.toFixed(2)))
         anotar(
           acc,
@@ -246,7 +278,7 @@ export async function resumenDeCuentas(
         return {
           unidadId: unidad.id,
           designacion: unidad.designacion,
-          saldo: acc.total.minus(acc.imputado).toFixed(DECIMALES_IMPORTE),
+          saldo: saldosDeUnidad(acc.detalles).saldoTotal,
           saldoAFavor: acc.saldoAFavor.toFixed(DECIMALES_IMPORTE),
           ultimoMovimiento: acc.ultimo
             ? { fecha: acc.ultimo.fecha, concepto: acc.ultimo.concepto }

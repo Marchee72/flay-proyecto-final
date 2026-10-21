@@ -1,6 +1,7 @@
 import type { TipoNotificacion } from '@prisma/client'
 
 import { emitirNotificaciones } from '@/aplicacion/comunicacion/eventos-notificaciones'
+import { consorcioActivo } from '@/infraestructura/cliente-aislado'
 import { prisma } from '@/infraestructura/prisma'
 
 /**
@@ -30,6 +31,10 @@ export interface AvisoNuevo {
 export async function notificar(tx: Transaccion, avisos: AvisoNuevo[]): Promise<void> {
   if (avisos.length === 0) return
 
+  // `consorcioId` NO se pasa: la extension lo inyecta desde el contexto activo
+  // (Notificacion es aislada). Todos los avisos de una transaccion comparten
+  // consorcio, asi que el nombre del edificio se busca una sola vez para el
+  // stream (`Consorcio` no es aislado; se direcciona por su id).
   const creadas = await tx.notificacion.createManyAndReturn({
     data: avisos.map((aviso) => ({
       usuarioId: aviso.usuarioId,
@@ -41,6 +46,12 @@ export async function notificar(tx: Transaccion, avisos: AvisoNuevo[]): Promise<
     })),
     select: { id: true, usuarioId: true, tipo: true, titulo: true, cuerpo: true, creadoEn: true },
   })
+
+  const activo = consorcioActivo()
+  const consorcio = activo
+    ? ((await tx.consorcio.findUnique({ where: { id: activo }, select: { nombre: true } }))
+        ?.nombre ?? null)
+    : null
 
   const ids = creadas.map((fila) => fila.id)
   await tx.$executeRaw`
@@ -59,6 +70,7 @@ export async function notificar(tx: Transaccion, avisos: AvisoNuevo[]): Promise<
         cuerpo: c.cuerpo,
         creadaEn: c.creadoEn.toISOString(),
         leida: false,
+        consorcio,
       },
     })),
   )
@@ -74,7 +86,12 @@ export async function habilitadosDelConsorcio(tx: Transaccion): Promise<string[]
   return filas.map((fila) => fila.usuarioId)
 }
 
-/** Para quien no esta dentro de una transaccion ajena. */
+/**
+ * Para quien no esta dentro de una transaccion ajena. Sin usos hoy.
+ *
+ * Desde que `Notificacion` es aislada, `notificar` exige consorcio activo, asi
+ * que esto debe invocarse dentro de `enConsorcio(consorcioId, ...)` o fallara.
+ */
 export function notificarAhora(avisos: AvisoNuevo[]): Promise<void> {
   return prisma.$transaction((tx) => notificar(tx, avisos))
 }

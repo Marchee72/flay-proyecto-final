@@ -598,6 +598,17 @@ th a:not(.boton):hover,
 }
 .campana__texto small {
   font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.campana__edificio {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--linea);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tinta-apagada);
 }
 .campana__punto {
   width: 10px;

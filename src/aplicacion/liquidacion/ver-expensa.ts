@@ -1,6 +1,7 @@
 import { Decimal, importe } from '@/compartido/dinero'
 import { importeSerializado } from '@/compartido/formato'
 import { NoEncontrado } from '@/compartido/errores'
+import { saldosDeUnidad } from '@/dominio/liquidacion/saldo'
 import { ordenarUnidades } from '@/dominio/unidades/division'
 import type { AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
@@ -143,7 +144,14 @@ export async function verExpensa(
         throw new NoEncontrado()
       }
 
-      return aVisible(almacen, detalle, reloj.hoy())
+      // El saldo de esta expensa sale del des-arrastre sobre TODAS las
+      // liquidaciones vigentes de la unidad, no de esta fila suelta: `totalUnidad`
+      // arrastra la deuda anterior y los pagos se imputan contra el saldo propio
+      // de cada periodo (misma cuenta que `detallesImpagosDe` y la morosidad).
+      const saldos = await saldosVigentesDeUnidad(detalle.unidadId)
+      const saldo = saldos.get(detalle.id) ?? new Decimal(0)
+
+      return aVisible(almacen, detalle, reloj.hoy(), saldo)
     },
   )
 }
@@ -180,23 +188,74 @@ async function expensasDe(
     orderBy: { liquidacion: { emitidaEn: 'desc' } },
   })
 
-  return Promise.all(detalles.map((detalle) => aVisible(almacen, detalle, hoy)))
+  // Un solo des-arrastre sobre todas las vigentes de la unidad; cada expensa
+  // toma su saldo del mapa, no de su `totalUnidad` (que incluye el arrastre).
+  const saldos = mapaDeSaldos(detalles)
+
+  return Promise.all(
+    detalles.map((detalle) =>
+      aVisible(almacen, detalle, hoy, saldos.get(detalle.id) ?? new Decimal(0)),
+    ),
+  )
+}
+
+/**
+ * Saldo des-arrastrado por detalle, igual que `detallesImpagosDe` y la
+ * morosidad: `totalUnidad` arrastra la deuda anterior, asi que el saldo propio
+ * de cada periodo sale de `saldosDeUnidad`, no de `totalUnidad − imputado`.
+ */
+function mapaDeSaldos(
+  detalles: readonly {
+    id: string
+    totalUnidad: { toFixed(decimales: number): string }
+    deudaAnterior: { toFixed(decimales: number): string }
+    interesMora: { toFixed(decimales: number): string }
+    liquidacion: { vencimiento: Date }
+    imputaciones: readonly { importeImputado: { toFixed(decimales: number): string } }[]
+  }[],
+): Map<string, Decimal> {
+  const resumen = saldosDeUnidad(
+    detalles.map((d) => ({
+      detalleId: d.id,
+      totalUnidad: d.totalUnidad.toFixed(2),
+      deudaAnterior: d.deudaAnterior.toFixed(2),
+      interesMora: d.interesMora.toFixed(2),
+      imputado: d.imputaciones
+        .reduce((total, i) => total.plus(importe(i.importeImputado.toFixed(2))), new Decimal(0))
+        .toFixed(2),
+      vencimiento: d.liquidacion.vencimiento,
+    })),
+  )
+  return new Map(resumen.detalles.map((d) => [d.detalleId, importe(d.saldo)]))
+}
+
+/** Lo mismo pero para una sola unidad por id: consulta sus vigentes y des-arrastra. */
+async function saldosVigentesDeUnidad(unidadId: string): Promise<Map<string, Decimal>> {
+  const detalles = await prismaBase.detalleLiquidacion.findMany({
+    where: { unidadId, liquidacion: { estado: 'vigente' } },
+    select: {
+      id: true,
+      totalUnidad: true,
+      deudaAnterior: true,
+      interesMora: true,
+      liquidacion: { select: { vencimiento: true } },
+      imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
+    },
+  })
+  return mapaDeSaldos(detalles)
 }
 
 async function aVisible(
   almacen: AlmacenObjetos,
   detalle: DetalleConContexto,
   hoy: Date,
+  saldo: Decimal,
 ): Promise<ExpensaVisible> {
   const { periodo } = detalle.liquidacion
 
-  // Lo imputado contra el total, al centavo: el saldo no se guarda en ningun
-  // lado porque cada pago nuevo lo cambia (misma cuenta que `saldoImpagoPorUnidad`).
-  const pagado = detalle.imputaciones.reduce(
-    (total, imputacion) => total.plus(importe(imputacion.importeImputado.toFixed(2))),
-    new Decimal(0),
-  )
-  const saldo = importe(detalle.totalUnidad.toFixed(2)).minus(pagado)
+  // El saldo ya viene des-arrastrado (saldo propio del periodo, no `totalUnidad`):
+  // una expensa saldada queda en cero aunque su total siga arrastrando la deuda
+  // anterior, porque los pagos se imputaron contra el mes viejo (RN-08, nota #4).
   const estadoPago: EstadoPagoExpensa = saldo.lessThanOrEqualTo(0)
     ? 'pagada'
     : detalle.liquidacion.vencimiento < hoy

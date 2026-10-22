@@ -6,8 +6,9 @@ import { prismaBase } from '@/infraestructura/prisma'
 /**
  * La campana del panel (`RF-14`, rediseño 013): los avisos que el sistema ya
  * guardaba para mandar por correo, ahora tambien leidos adentro de la app. El
- * aviso es de una persona y no de un consorcio —no lleva `consorcio_id`—, asi
- * que el unico filtro es el dueño, y va siempre.
+ * aviso es de una persona: el unico filtro es el dueño, y va siempre; un usuario
+ * ve sus avisos de todos sus consorcios. El edificio (`consorcio`) viaja como
+ * etiqueta para distinguir de cual es cada aviso.
  */
 
 export interface NotificacionPropia {
@@ -17,6 +18,7 @@ export interface NotificacionPropia {
   cuerpo: string
   creadaEn: string
   leida: boolean
+  consorcio: string | null
 }
 
 const LIMITE = 20
@@ -30,7 +32,15 @@ export async function misNotificaciones(
       where: { usuarioId },
       orderBy: { creadoEn: 'desc' },
       take: LIMITE,
-      select: { id: true, tipo: true, titulo: true, cuerpo: true, creadoEn: true, leidaEn: true },
+      select: {
+        id: true,
+        tipo: true,
+        titulo: true,
+        cuerpo: true,
+        creadoEn: true,
+        leidaEn: true,
+        consorcio: { select: { nombre: true } },
+      },
     }),
   ])
   return {
@@ -42,6 +52,7 @@ export async function misNotificaciones(
       cuerpo: n.cuerpo,
       creadaEn: n.creadoEn.toISOString(),
       leida: n.leidaEn !== null,
+      consorcio: n.consorcio?.nombre ?? null,
     })),
   }
 }

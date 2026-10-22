@@ -74,6 +74,7 @@ model Consorcio {
   extracciones   ExtraccionComprobante[]
   conversaciones ConversacionAsistente[]
   intentosDePago IntentoDePago[]
+  notificaciones Notificacion[]
 
   @@index([administradoraId])
 }
@@ -621,6 +622,11 @@ model PagoImputacion {
 model Notificacion {
   id            String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   usuarioId     String           @map("usuario_id") @db.Uuid
+  /// El edificio al que pertenece el aviso (RF-14). Nullable: las filas viejas
+  /// quedan sin consorcio y asi se evita el backfill. Al declararse, la
+  /// extension de aislamiento trata a `Notificacion` como aislada e inyecta el
+  /// `consorcioId` del contexto en cada escritura por el cliente aislado.
+  consorcioId   String?          @map("consorcio_id") @db.Uuid
   tipo          TipoNotificacion
   titulo        String           @db.Text
   cuerpo        String           @db.Text
@@ -632,6 +638,8 @@ model Notificacion {
   creadoEn      DateTime         @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn DateTime         @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
+  consorcio Consorcio? @relation(fields: [consorcioId], references: [id])
+
   @@index([usuarioId, estadoEnvio])
 }
 
@@ -642,6 +650,7 @@ enum TipoNotificacion {
   reserva_rechazada
   vencimiento_proximo
   novedad
+  pago_acreditado
 }
 
 enum EstadoEnvio {

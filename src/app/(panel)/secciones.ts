@@ -1,6 +1,7 @@
 import {
   Building2,
   CalendarCheck,
+  CalendarClock,
   DoorOpen,
   FileText,
   Gauge,
@@ -67,6 +68,12 @@ export const BLOQUES: Bloque[] = [
         roles: ['administrador', 'consejo'],
       },
       { ruta: 'proveedores', titulo: 'Proveedores', Icono: Truck },
+      {
+        ruta: 'vencimientos',
+        titulo: 'Vencimientos',
+        Icono: CalendarClock,
+        roles: ['administrador'],
+      },
       { ruta: 'usuarios', titulo: 'Usuarios', Icono: Users, roles: ['administrador'] },
     ],
   },

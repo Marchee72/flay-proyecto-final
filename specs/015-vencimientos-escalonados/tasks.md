@@ -42,9 +42,9 @@ description: "Task list — Vencimientos escalonados con recargo en las expensas
 
 **Independent Test**: guardar una regla válida de 1/2/3 tramos; rechazar último recargo ≥ mora, días no ascendentes y día > 28, con mensaje claro.
 
-- [ ] T006 [P] [US1] Test de integración en `pruebas/integracion/vencimientos-escalonados.spec.ts`: persistir una regla válida (auditada); rechazar mora ≤ último recargo; un consorcista no puede ver/guardar la regla y un usuario sin habilitación no la ve (autorización + aislamiento).
-- [ ] T007 [US1] Caso de uso `verReglaVencimientos` / `guardarReglaVencimientos` en `src/aplicacion/consorcios/regla-vencimientos.ts` (autoriza administrador + consorcio, aísla, valida con `validarReglaVencimientos` contra `Consorcio.tasaMoraMensual`, reemplaza la regla completa, auditoría por disparador).
-- [ ] T008 [US1] Pantalla ABM de la regla en el panel de configuración del consorcio: nueva ruta `src/app/(panel)/consorcios/[consorcio]/vencimientos/` (page + formulario cliente + `acciones.ts` con server action) — hasta 3 filas día+recargo%, 1ª fija en 0 %, validación en servidor, mensajes de error comprensibles (RNF-10), responsive (RNF-01). Enlazar desde la navegación del consorcio.
+- [X] T006 [P] [US1] Test de integración en `pruebas/integracion/vencimientos-escalonados.spec.ts`: persistir una regla válida (auditada); rechazar mora ≤ último recargo; un consorcista no puede ver/guardar la regla y un usuario sin habilitación no la ve (autorización + aislamiento).
+- [X] T007 [US1] Caso de uso `verReglaVencimientos` / `guardarReglaVencimientos` en `src/aplicacion/consorcios/regla-vencimientos.ts` (autoriza administrador + consorcio, aísla, valida con `validarReglaVencimientos` contra `Consorcio.tasaMoraMensual`, reemplaza la regla completa, auditoría por disparador).
+- [X] T008 [US1] Pantalla ABM de la regla en el panel de configuración del consorcio: nueva ruta `src/app/(panel)/consorcios/[consorcio]/vencimientos/` (page + formulario cliente + `acciones.ts` con server action) — hasta 3 filas día+recargo%, 1ª fija en 0 %, validación en servidor, mensajes de error comprensibles (RNF-10), responsive (RNF-01). Enlazar desde la navegación del consorcio.
 
 **Checkpoint**: la regla se configura y valida de punta a punta.
 

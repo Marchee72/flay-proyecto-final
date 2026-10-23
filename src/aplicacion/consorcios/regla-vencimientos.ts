@@ -1,5 +1,8 @@
 import { importe } from '@/compartido/dinero'
 import { validarReglaVencimientos, type TramoRegla } from '@/dominio/liquidacion/vencimientos'
+
+/** Reexportado para que la presentación arme la regla sin importar del dominio (§12.1.2). */
+export type { TramoRegla }
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'

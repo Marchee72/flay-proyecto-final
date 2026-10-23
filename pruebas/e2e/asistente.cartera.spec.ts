@@ -75,9 +75,9 @@ test('en la lista de consorcios el asistente arranca en todos y publica a la car
   expect(await desbordaALoAncho(page)).toBe(false)
 
   await panel.getByRole('button', { name: 'Confirmar' }).click()
-  await expect(
-    page.getByRole('status').filter({ hasText: 'Publicada en los 2 consorcios' }),
-  ).toBeVisible()
+  // El desenlace de una confirmacion sale en el hilo como una respuesta del asistente
+  // (no un toast ni un `role="status"`, que queda reservado al rechazo).
+  await expect(panel.getByText(/Publicada en los 2 consorcios/)).toBeVisible()
   expect(await prisma.novedad.count({ where: ambos })).toBe(2)
 })
 

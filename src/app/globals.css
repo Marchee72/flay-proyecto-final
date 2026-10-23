@@ -2425,6 +2425,92 @@ fieldset > legend {
   padding: 0;
 }
 
+/* Vencimientos escalonados (RF-08): la regla se edita como una escalera de hasta
+   tres peldaños. Cada tramo lleva su numero, su dia y su recargo; el base va en
+   lima porque es el importe sin recargo. Solo tokens (guia §3). */
+.escalera {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e3);
+  margin: var(--e4) 0;
+}
+/* El fieldset agrupa dia + recargo para el lector de pantalla; la rejilla deja
+   el numero a la izquierda, con el titulo y los campos apilados a la derecha.
+   El `legend` va primero (es el nombre del grupo) y se recoloca por rejilla. */
+.tramo {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--e4);
+  row-gap: var(--e2);
+  align-items: start;
+  padding: var(--e4);
+  border: 1px solid var(--linea-suave);
+  border-radius: var(--radio);
+  background: var(--superficie-hundida);
+}
+.tramo__numero {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: var(--grafito);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* El vencimiento en firme cierra la escalera: pasada su fecha corre la mora. Sin
+   recargo, con una nota en vez del segundo campo. */
+.tramo--firme {
+  background: var(--gris-palido);
+}
+.tramo--firme .tramo__numero .icono {
+  width: 18px;
+  height: 18px;
+}
+.tramo__nota {
+  align-self: center;
+  margin: 0;
+  font-size: var(--t-ayuda);
+  color: var(--tinta-apagada);
+}
+.tramo__titulo {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: var(--t-menor);
+  font-weight: 700;
+}
+.tramo__campos {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e3);
+}
+/* Dia y recargo son cifras cortas: el campo mide lo justo, sin el margen ni el
+   ancho de 320 del `.campo` suelto. */
+.tramo__campos .campo {
+  margin-top: 0;
+  max-width: 150px;
+}
+/* El base no cobra recargo: en vez de un control vacio, lo dice una pastilla,
+   alineada al pie del campo de al lado. */
+.tramo__sinrecargo {
+  align-self: end;
+  display: inline-flex;
+  align-items: center;
+  height: var(--toque);
+  padding: 0 14px;
+  border-radius: var(--radio-chico);
+  background: var(--superficie);
+  color: var(--verde);
+  font-size: var(--t-menor);
+  font-weight: 600;
+}
+
 /* Filtros de una tabla: en linea en escritorio, apilados en telefono. */
 .fila-de-filtros {
   display: flex;

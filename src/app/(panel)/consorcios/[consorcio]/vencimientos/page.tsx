@@ -1,7 +1,10 @@
 import type { Metadata } from 'next'
 import { CalendarClock } from 'lucide-react'
 
-import { verReglaVencimientos } from '@/aplicacion/consorcios/regla-vencimientos'
+import {
+  escalonadoDesdeTramos,
+  verReglaVencimientos,
+} from '@/aplicacion/consorcios/regla-vencimientos'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
@@ -29,21 +32,22 @@ export default async function VencimientosPage({
       usuarioId,
       consorcioId: activo.id,
     })
+    const { escalones, diaFirme } = escalonadoDesdeTramos(regla.tramos)
 
     return (
       <>
         <h1>Vencimientos escalonados</h1>
         <p className="apagado">
-          Hasta tres fechas de vencimiento por expensa, cada una con su recargo. Pagar antes cuesta
-          menos; pasado el último, la expensa vence en firme y arrastra con mora.
+          Hasta dos vencimientos con recargo por expensa y una fecha de vencimiento en firme. Pagar
+          antes cuesta menos; pasada la última fecha, la expensa vence y arrastra con mora.
         </p>
 
         {regla.porOmision && (
-          <p className="aviso" role="status">
+          <p className="aviso aviso--atencion" role="status">
             <CalendarClock className="icono" aria-hidden="true" />
             <span>
-              Todavía no configuraste la regla: hoy la expensa vence una sola vez, el día{' '}
-              {regla.tramos[0]?.diaDelMes}, sin recargo.
+              Todavía no configuraste la regla: hoy la expensa vence una sola vez, el día {diaFirme}
+              , sin recargo.
             </span>
           </p>
         )}
@@ -51,7 +55,8 @@ export default async function VencimientosPage({
         <div className="tarjeta">
           <FormularioVencimientos
             consorcioId={activo.id}
-            tramos={regla.tramos}
+            escalones={escalones}
+            diaFirme={diaFirme}
             tasaMoraMensual={regla.tasaMoraMensual}
           />
         </div>

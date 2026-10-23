@@ -1,32 +1,38 @@
 'use client'
 
 import { useActionState } from 'react'
+import { Flag } from 'lucide-react'
 
 import { accionGuardarVencimientos, type Resultado } from './acciones'
 
 const SIN_RESULTADO: Resultado = { mensaje: '', ok: false }
 
-interface TramoVisible {
-  orden: number
+interface EscalonVisible {
   diaDelMes: number
   recargoPorcentaje: string
 }
 
+const TITULOS = ['1er vencimiento', '2º vencimiento'] as const
+
 /**
- * ABM de la regla de vencimientos. Tres filas: la 1ª es el base (recargo 0) y es
- * obligatoria; las 2ª y 3ª son opcionales (se cargan con su día para activarse).
+ * ABM de la regla de vencimientos escalonados (RF-08). El administrador piensa el
+ * recargo como "lo que se cobra si se paga pasada esta fecha", así que cada fila
+ * de vencimiento lleva su recargo; la última fila es el vencimiento en firme, sin
+ * recargo, a partir del cual corre la mora. La acción traduce esto al modelo de
+ * boleta (primer tramo base) antes de guardar.
  */
 export function FormularioVencimientos({
   consorcioId,
-  tramos,
+  escalones,
+  diaFirme,
   tasaMoraMensual,
 }: {
   consorcioId: string
-  tramos: readonly TramoVisible[]
+  escalones: readonly EscalonVisible[]
+  diaFirme: number
   tasaMoraMensual: string
 }) {
   const [estado, accion, enviando] = useActionState(accionGuardarVencimientos, SIN_RESULTADO)
-  const porOrden = (orden: number) => tramos.find((t) => t.orden === orden)
   const hayError = estado.mensaje !== '' && !estado.ok
 
   return (
@@ -34,54 +40,81 @@ export function FormularioVencimientos({
       <input type="hidden" name="consorcio" value={consorcioId} />
 
       <p className="ayuda">
-        La mora mensual del consorcio es {tasaMoraMensual} %: el recargo del último vencimiento
-        tiene que ser menor, si no conviene dejar vencer antes que pagarlo.
+        El recargo de cada vencimiento se cobra si se paga <strong>pasada</strong> esa fecha. Antes
+        del 1er vencimiento se paga el importe base. La mora mensual del consorcio es{' '}
+        {tasaMoraMensual} %: el recargo más alto tiene que ser menor, si no conviene dejar vencer.
       </p>
 
-      {[1, 2, 3].map((orden) => {
-        const tramo = porOrden(orden)
-        const esBase = orden === 1
-        return (
-          <fieldset key={orden} className="campo-grupo">
-            <legend>{esBase ? '1er vencimiento (base)' : `${orden}º vencimiento`}</legend>
+      <div className="escalera">
+        {[0, 1].map((indice) => {
+          const escalon = escalones[indice]
+          const orden = indice + 1
+          return (
+            <fieldset key={orden} className="tramo">
+              <legend className="tramo__titulo">{TITULOS[indice]}</legend>
+              <span className="tramo__numero" aria-hidden="true">
+                {orden}
+              </span>
+              <div className="tramo__campos">
+                <div className="campo">
+                  <label htmlFor={`dia${orden}`}>Día del mes</label>
+                  <input
+                    id={`dia${orden}`}
+                    name={`dia${orden}`}
+                    type="number"
+                    min={1}
+                    max={28}
+                    inputMode="numeric"
+                    defaultValue={escalon?.diaDelMes ?? ''}
+                    aria-invalid={hayError || undefined}
+                  />
+                </div>
+                <div className="campo">
+                  <label htmlFor={`recargo${orden}`}>Recargo %</label>
+                  <input
+                    id={`recargo${orden}`}
+                    name={`recargo${orden}`}
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    inputMode="decimal"
+                    defaultValue={escalon ? escalon.recargoPorcentaje : ''}
+                    placeholder="Opcional"
+                  />
+                </div>
+              </div>
+            </fieldset>
+          )
+        })}
+
+        <fieldset className="tramo tramo--firme">
+          <legend className="tramo__titulo">Vence en firme</legend>
+          <span className="tramo__numero" aria-hidden="true">
+            <Flag className="icono" aria-hidden="true" />
+          </span>
+          <div className="tramo__campos">
             <div className="campo">
-              <label htmlFor={`dia${orden}`}>Día del mes</label>
+              <label htmlFor="diaFirme">Día del mes</label>
               <input
-                id={`dia${orden}`}
-                name={`dia${orden}`}
+                id="diaFirme"
+                name="diaFirme"
                 type="number"
                 min={1}
                 max={28}
                 inputMode="numeric"
-                defaultValue={tramo?.diaDelMes ?? ''}
-                required={esBase}
+                defaultValue={diaFirme}
+                required
                 aria-invalid={hayError || undefined}
               />
             </div>
-            {esBase ? (
-              <p className="ayuda">Sin recargo: es el importe base de la expensa.</p>
-            ) : (
-              <div className="campo">
-                <label htmlFor={`recargo${orden}`}>Recargo %</label>
-                <input
-                  id={`recargo${orden}`}
-                  name={`recargo${orden}`}
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  inputMode="decimal"
-                  defaultValue={tramo && orden > 1 ? tramo.recargoPorcentaje : ''}
-                  placeholder="Dejar vacío si no se usa"
-                />
-              </div>
-            )}
-          </fieldset>
-        )
-      })}
+            <p className="tramo__nota">A partir de esta fecha la expensa vence y corre la mora.</p>
+          </div>
+        </fieldset>
+      </div>
 
       {estado.mensaje &&
         (estado.ok ? (
-          <p className="aviso" role="status">
+          <p className="aviso aviso--exito" role="status">
             {estado.mensaje}
           </p>
         ) : (

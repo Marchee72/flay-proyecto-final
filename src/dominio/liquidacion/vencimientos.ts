@@ -43,6 +43,55 @@ export interface TramoRegla {
   recargoPorcentaje: string
 }
 
+/**
+ * La regla tiene dos lecturas de la misma escalera y conviene no confundirlas:
+ *
+ * - **Boleta / almacenamiento** (`TramoRegla`): el recargo vive en el vencimiento
+ *   HASTA el que se paga, y el primero es el base (0 %). Es lo que muestra la
+ *   expensa ("pagando hasta el dia 20: base + 5 %") y lo que valida el dominio.
+ * - **Administrador** (`EscalonVencimiento`): el recargo se pone en el vencimiento
+ *   DESPUES del cual rige. El 1er vencimiento ya lleva su recargo; pasada la
+ *   ultima fecha (la del firme) corre la mora, no un recargo.
+ *
+ * Las dos son equivalentes: convertir de una a otra es correr el recargo un
+ * lugar. `tramosDesdeEscalonado` / `escalonadoDesdeTramos` son esa traduccion, y
+ * el unico lugar donde vive el corrimiento.
+ */
+export interface EscalonVencimiento {
+  diaDelMes: number
+  /** Recargo que rige al pagar DESPUES de esta fecha (hasta el proximo escalon). */
+  recargoPorcentaje: string
+}
+
+/**
+ * Vista del administrador -> tramos de boleta. Los escalones son los
+ * vencimientos con recargo (de fecha mas temprana a mas tardia) y `diaFirme` la
+ * fecha en que vence en firme. El recargo del escalon i-esimo se cobra al pagar
+ * hasta el (i+1)-esimo vencimiento, asi que el primer tramo queda en el base.
+ */
+export function tramosDesdeEscalonado(
+  escalones: readonly EscalonVencimiento[],
+  diaFirme: number,
+): TramoRegla[] {
+  const dias = [...escalones.map((e) => e.diaDelMes), diaFirme]
+  const recargos = ['0', ...escalones.map((e) => e.recargoPorcentaje)]
+  return dias.map((diaDelMes, i) => ({ orden: i + 1, diaDelMes, recargoPorcentaje: recargos[i]! }))
+}
+
+/** Tramos de boleta -> vista del administrador. Inversa de `tramosDesdeEscalonado`. */
+export function escalonadoDesdeTramos(tramos: readonly TramoRegla[]): {
+  escalones: EscalonVencimiento[]
+  diaFirme: number
+} {
+  const ordenados = [...tramos].sort((a, b) => a.orden - b.orden)
+  const diaFirme = ordenados[ordenados.length - 1]!.diaDelMes
+  const escalones = ordenados.slice(0, -1).map((tramo, i) => ({
+    diaDelMes: tramo.diaDelMes,
+    recargoPorcentaje: ordenados[i + 1]!.recargoPorcentaje,
+  }))
+  return { escalones, diaFirme }
+}
+
 /** Dia calendario en UTC, para comparar fechas con el vencimiento inclusive. */
 const diaUTC = (d: Date): number => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
 
@@ -138,9 +187,9 @@ export function validarReglaVencimientos(
   if (!importe(tasaMoraMensual).greaterThan(importe(ultimo.recargoPorcentaje))) {
     throw new ReglaVencimientosInvalida(
       `La tasa de mora mensual (${importe(tasaMoraMensual).toFixed(DECIMALES_TASA)} %) debe ser ` +
-        `mayor que el recargo del último vencimiento ` +
+        `mayor que el recargo más alto ` +
         `(${importe(ultimo.recargoPorcentaje).toFixed(DECIMALES_TASA)} %): de lo contrario conviene ` +
-        'dejar vencer en firme antes que pagar el último recargo.',
+        'dejar vencer en firme antes que pagar ese recargo.',
     )
   }
 }

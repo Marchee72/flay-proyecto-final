@@ -16,7 +16,7 @@ Hoy cada liquidación tiene **un solo** vencimiento (el día del mes que fija el
 
 ### User Story 1 - El administrador configura la regla de vencimientos del consorcio (Priority: P1)
 
-El administrador define, una vez por consorcio, hasta tres vencimientos: para cada uno, el día del mes y el recargo en porcentaje. El primero es el importe base (recargo 0 %). El sistema rechaza una configuración incoherente: si el recargo del último tramo iguala o supera la tasa de mora mensual, dejar vencer en firme saldría igual o más barato que pagar el último recargo, y eso es un agujero.
+El administrador define, una vez por consorcio, hasta dos vencimientos con recargo y la fecha del vencimiento en firme. En la pantalla carga, para cada vencimiento con recargo, el día del mes y el recargo en porcentaje que rige al pagar **después** de esa fecha; antes del primer vencimiento se paga el importe base, y pasada la fecha del vencimiento en firme la expensa vence y corre la mora. Internamente esto se guarda como el modelo de boleta (tramos por fecha límite, el primero base 0 %), que es lo que ve la expensa. El sistema rechaza una configuración incoherente: si el recargo más alto iguala o supera la tasa de mora mensual, dejar vencer en firme saldría igual o más barato que pagar ese recargo, y eso es un agujero.
 
 **Why this priority**: sin la regla configurada no hay escalonamiento posible; es la base de todo lo demás, y la validación protege la coherencia económica del sistema.
 

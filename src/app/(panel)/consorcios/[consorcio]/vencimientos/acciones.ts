@@ -6,7 +6,8 @@ import { redirect } from 'next/navigation'
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import {
   guardarReglaVencimientos,
-  type TramoRegla,
+  tramosDesdeEscalonado,
+  type EscalonVencimiento,
 } from '@/aplicacion/consorcios/regla-vencimientos'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
@@ -16,9 +17,10 @@ export type Resultado = { mensaje: string; ok: boolean }
 const texto = (datos: FormData, campo: string) => String(datos.get(campo) ?? '').trim()
 
 /**
- * Guarda la regla de vencimientos (RF-08). Tres filas en el formulario: la 1ª es
- * el base (recargo 0) y es obligatoria; las otras cuentan como tramo solo si
- * tienen día. El dominio valida el resto (días ascendentes, mora > último recargo).
+ * Guarda la regla de vencimientos (RF-08). El administrador carga hasta dos
+ * vencimientos con recargo (el recargo rige al pagar DESPUES de esa fecha) y la
+ * fecha del vencimiento en firme, pasada la cual corre la mora. `tramosDesdeEscalonado`
+ * lo traduce al modelo de boleta (primer tramo base) antes de validar y guardar.
  */
 export async function accionGuardarVencimientos(
   _previo: Resultado,
@@ -29,24 +31,22 @@ export async function accionGuardarVencimientos(
 
   const consorcioId = texto(datos, 'consorcio')
 
-  const tramos: TramoRegla[] = []
-  const dia1 = texto(datos, 'dia1')
-  if (dia1 !== '') {
-    tramos.push({ orden: 1, diaDelMes: Number(dia1), recargoPorcentaje: '0' })
-  }
-  for (let fila = 2; fila <= 3; fila++) {
+  const escalones: EscalonVencimiento[] = []
+  for (const fila of [1, 2]) {
     const dia = texto(datos, `dia${fila}`)
     if (dia === '') continue
-    tramos.push({
-      orden: tramos.length + 1,
+    escalones.push({
       diaDelMes: Number(dia),
       recargoPorcentaje: texto(datos, `recargo${fila}`) || '0',
     })
   }
 
-  if (tramos.length === 0) {
-    return { mensaje: 'Cargá al menos el primer vencimiento (día del mes).', ok: false }
+  const diaFirme = texto(datos, 'diaFirme')
+  if (diaFirme === '') {
+    return { mensaje: 'Cargá el día del vencimiento en firme.', ok: false }
   }
+
+  const tramos = tramosDesdeEscalonado(escalones, Number(diaFirme))
 
   try {
     await guardarReglaVencimientos(HABILITACIONES, RELOJ, { usuarioId, consorcioId, tramos })

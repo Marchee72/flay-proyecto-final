@@ -61,7 +61,9 @@ jobs:
       - run: npm ci
 
       # El navegador se cachea: en un runner lento su descarga tardo 9 de los 10
-      # minutos que FR-018 concede a toda la verificacion.
+      # minutos que FR-018 concede a toda la verificacion. La key depende del
+      # lockfile, asi que cualquier cambio de dependencia (p. ej. subir `next`)
+      # fuerza un cache miss y vuelve a bajar todo.
       - name: Cache del navegador
         id: cache-navegador
         uses: actions/cache@v4
@@ -69,9 +71,12 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
+      # Solo en cache miss. El cap es generoso porque `--with-deps` hace `apt-get`
+      # de las librerias del sistema contra el mirror de Azure, que a veces va a
+      # 3,5 MB/min y pasaba de los 4 minutos; no es tiempo de verificacion (FR-018).
       - name: Navegador de Playwright
         if: steps.cache-navegador.outputs.cache-hit != 'true'
-        timeout-minutes: 4
+        timeout-minutes: 8
         run: npx playwright install --with-deps chromium
 
       - name: Dependencias del navegador

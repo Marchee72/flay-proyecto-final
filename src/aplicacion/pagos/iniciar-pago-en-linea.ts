@@ -5,10 +5,27 @@ import type { ProcesadorDePagos } from '@/dominio/contratos/procesador-pagos'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import { saldosDeUnidad } from '@/dominio/liquidacion/saldo'
+import { montoExigible } from '@/dominio/liquidacion/vencimientos'
 import { ocupaUnidad } from '@/infraestructura/repositorios/ocupaciones'
 import { sinConsorcio } from '@/infraestructura/cliente-aislado'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 import { obtenerCredencialesDescifradas } from '@/aplicacion/administradoras/credenciales-pago'
+import { detallesImpagosDe } from '@/aplicacion/pagos/registrar'
+
+/**
+ * El monto a cobrar hoy: la deuda consolidada mas el recargo del tramo vigente
+ * de cada expensa (RF-08). Coincide con lo que la imputacion consumira al
+ * acreditarse (base a la deuda, recargo como cargo propio).
+ */
+async function exigibleConRecargo(unidadId: string, hoy: Date): Promise<string> {
+  const impagos = await detallesImpagosDe(unidadId, hoy)
+  return impagos
+    .reduce(
+      (total, i) => total.plus(importe(montoExigible(i.saldo, i.recargoPorcentaje ?? '0'))),
+      new Decimal(0),
+    )
+    .toFixed(DECIMALES_IMPORTE)
+}
 
 /**
  * Inicio de cobro en linea de expensas con pasarela (`RF-28`, D-1, D-3).
@@ -131,6 +148,9 @@ export async function iniciarPagoEnLinea(
         throw new ExpensaSinSaldoPendiente()
       }
 
+      // Lo que se cobra incluye el recargo del tramo vigente (RF-08).
+      const importeACobrar = await exigibleConRecargo(detalle.unidadId, ahora)
+
       const credenciales = await obtenerCredencialesDescifradas(
         detalle.liquidacion.consorcio.administradoraId,
       )
@@ -168,7 +188,7 @@ export async function iniciarPagoEnLinea(
         data: sinConsorcio({
           unidadId: detalle.unidadId,
           detalleLiquidacionId: detalle.id,
-          importe: saldos.saldoExigible,
+          importe: importeACobrar,
           iniciadoPor: datos.usuarioId,
           venceEn,
           estado: 'iniciado',
@@ -189,7 +209,7 @@ export async function iniciarPagoEnLinea(
           credenciales,
           intentoId: intento.id,
           titulo,
-          importe: saldos.saldoExigible,
+          importe: importeACobrar,
           urlRetorno,
           urlNotificacion,
           venceEn,
@@ -289,6 +309,9 @@ export async function consultarDisponibilidadPagoEnLinea(
     return { pagable: false, motivo: 'saldada', saldoExigible: '0.00' }
   }
 
+  // El monto a cobrar incluye el recargo del tramo vigente (RF-08).
+  const importeACobrar = await exigibleConRecargo(detalle.unidadId, reloj.hoy())
+
   const credencial = await prismaBase.credencialPagoAdministradora.findUnique({
     where: { administradoraId: detalle.liquidacion.consorcio.administradoraId },
     select: { id: true },
@@ -298,12 +321,12 @@ export async function consultarDisponibilidadPagoEnLinea(
     return {
       pagable: false,
       motivo: 'pasarela-no-configurada',
-      saldoExigible: saldos.saldoExigible,
+      saldoExigible: importeACobrar,
     }
   }
 
   return {
     pagable: true,
-    saldoExigible: saldos.saldoExigible,
+    saldoExigible: importeACobrar,
   }
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Fragment } from 'react'
 import Link from 'next/link'
 import { CheckCircle, Clock, Download, Siren, TriangleAlert } from 'lucide-react'
 
@@ -214,6 +215,26 @@ function VerGastos({ base, periodoId }: { base: string; periodoId: string }) {
   )
 }
 
+/** El calendario de vencimientos congelados: cada fecha con lo que se paga hasta ella. */
+function Vencimientos({ expensa }: { expensa: ExpensaVisible }) {
+  return (
+    <div className="exp-vencimientos">
+      <h2>Vencimientos</h2>
+      <dl className="definiciones">
+        {expensa.vencimientos.map((v) => (
+          <Fragment key={v.orden}>
+            <dt>
+              {fechaParaMostrar(v.fecha)}
+              {v.recargoPorcentaje !== '0.0000' && ` · +${v.recargoPorcentaje} %`}
+            </dt>
+            <dd className="cifra">{importeParaMostrar(v.monto)}</dd>
+          </Fragment>
+        ))}
+      </dl>
+    </div>
+  )
+}
+
 /** Una banda grafito con el total en blanco; las acciones en el cuerpo. */
 function ExpensaTarjetaBanda({ base, expensa, consorcio, disponibilidadPago }: PropsExpensa) {
   return (
@@ -226,6 +247,25 @@ function ExpensaTarjetaBanda({ base, expensa, consorcio, disponibilidadPago }: P
       </div>
       <div className="expensa-banda__cuerpo">
         <EstadoExpensa estado={expensa.estadoPago} />
+
+        {expensa.estadoPago !== 'pagada' && (
+          <p className="exp-exigible">
+            A pagar hoy <strong className="cifra">{importeParaMostrar(expensa.exigibleHoy)}</strong>
+            {expensa.recargo !== '0.00' && (
+              <span className="apagado">
+                {' '}
+                (incluye {importeParaMostrar(expensa.recargo)} de recargo por el{' '}
+                {expensa.recargoPorcentaje}
+                %)
+              </span>
+            )}
+            {expensa.venceEnFirme && (
+              <span className="apagado"> · venció en firme: se traslada al período siguiente</span>
+            )}
+          </p>
+        )}
+
+        {expensa.vencimientos.length > 1 && <Vencimientos expensa={expensa} />}
 
         {disponibilidadPago.pagable && disponibilidadPago.saldoExigible && (
           <div className="expensa-banda__pago-en-linea">

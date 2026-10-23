@@ -5,6 +5,12 @@ import {
   guardarReglaVencimientos,
   verReglaVencimientos,
 } from '@/aplicacion/consorcios/regla-vencimientos'
+import { cargarPadron } from '@/aplicacion/consorcios/unidades'
+import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
+import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
+import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
+import { periodoPara } from '@/aplicacion/periodos/periodos'
+import { registrarPago } from '@/aplicacion/pagos/registrar'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
 
@@ -123,5 +129,105 @@ describe('regla de vencimientos escalonados (RF-08)', () => {
       where: { tabla: 'TramoVencimiento' },
     })
     expect(despues).toBeGreaterThan(antes)
+  })
+})
+
+describe('cobro con recargo escalonado (RF-08, US2)', () => {
+  let unidadA: string
+
+  // Regla 0/1/1.5 % a los dias 10/20/28 (mora del consorcio 2 % > 1.5 %).
+  // Un gasto de 1000 sobre una unidad al 100 %: 1A debe 1000; la liquidacion del
+  // periodo 01/2026 vence los 10/20/28 de 02/2026.
+  beforeEach(async () => {
+    await guardarReglaVencimientos(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      tramos: [
+        { orden: 1, diaDelMes: 10, recargoPorcentaje: '0.0000' },
+        { orden: 2, diaDelMes: 20, recargoPorcentaje: '1.0000' },
+        { orden: 3, diaDelMes: 28, recargoPorcentaje: '1.5000' },
+      ],
+    })
+    await cargarPadron(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidades: [{ designacion: '1A', coeficiente: '100.00000000' }],
+    })
+    unidadA = (
+      await prismaBase.unidad.findFirstOrThrow({ where: { consorcioId, designacion: '1A' } })
+    ).id
+
+    const rubroId = (
+      await prismaBase.rubroGasto.upsert({
+        where: { nombre: 'Rubro de prueba' },
+        update: {},
+        create: { nombre: 'Rubro de prueba', clasificacion: 'ordinario' },
+      })
+    ).id
+    const { periodoId } = await periodoPara(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      anio: 2026,
+      mes: 1,
+    })
+    await registrarGasto(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId,
+      rubroId,
+      importe: '1000.00',
+      fecha: new Date('2026-01-05'),
+      descripcion: 'Gasto enero',
+    })
+    await cerrarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
+    await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
+  })
+
+  const pagarEl = (fecha: string, importePagado: string) =>
+    registrarPago(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidadId: unidadA,
+      importe: importePagado,
+      fechaPago: new Date(fecha),
+      medio: 'transferencia',
+    })
+
+  it('congela los tres vencimientos al emitir', async () => {
+    const liquidacion = await prismaBase.liquidacion.findFirstOrThrow({ where: { consorcioId } })
+    const vencimientos = await prismaBase.vencimientoLiquidacion.findMany({
+      where: { liquidacionId: liquidacion.id },
+      orderBy: { orden: 'asc' },
+    })
+    expect(vencimientos.map((v) => v.fecha.toISOString().slice(0, 10))).toEqual([
+      '2026-02-10',
+      '2026-02-20',
+      '2026-02-28',
+    ])
+    // El ultimo tramo fija el vencimiento en firme de la liquidacion.
+    expect(liquidacion.vencimiento.toISOString().slice(0, 10)).toBe('2026-02-28')
+  })
+
+  it('pagar dentro del 2º tramo salda la expensa y cobra el recargo aparte', async () => {
+    // El 15/02 rige el tramo 2 (1 %): exigible 1010 = 1000 + 10.
+    const pago = await pagarEl('2026-02-15', '1010.00')
+
+    expect(pago.imputaciones).toHaveLength(1)
+    expect(pago.imputaciones[0]).toMatchObject({
+      importeImputado: '1000.00',
+      recargoCobrado: '10.00',
+    })
+    expect(pago.saldoAFavor).toBe('0.00')
+
+    const imputacion = await prismaBase.pagoImputacion.findFirstOrThrow({
+      where: { pagoId: pago.pagoId },
+    })
+    expect(imputacion.recargoCobrado.toFixed(2)).toBe('10.00')
+  })
+
+  it('pagar solo el importe base dentro de un tramo con recargo deja saldo pendiente', async () => {
+    const pago = await pagarEl('2026-02-15', '1000.00')
+    // No alcanza para base + recargo: el capital imputado es menor a 1000.
+    expect(Number(pago.imputaciones[0]!.importeImputado)).toBeLessThan(1000)
   })
 })

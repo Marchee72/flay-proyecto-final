@@ -2,6 +2,7 @@ import { Decimal, importe } from '@/compartido/dinero'
 import { importeSerializado } from '@/compartido/formato'
 import { NoEncontrado } from '@/compartido/errores'
 import { saldosDeUnidad } from '@/dominio/liquidacion/saldo'
+import { montoExigible, recargoVigente } from '@/dominio/liquidacion/vencimientos'
 import { ordenarUnidades } from '@/dominio/unidades/division'
 import type { AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
@@ -28,15 +29,36 @@ const SEGUNDOS_DE_LECTURA = 600
  */
 export type EstadoPagoExpensa = 'pagada' | 'vencida' | 'pendiente'
 
+/** Un tramo de vencimiento congelado, con el monto a pagar si se abona en el. */
+export interface TramoExpensa {
+  orden: number
+  /** ISO `AAAA-MM-DD`. */
+  fecha: string
+  recargoPorcentaje: string
+  /** Lo que habria que pagar de esta expensa dentro de este tramo (saldo + recargo). */
+  monto: string
+}
+
 export interface ExpensaVisible {
   detalleId: string
   designacion: string
   periodoId: string
   periodo: string
+  /** El ultimo vencimiento (el que vence en firme). ISO `AAAA-MM-DD`. */
   vencimiento: string
   totalUnidad: string
-  /** Lo que falta pagar, `'0.00'` si esta saldada. Cadena, como todo importe. */
+  /** Lo que falta pagar de capital, `'0.00'` si esta saldada. Cadena, como todo importe. */
   saldo: string
+  /** Lo que hay que pagar HOY: saldo + recargo del tramo vigente. `'0.00'` si saldada. */
+  exigibleHoy: string
+  /** El recargo en pesos aplicable hoy sobre el saldo. */
+  recargo: string
+  /** El porcentaje del tramo vigente (`'0.0000'` si es el base o vencio en firme). */
+  recargoPorcentaje: string
+  /** Verdadero si ya paso el ultimo vencimiento: la expensa vence en firme. */
+  venceEnFirme: boolean
+  /** Los tramos de vencimiento, con el monto a pagar en cada uno. */
+  vencimientos: TramoExpensa[]
   estadoPago: EstadoPagoExpensa
   /** Nulo mientras el documento no se genero: la liquidacion ya existe igual. */
   direccion: string | null
@@ -127,7 +149,7 @@ export async function verExpensa(
       const detalle = await prismaBase.detalleLiquidacion.findUnique({
         where: { id: datos.detalleId },
         include: {
-          liquidacion: { include: { periodo: true } },
+          liquidacion: { include: { periodo: true, vencimientos: true } },
           unidad: true,
           // La imputacion revertida no descuenta: la anulacion la deja en la
           // tabla con `revertidaEn` y el saldo vuelve a deber. Lo mismo hacen
@@ -161,7 +183,7 @@ type DetalleConContexto = NonNullable<
     ReturnType<
       typeof prismaBase.detalleLiquidacion.findFirst<{
         include: {
-          liquidacion: { include: { periodo: true } }
+          liquidacion: { include: { periodo: true; vencimientos: true } }
           unidad: true
           imputaciones: { where: { revertidaEn: null } }
         }
@@ -178,7 +200,7 @@ async function expensasDe(
   const detalles = await prismaBase.detalleLiquidacion.findMany({
     where: { unidadId, liquidacion: { estado: 'vigente' } },
     include: {
-      liquidacion: { include: { periodo: true } },
+      liquidacion: { include: { periodo: true, vencimientos: true } },
       unidad: true,
       // La imputacion revertida no descuenta: la anulacion la deja en la
       // tabla con `revertidaEn` y el saldo vuelve a deber. Lo mismo hacen
@@ -252,13 +274,35 @@ async function aVisible(
   saldo: Decimal,
 ): Promise<ExpensaVisible> {
   const { periodo } = detalle.liquidacion
+  const saldoPositivo = Decimal.max(saldo, 0)
+
+  // Los tramos congelados (RF-08). Una liquidacion emitida antes de la regla no
+  // tiene filas: se usa su vencimiento unico como un solo tramo sin recargo, de
+  // modo que se comporta como antes.
+  const tramos =
+    detalle.liquidacion.vencimientos.length > 0
+      ? detalle.liquidacion.vencimientos
+          .map((v) => ({
+            orden: v.orden,
+            fecha: v.fecha,
+            recargoPorcentaje: v.recargoPorcentaje.toFixed(4),
+          }))
+          .sort((a, b) => a.orden - b.orden)
+      : [{ orden: 1, fecha: detalle.liquidacion.vencimiento, recargoPorcentaje: '0.0000' }]
+
+  const vigente = recargoVigente(tramos, hoy)
+  const exigibleHoy = saldoPositivo.lessThanOrEqualTo(0)
+    ? '0.00'
+    : montoExigible(saldoPositivo.toFixed(2), vigente.recargoPorcentaje)
+  const recargo = importe(exigibleHoy).minus(saldoPositivo).toFixed(2)
 
   // El saldo ya viene des-arrastrado (saldo propio del periodo, no `totalUnidad`):
   // una expensa saldada queda en cero aunque su total siga arrastrando la deuda
-  // anterior, porque los pagos se imputaron contra el mes viejo (RN-08, nota #4).
+  // anterior (RN-08, nota #4). Vencida solo cuando paso el ultimo vencimiento
+  // (vence en firme); antes de eso sigue "pendiente" aunque escale el recargo.
   const estadoPago: EstadoPagoExpensa = saldo.lessThanOrEqualTo(0)
     ? 'pagada'
-    : detalle.liquidacion.vencimiento < hoy
+    : vigente.venceEnFirme
       ? 'vencida'
       : 'pendiente'
 
@@ -271,7 +315,17 @@ async function aVisible(
     totalUnidad: importeSerializado(detalle.totalUnidad),
     // Nunca negativo en pantalla: un pago de mas es saldo a favor de la unidad,
     // y vive en el estado de cuenta, no en la expensa que ya quedo saldada.
-    saldo: Decimal.max(saldo, 0).toFixed(2),
+    saldo: saldoPositivo.toFixed(2),
+    exigibleHoy,
+    recargo,
+    recargoPorcentaje: vigente.recargoPorcentaje,
+    venceEnFirme: vigente.venceEnFirme,
+    vencimientos: tramos.map((t) => ({
+      orden: t.orden,
+      fecha: t.fecha.toISOString().slice(0, 10),
+      recargoPorcentaje: t.recargoPorcentaje,
+      monto: montoExigible(saldoPositivo.toFixed(2), t.recargoPorcentaje),
+    })),
     estadoPago,
     direccion: detalle.claveDocumento
       ? await almacen.resolverLecturaAutorizada(detalle.claveDocumento, SEGUNDOS_DE_LECTURA)

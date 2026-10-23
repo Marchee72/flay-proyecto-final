@@ -188,8 +188,8 @@ describe('saldosDeUnidad — regla de arrastre y saldo propio (RN-08 ampliada)',
     const resultadoImputacion = imputar(saldos.saldoExigible, impagos)
     expect(resultadoImputacion.sobrante).toBe('0.00')
     expect(resultadoImputacion.imputaciones).toEqual([
-      { detalleId: 'd-1', importeImputado: '1000.00' },
-      { detalleId: 'd-2', importeImputado: '1600.00' },
+      { detalleId: 'd-1', importeImputado: '1000.00', recargoCobrado: '0.00' },
+      { detalleId: 'd-2', importeImputado: '1600.00', recargoCobrado: '0.00' },
     ])
   })
 })

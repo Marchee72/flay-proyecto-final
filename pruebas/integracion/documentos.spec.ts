@@ -76,6 +76,7 @@ afterEach(async () => {
   await prismaBase.$executeRaw`DELETE FROM "Ocupacion"`
   await prismaBase.$executeRaw`DELETE FROM "InteresLiquidado"`
   await prismaBase.$executeRaw`DELETE FROM "DetalleLiquidacion"`
+  await prismaBase.$executeRaw`DELETE FROM "VencimientoLiquidacion"`
   await prismaBase.$executeRaw`DELETE FROM "Liquidacion"`
   await prismaBase.$executeRaw`DELETE FROM "CoeficienteHistorico"`
   await prismaBase.$executeRaw`DELETE FROM "Unidad"`

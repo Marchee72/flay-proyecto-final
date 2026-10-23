@@ -109,7 +109,8 @@ export async function confirmarPagoEnLinea(
 
   // Estado aprobado: registrar e imputar en una transaccion atomica
   return enConsorcio(datos.consorcioId, async () => {
-    const impagos = await detallesImpagosDe(intento.unidadId)
+    // El recargo se mide a la fecha en que se acredito el pago (RF-08).
+    const impagos = await detallesImpagosDe(intento.unidadId, pagoApi.fechaAprobacion ?? new Date())
 
     // Contexto del aviso al pagador (RF-28): unidad y periodo del detalle.
     const contexto = await prisma.detalleLiquidacion.findFirst({

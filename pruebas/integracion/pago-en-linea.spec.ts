@@ -99,6 +99,7 @@ afterEach(async () => {
   await prismaBase.$executeRaw`DELETE FROM "Pago"`
   await prismaBase.$executeRaw`DELETE FROM "InteresLiquidado"`
   await prismaBase.$executeRaw`DELETE FROM "DetalleLiquidacion"`
+  await prismaBase.$executeRaw`DELETE FROM "VencimientoLiquidacion"`
   await prismaBase.$executeRaw`DELETE FROM "Liquidacion"`
   await prismaBase.$executeRaw`DELETE FROM "Gasto"`
   await prismaBase.$executeRaw`DELETE FROM "Periodo"`

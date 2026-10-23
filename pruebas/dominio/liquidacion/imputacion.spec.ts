@@ -33,8 +33,8 @@ describe('imputacion por antiguedad', () => {
     const resultado = imputar('15000.00', TRES)
 
     expect(resultado.imputaciones).toEqual([
-      { detalleId: 'd-1', importeImputado: '10000.00' },
-      { detalleId: 'd-2', importeImputado: '5000.00' },
+      { detalleId: 'd-1', importeImputado: '10000.00', recargoCobrado: '0.00' },
+      { detalleId: 'd-2', importeImputado: '5000.00', recargoCobrado: '0.00' },
     ])
     expect(resultado.sobrante).toBe('0.00')
   })
@@ -87,6 +87,58 @@ describe('imputacion por antiguedad', () => {
   it('saltea los detalles que ya estan en cero', () => {
     const resultado = imputar('5000.00', [impago('d-0', '0.00', '2025-12-10'), ...TRES])
 
-    expect(resultado.imputaciones).toEqual([{ detalleId: 'd-1', importeImputado: '5000.00' }])
+    expect(resultado.imputaciones).toEqual([
+      { detalleId: 'd-1', importeImputado: '5000.00', recargoCobrado: '0.00' },
+    ])
+  })
+})
+
+describe('imputacion con recargo escalonado (RF-08)', () => {
+  const conRecargo = (
+    id: string,
+    saldo: string,
+    vencimiento: string,
+    recargoPorcentaje: string,
+  ): DetalleImpago => ({ detalleId: id, saldo, vencimiento: fecha(vencimiento), recargoPorcentaje })
+
+  it('saldar una expensa dentro de un tramo con recargo cobra base + recargo', () => {
+    // Saldo 100000 al 5 %: exigible 105000. El capital cancela la deuda y el
+    // recargo se registra aparte (no como sobrante).
+    const resultado = imputar('105000.00', [conRecargo('d-1', '100000.00', '2026-11-20', '5.0000')])
+
+    expect(resultado.imputaciones).toEqual([
+      { detalleId: 'd-1', importeImputado: '100000.00', recargoCobrado: '5000.00' },
+    ])
+    expect(resultado.sobrante).toBe('0.00')
+  })
+
+  it('el invariante se mantiene con recargo: capital + recargo + sobrante = pagado', () => {
+    const impagos = [conRecargo('d-1', '100000.00', '2026-11-20', '5.0000')]
+    for (const monto of ['0.01', '50000.00', '105000.00', '120000.00']) {
+      const r = imputar(monto, impagos)
+      const total = r.imputaciones
+        .reduce(
+          (acc, i) => acc.plus(importe(i.importeImputado)).plus(importe(i.recargoCobrado)),
+          importe('0'),
+        )
+        .plus(importe(r.sobrante))
+      expect(total.toFixed(2)).toBe(monto)
+    }
+  })
+
+  it('paga primero la deuda vieja vencida en firme (sin recargo) y recarga solo la del mes', () => {
+    // d-1 vieja (vencida en firme, recargo 0), d-2 del mes al 5 %.
+    const impagos = [
+      conRecargo('d-1', '10000.00', '2026-10-10', '0.0000'),
+      conRecargo('d-2', '10000.00', '2026-11-20', '5.0000'),
+    ]
+    // 10000 (salda d-1) + 10500 (salda d-2 con 5 %) = 20500.
+    const resultado = imputar('20500.00', impagos)
+
+    expect(resultado.imputaciones).toEqual([
+      { detalleId: 'd-1', importeImputado: '10000.00', recargoCobrado: '0.00' },
+      { detalleId: 'd-2', importeImputado: '10000.00', recargoCobrado: '500.00' },
+    ])
+    expect(resultado.sobrante).toBe('0.00')
   })
 })

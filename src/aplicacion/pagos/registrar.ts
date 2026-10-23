@@ -4,6 +4,7 @@ import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import { Decimal, importe } from '@/compartido/dinero'
 import { imputar, type DetalleImpago } from '@/dominio/liquidacion/imputacion'
 import { saldosDeUnidad } from '@/dominio/liquidacion/saldo'
+import { recargoVigente } from '@/dominio/liquidacion/vencimientos'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
@@ -92,6 +93,7 @@ export async function imputarYRegistrar(
         pagoId: creado.id,
         detalleLiquidacionId: imputacion.detalleId,
         importeImputado: imputacion.importeImputado,
+        recargoCobrado: imputacion.recargoCobrado,
       })),
     })
   }
@@ -134,7 +136,8 @@ export async function registrarPago(
       const unidad = await prisma.unidad.findFirst({ where: { id: datos.unidadId } })
       if (!unidad) throw new NoEncontrado()
 
-      const impagos = await detallesImpagosDe(unidad.id)
+      // El recargo se mide a la fecha del pago: es cuando se considera pagado.
+      const impagos = await detallesImpagosDe(unidad.id, datos.fechaPago)
 
       return prisma.$transaction(async (tx) => {
         return imputarYRegistrar(tx, {
@@ -152,11 +155,13 @@ export async function registrarPago(
 }
 
 /**
- * Lo que la unidad debe, liquidacion por liquidacion, con su vencimiento: es
- * la entrada de `imputar`. Calcula el saldo propio por periodo aplicando la
- * regla de arrastre (RN-08 ampliada).
+ * Lo que la unidad debe, liquidacion por liquidacion, con su vencimiento y el
+ * recargo del tramo vigente a `hoy` (RF-08): es la entrada de `imputar`. Calcula
+ * el saldo propio por periodo aplicando la regla de arrastre (RN-08 ampliada); el
+ * recargo sale de los vencimientos congelados de cada liquidacion. Una expensa
+ * vencida en firme (o emitida antes de la regla) tiene recargo 0.
  */
-export async function detallesImpagosDe(unidadId: string): Promise<DetalleImpago[]> {
+export async function detallesImpagosDe(unidadId: string, hoy: Date): Promise<DetalleImpago[]> {
   const detalles = await prisma.detalleLiquidacion.findMany({
     where: { unidadId, liquidacion: { estado: 'vigente' } },
     select: {
@@ -164,7 +169,12 @@ export async function detallesImpagosDe(unidadId: string): Promise<DetalleImpago
       totalUnidad: true,
       deudaAnterior: true,
       interesMora: true,
-      liquidacion: { select: { vencimiento: true } },
+      liquidacion: {
+        select: {
+          vencimiento: true,
+          vencimientos: { select: { orden: true, fecha: true, recargoPorcentaje: true } },
+        },
+      },
       imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
     },
   })
@@ -180,6 +190,20 @@ export async function detallesImpagosDe(unidadId: string): Promise<DetalleImpago
       .toFixed(DECIMALES_IMPORTE),
   }))
 
+  const recargoPorDetalle = new Map(
+    detalles.map((d) => [
+      d.id,
+      recargoVigente(
+        d.liquidacion.vencimientos.map((v) => ({
+          orden: v.orden,
+          fecha: v.fecha,
+          recargoPorcentaje: v.recargoPorcentaje.toFixed(4),
+        })),
+        hoy,
+      ).recargoPorcentaje,
+    ]),
+  )
+
   const saldos = saldosDeUnidad(formateados)
 
   return saldos.detalles
@@ -188,5 +212,6 @@ export async function detallesImpagosDe(unidadId: string): Promise<DetalleImpago
       detalleId: detalle.detalleId,
       saldo: detalle.saldo,
       vencimiento: detalle.vencimiento,
+      recargoPorcentaje: recargoPorDetalle.get(detalle.detalleId) ?? '0',
     }))
 }

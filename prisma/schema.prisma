@@ -57,24 +57,25 @@ model Consorcio {
   creadoEn         DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn    DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  administradora Administradora          @relation(fields: [administradoraId], references: [id])
-  unidades       Unidad[]
-  proveedores    Proveedor[]
-  periodos       Periodo[]
-  gastos         Gasto[]
-  liquidaciones  Liquidacion[]
-  pagos          Pago[]
-  reclamos       Reclamo[]
-  espacios       EspacioComun[]
-  suspensiones   SuspensionEspacio[]
-  reservas       Reserva[]
-  novedades      Novedad[]
-  documentos     DocumentoConsorcio[]
-  consultas      ConsultaDocumental[]
-  extracciones   ExtraccionComprobante[]
-  conversaciones ConversacionAsistente[]
-  intentosDePago IntentoDePago[]
-  notificaciones Notificacion[]
+  administradora    Administradora          @relation(fields: [administradoraId], references: [id])
+  unidades          Unidad[]
+  proveedores       Proveedor[]
+  periodos          Periodo[]
+  gastos            Gasto[]
+  liquidaciones     Liquidacion[]
+  pagos             Pago[]
+  reclamos          Reclamo[]
+  espacios          EspacioComun[]
+  suspensiones      SuspensionEspacio[]
+  reservas          Reserva[]
+  novedades         Novedad[]
+  documentos        DocumentoConsorcio[]
+  consultas         ConsultaDocumental[]
+  extracciones      ExtraccionComprobante[]
+  conversaciones    ConversacionAsistente[]
+  intentosDePago    IntentoDePago[]
+  notificaciones    Notificacion[]
+  tramosVencimiento TramoVencimiento[]
 
   @@index([administradoraId])
 }
@@ -265,14 +266,14 @@ model Unidad {
   creadoEn      DateTime   @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn DateTime   @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  consorcio   Consorcio              @relation(fields: [consorcioId], references: [id])
-  historico   CoeficienteHistorico[]
-  ocupaciones Ocupacion[]
-  detalles    DetalleLiquidacion[]
-  pagos       Pago[]
-  reclamos    Reclamo[]
-  reservas    Reserva[]
-  novedades   Novedad[]
+  consorcio      Consorcio              @relation(fields: [consorcioId], references: [id])
+  historico      CoeficienteHistorico[]
+  ocupaciones    Ocupacion[]
+  detalles       DetalleLiquidacion[]
+  pagos          Pago[]
+  reclamos       Reclamo[]
+  reservas       Reserva[]
+  novedades      Novedad[]
   intentosDePago IntentoDePago[]
 
   @@unique([consorcioId, designacion])
@@ -489,12 +490,13 @@ model Liquidacion {
   creadoEn            DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn       DateTime          @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  consorcio  Consorcio            @relation(fields: [consorcioId], references: [id])
-  periodo    Periodo              @relation(fields: [periodoId], references: [id])
-  anulaA     Liquidacion?         @relation("Reemplazo", fields: [anulaAId], references: [id])
-  anuladaPor Liquidacion[]        @relation("Reemplazo")
-  detalles   DetalleLiquidacion[]
-  intereses  InteresLiquidado[]   @relation("Origen")
+  consorcio    Consorcio                @relation(fields: [consorcioId], references: [id])
+  periodo      Periodo                  @relation(fields: [periodoId], references: [id])
+  anulaA       Liquidacion?             @relation("Reemplazo", fields: [anulaAId], references: [id])
+  anuladaPor   Liquidacion[]            @relation("Reemplazo")
+  detalles     DetalleLiquidacion[]
+  intereses    InteresLiquidado[]       @relation("Origen")
+  vencimientos VencimientoLiquidacion[]
 
   @@index([consorcioId])
   @@index([periodoId])
@@ -529,8 +531,8 @@ model DetalleLiquidacion {
   creadoEn              DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn         DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  liquidacion  Liquidacion        @relation(fields: [liquidacionId], references: [id])
-  unidad       Unidad             @relation(fields: [unidadId], references: [id])
+  liquidacion    Liquidacion        @relation(fields: [liquidacionId], references: [id])
+  unidad         Unidad             @relation(fields: [unidadId], references: [id])
   intereses      InteresLiquidado[]
   imputaciones   PagoImputacion[]
   intentosDePago IntentoDePago[]
@@ -562,6 +564,42 @@ model InteresLiquidado {
   @@index([detalleId])
 }
 
+/// Un tramo de la regla de vencimientos escalonados de un consorcio — **economica**
+/// (RF-08). Hasta tres por consorcio; el de `orden` 1 es el base (recargo 0). Lleva
+/// `consorcio_id`, asi que la extension lo aisla.
+model TramoVencimiento {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId       String   @map("consorcio_id") @db.Uuid
+  orden             Int      @db.SmallInt
+  diaDelMes         Int      @map("dia_del_mes") @db.SmallInt
+  recargoPorcentaje Decimal  @default(0) @map("recargo_porcentaje") @db.Decimal(6, 4)
+  creadoEn          DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn     DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio Consorcio @relation(fields: [consorcioId], references: [id])
+
+  @@unique([consorcioId, orden])
+  @@index([consorcioId])
+}
+
+/// Snapshot congelado al emitir de cada tramo sobre una liquidacion concreta
+/// — **economica** (RF-08, RN-02). No lleva `consorcio_id`: cuelga de
+/// `Liquidacion`, que si lo lleva. El de mayor `orden` fija el vencimiento en
+/// firme y coincide con `Liquidacion.vencimiento`.
+model VencimientoLiquidacion {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  liquidacionId     String   @map("liquidacion_id") @db.Uuid
+  orden             Int      @db.SmallInt
+  fecha             DateTime @db.Date
+  recargoPorcentaje Decimal  @default(0) @map("recargo_porcentaje") @db.Decimal(6, 4)
+  creadoEn          DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  liquidacion Liquidacion @relation(fields: [liquidacionId], references: [id])
+
+  @@unique([liquidacionId, orden])
+  @@index([liquidacionId])
+}
+
 /// Cobro recibido de una unidad — **economica** (RF-09).
 model Pago {
   id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -578,9 +616,9 @@ model Pago {
   creadoEn      DateTime    @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn DateTime    @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  consorcio    Consorcio        @relation(fields: [consorcioId], references: [id])
-  unidad       Unidad           @relation(fields: [unidadId], references: [id])
-  imputaciones PagoImputacion[]
+  consorcio     Consorcio        @relation(fields: [consorcioId], references: [id])
+  unidad        Unidad           @relation(fields: [unidadId], references: [id])
+  imputaciones  PagoImputacion[]
   intentoDePago IntentoDePago?
 
   @@index([consorcioId])

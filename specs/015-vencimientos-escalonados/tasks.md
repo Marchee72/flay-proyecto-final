@@ -19,7 +19,7 @@ description: "Task list — Vencimientos escalonados con recargo en las expensas
 
 ## Phase 1: Setup
 
-- [ ] T001 Ramar `015-vencimientos-escalonados` sobre el fix de saldo des-arrastre de la nota #4 (rama `fix/saldo-expensa-desarrastre`) — el cálculo de expensa de #3 se apoya en `saldosDeUnidad` corregido; rebasar o mergear esa base antes de implementar.
+- [X] T001 Ramar `015-vencimientos-escalonados` sobre el fix de saldo des-arrastre de la nota #4 (rama `fix/saldo-expensa-desarrastre`) — el cálculo de expensa de #3 se apoya en `saldosDeUnidad` corregido; rebasar o mergear esa base antes de implementar.
 
 ---
 
@@ -27,10 +27,10 @@ description: "Task list — Vencimientos escalonados con recargo en las expensas
 
 **⚠️ CRITICAL**: ninguna historia empieza hasta terminar esta fase.
 
-- [ ] T002 Agregar los modelos `TramoVencimiento` (consorcioId, orden 1..3, diaDelMes 1..28, recargoPorcentaje Decimal(6,4); `@@unique([consorcioId, orden])`) y `VencimientoLiquidacion` (liquidacionId, orden, fecha Date, recargoPorcentaje Decimal(6,4); `@@unique([liquidacionId, orden])`, sin `consorcio_id`) con sus relaciones en `prisma/schema.prisma`, según `data-model.md`.
-- [ ] T003 Crear la migración versionada en `prisma/migrations/<nueva>_vencimientos_escalonados/migration.sql` (ambas tablas + disparador `fn_auditar` sobre `TramoVencimiento`, RN-15) y correr `npx prisma generate`.
-- [ ] T004 [P] Tests de dominio (TDD — escribir y verlos FALLAR primero) en `pruebas/dominio/liquidacion/vencimientos.spec.ts`: `recargoVigente` por tramo y en las fronteras (día de vencimiento inclusive), vencida en firme → recargo 0; `montoExigible` al centavo (base × (1+recargo), redondeo solo al final); `validarReglaVencimientos` rechaza último recargo ≥ mora, días no ascendentes, día > 28 y 1er tramo con recargo ≠ 0 (casos de `quickstart.md` V1).
-- [ ] T005 Implementar el módulo de dominio puro `src/dominio/liquidacion/vencimientos.ts` (`recargoVigente`, `montoExigible`, `validarReglaVencimientos` con firmas de `contracts/contratos.md`) hasta que T004 pase. Sin acceso a infraestructura (Principio III); `Decimal` para todo importe/porcentaje.
+- [X] T002 Agregar los modelos `TramoVencimiento` (consorcioId, orden 1..3, diaDelMes 1..28, recargoPorcentaje Decimal(6,4); `@@unique([consorcioId, orden])`) y `VencimientoLiquidacion` (liquidacionId, orden, fecha Date, recargoPorcentaje Decimal(6,4); `@@unique([liquidacionId, orden])`, sin `consorcio_id`) con sus relaciones en `prisma/schema.prisma`, según `data-model.md`.
+- [X] T003 Crear la migración versionada en `prisma/migrations/<nueva>_vencimientos_escalonados/migration.sql` (ambas tablas + disparador `fn_auditar` sobre `TramoVencimiento`, RN-15) y correr `npx prisma generate`.
+- [X] T004 [P] Tests de dominio (TDD — escribir y verlos FALLAR primero) en `pruebas/dominio/liquidacion/vencimientos.spec.ts`: `recargoVigente` por tramo y en las fronteras (día de vencimiento inclusive), vencida en firme → recargo 0; `montoExigible` al centavo (base × (1+recargo), redondeo solo al final); `validarReglaVencimientos` rechaza último recargo ≥ mora, días no ascendentes, día > 28 y 1er tramo con recargo ≠ 0 (casos de `quickstart.md` V1).
+- [X] T005 Implementar el módulo de dominio puro `src/dominio/liquidacion/vencimientos.ts` (`recargoVigente`, `montoExigible`, `validarReglaVencimientos` con firmas de `contracts/contratos.md`) hasta que T004 pase. Sin acceso a infraestructura (Principio III); `Decimal` para todo importe/porcentaje.
 
 **Checkpoint**: esquema migrado y cálculo de recargo probado sin base.
 

@@ -231,3 +231,87 @@ describe('cobro con recargo escalonado (RF-08, US2)', () => {
     expect(Number(pago.imputaciones[0]!.importeImputado)).toBeLessThan(1000)
   })
 })
+
+describe('vencimiento en firme, arrastre y congelado (RF-08, US3/US4)', () => {
+  let rubroId: string
+
+  beforeEach(async () => {
+    await guardarReglaVencimientos(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      tramos: [
+        { orden: 1, diaDelMes: 10, recargoPorcentaje: '0.0000' },
+        { orden: 2, diaDelMes: 20, recargoPorcentaje: '1.0000' },
+        { orden: 3, diaDelMes: 28, recargoPorcentaje: '1.5000' },
+      ],
+    })
+    await cargarPadron(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidades: [{ designacion: '1A', coeficiente: '100.00000000' }],
+    })
+    rubroId = (
+      await prismaBase.rubroGasto.upsert({
+        where: { nombre: 'Rubro de prueba' },
+        update: {},
+        create: { nombre: 'Rubro de prueba', clasificacion: 'ordinario' },
+      })
+    ).id
+  })
+
+  async function emitirMes(mes: number) {
+    const { periodoId } = await periodoPara(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      anio: 2026,
+      mes,
+    })
+    await registrarGasto(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId,
+      rubroId,
+      importe: '1000.00',
+      fecha: new Date(`2026-${String(mes).padStart(2, '0')}-05`),
+      descripcion: `Gasto ${mes}`,
+    })
+    await cerrarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
+    return liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
+  }
+
+  it('impaga tras el ultimo vencimiento: arrastra el base (no el recargado) y la mora corre sobre el base', async () => {
+    await emitirMes(1) // vence 10/20/28 de 02/2026; queda impaga
+    const febrero = await emitirMes(2)
+
+    const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+      where: { liquidacionId: febrero.liquidacionId },
+    })
+    // El arrastre es el base 1000, no 1015 (1,5 %): el recargo del mes no se traslada.
+    expect(detalle.deudaAnterior.toFixed(2)).toBe('1000.00')
+    // La mora (2 % mensual del consorcio) corre sobre el base arrastrado.
+    expect(Number(detalle.interesMora)).toBeGreaterThan(0)
+  })
+
+  it('cambiar la regla del consorcio no altera una liquidacion ya emitida (congelado)', async () => {
+    const enero = await emitirMes(1)
+
+    // Se cambia la regla a un solo vencimiento sin recargo.
+    await guardarReglaVencimientos(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      tramos: [{ orden: 1, diaDelMes: 15, recargoPorcentaje: '0.0000' }],
+    })
+
+    const vencimientos = await prismaBase.vencimientoLiquidacion.findMany({
+      where: { liquidacionId: enero.liquidacionId },
+      orderBy: { orden: 'asc' },
+    })
+    // La liquidacion de enero conserva sus tres tramos originales.
+    expect(vencimientos).toHaveLength(3)
+    expect(vencimientos.map((v) => v.recargoPorcentaje.toFixed(4))).toEqual([
+      '0.0000',
+      '1.0000',
+      '1.5000',
+    ])
+  })
+})

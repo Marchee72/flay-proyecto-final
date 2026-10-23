@@ -72,9 +72,9 @@ description: "Task list — Vencimientos escalonados con recargo en las expensas
 
 **Independent Test**: expensa impaga pasado el último vencimiento → al liquidar el período siguiente arrastra el base (no el recargado) y la mora se calcula sobre el base.
 
-- [ ] T014 [US3] Estado "vencida en firme" tras el último vencimiento en `src/aplicacion/liquidacion/ver-expensa.ts` y `src/aplicacion/pagos/estado-de-cuenta.ts`: el exigible vuelve al base (el recargo no aplica), estado `vencida`; una expensa dentro de su mes no lleva mora.
-- [ ] T015 [US3] Confirmar/ajustar en `src/aplicacion/liquidacion/liquidar.ts` (`deudaVigentePorUnidad`, `interesPorMora`) que la mora corre desde `Liquidacion.vencimiento` = último vencimiento y que el arrastre usa el base (`totalUnidad`, sin recargo); documentar que el recargo no se arrastra (lo reemplaza la mora, D4/D7).
-- [ ] T016 [P] [US3] Test de integración (`quickstart.md` V5) en `pruebas/integracion/vencimientos-escalonados.spec.ts`: impaga pasado el último venc → arrastra base; mora sobre base; sin mora antes del último venc.
+- [X] T014 [US3] Estado "vencida en firme" tras el último vencimiento en `src/aplicacion/liquidacion/ver-expensa.ts` y `src/aplicacion/pagos/estado-de-cuenta.ts`: el exigible vuelve al base (el recargo no aplica), estado `vencida`; una expensa dentro de su mes no lleva mora.
+- [X] T015 [US3] Confirmar/ajustar en `src/aplicacion/liquidacion/liquidar.ts` (`deudaVigentePorUnidad`, `interesPorMora`) que la mora corre desde `Liquidacion.vencimiento` = último vencimiento y que el arrastre usa el base (`totalUnidad`, sin recargo); documentar que el recargo no se arrastra (lo reemplaza la mora, D4/D7).
+- [X] T016 [P] [US3] Test de integración (`quickstart.md` V5) en `pruebas/integracion/vencimientos-escalonados.spec.ts`: impaga pasado el último venc → arrastra base; mora sobre base; sin mora antes del último venc.
 
 **Checkpoint**: el ciclo recargo → vence en firme → mora funciona sin duplicar cargos.
 
@@ -86,9 +86,9 @@ description: "Task list — Vencimientos escalonados con recargo en las expensas
 
 **Independent Test**: cambiar la regla del consorcio no altera una expensa ya emitida; el PDF y el detalle muestran los tramos congelados.
 
-- [ ] T017 [US4] Reflejar los tramos congelados en `src/aplicacion/pagos/estado-de-cuenta.ts` (saldo/último movimiento según el exigible por fecha) y en el detalle de la expensa.
-- [ ] T018 [US4] Incluir la tabla de vencimientos congelados (fecha + monto por tramo) en el PDF de la expensa, en `src/aplicacion/liquidacion/documentos.ts` (`@react-pdf/renderer`).
-- [ ] T019 [P] [US4] Test de integración (`quickstart.md` V3) en `pruebas/integracion/vencimientos-escalonados.spec.ts`: emitir con 3 tramos, cambiar la regla del consorcio, y verificar que la liquidación emitida conserva sus tramos.
+- [X] T017 [US4] Reflejar los tramos congelados en `src/aplicacion/pagos/estado-de-cuenta.ts` (saldo/último movimiento según el exigible por fecha) y en el detalle de la expensa.
+- [X] T018 [US4] Incluir la tabla de vencimientos congelados (fecha + monto por tramo) en el PDF de la expensa, en `src/aplicacion/liquidacion/documentos.ts` (`@react-pdf/renderer`).
+- [X] T019 [P] [US4] Test de integración (`quickstart.md` V3) en `pruebas/integracion/vencimientos-escalonados.spec.ts`: emitir con 3 tramos, cambiar la regla del consorcio, y verificar que la liquidación emitida conserva sus tramos.
 
 **Checkpoint**: todas las historias funcionan de forma independiente.
 

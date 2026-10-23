@@ -305,6 +305,10 @@ describe('el renderizador real', () => {
       periodo: '07/2026',
       vencimiento: '10/08/2026',
       unidad: { designacion: '1A', tipo: 'departamento' },
+      vencimientos: [
+        { fecha: '10/08/2026', recargoPorcentaje: '0.0000', monto: '150500.00' },
+        { fecha: '20/08/2026', recargoPorcentaje: '5.0000', monto: '158025.00' },
+      ],
       coeficienteAplicado: '12.50000000',
       gastos: [
         {

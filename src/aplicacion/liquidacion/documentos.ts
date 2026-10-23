@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import { Decimal, importe } from '@/compartido/dinero'
 import { fechaParaMostrar, importeSerializado } from '@/compartido/formato'
+import { montoExigible } from '@/dominio/liquidacion/vencimientos'
 import type { AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
 import type {
   ExpensaParaDocumento,
@@ -61,6 +62,7 @@ export function manejadorDocumentoExpensa(
           include: {
             periodo: { select: { anio: true, mes: true } },
             consorcio: { select: { id: true, nombre: true, direccion: true, localidad: true } },
+            vencimientos: { orderBy: { orden: 'asc' } },
           },
         },
       },
@@ -90,6 +92,20 @@ export function manejadorDocumentoExpensa(
       periodo: periodoDe(detalle.liquidacion.periodo),
       vencimiento: fechaParaMostrar(detalle.liquidacion.vencimiento.toISOString()),
       unidad: detalle.unidad,
+      // Los vencimientos escalonados con el monto a pagar hasta cada fecha
+      // (RF-08). Al emitir el saldo es el total, asi que el monto sale del total.
+      // Una liquidacion vieja sin tramos usa su vencimiento unico sin recargo.
+      vencimientos: (detalle.liquidacion.vencimientos.length > 0
+        ? detalle.liquidacion.vencimientos.map((v) => ({
+            fecha: v.fecha,
+            recargo: v.recargoPorcentaje.toFixed(4),
+          }))
+        : [{ fecha: detalle.liquidacion.vencimiento, recargo: '0.0000' }]
+      ).map((tramo) => ({
+        fecha: fechaParaMostrar(tramo.fecha.toISOString()),
+        recargoPorcentaje: tramo.recargo,
+        monto: montoExigible(importeSerializado(detalle.totalUnidad), tramo.recargo),
+      })),
       coeficienteAplicado: detalle.coeficienteAplicado.toFixed(8),
       gastos: agruparGastos(gastos, {
         ordinario: importeSerializado(detalle.liquidacion.totalOrdinario),

@@ -22,6 +22,12 @@ comunicación. Mantenerlo.
 `test:integracion` → `build` → `test:e2e`, en ese orden, para que lo que no necesita base falle en
 el primer minuto.
 
+**Antes de cualquier commit o push corré `npm run format:check` (y si marca algo, `prettier --write .`).**
+`format:check` es el primer eslabón del gate y el que más seguido voltea los checks del PR: basta un
+salto de línea que Prettier habría metido para que el job falle en el minuto uno, antes de compilar o
+testear nada. No alcanza con que la lógica esté bien. Si no vas a correr el gate entero localmente,
+formateá sí o sí.
+
 | Guion | Para qué |
 |---|---|
 | `npm run dev` | Servidor de desarrollo |

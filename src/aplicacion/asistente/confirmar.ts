@@ -119,7 +119,8 @@ export async function confirmarPropuesta(
           where: { id: datos.propuestaId, estadoPropuesta: 'confirmada' },
           data: { estadoPropuesta: 'pendiente' },
         })
-        if (error instanceof ErrorDeAplicacion) await anotar(`No se pudo: ${error.mensajeParaUsuario}`)
+        if (error instanceof ErrorDeAplicacion)
+          await anotar(`No se pudo: ${error.mensajeParaUsuario}`)
         throw error
       }
     },

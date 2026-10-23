@@ -280,7 +280,9 @@ describe('escrituras con confirmacion (Principio IV, FR-008)', () => {
       if (p.modo === 'propuesta') await confirmar(administrador, p.propuestaId)
     }
     await expect(intentar()).rejects.toBeInstanceOf(NoEncontrado)
-    expect((await prismaBase.espacioComun.findUnique({ where: { id: otro.id } }))?.activo).toBe(true)
+    expect((await prismaBase.espacioComun.findUnique({ where: { id: otro.id } }))?.activo).toBe(
+      true,
+    )
   })
 })
 

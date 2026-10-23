@@ -141,11 +141,16 @@ export interface Sugerencia {
   herramienta?: string
 }
 
-/** `consorcios` solo viaja en modo «todos»: los del alcance del usuario. */
+/**
+ * `consorcios` solo viaja en modo «todos» (los del alcance del usuario);
+ * `consorcioActivo`, solo en modo un-consorcio: el seleccionado, para que el
+ * modelo sepa de cual habla y no se refiera a ningun otro. Son excluyentes.
+ */
 export interface ContextoAgente {
   hoy: string
   rolTexto: string
   consorcios?: { id: string; nombre: string }[]
+  consorcioActivo?: { nombre: string; direccion: string | null }
 }
 
 export interface AgenteConversacional {

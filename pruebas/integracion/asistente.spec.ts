@@ -127,21 +127,15 @@ describe('alcance (RN-12, Principio I)', () => {
     await expect(pedir(ajeno, 'ver_espacios')).rejects.toBeInstanceOf(NoEncontrado)
   })
 
-  it('un consorcio fuera del alcance se declara no encontrado, sin datos', async () => {
-    const r = await pedir(vecino.id, `ver_espacios consorcioId=${otroConsorcioId}`)
-    expect(r.modo).toBe('respuesta')
-    if (r.modo === 'respuesta') {
-      expect(r.texto).toMatch(/No encontré ese consorcio/)
-      expect(r.enlaces).toEqual([])
-    }
-  })
-
-  it('el administrador consulta otro consorcio de su alcance', async () => {
+  it('con un consorcio seleccionado, nombrar otro no sale del seleccionado', async () => {
+    // El admin accede a ambos, pero con uno activo el `consorcioId` colado se ignora:
+    // la lectura queda en el seleccionado (candado al activo), no salta al otro.
     const r = await pedir(administrador, `ver_espacios consorcioId=${otroConsorcioId}`)
     expect(r.modo).toBe('respuesta')
     if (r.modo === 'respuesta') {
-      expect(r.texto).toContain('Quincho')
-      expect(r.enlaces[0].consorcioId).toBe(otroConsorcioId)
+      expect(r.texto).toContain('SUM')
+      expect(r.texto).not.toContain('Quincho')
+      expect(r.enlaces[0].consorcioId).toBe(consorcioId)
     }
   })
 })
@@ -236,6 +230,11 @@ describe('escrituras con confirmacion (Principio IV, FR-008)', () => {
     const fila = await prismaBase.mensajeAsistente.findUnique({ where: { id: p.propuestaId } })
     expect(fila?.estadoPropuesta).toBe('pendiente')
     expect(await reservas()).toBe(0)
+
+    // El motivo del rechazo entra al contexto: el proximo turno lo ve el modelo.
+    vistos.length = 0
+    await pedir(vecino.id, 'y entonces?', consorcioId, p.conversacionId)
+    expect(vistos[0]).toContain('48 horas')
   })
 
   it('gestion no economica: deshabilitar un espacio exige confirmar y solo lo hace el administrador', async () => {
@@ -267,19 +266,21 @@ describe('escrituras con confirmacion (Principio IV, FR-008)', () => {
     expect(r.ejecutada).toBe(true)
   })
 
-  it('una escritura sobre otro consorcio propio se confirma sobre ese consorcio', async () => {
+  it('con un consorcio seleccionado, una escritura no alcanza a otro consorcio', async () => {
     const otro = await prismaBase.espacioComun.findFirstOrThrow({
       where: { consorcioId: otroConsorcioId },
     })
-    const p = await pedir(
-      administrador,
-      `deshabilitar_espacio espacioId=${otro.id} motivo=reforma consorcioId=${otroConsorcioId}`,
-    )
-    if (p.modo !== 'propuesta') throw new Error('se esperaba una propuesta')
-    await confirmar(administrador, p.propuestaId)
-    expect((await prismaBase.espacioComun.findUnique({ where: { id: otro.id } }))?.activo).toBe(
-      false,
-    )
+    // El admin accede a ambos, pero con uno activo el `consorcioId` colado se ignora:
+    // el id del espacio se resuelve en el seleccionado, donde no existe (RN-12). El otro queda intacto.
+    const intentar = async () => {
+      const p = await pedir(
+        administrador,
+        `deshabilitar_espacio espacioId=${otro.id} motivo=reforma consorcioId=${otroConsorcioId}`,
+      )
+      if (p.modo === 'propuesta') await confirmar(administrador, p.propuestaId)
+    }
+    await expect(intentar()).rejects.toBeInstanceOf(NoEncontrado)
+    expect((await prismaBase.espacioComun.findUnique({ where: { id: otro.id } }))?.activo).toBe(true)
   })
 })
 

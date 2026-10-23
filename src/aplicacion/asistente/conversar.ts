@@ -19,7 +19,7 @@ import {
 } from '@/aplicacion/asistente/herramientas'
 import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { sinConsorcio } from '@/infraestructura/cliente-aislado'
-import { prisma } from '@/infraestructura/prisma'
+import { prisma, prismaBase } from '@/infraestructura/prisma'
 
 /**
  * El orquestador del asistente (RF-27, CU-16). Entiende el pedido con el agente,
@@ -213,10 +213,19 @@ export async function conversar(
         consorcioId: datos.consorcioId,
         roles: acceso.roles,
       }
+      // En modo un-consorcio, el modelo recibe cual es el activo (nombre y direccion)
+      // para situarse; en cartera ya tiene la lista. `datos.consorcioId` esta autorizado.
+      const consorcioActivo = datos.cartera
+        ? undefined
+        : ((await prismaBase.consorcio.findUnique({
+            where: { id: datos.consorcioId },
+            select: { nombre: true, direccion: true },
+          })) ?? undefined)
       const contexto: ContextoAgente = {
         hoy: hoyEnArgentina(reloj.hoy()),
         rolTexto: rolTextoDe(rolesOferta),
         consorcios: datos.cartera ? alcance.map(({ id, nombre }) => ({ id, nombre })) : undefined,
+        consorcioActivo,
       }
       const enlaces: EnlaceDeDatos[] = []
 
@@ -299,7 +308,10 @@ export async function conversar(
           destino = destinos[0]!.id
           rolesDestino = destinos[0]!.roles
         }
+        // El salto a otro consorcio solo existe en «todos»: con uno seleccionado todo
+        // queda en el activo y un `consorcioId` colado se ignora (candado al seleccionado).
         if (
+          datos.cartera &&
           typeof pedido === 'string' &&
           pedido &&
           pedido !== datos.consorcioId &&

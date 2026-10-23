@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { ArrowRight, Bot, LoaderCircle, Send, X } from 'lucide-react'
 
-import { avisar } from '../../avisos'
 import type { EnlaceDeDatos, EventoAsistente } from '@/aplicacion/asistente/conversar'
 import { accionConfirmar, accionDescartar } from './acciones'
 import { destinoDe, tituloDe } from './enlaces'
@@ -223,9 +222,14 @@ export function Asistente({
   const confirmar = (propuestaId: string, consorcio: string) =>
     empezar(async () => {
       const r = await accionConfirmar(consorcio, propuestaId)
+      // Un solo clic resuelve la tarjeta pase lo que pase: los botones no vuelven.
+      // El resultado (bien o mal) sale en el hilo, nunca en un toast, y el servidor
+      // lo dejo en el contexto; reintentar es pedirlo de nuevo en el chat.
       marcar(propuestaId)
-      if (r.ok) avisar(r.texto, 'exito')
-      else avisar(r.mensaje, 'problema')
+      setLineas((l) => [
+        ...l,
+        r.ok ? { de: 'asistente', texto: r.texto } : { de: 'estado', texto: r.mensaje },
+      ])
     })
 
   const descartar = (propuestaId: string, consorcio: string) =>

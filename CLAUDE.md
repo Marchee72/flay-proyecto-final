@@ -155,7 +155,15 @@ Veintiséis decisiones que costaron una vuelta y conviene no volver a tomar desd
 
 1. **El orden de las semillas y las pruebas.** `npm run test:integracion` **vacía** las tablas de
    negocio, semilla incluida: en una base compartida no hay forma de distinguir lo sembrado de lo
-   que dejó una corrida anterior. Se siembra y se mide, nunca al revés.
+   que dejó una corrida anterior. Se siembra y se mide, nunca al revés. Y al revés de verdad no
+   funciona: la limpieza de los tests (`limpiar()` en `pruebas/integracion/ayudas.ts`) borra
+   `Periodo` **sin** `.catch`, y los datos de `npm run semilla` traen liquidaciones reales con sus
+   pagos, detalles e intereses; esa fila de `Periodo` no cae y `limpiar()` **explota por FK**,
+   abortando el `afterEach` y dejando que cada test siguiente acumule basura (decenas de consorcios
+   fantasma, cientos de fallos). Si pasó: `prisma migrate reset --force --skip-seed`, y como el
+   reset no puede recrear la extensión `vector` (pide superusuario), antes correr
+   `CREATE EXTENSION IF NOT EXISTS vector` (+ `btree_gist`, `pgcrypto`) como `postgres`, después
+   `prisma migrate deploy` y recién ahí `npm run semilla`.
 2. **La bitácora no se limpia.** `flay_app` no tiene `DELETE` sobre `BitacoraAuditoria`, así que una
    prueba que intente vaciarla falla —y eso es exactamente lo que SC-008 promete—. Cada prueba de
    auditoría se acota a las filas de su propia corrida.
@@ -276,6 +284,15 @@ Veintiséis decisiones que costaron una vuelta y conviene no volver a tomar desd
     `IN` nuestro: por eso no entra nada a la lista blanca de `filtro-unico.spec.ts`. Es un solo salto
     (`MAX_SALTOS` no se toca) y de mejor esfuerzo. Una escritura de un solo consorcio se ofrece también en cartera, pero solo con el consorcio nombrado: se enruta a ese (`conversar` + `confirmar`, cada uno reautoriza) y sin nombrarlo se pregunta cuál (SC-010). Las personas hablan con nombres: el prompt le pide al modelo resolver nombre→id con las lecturas, nunca pedir un id.
 
+    **El cruce entre consorcios es exclusivo del modo «todos».** Con un consorcio seleccionado hay
+    candado: `parametrosParaModelo` **no** ofrece el parámetro `consorcioId` (solo lo suma en cartera),
+    y el salto a otro consorcio en `conversar` está gateado por `datos.cartera`, así que un
+    `consorcioId` colado en modo un-consorcio se ignora y todo —lectura y escritura— queda en el
+    activo (nombrar un recurso de otro edificio lo resuelve en el seleccionado, donde no existe →
+    RN-12). Para situar al modelo, en modo un-consorcio `conversar` le pasa `consorcioActivo`
+    (nombre y dirección) en el `ContextoAgente`, y el prompt dice que no existe ningún otro; en
+    cartera, en cambio, viaja la lista de `consorcios`. Son excluyentes.
+
 27. **Los vencimientos escalonados no reemplazan la mora, conviven (RF-08).** Un consorcio puede
     tener hasta tres vencimientos con recargo (`TramoVencimiento`, regla fija; el 1º es el base, 0 %).
     Al emitir, la liquidación **congela** sus tramos en `VencimientoLiquidacion` y
@@ -289,6 +306,17 @@ Veintiséis decisiones que costaron una vuelta y conviene no volver a tomar desd
     exigible y el estado («vencida» solo al vencer en firme) **dependen de la fecha** (hora de
     Argentina). Una liquidación emitida antes de la regla no tiene tramos: se la trata como un solo
     vencimiento sin recargo, idéntico a antes.
+
+    **La regla se lee de dos formas y no hay que confundirlas.** En la **boleta y el almacenamiento**
+    (`TramoVencimiento`, modelo de siempre) el recargo vive en el vencimiento **hasta el que se
+    paga** y el 1er tramo es el base (0 %): la expensa dice «pagando hasta el día 20: base + 5 %». En
+    la **pantalla de configuración** el administrador lo piensa al revés —el recargo se setea en el
+    vencimiento **después del cual** rige, así el 1er vencimiento ya lleva su recargo y la última
+    fecha es la del firme (sin recargo, mora después)—. Son equivalentes: convertir de una a otra es
+    **correr el recargo un lugar**, y ese corrimiento vive **solo** en `tramosDesdeEscalonado` /
+    `escalonadoDesdeTramos` (`src/dominio/liquidacion/vencimientos.ts`), que usan la acción y la
+    página de `vencimientos/`. El dominio, la validación (1er tramo 0 %, mora > recargo más alto), el
+    congelado, el PDF y los pagos siguen en el modelo de boleta, intactos.
 
 ## Notas
 

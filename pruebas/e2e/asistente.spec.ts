@@ -57,7 +57,8 @@ test('reservar por el chat: tarjeta, confirmar una vez y aviso', async ({ page }
   expect(await desbordaALoAncho(page)).toBe(false)
 
   await panel.getByRole('button', { name: 'Confirmar' }).click()
-  await expect(page.getByRole('status').filter({ hasText: 'la acción se realizó' })).toBeVisible()
+  // El resultado vuelve DENTRO del chat, no como toast de afuera (RF-27).
+  await expect(panel.getByText(/la acción se realizó/)).toBeVisible()
   await expect(panel.getByText('Resuelta.')).toBeVisible()
   expect(await prisma.reserva.count({ where: { consorcioId: escenario.consorcioId } })).toBe(1)
 })
@@ -122,8 +123,8 @@ test('una sugerencia no ejecuta nada: manda el pedido y la tarjeta espera el cli
 
   await panel.getByRole('button', { name: 'Confirmar' }).click()
   await expect(panel.getByText('Resuelta.')).toBeVisible()
-  // `Resuelta.` se marca también si la confirmación falló: se espera el efecto, no el cartel, y
-  // si no llega el mensaje dice qué avisó la pantalla.
+  // Al confirmar OK la tarjeta queda `Resuelta.`; aun asi se espera el efecto en base, no el
+  // cartel, y si no llega el mensaje dice que aviso la pantalla.
   const avisos = await page.locator('[role=status], [role=alert]').allTextContents()
   await expect
     .poll(() => prisma.reclamo.count({ where: { consorcioId: escenario.consorcioId } }), {

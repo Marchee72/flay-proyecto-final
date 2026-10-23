@@ -43,6 +43,13 @@ const reglasDeCartera = (c: ContextoAgente): string =>
 - Una accion (crear, deshabilitar, cancelar, asignar, etc.) se hace sobre UN consorcio: incluye siempre su consorcioId (el que la persona nombro, por nombre o direccion). Si no dijo cual, preguntaselo; nunca la hagas sobre todos.`
     : ''
 
+/** Solo en modo un-consorcio: le dice al modelo cual es, y que no existe ningun otro aca. */
+const reglaDeConsorcio = (c: ContextoAgente): string =>
+  c.consorcioActivo
+    ? `
+- Estas atendiendo el consorcio ${c.consorcioActivo.nombre}${c.consorcioActivo.direccion ? `, ${c.consorcioActivo.direccion}` : ''}. Todo lo que consultes o hagas es sobre ESE consorcio; en esta conversacion no existe ningun otro, no lo nombres ni intentes operarlo.`
+    : ''
+
 const cliente = () => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
 
 /** Errores de cuota o de carga del proveedor: un reintento con espera y listo. */
@@ -367,7 +374,7 @@ Reglas, sin excepcion:
 - Para crear, asignar o publicar algo, llamas a la herramienta correspondiente con sus argumentos: NO afirmes que ya lo hiciste. La confirmacion la da la persona despues.
 - Despues de usar una herramienta, contestas en prosa, con el dato concreto, en una o dos frases. Nada de tablas, ni markdown, ni volcar el JSON: la pantalla con el detalle se la ofrece la interfaz aparte con un enlace. Si hay varios items, a lo sumo una lista corta con guiones.
 - La persona habla con NOMBRES, nunca con identificadores: no conoce los ids y NUNCA se los pidas. Para una accion que necesita un id (espacio, unidad, reclamo, proveedor, documento, novedad), primero llama a la lectura que los lista (ver_espacios, ver_mis_unidades, ver_unidades_para_reclamar, ver_reclamos, ver_proveedores, ver_documentos, ver_novedades), busca por el nombre que dijo y usa el id que corresponda.
-- Preguntas solo lo que la persona puede saber: un dato que no es un id (motivo, fecha, hora) o cual de varios nombres parecidos quiso decir, o cuando el nombre no aparece en la lista.${reglasDeCartera(contexto)}`
+- Preguntas solo lo que la persona puede saber: un dato que no es un id (motivo, fecha, hora) o cual de varios nombres parecidos quiso decir, o cuando el nombre no aparece en la lista.${reglasDeCartera(contexto)}${reglaDeConsorcio(contexto)}`
       const contents = historial.map((t) =>
         t.rol === 'usuario'
           ? { role: 'user' as const, parts: [{ text: t.texto }] }
@@ -432,7 +439,7 @@ Segun la conversacion, propone hasta tres proximos pasos concretos que la person
 - "pedido": el mensaje que la persona mandaria, en primera persona, con los datos que ya salieron en la conversacion.
 - "herramienta": la herramienta que haria falta, de la lista; null si es una pregunta.
 - Si falta un dato para actuar, una sugerencia es preguntarlo. Si una accion no esta en la lista, no la propongas.
-- Si no hay nada util que proponer, devolve una lista vacia.`
+- Si no hay nada util que proponer, devolve una lista vacia.${reglaDeConsorcio(contexto)}`
       const conversacion = historial
         .map((t) =>
           t.rol === 'herramienta'

@@ -22,11 +22,20 @@ comunicación. Mantenerlo.
 `test:integracion` → `build` → `test:e2e`, en ese orden, para que lo que no necesita base falle en
 el primer minuto.
 
-**Antes de cualquier commit o push corré `npm run format:check` (y si marca algo, `prettier --write .`).**
-`format:check` es el primer eslabón del gate y el que más seguido voltea los checks del PR: basta un
-salto de línea que Prettier habría metido para que el job falle en el minuto uno, antes de compilar o
-testear nada. No alcanza con que la lógica esté bien. Si no vas a correr el gate entero localmente,
-formateá sí o sí.
+**El check `verificar` del PR corre más que `npm run verificar`, y lo que sobra es lo que más seguido
+voltea el PR.** `.github/workflows/verificacion.yml` encadena, *después* del gate: `npm run test:a11y`,
+`npm run docs:versiones` (**FR-023**), un escaneo de secretos y `npm audit --omit=dev --audit-level=high`.
+Antes de pushear, además del gate:
+
+- **Formatear.** `format:check` es el primer eslabón y cae con un solo salto de línea que Prettier
+  habría metido, antes de compilar o testear nada. Si no vas a correr el gate entero, `prettier --write .`
+  sí o sí.
+- **Tocar una dependencia ⇒ tocar el § 14.1.** `npm run docs:versiones` compara `docs/entrega-final/
+  14-codificacion.md` § 14.1 contra `package-lock.json` al pie de la letra: subís `next` y no mencionás
+  la versión nueva en el doc, falla. Corré `docs:versiones` después de cualquier `npm install`.
+- **`npm audit` no está en el gate.** Un aviso crítico recién publicado sobre una dependencia de
+  producción (típicamente `next`) rompe **todos** los PRs hasta que se sube la versión parcheada —y eso
+  arrastra el § 14.1 por el punto anterior—. Corré `npm audit --omit=dev --audit-level=high` antes de pushear.
 
 | Guion | Para qué |
 |---|---|

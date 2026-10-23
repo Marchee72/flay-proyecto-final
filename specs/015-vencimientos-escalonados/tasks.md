@@ -96,8 +96,8 @@ description: "Task list — Vencimientos escalonados con recargo en las expensas
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] T020 [P] Actualizar documentación: el punto correspondiente en `docs/` (vencimientos y recargo; aclarar que convive con la mora RN-08) y una nota en `CLAUDE.md` sobre la semántica "`Liquidacion.vencimiento` = último vencimiento" y el recargo derivado.
-- [ ] T021 Verificar compatibilidad hacia atrás (`quickstart.md` V7): un consorcio sin regla liquida como hoy (un vencimiento, recargo 0); las liquidaciones viejas no cambian.
+- [X] T020 [P] Actualizar documentación: el punto correspondiente en `docs/` (vencimientos y recargo; aclarar que convive con la mora RN-08) y una nota en `CLAUDE.md` sobre la semántica "`Liquidacion.vencimiento` = último vencimiento" y el recargo derivado.
+- [X] T021 Verificar compatibilidad hacia atrás (`quickstart.md` V7): un consorcio sin regla liquida como hoy (un vencimiento, recargo 0); las liquidaciones viejas no cambian.
 - [ ] T022 Correr `npm run verificar` completo (format, lint, typecheck, test:dominio, db:deploy, db:drift, test:integracion, build, test:e2e/a11y) en verde.
 
 ---

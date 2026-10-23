@@ -276,6 +276,20 @@ Veintiséis decisiones que costaron una vuelta y conviene no volver a tomar desd
     `IN` nuestro: por eso no entra nada a la lista blanca de `filtro-unico.spec.ts`. Es un solo salto
     (`MAX_SALTOS` no se toca) y de mejor esfuerzo. Una escritura de un solo consorcio se ofrece también en cartera, pero solo con el consorcio nombrado: se enruta a ese (`conversar` + `confirmar`, cada uno reautoriza) y sin nombrarlo se pregunta cuál (SC-010). Las personas hablan con nombres: el prompt le pide al modelo resolver nombre→id con las lecturas, nunca pedir un id.
 
+27. **Los vencimientos escalonados no reemplazan la mora, conviven (RF-08).** Un consorcio puede
+    tener hasta tres vencimientos con recargo (`TramoVencimiento`, regla fija; el 1º es el base, 0 %).
+    Al emitir, la liquidación **congela** sus tramos en `VencimientoLiquidacion` y
+    `Liquidacion.vencimiento` pasa a ser el **último** tramo (el que vence en firme): así la mora
+    (RN-08) sigue corriendo desde él sin tocarse. El recargo es **derivado**, no se persiste en
+    `totalUnidad`; por eso al vencer en firme se arrastra el **base** y la mora toma el relevo (la
+    validación exige mora mensual > recargo del último tramo, si no conviene dejar vencer). El
+    recargo cobrado se registra como **cargo propio** en `PagoImputacion.recargoCobrado` —no como
+    saldo a favor—: `imputar` separa capital de recargo y el exigible es `base + redondeo(base ×
+    recargo/100)`, al centavo igual en pantalla, en la imputación y en el cobro en línea. El monto
+    exigible y el estado («vencida» solo al vencer en firme) **dependen de la fecha** (hora de
+    Argentina). Una liquidación emitida antes de la regla no tiene tramos: se la trata como un solo
+    vencimiento sin recargo, idéntico a antes.
+
 ## Notas
 
 - La organización cliente ("Grupo Delta") es **ficticia**, construida para el ejercicio académico.

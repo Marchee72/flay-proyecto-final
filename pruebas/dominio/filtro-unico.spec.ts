@@ -31,6 +31,10 @@ const PERMITIDOS: Record<string, string> = {
     'la bandeja cruza los consorcios que el usuario administra: el IN sale de la habilitacion, nunca de un parametro',
   'src/aplicacion/consorcios/resumen.ts':
     'la cabecera es el consorcio, direccionado por su propio identificador (como ver-consorcio)',
+  'src/aplicacion/consorcios/regla-vencimientos.ts':
+    'lee del consorcio, por su propio identificador, el dia de vencimiento y la tasa de mora (como liquidar)',
+  'src/aplicacion/asistente/conversar.ts':
+    'lee la cabecera del consorcio activo por su propio identificador, para situar al modelo (como ver-consorcio)',
 }
 
 /** El filtro escrito a mano: `consorcioId` dentro de un `where` o un `data`. */

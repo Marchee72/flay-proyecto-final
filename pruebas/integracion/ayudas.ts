@@ -78,6 +78,7 @@ export async function limpiar() {
   await prismaBase.pagoImputacion.deleteMany({}).catch(() => {})
   await prismaBase.pago.deleteMany({}).catch(() => {})
   await prismaBase.interesLiquidado.deleteMany({}).catch(() => {})
+  await prismaBase.vencimientoLiquidacion.deleteMany({}).catch(() => {})
   await prismaBase.detalleLiquidacion.deleteMany({}).catch(() => {})
   await prismaBase.liquidacion.deleteMany({}).catch(() => {})
   await prismaBase.periodo.deleteMany({})
@@ -93,6 +94,7 @@ export async function limpiar() {
   await prismaBase.trabajoPendiente.deleteMany({})
   await prismaBase.usuario.deleteMany({})
   await prismaBase.persona.deleteMany({})
+  await prismaBase.tramoVencimiento.deleteMany({})
   await prismaBase.consorcio.deleteMany({})
   await prismaBase.administradora.deleteMany({})
   // El catalogo de rubros es global y no lleva consorcio, asi que nada de lo

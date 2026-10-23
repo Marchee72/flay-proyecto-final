@@ -46,12 +46,12 @@ export function herramientaPorNombre(nombre: string): Herramienta | undefined {
 }
 
 /**
- * Lo que se le declara al modelo: a toda herramienta atada a un consorcio se le
- * suma un `consorcioId` opcional para consultar otro dentro del alcance del
- * usuario (FR-011). `conversar` lo valida contra `misConsorcios`.
+ * Lo que se le declara al modelo. Solo en modo «todos» se suma un `consorcioId`
+ * para elegir sobre cual operar (FR-017); con un consorcio seleccionado NO se
+ * ofrece: todo va sobre el activo y el modelo no puede alcanzar otro.
  */
 export function parametrosParaModelo(h: Herramienta, cartera = false): Record<string, unknown> {
-  if (h.sinConsorcio) return h.parametros
+  if (h.sinConsorcio || !cartera) return h.parametros
   const props = (h.parametros.properties ?? {}) as Record<string, unknown>
   return {
     ...h.parametros,
@@ -59,9 +59,8 @@ export function parametrosParaModelo(h: Herramienta, cartera = false): Record<st
       ...props,
       consorcioId: {
         type: 'string',
-        description: cartera
-          ? 'Opcional: el consorcio sobre el que consultar. Si lo omitís, se consulta en TODOS los consorcios del usuario y recibís un resultado por consorcio.'
-          : 'Opcional: otro consorcio al que el usuario accede.',
+        description:
+          'Opcional: el consorcio sobre el que consultar. Si lo omitís, se consulta en TODOS los consorcios del usuario y recibís un resultado por consorcio.',
       },
     },
   }

@@ -4,7 +4,9 @@ import { verificarFirmaWebhookMercadoPago } from '@/dominio/pagos/firma-webhook'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 import { enConsorcio } from '@/infraestructura/cliente-aislado'
 import { obtenerCredencialesDescifradas } from '@/aplicacion/administradoras/credenciales-pago'
+import { notificar } from '@/aplicacion/comunicacion/notificar'
 import { detallesImpagosDe, imputarYRegistrar } from '@/aplicacion/pagos/registrar'
+import { importeParaMostrar } from '@/compartido/formato'
 
 /**
  * Confirmacion de pago en linea (`RF-28`, D-4).
@@ -107,7 +109,17 @@ export async function confirmarPagoEnLinea(
 
   // Estado aprobado: registrar e imputar en una transaccion atomica
   return enConsorcio(datos.consorcioId, async () => {
-    const impagos = await detallesImpagosDe(intento.unidadId)
+    // El recargo se mide a la fecha en que se acredito el pago (RF-08).
+    const impagos = await detallesImpagosDe(intento.unidadId, pagoApi.fechaAprobacion ?? new Date())
+
+    // Contexto del aviso al pagador (RF-28): unidad y periodo del detalle.
+    const contexto = await prisma.detalleLiquidacion.findFirst({
+      where: { id: intento.detalleLiquidacionId },
+      select: {
+        unidad: { select: { designacion: true } },
+        liquidacion: { select: { periodo: { select: { anio: true, mes: true } } } },
+      },
+    })
 
     const pagoRegistrado = await prisma.$transaction(async (tx) => {
       // Bloqueo optimista / idempotencia: solo actualiza si sigue iniciado
@@ -141,6 +153,27 @@ export async function confirmarPagoEnLinea(
         where: { id: intento.id },
         data: { pagoId: pago.pagoId },
       })
+
+      // Aviso al pagador. Solo en este camino (el que creo el pago): la
+      // reconfirmacion idempotente sale por `afectado.count === 0` y no vuelve
+      // aca, asi que no se duplica.
+      const periodo = contexto
+        ? `${String(contexto.liquidacion.periodo.mes).padStart(2, '0')}/${contexto.liquidacion.periodo.anio}`
+        : ''
+      const unidad = contexto?.unidad.designacion
+      await notificar(tx, [
+        {
+          usuarioId: intento.iniciadoPor,
+          tipo: 'pago_acreditado',
+          titulo: 'Pago acreditado',
+          cuerpo:
+            `Tu pago de ${importeParaMostrar(pagoApi.importe)}` +
+            (unidad ? ` de la unidad ${unidad} (${periodo})` : '') +
+            ' fue acreditado e imputado.',
+          entidadTipo: 'Pago',
+          entidadId: pago.pagoId,
+        },
+      ])
 
       return { pagoId: pago.pagoId }
     })

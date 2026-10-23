@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { momentoParaMostrar } from '@/compartido/formato'
 import { publicarNovedad } from '@/aplicacion/comunicacion/novedades'
 import { asignar, posiblesResponsables } from '@/aplicacion/reclamos/asignar'
 import { verReclamo } from '@/aplicacion/reclamos/consultar'
@@ -76,8 +77,14 @@ export const escritura: Herramienta[] = [
       properties: {
         espacioId: { type: 'string' },
         unidadId: { type: 'string' },
-        desde: { type: 'string', description: 'Inicio ISO' },
-        hasta: { type: 'string', description: 'Fin ISO' },
+        desde: {
+          type: 'string',
+          description: 'Inicio, hora LOCAL de Argentina sin zona (ej. 2026-10-22T15:00)',
+        },
+        hasta: {
+          type: 'string',
+          description: 'Fin, hora LOCAL de Argentina sin zona (ej. 2026-10-22T17:00)',
+        },
         cantidadPersonas: { type: 'integer' },
         observaciones: { type: 'string' },
       },
@@ -103,7 +110,7 @@ export const escritura: Herramienta[] = [
       const unidad = unidades.find((u) => u.id === a.unidadId)?.designacion ?? 'unidad'
       const desde = aFecha(a.desde)
       const hasta = aFecha(a.hasta)
-      return `Reservar ${espacio} para la unidad ${unidad}, desde ${desde.toLocaleString('es-AR')} hasta ${hasta.toLocaleString('es-AR')}.`
+      return `Reservar ${espacio} para la unidad ${unidad}, desde ${momentoParaMostrar(desde.toISOString())} hasta ${momentoParaMostrar(hasta.toISOString())}.`
     },
     async confirmar(args, ctx) {
       const a = args as z.infer<typeof CrearReserva>

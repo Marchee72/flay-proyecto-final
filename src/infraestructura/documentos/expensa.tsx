@@ -163,6 +163,35 @@ function GastosDelPeriodo({ grupos }: { grupos: GastosDeClasificacion[] }) {
   )
 }
 
+/**
+ * Los vencimientos escalonados (`RF-08`): cada fecha con su recargo y el monto a
+ * pagar hasta ella. Pagar antes cuesta menos; solo se dibuja cuando hay mas de uno.
+ */
+function VencimientosEscalonados({
+  vencimientos,
+}: {
+  vencimientos: ExpensaParaDocumento['vencimientos']
+}) {
+  return (
+    <>
+      <View style={estilos.fila}>
+        <Text style={estilos.celdaAncha}>Vencimiento</Text>
+        <Text style={estilos.celda}>Recargo</Text>
+        <Text style={estilos.celda}>A pagar</Text>
+      </View>
+      {vencimientos.map((v, i) => (
+        <View key={i} style={estilos.filaConLinea}>
+          <Text style={estilos.celdaAncha}>{v.fecha}</Text>
+          <Text style={estilos.celda}>
+            {v.recargoPorcentaje === '0.0000' ? '—' : `${v.recargoPorcentaje} %`}
+          </Text>
+          <Text style={estilos.celda}>{importeParaMostrar(v.monto)}</Text>
+        </View>
+      ))}
+    </>
+  )
+}
+
 export function Expensa({ datos }: { datos: ExpensaParaDocumento }) {
   return (
     <Document
@@ -187,10 +216,14 @@ export function Expensa({ datos }: { datos: ExpensaParaDocumento }) {
             <Text>Coeficiente aplicado</Text>
             <Text>{coeficienteParaMostrar(datos.coeficienteAplicado)} %</Text>
           </View>
-          <View style={estilos.filaConLinea}>
-            <Text>Vencimiento</Text>
-            <Text>{datos.vencimiento}</Text>
-          </View>
+          {datos.vencimientos.length <= 1 ? (
+            <View style={estilos.filaConLinea}>
+              <Text>Vencimiento</Text>
+              <Text>{datos.vencimientos[0]?.fecha ?? datos.vencimiento}</Text>
+            </View>
+          ) : (
+            <VencimientosEscalonados vencimientos={datos.vencimientos} />
+          )}
         </View>
 
         <GastosDelPeriodo grupos={datos.gastos} />

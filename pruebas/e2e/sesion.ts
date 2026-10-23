@@ -265,6 +265,9 @@ export async function limpiarExpensa(escenario: Escenario): Promise<void> {
   await prisma.detalleLiquidacion.deleteMany({
     where: { liquidacion: { consorcioId: escenario.consorcioId } },
   })
+  await prisma.vencimientoLiquidacion.deleteMany({
+    where: { liquidacion: { consorcioId: escenario.consorcioId } },
+  })
   await prisma.liquidacion.deleteMany({ where: { consorcioId: escenario.consorcioId } })
   await prisma.$executeRaw`
     DELETE FROM "Ocupacion" WHERE unidad_id IN

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import {
+  Banknote,
   Bell,
   CalendarCheck,
   Check,
@@ -20,6 +21,7 @@ type Notificacion = {
   cuerpo: string
   creadaEn: string
   leida: boolean
+  consorcio: string | null
 }
 
 const CADA_MS = 20_000
@@ -31,6 +33,7 @@ const TIPOS: Record<string, { Icono: typeof Bell; tono: string }> = {
   reserva_rechazada: { Icono: CalendarCheck, tono: 'aviso-tono--rojo' },
   vencimiento_proximo: { Icono: Clock, tono: 'aviso-tono--rojo' },
   novedad: { Icono: Megaphone, tono: 'aviso-tono--azul' },
+  pago_acreditado: { Icono: Banknote, tono: 'aviso-tono--verde' },
 }
 
 /** «hace 3 min», «hace 2 h», «ayer», «24/09». */
@@ -235,7 +238,10 @@ export function Campana() {
                     <span className="campana__texto">
                       <strong>{n.titulo}</strong>
                       <span>{n.cuerpo}</span>
-                      <small>{cuando(n.creadaEn, ahora)}</small>
+                      <small>
+                        {n.consorcio && <span className="campana__edificio">{n.consorcio}</span>}
+                        {cuando(n.creadaEn, ahora)}
+                      </small>
                     </span>
                     <span className="campana__punto" aria-hidden="true" />
                     <span className="oculto">{n.leida ? 'Leída' : 'Sin leer'}</span>

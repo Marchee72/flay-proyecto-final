@@ -42,7 +42,9 @@ export default async function ConsorciosPage({
   const busqueda = (parametros.q ?? '').trim().toLowerCase()
   const visibles = busqueda
     ? consorcios.filter((consorcio) =>
-        `${consorcio.nombre} ${consorcio.direccion}`.toLowerCase().includes(busqueda),
+        `${consorcio.nombre} ${consorcio.direccion} ${consorcio.localidad}`
+          .toLowerCase()
+          .includes(busqueda),
       )
     : consorcios
   // El ultimo periodo liquidado se lee en vivo, no de la vista materializada:
@@ -142,7 +144,9 @@ export default async function ConsorciosPage({
                       <h2>
                         <Link href={`/consorcios/${consorcio.id}`}>{consorcio.nombre}</Link>
                       </h2>
-                      <p className="apagado">{consorcio.direccion}</p>
+                      <p className="apagado">
+                        {consorcio.direccion} · {consorcio.localidad}
+                      </p>
                     </div>
                   </div>
                   <Senales

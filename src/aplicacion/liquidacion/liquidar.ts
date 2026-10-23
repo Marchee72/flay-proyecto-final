@@ -123,7 +123,26 @@ async function calcular(reloj: Reloj, consorcioId: string, periodoId: string) {
     totalExtraordinario: sumar('extraordinario'),
   })
 
-  const vencimiento = vencimientoDe(periodo.anio, periodo.mes, consorcio.diaVencimiento)
+  // Regla de vencimientos escalonados del consorcio (RF-08). Sin regla
+  // configurada, un solo tramo al dia de vencimiento (recargo 0): identico a
+  // antes. El tramo de mayor orden es el que vence en firme y fija
+  // `Liquidacion.vencimiento`, que es el que usa la mora (RN-08).
+  const tramosRegla = await prisma.tramoVencimiento.findMany({ orderBy: { orden: 'asc' } })
+  const reglaEfectiva =
+    tramosRegla.length > 0
+      ? tramosRegla.map((tramo) => ({
+          orden: tramo.orden,
+          diaDelMes: tramo.diaDelMes,
+          recargoPorcentaje: tramo.recargoPorcentaje.toFixed(4),
+        }))
+      : [{ orden: 1, diaDelMes: consorcio.diaVencimiento, recargoPorcentaje: '0.0000' }]
+
+  const vencimientos = reglaEfectiva.map((tramo) => ({
+    orden: tramo.orden,
+    fecha: vencimientoDe(periodo.anio, periodo.mes, tramo.diaDelMes),
+    recargoPorcentaje: tramo.recargoPorcentaje,
+  }))
+  const vencimiento = vencimientos[vencimientos.length - 1]!.fecha
   const hoy = reloj.hoy()
   const tasa = importe(consorcio.tasaMoraMensual.toFixed(4))
 
@@ -163,7 +182,7 @@ async function calcular(reloj: Reloj, consorcioId: string, periodoId: string) {
     }
   })
 
-  return { periodo, reparto, vencimiento, detalles }
+  return { periodo, reparto, vencimiento, vencimientos, detalles }
 }
 
 export interface LiquidacionEmitida {
@@ -194,7 +213,7 @@ export async function liquidarPeriodo(
       accion: 'liquidar períodos',
     },
     async () => {
-      const { periodo, reparto, vencimiento, detalles } = await calcular(
+      const { periodo, reparto, vencimiento, vencimientos, detalles } = await calcular(
         reloj,
         datos.consorcioId,
         datos.periodoId,
@@ -265,6 +284,19 @@ export async function liquidarPeriodo(
         if (lineasDeInteres.length > 0) {
           await tx.interesLiquidado.createMany({ data: lineasDeInteres })
         }
+
+        // Vencimientos escalonados congelados (RF-08): el snapshot que la expensa
+        // muestra y contra el que se calcula el recargo, inmune a cambios
+        // posteriores de la regla del consorcio. No lleva consorcio_id: cuelga de
+        // la liquidacion (ya aislada).
+        await tx.vencimientoLiquidacion.createMany({
+          data: vencimientos.map((v) => ({
+            liquidacionId: liquidacion.id,
+            orden: v.orden,
+            fecha: v.fecha,
+            recargoPorcentaje: v.recargoPorcentaje,
+          })),
+        })
 
         await encolarDocumentos(tx, liquidacion.id)
         await avisarALosHabilitados(tx, liquidacion.id, periodo)

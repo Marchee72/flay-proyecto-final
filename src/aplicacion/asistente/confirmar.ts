@@ -1,6 +1,6 @@
 import type { EstadoPropuesta } from '@prisma/client'
 
-import { NoEncontrado } from '@/compartido/errores'
+import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import type { AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
 import type { Asistencia } from '@/dominio/contratos/asistencia'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
@@ -66,6 +66,19 @@ export async function confirmarPropuesta(
       const tool = herramientaPorNombre(nombre)
       if (!tool?.confirmar) throw new NoEncontrado()
 
+      // El desenlace entra al contexto como un turno `herramienta` (lo mismo que una
+      // lectura): asi el modelo sabe que la accion se hizo —o por que no— y el
+      // usuario puede seguir desde ahi en el chat, sin reusar la tarjeta.
+      const anotar = (contenido: string) =>
+        prisma.mensajeAsistente.create({
+          data: {
+            conversacionId: mensaje.conversacionId,
+            rol: 'herramienta',
+            contenido,
+            herramienta: { nombre, resultado: contenido },
+          },
+        })
+
       // Reclamo atomico: solo una confirmacion gana la transicion pendiente -> confirmada.
       const reclamo = await prisma.mensajeAsistente.updateMany({
         where: { id: datos.propuestaId, estadoPropuesta: 'pendiente' },
@@ -96,13 +109,18 @@ export async function confirmarPropuesta(
           roles: accesoDestino.roles,
         }
         const resultado = await tool.confirmar(args, ctx)
+        const detalle = (resultado as { texto?: unknown } | null)?.texto
+        await anotar(typeof detalle === 'string' ? detalle : 'La acción se realizó.')
         return { ejecutada: true, resultado }
       } catch (error) {
-        // El caso de uso rechazo: se deshace el reclamo para permitir reintento.
+        // El caso de uso rechazo: se deshace el reclamo (la propuesta queda resuelta
+        // en pantalla, pero el estado vuelve a `pendiente` para no quedar colgado).
         await prisma.mensajeAsistente.updateMany({
           where: { id: datos.propuestaId, estadoPropuesta: 'confirmada' },
           data: { estadoPropuesta: 'pendiente' },
         })
+        if (error instanceof ErrorDeAplicacion)
+          await anotar(`No se pudo: ${error.mensajeParaUsuario}`)
         throw error
       }
     },

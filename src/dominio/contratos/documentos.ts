@@ -48,6 +48,12 @@ export interface ExpensaParaDocumento {
   /** `10/09/2026`, ya en formato de pantalla: el generador no interpreta calendarios. */
   vencimiento: string
   unidad: { designacion: string; tipo: string }
+  /**
+   * Los vencimientos escalonados (`RF-08`), con el monto a pagar hasta cada
+   * fecha. Un solo elemento cuando no hay escalonamiento. Fechas e importes ya
+   * en formato de pantalla; el generador no calcula nada.
+   */
+  vencimientos: { fecha: string; recargoPorcentaje: string; monto: string }[]
   coeficienteAplicado: string
   /** Vacio si el periodo no tuvo gastos; una entrada por clasificacion con gastos. */
   gastos: GastosDeClasificacion[]

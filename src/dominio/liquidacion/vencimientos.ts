@@ -57,7 +57,12 @@ export function recargoVigente(tramos: readonly TramoCongelado[], hoy: Date): Re
   const vigente = ordenados.find((tramo) => diaUTC(tramo.fecha) >= dHoy)
 
   if (!vigente) {
-    return { recargoPorcentaje: '0.0000', tramo: null, venceEnFirme: true, proximoVencimiento: null }
+    return {
+      recargoPorcentaje: '0.0000',
+      tramo: null,
+      venceEnFirme: true,
+      proximoVencimiento: null,
+    }
   }
 
   return {

@@ -73,10 +73,19 @@ export function recargoVigente(tramos: readonly TramoCongelado[], hoy: Date): Re
   }
 }
 
-/** Monto a pagar = base x (1 + recargo/100). Redondeo solo al final. */
-export function montoExigible(totalUnidadBase: string, recargoPorcentaje: string): string {
-  const factor = new Decimal(1).plus(importe(recargoPorcentaje).div(CIEN))
-  return importe(totalUnidadBase).times(factor).toFixed(DECIMALES_IMPORTE)
+/** El recargo en pesos sobre una base: `redondeo(base x recargo/100)`, a dos decimales. */
+export function recargoSobre(base: string, recargoPorcentaje: string): string {
+  return importe(base).times(importe(recargoPorcentaje)).div(CIEN).toFixed(DECIMALES_IMPORTE)
+}
+
+/**
+ * Monto a pagar hoy = base + recargo. Se define como suma (no `base x (1+r)`)
+ * para que coincida al centavo con el recargo que la imputacion cobra y registra.
+ */
+export function montoExigible(base: string, recargoPorcentaje: string): string {
+  return importe(base)
+    .plus(importe(recargoSobre(base, recargoPorcentaje)))
+    .toFixed(DECIMALES_IMPORTE)
 }
 
 export class ReglaVencimientosInvalida extends ErrorDeAplicacion {

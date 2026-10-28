@@ -89,4 +89,21 @@ describe('verificarFirmaWebhookMercadoPago', () => {
 
     expect(valido).toBe(false)
   })
+
+  it('valida aunque no venga x-request-id: el manifiesto omite ese par', () => {
+    const ahoraMs = 1770000000000
+    const ts = Math.floor(ahoraMs / 1000)
+    const manifest = `id:${dataId};ts:${ts};`
+    const hash = createHmac('sha256', secreto).update(manifest).digest('hex')
+
+    const valido = verificarFirmaWebhookMercadoPago({
+      xSignature: `ts=${ts},v1=${hash}`,
+      xRequestId: null,
+      dataId,
+      secreto,
+      ahoraMs,
+    })
+
+    expect(valido).toBe(true)
+  })
 })

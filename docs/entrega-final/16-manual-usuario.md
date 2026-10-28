@@ -754,7 +754,7 @@ Flay permite abonar las expensas mensuales de forma 100 % digital mediante la pa
 4. Al presionar el botón, Flay registra un intento de pago e interactúa de servidor a servidor con la pasarela para abrir el **Checkout Pro** seguro (mediante redirección externa).
 5. **Aboná en la pasarela:** Completá el pago con el medio de tu preferencia (tarjeta de débito/crédito, dinero en cuenta o transferencia en Sandbox). Flay **nunca tiene acceso a los datos de tus tarjetas** (cumplimiento PCI-DSS).
 6. **Acreditación e imputación instantánea (D-4):**
-   - Al concluir el pago en la pasarela, regresarás automáticamente a la pantalla de tu expensa en Flay.
+   - Al concluir el pago en la pasarela, regresarás automáticamente a la pantalla de tu expensa en Flay (si la instalación tiene una URL pública HTTPS configurada).
    - El sistema consulta directamente la API de la pasarela y procesa el webhook firmado criptográficamente, confirmando la cobranza en el acto.
    - El pago queda asentado bajo el medio `mercado_pago`, imputando en cascada la deuda más antigua primero y emitiendo el comprobante de cancelación. Verás el aviso accesible en verde: *«Pago acreditado e imputado correctamente. ¡Muchas gracias!»*.
    - Si la pasarela demora la acreditación, la pantalla te muestra *«Estamos verificando tu pago…»* y vuelve a consultar cada 3 segundos durante un minuto, sin que tengas que recargar.

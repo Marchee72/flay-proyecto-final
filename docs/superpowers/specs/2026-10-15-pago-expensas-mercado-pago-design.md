@@ -252,7 +252,7 @@ sequenceDiagram
    Marca `vencido` los intentos `iniciado` con `venceEn` pasado. Si hay uno vivo, lo reutiliza;
    si no, crea `IntentoDePago` y la preferencia (un ítem por el saldo, `external_reference =
    intentoId`, `excluded_payment_types: [ticket, atm]`, `expiration_date_to = venceEn`,
-   `back_urls` a la vista de retorno, `auto_return: approved`). Redirige a `sandbox_init_point`.
+   `back_urls` a la vista de retorno, `auto_return: approved`). Redirige a `init_point` (Mercado Pago elimino el sandbox; `sandbox_init_point` falla).
 2. **Pagar.** Ocurre en Mercado Pago.
 3. **Retornar.** El usuario vuelve a `expensas/[detalle]?intento=…&payment_id=…`.
 4. **Confirmar** (`confirmarPagoEnLinea`, desde webhook o desde la vista de retorno):

@@ -757,6 +757,8 @@ Flay permite abonar las expensas mensuales de forma 100 % digital mediante la pa
    - Al concluir el pago en la pasarela, regresarás automáticamente a la pantalla de tu expensa en Flay.
    - El sistema consulta directamente la API de la pasarela y procesa el webhook firmado criptográficamente, confirmando la cobranza en el acto.
    - El pago queda asentado bajo el medio `mercado_pago`, imputando en cascada la deuda más antigua primero y emitiendo el comprobante de cancelación. Verás el aviso accesible en verde: *«Pago acreditado e imputado correctamente. ¡Muchas gracias!»*.
+   - Si la pasarela demora la acreditación, la pantalla te muestra *«Estamos verificando tu pago…»* y vuelve a consultar cada 3 segundos durante un minuto, sin que tengas que recargar.
+   - **Requisito de despliegue:** el cobro en línea necesita una `URL_PUBLICA` **HTTPS y accesible desde internet**. Mercado Pago no envía webhooks ni retorna a `localhost`; en desarrollo se usa un túnel (por ejemplo, Cloudflare Tunnel o ngrok) configurado en esa variable.
 
 ---
 

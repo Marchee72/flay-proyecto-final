@@ -73,6 +73,8 @@ export class ProcesadorMercadoPago implements ProcesadorDePagos {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
+      // Sin timeout, una pasarela colgada deja la pantalla esperando para siempre.
+      signal: AbortSignal.timeout(8000),
     })
 
     if (!respuesta.ok) {
@@ -97,12 +99,17 @@ export class ProcesadorMercadoPago implements ProcesadorDePagos {
     credenciales: { accessToken: string }
     pagoExternoId: string
   }): Promise<ResultadoConsultaPago> {
-    const respuesta = await fetch(`${URL_BASE}/v1/payments/${datos.pagoExternoId}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${datos.credenciales.accessToken}`,
+    const respuesta = await fetch(
+      `${URL_BASE}/v1/payments/${encodeURIComponent(datos.pagoExternoId)}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${datos.credenciales.accessToken}`,
+        },
+        // La vista de retorno consulta esto durante el render: sin timeout se cuelga.
+        signal: AbortSignal.timeout(8000),
       },
-    })
+    )
 
     if (!respuesta.ok) {
       const errorTexto = await respuesta.text().catch(() => '')

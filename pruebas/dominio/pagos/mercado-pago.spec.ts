@@ -65,3 +65,27 @@ describe('ProcesadorMercadoPago.crearPreferencia', () => {
     expect(cuerpo).not.toHaveProperty('notification_url')
   })
 })
+
+describe('ProcesadorMercadoPago.consultarPago', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('consulta con timeout para no colgar la vista de retorno', async () => {
+    const fetchFalso = vi.fn<(url: string, opciones: RequestInit) => Promise<Response>>()
+    fetchFalso.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          status: 'approved',
+          transaction_amount: 100,
+          external_reference: 'intento-1',
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    )
+    vi.stubGlobal('fetch', fetchFalso)
+
+    await new ProcesadorMercadoPago().consultarPago({ credenciales, pagoExternoId: '123' })
+
+    const [, opciones] = fetchFalso.mock.calls[0]!
+    expect(opciones.signal).toBeInstanceOf(AbortSignal)
+  })
+})

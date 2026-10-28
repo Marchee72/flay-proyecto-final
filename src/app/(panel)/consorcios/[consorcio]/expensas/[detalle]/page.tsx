@@ -17,6 +17,7 @@ import {
 import { MEDIOS_DE_PAGO } from '@/aplicacion/pagos/registrar'
 
 import { BotonPagoEnLinea } from './boton-pago-en-linea'
+import { SondeoPago } from './sondeo-pago'
 import { ModalPago } from '../../pagos/modal-pago'
 
 import { conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
@@ -72,6 +73,10 @@ export default async function ExpensaPage({
         estadoRetorno = 'aprobado'
       } else if (parametros.collection_status === 'rejected' || parametros.status === 'rejected') {
         estadoRetorno = 'rechazado'
+      } else {
+        // No se pudo verificar con la pasarela: el sondeo reintenta hasta acreditarlo.
+        estadoRetorno = 'pendiente'
+        mensajeRetorno = 'Estamos verificando tu pago con la pasarela…'
       }
     }
   }
@@ -128,6 +133,7 @@ export default async function ExpensaPage({
             <span>
               {mensajeRetorno ?? 'El pago se encuentra pendiente de acreditación en la pasarela.'}
             </span>
+            <SondeoPago />
           </p>
         )}
 

@@ -16,6 +16,17 @@ import type {
 
 const URL_BASE = 'https://api.mercadopago.com'
 
+/**
+ * Mercado Pago rechaza con 400 (`invalid_back_urls`) las `back_urls` y la
+ * `notification_url` en HTTP, y no retorna a dominios locales. Sin una URL
+ * publica no se envian: la preferencia se crea igual, pero sin retorno ni webhook.
+ */
+function esUrlPublica(url: string): boolean {
+  return (
+    /^https:\/\//i.test(url) && !/^https:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:|\/|$)/i.test(url)
+  )
+}
+
 export class ErrorProcesadorPago extends ErrorDeAplicacion {
   constructor(mensaje: string) {
     super(mensaje, 'RF-28')
@@ -24,7 +35,6 @@ export class ErrorProcesadorPago extends ErrorDeAplicacion {
 
 export class ProcesadorMercadoPago implements ProcesadorDePagos {
   async crearPreferencia(datos: DatosPreferencia): Promise<ResultadoPreferencia> {
-    const esHttps = datos.urlRetorno.startsWith('https://')
     const payload: Record<string, unknown> = {
       items: [
         {
@@ -39,21 +49,20 @@ export class ProcesadorMercadoPago implements ProcesadorDePagos {
       payment_methods: {
         excluded_payment_types: [{ id: 'ticket' }, { id: 'atm' }],
       },
-      back_urls: {
-        success: datos.urlRetorno,
-        pending: datos.urlRetorno,
-        failure: datos.urlRetorno,
-      },
       expiration_date_to: datos.venceEn.toISOString(),
     }
 
-    // Mercado Pago exige HTTPS para auto_return; en HTTP o localhost se omite para evitar error 400
-    if (esHttps) {
+    // Mercado Pago exige HTTPS publico para back_urls, auto_return y notification_url.
+    if (esUrlPublica(datos.urlRetorno)) {
+      payload.back_urls = {
+        success: datos.urlRetorno,
+        pending: datos.urlRetorno,
+        failure: datos.urlRetorno,
+      }
       payload.auto_return = 'approved'
     }
 
-    // notification_url solo se envia si es HTTPS publicamente accesible
-    if (datos.urlNotificacion && datos.urlNotificacion.startsWith('https://')) {
+    if (esUrlPublica(datos.urlNotificacion)) {
       payload.notification_url = datos.urlNotificacion
     }
 
@@ -76,13 +85,11 @@ export class ProcesadorMercadoPago implements ProcesadorDePagos {
     const json = (await respuesta.json()) as {
       id: string
       init_point: string
-      sandbox_init_point?: string
     }
 
     return {
       preferenciaId: json.id,
-      // En entorno de pruebas / sandbox se prioriza sandbox_init_point
-      urlPago: json.sandbox_init_point || json.init_point,
+      urlPago: json.init_point,
     }
   }
 

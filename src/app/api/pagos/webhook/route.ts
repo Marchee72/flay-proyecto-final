@@ -40,6 +40,8 @@ export async function POST(pedido: Request): Promise<NextResponse> {
       consorcioId,
       xSignature: pedido.headers.get('x-signature'),
       xRequestId: pedido.headers.get('x-request-id'),
+      dataIdQuery: searchParams.get('data.id'),
+      tipoQuery: searchParams.get('type'),
       body,
     })
 

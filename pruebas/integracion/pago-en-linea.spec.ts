@@ -516,5 +516,55 @@ describe('pago en linea de expensas (RF-28)', () => {
       expect(intentoDb.estado).toBe('aprobado')
       expect(intentoDb.pagoId).toBe(data.pagoId)
     })
+
+    it('toma data.id y type del query string, que es lo que firma Mercado Pago', async () => {
+      const secretoWebhook = 'SECRETO-QUERY-1234'
+      await guardarCredencialesPago(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        accessToken: 'TEST-TOKEN-1234',
+        secretoWebhook,
+      })
+
+      const liq = await emitirMes(1, '1000.00')
+      const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+        where: { liquidacionId: liq.liquidacionId, unidadId: unidadA },
+      })
+      const inicio = await iniciarPagoEnLinea(repo, RELOJ, procesadorDePrueba, {
+        usuarioId: inquilino,
+        consorcioId,
+        detalleLiquidacionId: detalle.id,
+        urlBaseRetorno: 'https://consorcio.app/volver',
+      })
+
+      const pagoExternoId = `pago_simulado_${inicio.intentoId}`
+      const requestId = 'req-query-1'
+      const ts = Math.floor(Date.now() / 1000).toString()
+      const manifest = `id:${pagoExternoId};request-id:${requestId};ts:${ts};`
+      const hash = createHmac('sha256', secretoWebhook).update(manifest).digest('hex')
+
+      const req = new Request(
+        `http://localhost/api/pagos/webhook?consorcio=${consorcioId}&data.id=${pagoExternoId}&type=payment`,
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'x-signature': `ts=${ts},v1=${hash}`,
+            'x-request-id': requestId,
+          },
+          // El body trae otro id y otro tipo: debe ganar el query.
+          body: JSON.stringify({ data: { id: 'id-que-no-firma' }, type: 'merchant_order' }),
+        },
+      )
+
+      const res = await webhookRoute(req)
+      expect(res.status).toBe(200)
+      expect((await res.json()).estado).toBe('aprobado')
+
+      const intentoDb = await prismaBase.intentoDePago.findUniqueOrThrow({
+        where: { id: inicio.intentoId },
+      })
+      expect(intentoDb.estado).toBe('aprobado')
+    })
   })
 })

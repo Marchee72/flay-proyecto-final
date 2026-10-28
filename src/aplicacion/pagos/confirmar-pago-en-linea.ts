@@ -203,6 +203,10 @@ export interface ParametrosProcesarWebhook {
   consorcioId: string
   xSignature?: string | null
   xRequestId?: string | null
+  /** `data.id` del query string: es el valor que Mercado Pago firma. */
+  dataIdQuery?: string | null
+  /** `type` del query string, cuando la notificacion lo trae en la URL. */
+  tipoQuery?: string | null
   body: Record<string, unknown>
 }
 
@@ -234,9 +238,15 @@ export async function procesarWebhookPago(
   }
 
   const dataObj = datos.body?.data as { id?: string | number } | undefined
-  const dataId = dataObj?.id ? String(dataObj.id) : datos.body?.id ? String(datos.body.id) : null
+  // Mercado Pago firma el `data.id` del query string; el body es el respaldo.
+  const dataId =
+    datos.dataIdQuery ||
+    (dataObj?.id ? String(dataObj.id) : datos.body?.id ? String(datos.body.id) : null)
   const tipo =
-    (datos.body?.type as string) || (datos.body?.topic as string) || (datos.body?.action as string)
+    datos.tipoQuery ||
+    (datos.body?.type as string) ||
+    (datos.body?.topic as string) ||
+    (datos.body?.action as string)
 
   if (!dataId) {
     return { recibido: true, ignorado: true }

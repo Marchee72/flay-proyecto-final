@@ -76,8 +76,9 @@ export async function confirmarPagoEnLinea(
     throw new NoEncontrado()
   }
 
-  // Si ya fue aprobado o procesado previamente, retornar estado (idempotencia)
-  if (intento.estado === 'aprobado') {
+  // Idempotencia: el mismo pago ya imputado no se vuelve a registrar.
+  // Un segundo pago aprobado con otro id si se registra (su excedente queda a favor).
+  if (intento.estado === 'aprobado' && intento.pagoExternoId === datos.pagoExternoId) {
     return {
       estado: 'aprobado',
       pagoId: intento.pagoId,
@@ -87,10 +88,20 @@ export async function confirmarPagoEnLinea(
   }
 
   if (pagoApi.estado === 'rechazado' || pagoApi.estado === 'cancelado') {
-    await prismaBase.intentoDePago.update({
-      where: { id: intento.id },
+    // Un rechazo de otro intento no puede pisar un pago ya aprobado.
+    const actualizado = await prismaBase.intentoDePago.updateMany({
+      where: { id: intento.id, estado: { not: 'aprobado' } },
       data: { estado: 'rechazado', pagoExternoId: datos.pagoExternoId },
     })
+
+    if (actualizado.count === 0) {
+      return {
+        estado: 'aprobado',
+        pagoId: intento.pagoId,
+        intentoId: intento.id,
+        mensaje: 'El pago ya se encuentra registrado e imputado.',
+      }
+    }
 
     return {
       estado: 'rechazado',
@@ -122,9 +133,18 @@ export async function confirmarPagoEnLinea(
     })
 
     const pagoRegistrado = await prisma.$transaction(async (tx) => {
-      // Bloqueo optimista / idempotencia: solo actualiza si sigue iniciado
+      // Un mismo pago externo no se registra dos veces (reintentos del webhook).
+      const yaRegistrado = await tx.pago.findFirst({
+        where: { referencia: `MP-${datos.pagoExternoId}` },
+        select: { id: true },
+      })
+      if (yaRegistrado) return { pagoId: yaRegistrado.id, registrado: false }
+
+      // Solo la primera confirmacion toma el intento. Si ya estaba aprobado
+      // (segundo pago de la misma preferencia), igual se registra: el excedente
+      // queda como saldo a favor y la plata no se pierde (spec §6).
       const afectado = await tx.intentoDePago.updateMany({
-        where: { id: intento.id, estado: 'iniciado' },
+        where: { id: intento.id, estado: { not: 'aprobado' } },
         data: {
           estado: 'aprobado',
           pagoExternoId: datos.pagoExternoId,
@@ -132,9 +152,11 @@ export async function confirmarPagoEnLinea(
       })
 
       if (afectado.count === 0) {
-        // Otra ejecucion concurrente ya lo proceso
-        const actual = await tx.intentoDePago.findUniqueOrThrow({ where: { id: intento.id } })
-        return { pagoId: actual.pagoId }
+        const actual = await tx.intentoDePago.findFirst({ where: { id: intento.id } })
+        // Otra ejecucion concurrente con el mismo pago: ya esta imputado.
+        if (actual?.pagoExternoId === datos.pagoExternoId) {
+          return { pagoId: actual.pagoId, registrado: false }
+        }
       }
 
       // Imputar y registrar pago con medio mercado_pago
@@ -148,15 +170,18 @@ export async function confirmarPagoEnLinea(
         impagos,
       })
 
+      if (afectado.count === 0) {
+        return { pagoId: pago.pagoId, registrado: true }
+      }
+
       // Enlazar intento de pago con el pago persistido
       await tx.intentoDePago.update({
         where: { id: intento.id },
         data: { pagoId: pago.pagoId },
       })
 
-      // Aviso al pagador. Solo en este camino (el que creo el pago): la
-      // reconfirmacion idempotente sale por `afectado.count === 0` y no vuelve
-      // aca, asi que no se duplica.
+      // Aviso al pagador: solo lo emite el primer pago del intento; el segundo
+      // (dos pestañas pagando la misma preferencia) no lo duplica.
       const periodo = contexto
         ? `${String(contexto.liquidacion.periodo.mes).padStart(2, '0')}/${contexto.liquidacion.periodo.anio}`
         : ''
@@ -175,14 +200,16 @@ export async function confirmarPagoEnLinea(
         },
       ])
 
-      return { pagoId: pago.pagoId }
+      return { pagoId: pago.pagoId, registrado: true }
     })
 
     return {
       estado: 'aprobado',
       pagoId: pagoRegistrado.pagoId,
       intentoId: intento.id,
-      mensaje: 'Pago acreditado e imputado correctamente.',
+      mensaje: pagoRegistrado.registrado
+        ? 'Pago acreditado e imputado correctamente.'
+        : 'El pago ya se encuentra registrado e imputado.',
     }
   })
 }

@@ -25,14 +25,13 @@ export async function POST(pedido: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'El parametro consorcio es obligatorio.' }, { status: 400 })
   }
 
-  let body: Record<string, unknown> | null = null
+  // El `data.id` puede venir solo en el query string: un body vacio no es motivo
+  // de rechazo. La firma y la presencia del id se validan mas abajo.
+  let body: Record<string, unknown> = {}
   try {
     body = (await pedido.json()) as Record<string, unknown>
   } catch {
-    return NextResponse.json(
-      { error: 'Cuerpo de la solicitud no es un JSON valido.' },
-      { status: 400 },
-    )
+    body = {}
   }
 
   try {

@@ -340,6 +340,177 @@ describe('pago en linea de expensas (RF-28)', () => {
     expect(pagos).toHaveLength(0)
   })
 
+  it('un pago aprobado despues de un rechazo se imputa (no se pierde la plata)', async () => {
+    await guardarCredencialesPago(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      accessToken: 'TEST-TOKEN-1234',
+      secretoWebhook: 'WEBHOOK-SECRET-1234',
+    })
+
+    const liq = await emitirMes(1, '1000.00')
+    const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+      where: { liquidacionId: liq.liquidacionId, unidadId: unidadA },
+    })
+    const inicio = await iniciarPagoEnLinea(repo, RELOJ, procesadorDePrueba, {
+      usuarioId: inquilino,
+      consorcioId,
+      detalleLiquidacionId: detalle.id,
+      urlBaseRetorno: 'https://consorcio.app/volver',
+    })
+
+    const rechazadoId = `pago_rechazado_${inicio.intentoId}`
+    procesadorDePrueba.programarPago(rechazadoId, {
+      estado: 'rechazado',
+      importe: '1000.00',
+      referenciaExterna: inicio.intentoId,
+      fechaAprobacion: null,
+    })
+    await confirmarPagoEnLinea(procesadorDePrueba, {
+      consorcioId,
+      pagoExternoId: rechazadoId,
+      intentoId: inicio.intentoId,
+    })
+
+    // La misma preferencia se paga despues con otro intento del comprador.
+    const aprobadoId = `pago_tardio_${inicio.intentoId}`
+    procesadorDePrueba.programarPago(aprobadoId, {
+      estado: 'aprobado',
+      importe: '1000.00',
+      referenciaExterna: inicio.intentoId,
+      fechaAprobacion: new Date('2026-09-15T12:00:00Z'),
+    })
+
+    const confirmacion = await confirmarPagoEnLinea(procesadorDePrueba, {
+      consorcioId,
+      pagoExternoId: aprobadoId,
+      intentoId: inicio.intentoId,
+    })
+
+    expect(confirmacion.estado).toBe('aprobado')
+    expect(confirmacion.pagoId).toBeTruthy()
+
+    const intento = await prismaBase.intentoDePago.findUniqueOrThrow({
+      where: { id: inicio.intentoId },
+    })
+    expect(intento.estado).toBe('aprobado')
+    expect(intento.pagoExternoId).toBe(aprobadoId)
+    expect(await prismaBase.pago.count({ where: { consorcioId } })).toBe(1)
+  })
+
+  it('un segundo pago aprobado del mismo intento queda como saldo a favor', async () => {
+    await guardarCredencialesPago(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      accessToken: 'TEST-TOKEN-1234',
+      secretoWebhook: 'WEBHOOK-SECRET-1234',
+    })
+
+    const liq = await emitirMes(1, '1000.00')
+    const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+      where: { liquidacionId: liq.liquidacionId, unidadId: unidadA },
+    })
+    const inicio = await iniciarPagoEnLinea(repo, RELOJ, procesadorDePrueba, {
+      usuarioId: inquilino,
+      consorcioId,
+      detalleLiquidacionId: detalle.id,
+      urlBaseRetorno: 'https://consorcio.app/volver',
+    })
+
+    const primero = await confirmarPagoEnLinea(procesadorDePrueba, {
+      consorcioId,
+      pagoExternoId: `pago_simulado_${inicio.intentoId}`,
+      intentoId: inicio.intentoId,
+    })
+    expect(primero.estado).toBe('aprobado')
+
+    // Dos pestañas pagaron la misma preferencia: el segundo cobro no se descarta.
+    const extraId = `pago_extra_${inicio.intentoId}`
+    procesadorDePrueba.programarPago(extraId, {
+      estado: 'aprobado',
+      importe: '250.00',
+      referenciaExterna: inicio.intentoId,
+      fechaAprobacion: new Date('2026-09-15T12:00:00Z'),
+    })
+    const segundo = await confirmarPagoEnLinea(procesadorDePrueba, {
+      consorcioId,
+      pagoExternoId: extraId,
+      intentoId: inicio.intentoId,
+    })
+    expect(segundo.estado).toBe('aprobado')
+    expect(segundo.pagoId).not.toBe(primero.pagoId)
+
+    const pagos = await prismaBase.pago.findMany({
+      where: { consorcioId },
+      orderBy: { creadoEn: 'asc' },
+    })
+    expect(pagos).toHaveLength(2)
+    expect(pagos[1]!.saldoAFavor.toFixed(2)).toBe('250.00')
+
+    const intento = await prismaBase.intentoDePago.findUniqueOrThrow({
+      where: { id: inicio.intentoId },
+    })
+    expect(intento.pagoId).toBe(primero.pagoId)
+
+    // El reintento del webhook del segundo pago no lo duplica.
+    await confirmarPagoEnLinea(procesadorDePrueba, {
+      consorcioId,
+      pagoExternoId: extraId,
+      intentoId: inicio.intentoId,
+    })
+    expect(await prismaBase.pago.count({ where: { consorcioId } })).toBe(2)
+  })
+
+  it('un rechazo tardio no pisa un intento ya aprobado', async () => {
+    await guardarCredencialesPago(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      accessToken: 'TEST-TOKEN-1234',
+      secretoWebhook: 'WEBHOOK-SECRET-1234',
+    })
+
+    const liq = await emitirMes(1, '1000.00')
+    const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+      where: { liquidacionId: liq.liquidacionId, unidadId: unidadA },
+    })
+    const inicio = await iniciarPagoEnLinea(repo, RELOJ, procesadorDePrueba, {
+      usuarioId: inquilino,
+      consorcioId,
+      detalleLiquidacionId: detalle.id,
+      urlBaseRetorno: 'https://consorcio.app/volver',
+    })
+
+    const aprobadoId = `pago_simulado_${inicio.intentoId}`
+    const primero = await confirmarPagoEnLinea(procesadorDePrueba, {
+      consorcioId,
+      pagoExternoId: aprobadoId,
+      intentoId: inicio.intentoId,
+    })
+
+    const rechazadoId = `pago_rechazado_${inicio.intentoId}`
+    procesadorDePrueba.programarPago(rechazadoId, {
+      estado: 'rechazado',
+      importe: '10.00',
+      referenciaExterna: inicio.intentoId,
+      fechaAprobacion: null,
+    })
+    const confirmacion = await confirmarPagoEnLinea(procesadorDePrueba, {
+      consorcioId,
+      pagoExternoId: rechazadoId,
+      intentoId: inicio.intentoId,
+    })
+
+    // El intento ya tenia un pago aprobado: el rechazo de otro intento no lo pisa.
+    expect(confirmacion.estado).toBe('aprobado')
+
+    const intento = await prismaBase.intentoDePago.findUniqueOrThrow({
+      where: { id: inicio.intentoId },
+    })
+    expect(intento.estado).toBe('aprobado')
+    expect(intento.pagoExternoId).toBe(aprobadoId)
+    expect(intento.pagoId).toBe(primero.pagoId)
+  })
+
   it('aislamiento (RT-04): confirmar con un consorcio ajeno es rechazado', async () => {
     await guardarCredencialesPago(repo, RELOJ, {
       usuarioId: administrador,
@@ -565,6 +736,48 @@ describe('pago en linea de expensas (RF-28)', () => {
         where: { id: inicio.intentoId },
       })
       expect(intentoDb.estado).toBe('aprobado')
+    })
+
+    it('procesa una notificacion sin body cuando data.id viene en el query', async () => {
+      const secretoWebhook = 'SECRETO-SIN-BODY-1234'
+      await guardarCredencialesPago(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        accessToken: 'TEST-TOKEN-1234',
+        secretoWebhook,
+      })
+
+      const liq = await emitirMes(1, '1000.00')
+      const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+        where: { liquidacionId: liq.liquidacionId, unidadId: unidadA },
+      })
+      const inicio = await iniciarPagoEnLinea(repo, RELOJ, procesadorDePrueba, {
+        usuarioId: inquilino,
+        consorcioId,
+        detalleLiquidacionId: detalle.id,
+        urlBaseRetorno: 'https://consorcio.app/volver',
+      })
+
+      const pagoExternoId = `pago_simulado_${inicio.intentoId}`
+      const requestId = 'req-sin-body'
+      const ts = Math.floor(Date.now() / 1000).toString()
+      const manifest = `id:${pagoExternoId};request-id:${requestId};ts:${ts};`
+      const hash = createHmac('sha256', secretoWebhook).update(manifest).digest('hex')
+
+      const req = new Request(
+        `http://localhost/api/pagos/webhook?consorcio=${consorcioId}&data.id=${pagoExternoId}&type=payment`,
+        {
+          method: 'POST',
+          headers: {
+            'x-signature': `ts=${ts},v1=${hash}`,
+            'x-request-id': requestId,
+          },
+        },
+      )
+
+      const res = await webhookRoute(req)
+      expect(res.status).toBe(200)
+      expect((await res.json()).estado).toBe('aprobado')
     })
   })
 })

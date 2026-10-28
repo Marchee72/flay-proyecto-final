@@ -10,6 +10,7 @@ import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
 import { ALMACEN, HABILITACIONES, PROCESADOR_PAGOS, RELOJ } from '@/aplicacion/dependencias'
 import { verExpensa, type ExpensaVisible } from '@/aplicacion/liquidacion/ver-expensa'
 import { confirmarPagoEnLinea } from '@/aplicacion/pagos/confirmar-pago-en-linea'
+import { resultadoDeRetorno } from '@/aplicacion/pagos/resultado-retorno'
 import {
   consultarDisponibilidadPagoEnLinea,
   type DisponibilidadPagoEnLinea,
@@ -69,13 +70,9 @@ export default async function ExpensaPage({
       estadoRetorno = confirmacion.estado as 'aprobado' | 'rechazado' | 'pendiente'
       mensajeRetorno = confirmacion.mensaje || null
     } catch {
-      if (parametros.collection_status === 'approved' || parametros.status === 'approved') {
-        estadoRetorno = 'aprobado'
-      } else if (parametros.collection_status === 'rejected' || parametros.status === 'rejected') {
-        estadoRetorno = 'rechazado'
-      } else {
-        // No se pudo verificar con la pasarela: el sondeo reintenta hasta acreditarlo.
-        estadoRetorno = 'pendiente'
+      // La URL la controla el cliente: no se afirma un pago que no se pudo verificar.
+      estadoRetorno = resultadoDeRetorno(parametros)
+      if (estadoRetorno === 'pendiente') {
         mensajeRetorno = 'Estamos verificando tu pago con la pasarela…'
       }
     }

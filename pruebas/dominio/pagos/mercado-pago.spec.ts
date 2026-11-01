@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { ProcesadorMercadoPago } from '@/infraestructura/pagos/mercado-pago'
+import { ErrorProcesadorPago, ProcesadorMercadoPago } from '@/infraestructura/pagos/mercado-pago'
 
 const credenciales = { accessToken: 'TEST-1234' }
 
@@ -87,5 +87,83 @@ describe('ProcesadorMercadoPago.consultarPago', () => {
 
     const [, opciones] = fetchFalso.mock.calls[0]!
     expect(opciones.signal).toBeInstanceOf(AbortSignal)
+  })
+})
+
+describe('ProcesadorMercadoPago.buscarPagosPorReferencia', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  function respuestaBusqueda(results: unknown[], status = 200) {
+    return new Response(JSON.stringify({ results }), {
+      status,
+      headers: { 'content-type': 'application/json' },
+    })
+  }
+
+  it('consulta /v1/payments/search por external_reference, del mas reciente al mas viejo', async () => {
+    const fetchFalso = vi.fn<(url: string, opciones: RequestInit) => Promise<Response>>()
+    fetchFalso.mockResolvedValue(respuestaBusqueda([]))
+    vi.stubGlobal('fetch', fetchFalso)
+
+    await new ProcesadorMercadoPago().buscarPagosPorReferencia({
+      credenciales,
+      referenciaExterna: 'intento-1',
+    })
+
+    const [url, opciones] = fetchFalso.mock.calls[0]
+    expect(url).toContain('/v1/payments/search')
+    expect(url).toContain('external_reference=intento-1')
+    expect(url).toContain('sort=date_created')
+    expect(url).toContain('criteria=desc')
+    expect((opciones.headers as Record<string, string>).Authorization).toBe('Bearer TEST-1234')
+  })
+
+  it('traduce cada resultado a PagoEncontrado', async () => {
+    const fetchFalso = vi.fn<(url: string, opciones: RequestInit) => Promise<Response>>()
+    fetchFalso.mockResolvedValue(
+      respuestaBusqueda([
+        { id: 111, status: 'approved' },
+        { id: 222, status: 'in_process' },
+        { id: 333, status: 'rejected' },
+      ]),
+    )
+    vi.stubGlobal('fetch', fetchFalso)
+
+    const pagos = await new ProcesadorMercadoPago().buscarPagosPorReferencia({
+      credenciales,
+      referenciaExterna: 'intento-1',
+    })
+
+    expect(pagos).toEqual([
+      { pagoExternoId: '111', estado: 'aprobado' },
+      { pagoExternoId: '222', estado: 'pendiente' },
+      { pagoExternoId: '333', estado: 'rechazado' },
+    ])
+  })
+
+  it('sin resultados devuelve una lista vacia', async () => {
+    const fetchFalso = vi.fn<(url: string, opciones: RequestInit) => Promise<Response>>()
+    fetchFalso.mockResolvedValue(respuestaBusqueda([]))
+    vi.stubGlobal('fetch', fetchFalso)
+
+    await expect(
+      new ProcesadorMercadoPago().buscarPagosPorReferencia({
+        credenciales,
+        referenciaExterna: 'intento-1',
+      }),
+    ).resolves.toEqual([])
+  })
+
+  it('un error HTTP lanza ErrorProcesadorPago', async () => {
+    const fetchFalso = vi.fn<(url: string, opciones: RequestInit) => Promise<Response>>()
+    fetchFalso.mockResolvedValue(new Response('boom', { status: 500 }))
+    vi.stubGlobal('fetch', fetchFalso)
+
+    await expect(
+      new ProcesadorMercadoPago().buscarPagosPorReferencia({
+        credenciales,
+        referenciaExterna: 'intento-1',
+      }),
+    ).rejects.toBeInstanceOf(ErrorProcesadorPago)
   })
 })

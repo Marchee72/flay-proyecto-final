@@ -1,5 +1,6 @@
 import type {
   DatosPreferencia,
+  PagoEncontrado,
   ProcesadorDePagos,
   ResultadoConsultaPago,
   ResultadoPreferencia,
@@ -61,6 +62,13 @@ export class ProcesadorDePrueba implements ProcesadorDePagos {
       referenciaExterna: null,
       fechaAprobacion: new Date(),
     }
+  }
+
+  async buscarPagosPorReferencia(datos: { referenciaExterna: string }): Promise<PagoEncontrado[]> {
+    return [...this.pagosSimulados]
+      .filter(([, pago]) => pago.referenciaExterna === datos.referenciaExterna)
+      .map(([pagoExternoId, pago]) => ({ pagoExternoId, estado: pago.estado }))
+      .reverse()
   }
 }
 

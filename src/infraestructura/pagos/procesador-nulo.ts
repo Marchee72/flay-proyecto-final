@@ -1,5 +1,6 @@
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import type {
+  PagoEncontrado,
   ProcesadorDePagos,
   ResultadoConsultaPago,
   ResultadoPreferencia,
@@ -22,6 +23,10 @@ export class ProcesadorNulo implements ProcesadorDePagos {
   }
 
   async consultarPago(): Promise<ResultadoConsultaPago> {
+    throw new ProcesadorDePagosDeshabilitado()
+  }
+
+  async buscarPagosPorReferencia(): Promise<PagoEncontrado[]> {
     throw new ProcesadorDePagosDeshabilitado()
   }
 }

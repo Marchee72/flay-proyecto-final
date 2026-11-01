@@ -2,6 +2,7 @@ import { ErrorDeAplicacion } from '@/compartido/errores'
 import type {
   DatosPreferencia,
   EstadoPagoExterno,
+  PagoEncontrado,
   ProcesadorDePagos,
   ResultadoConsultaPago,
   ResultadoPreferencia,
@@ -25,6 +26,19 @@ function esUrlPublica(url: string): boolean {
   return (
     /^https:\/\//i.test(url) && !/^https:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:|\/|$)/i.test(url)
   )
+}
+
+function estadoDesdeMercadoPago(status: string): EstadoPagoExterno {
+  switch (status) {
+    case 'approved':
+      return 'aprobado'
+    case 'rejected':
+      return 'rechazado'
+    case 'cancelled':
+      return 'cancelado'
+    default:
+      return 'pendiente'
+  }
 }
 
 export class ErrorProcesadorPago extends ErrorDeAplicacion {
@@ -125,28 +139,37 @@ export class ProcesadorMercadoPago implements ProcesadorDePagos {
       date_approved?: string | null
     }
 
-    let estado: EstadoPagoExterno
-    switch (json.status) {
-      case 'approved':
-        estado = 'aprobado'
-        break
-      case 'rejected':
-        estado = 'rechazado'
-        break
-      case 'cancelled':
-        estado = 'cancelado'
-        break
-      default:
-        estado = 'pendiente'
-        break
-    }
-
     return {
-      estado,
+      estado: estadoDesdeMercadoPago(json.status),
       importe: Number(json.transaction_amount).toFixed(2),
       referenciaExterna: json.external_reference ?? null,
       fechaAprobacion: json.date_approved ? new Date(json.date_approved) : null,
     }
+  }
+
+  async buscarPagosPorReferencia(datos: {
+    credenciales: { accessToken: string }
+    referenciaExterna: string
+  }): Promise<PagoEncontrado[]> {
+    const consulta = `external_reference=${encodeURIComponent(datos.referenciaExterna)}&sort=date_created&criteria=desc`
+    const respuesta = await fetch(`${URL_BASE}/v1/payments/search?${consulta}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${datos.credenciales.accessToken}` },
+      signal: AbortSignal.timeout(8000),
+    })
+
+    if (!respuesta.ok) {
+      const errorTexto = await respuesta.text().catch(() => '')
+      throw new ErrorProcesadorPago(
+        `No se pudieron buscar los pagos en Mercado Pago (${respuesta.status}): ${errorTexto}`,
+      )
+    }
+
+    const json = (await respuesta.json()) as { results?: { id: number | string; status: string }[] }
+    return (json.results ?? []).map((pago) => ({
+      pagoExternoId: String(pago.id),
+      estado: estadoDesdeMercadoPago(pago.status),
+    }))
   }
 }
 

@@ -114,4 +114,8 @@ export const PROCESADOR_PAGOS: ProcesadorDePagos = {
     const impl = await resolverProcesadorPagos()
     return impl.consultarPago(datos)
   },
+  async buscarPagosPorReferencia(datos) {
+    const impl = await resolverProcesadorPagos()
+    return impl.buscarPagosPorReferencia(datos)
+  },
 }

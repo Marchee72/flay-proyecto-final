@@ -12,6 +12,7 @@ import {
 import { confirmarPagoEnLinea } from '@/aplicacion/pagos/confirmar-pago-en-linea'
 import * as cola from '@/aplicacion/pendientes/encolar'
 import { iniciarPagoEnLinea } from '@/aplicacion/pagos/iniciar-pago-en-linea'
+import { Decimal } from '@/compartido/dinero'
 import { NoEncontrado } from '@/compartido/errores'
 import { procesadorDePrueba } from '@/infraestructura/pagos/procesador-de-prueba'
 import {
@@ -162,6 +163,45 @@ describe('conciliacion de pagos en linea (RF-28)', () => {
 
     expect(await pagos()).toHaveLength(1)
     expect(await avisos()).toBe(1)
+  })
+
+  it('dos conciliaciones concurrentes con dos aprobados registran exactamente dos Pago', async () => {
+    procesadorDePrueba.limpiar()
+    programar('mp-1', 'aprobado')
+    programar('mp-2', 'aprobado')
+
+    await Promise.all([conciliar(), conciliar()])
+
+    const registrados = await pagos()
+    expect(registrados.map((p) => p.referencia).sort()).toEqual(['MP-mp-1', 'MP-mp-2'])
+    // El detalle (500) se imputa una sola vez; el segundo pago queda entero a favor.
+    const imputaciones = await prismaBase.pagoImputacion.findMany({
+      where: { pagoId: { in: registrados.map((p) => p.id) } },
+    })
+    const suma = (valores: { toString(): string }[]) =>
+      valores.reduce((total: Decimal, v) => total.plus(v.toString()), new Decimal(0)).toFixed(2)
+    expect(suma(imputaciones.map((i) => i.importeImputado))).toBe('500.00')
+    expect(suma(registrados.map((p) => p.saldoAFavor))).toBe('500.00')
+  })
+
+  it('dos aprobados distintos confirmados a la vez no imputan dos veces el mismo saldo', async () => {
+    procesadorDePrueba.limpiar()
+    programar('mp-1', 'aprobado')
+    programar('mp-2', 'aprobado')
+
+    await Promise.all(
+      ['mp-1', 'mp-2'].map((pagoExternoId) =>
+        confirmarPagoEnLinea(procesadorDePrueba, { consorcioId, pagoExternoId, intentoId }),
+      ),
+    )
+
+    const registrados = await pagos()
+    expect(registrados).toHaveLength(2)
+    const imputaciones = await prismaBase.pagoImputacion.findMany({
+      where: { pagoId: { in: registrados.map((p) => p.id) } },
+    })
+    expect(imputaciones).toHaveLength(1)
+    expect(imputaciones[0].importeImputado.toFixed(2)).toBe('500.00')
   })
 
   it('vencido hace mas de 72 h no consulta la pasarela', async () => {

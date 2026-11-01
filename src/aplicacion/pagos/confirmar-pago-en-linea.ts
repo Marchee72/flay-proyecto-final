@@ -120,9 +120,6 @@ export async function confirmarPagoEnLinea(
 
   // Estado aprobado: registrar e imputar en una transaccion atomica
   return enConsorcio(datos.consorcioId, async () => {
-    // El recargo se mide a la fecha en que se acredito el pago (RF-08).
-    const impagos = await detallesImpagosDe(intento.unidadId, pagoApi.fechaAprobacion ?? new Date())
-
     // Contexto del aviso al pagador (RF-28): unidad y periodo del detalle.
     const contexto = await prisma.detalleLiquidacion.findFirst({
       where: { id: intento.detalleLiquidacionId },
@@ -133,6 +130,11 @@ export async function confirmarPagoEnLinea(
     })
 
     const pagoRegistrado = await prisma.$transaction(async (tx) => {
+      // El candado del intento serializa las confirmaciones del mismo intento: sin el,
+      // con el intento ya aprobado ningun `updateMany` bloquea y dos confirmaciones
+      // concurrentes de un segundo pago pasarian ambas el chequeo de `referencia`.
+      await tx.$queryRaw`SELECT 1 FROM "IntentoDePago" WHERE id = ${intento.id}::uuid FOR UPDATE`
+
       // Un mismo pago externo no se registra dos veces (reintentos del webhook).
       const yaRegistrado = await tx.pago.findFirst({
         where: { referencia: `MP-${datos.pagoExternoId}` },
@@ -158,6 +160,15 @@ export async function confirmarPagoEnLinea(
           return { pagoId: actual.pagoId, registrado: false }
         }
       }
+
+      // Lo impago se lee con el candado tomado: leido antes, un pago concurrente del
+      // mismo intento ya pudo haberlo imputado. El recargo se mide a la fecha en que
+      // se acredito el pago (RF-08).
+      const impagos = await detallesImpagosDe(
+        intento.unidadId,
+        pagoApi.fechaAprobacion ?? new Date(),
+        tx,
+      )
 
       // Imputar y registrar pago con medio mercado_pago
       const pago = await imputarYRegistrar(tx, {

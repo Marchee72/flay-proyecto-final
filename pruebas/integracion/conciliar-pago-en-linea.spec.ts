@@ -10,6 +10,7 @@ import {
   PagoTodaviaSinConfirmar,
 } from '@/aplicacion/pagos/conciliar-pago-en-linea'
 import { confirmarPagoEnLinea } from '@/aplicacion/pagos/confirmar-pago-en-linea'
+import * as cola from '@/aplicacion/pendientes/encolar'
 import { iniciarPagoEnLinea } from '@/aplicacion/pagos/iniciar-pago-en-linea'
 import { NoEncontrado } from '@/compartido/errores'
 import { procesadorDePrueba } from '@/infraestructura/pagos/procesador-de-prueba'
@@ -258,5 +259,25 @@ describe('conciliacion de pagos en linea (RF-28)', () => {
         intentoId: randomUUID(),
       }),
     ).resolves.toBeUndefined()
+  })
+
+  it('si la cola falla, iniciarPagoEnLinea igual devuelve urlPago y el intento sigue iniciado', async () => {
+    await prismaBase.intentoDePago.update({ where: { id: intentoId }, data: { estado: 'vencido' } })
+    vi.spyOn(cola, 'encolar').mockRejectedValue(new Error('base caida'))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const inicio = await iniciarPagoEnLinea(repo, RELOJ, procesadorDePrueba, {
+      usuarioId: inquilino,
+      consorcioId,
+      detalleLiquidacionId: detalleId,
+      urlBaseRetorno: 'https://consorcio.app/volver',
+    })
+
+    expect(inicio.urlPago).toBeTruthy()
+    expect(inicio.intentoId).not.toBe(intentoId)
+    expect(
+      (await prismaBase.intentoDePago.findUniqueOrThrow({ where: { id: inicio.intentoId } }))
+        .estado,
+    ).toBe('iniciado')
   })
 })

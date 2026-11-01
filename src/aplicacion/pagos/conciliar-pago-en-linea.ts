@@ -122,7 +122,7 @@ const CARGA = z.object({
 /** Lo lanza el manejador para que el drenaje reintente con su espera creciente. */
 export class PagoTodaviaSinConfirmar extends Error {
   constructor() {
-    super('Mercado Pago todavia no informa un pago aprobado para este intento.')
+    super('Mercado Pago todavía no informa un pago aprobado para este intento.')
   }
 }
 

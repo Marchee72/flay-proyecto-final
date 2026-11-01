@@ -205,6 +205,7 @@ export async function iniciarPagoEnLinea(
       const periodoMes = String(detalle.liquidacion.periodo.mes).padStart(2, '0')
       const titulo = `Expensas ${periodoMes}/${detalle.liquidacion.periodo.anio} - ${detalle.unidad.designacion}`
 
+      let preferenciaUrl: string
       try {
         const preferencia = await procesador.crearPreferencia({
           credenciales,
@@ -224,16 +225,7 @@ export async function iniciarPagoEnLinea(
           },
         })
 
-        await encolar('conciliar_pago', {
-          consorcioId: datos.consorcioId,
-          detalleLiquidacionId: detalle.id,
-          intentoId: intento.id,
-        })
-
-        return {
-          intentoId: intento.id,
-          urlPago: preferencia.urlPago,
-        }
+        preferenciaUrl = preferencia.urlPago
       } catch (error) {
         // Si la creacion de la preferencia falla, marcar como rechazado
         await prismaBase.intentoDePago.update({
@@ -242,6 +234,20 @@ export async function iniciarPagoEnLinea(
         })
         throw error
       }
+
+      // La preferencia ya existe y esta guardada: si la cola falla, el intento sigue
+      // vivo y la conciliacion al abrir la vista cubre ese caso.
+      try {
+        await encolar('conciliar_pago', {
+          consorcioId: datos.consorcioId,
+          detalleLiquidacionId: detalle.id,
+          intentoId: intento.id,
+        })
+      } catch (error) {
+        console.error('[conciliar_pago]', error)
+      }
+
+      return { intentoId: intento.id, urlPago: preferenciaUrl }
     },
   )
 }

@@ -10,8 +10,8 @@ import { useRouter } from 'next/navigation'
  * mostrarse y el intervalo se limpia solo. Cubre el webhook demorado o ausente.
  */
 export function SondeoPago({
-  intentos = 20,
-  intervaloMs = 3000,
+  intentos = 120,
+  intervaloMs = 5000,
 }: {
   intentos?: number
   intervaloMs?: number
@@ -26,7 +26,16 @@ export function SondeoPago({
       if (hechos >= intentos) clearInterval(id)
     }, intervaloMs)
 
-    return () => clearInterval(id)
+    // Al volver de la pestaña de Mercado Pago se concilia sin esperar al intervalo.
+    const alVolver = () => {
+      if (document.visibilityState === 'visible') router.refresh()
+    }
+    document.addEventListener('visibilitychange', alVolver)
+
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', alVolver)
+    }
   }, [router, intentos, intervaloMs])
 
   return null

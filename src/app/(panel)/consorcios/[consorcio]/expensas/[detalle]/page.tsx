@@ -3,14 +3,18 @@ import { Fragment } from 'react'
 import Link from 'next/link'
 import { CheckCircle, Clock, Download, Siren, TriangleAlert } from 'lucide-react'
 
-import { ErrorDeAplicacion } from '@/compartido/errores'
+import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import { fechaParaMostrar, importeParaMostrar } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
 import { ALMACEN, HABILITACIONES, PROCESADOR_PAGOS, RELOJ } from '@/aplicacion/dependencias'
 import { verExpensa, type ExpensaVisible } from '@/aplicacion/liquidacion/ver-expensa'
 import { confirmarPagoEnLinea } from '@/aplicacion/pagos/confirmar-pago-en-linea'
-import { resultadoDeRetorno } from '@/aplicacion/pagos/resultado-retorno'
+import {
+  conciliarIntento,
+  conciliarPagosDelDetalle,
+} from '@/aplicacion/pagos/conciliar-pago-en-linea'
+import { estadoDeConciliacion, resultadoDeRetorno } from '@/aplicacion/pagos/resultado-retorno'
 import {
   consultarDisponibilidadPagoEnLinea,
   type DisponibilidadPagoEnLinea,
@@ -75,6 +79,31 @@ export default async function ExpensaPage({
       if (estadoRetorno === 'pendiente') {
         mensajeRetorno = 'Estamos verificando tu pago con la pasarela…'
       }
+    }
+  } else {
+    // Sin payment_id (el inquilino no volvio desde Mercado Pago) se concilia contra la pasarela.
+    const intentoId = parametros.intentoId ? String(parametros.intentoId) : undefined
+    try {
+      const resultados = intentoId
+        ? [
+            await conciliarIntento(PROCESADOR_PAGOS, RELOJ, {
+              consorcioId: activo.id,
+              detalleLiquidacionId: detalle,
+              intentoId,
+            }),
+          ]
+        : await conciliarPagosDelDetalle(PROCESADOR_PAGOS, RELOJ, {
+            consorcioId: activo.id,
+            detalleLiquidacionId: detalle,
+          })
+      estadoRetorno = estadoDeConciliacion(resultados, Boolean(intentoId))
+    } catch (error) {
+      // Un intento ajeno o invalido no muestra aviso; una pasarela caida deja la espera.
+      estadoRetorno = intentoId && !(error instanceof NoEncontrado) ? 'pendiente' : null
+    }
+    if (estadoRetorno === 'pendiente') {
+      mensajeRetorno =
+        'Esperando la confirmación de Mercado Pago. Si ya pagaste, esta pantalla se actualiza sola.'
     }
   }
 

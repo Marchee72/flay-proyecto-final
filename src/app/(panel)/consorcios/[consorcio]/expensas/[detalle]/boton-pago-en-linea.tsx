@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { CreditCard, ExternalLink, Loader2 } from 'lucide-react'
 
 import { importeParaMostrar } from '@/compartido/formato'
@@ -15,6 +16,7 @@ export function BotonPagoEnLinea({
   detalleId: string
   saldoExigible: string
 }) {
+  const router = useRouter()
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -34,6 +36,15 @@ export function BotonPagoEnLinea({
       const resultado = await accionPagarExpensaEnLinea({ mensaje: '' }, formData)
       if (resultado.urlPago && nuevaPestana) {
         nuevaPestana.location.href = resultado.urlPago
+        // La pestaña original queda esperando el pago de este intento.
+        if (resultado.intentoId) {
+          router.replace(
+            `/consorcios/${consorcioId}/expensas/${detalleId}?intentoId=${resultado.intentoId}`,
+          )
+        }
+      } else if (resultado.urlPago) {
+        // El navegador bloqueo la pestaña nueva: se paga en esta.
+        window.location.assign(resultado.urlPago)
       } else {
         nuevaPestana?.close()
         if (resultado.mensaje) {

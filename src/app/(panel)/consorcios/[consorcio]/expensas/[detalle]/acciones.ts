@@ -7,7 +7,7 @@ import { HABILITACIONES, PROCESADOR_PAGOS, RELOJ } from '@/aplicacion/dependenci
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { iniciarPagoEnLinea } from '@/aplicacion/pagos/iniciar-pago-en-linea'
 
-export type ResultadoInicioPago = { mensaje: string; urlPago?: string }
+export type ResultadoInicioPago = { mensaje: string; urlPago?: string; intentoId?: string }
 
 /**
  * Server Action para iniciar el pago en linea de una expensa (`RF-28`, D-1, D-3).
@@ -33,7 +33,7 @@ export async function accionPagarExpensaEnLinea(
       detalleLiquidacionId: detalleId,
       urlBaseRetorno,
     })
-    return { mensaje: '', urlPago: inicio.urlPago }
+    return { mensaje: '', urlPago: inicio.urlPago, intentoId: inicio.intentoId }
   } catch (error) {
     if (error instanceof ErrorDeAplicacion) {
       return { mensaje: error.mensajeParaUsuario }

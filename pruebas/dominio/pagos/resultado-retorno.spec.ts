@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { resultadoDeRetorno } from '@/aplicacion/pagos/resultado-retorno'
+import { estadoDeConciliacion, resultadoDeRetorno } from '@/aplicacion/pagos/resultado-retorno'
 
 /**
  * La URL de retorno la controla el cliente: un `status=approved` no prueba que
@@ -20,5 +20,33 @@ describe('resultadoDeRetorno', () => {
 
   it('sin estado en la URL queda pendiente de verificar', () => {
     expect(resultadoDeRetorno({})).toBe('pendiente')
+  })
+})
+
+describe('estadoDeConciliacion', () => {
+  const r = (estado: 'aprobado' | 'rechazado' | 'vencido' | 'esperando') => ({
+    intentoId: 'i1',
+    estado,
+  })
+
+  it('un aprobado se muestra siempre, se siga o no un intento', () => {
+    expect(estadoDeConciliacion([r('aprobado')], true)).toBe('aprobado')
+    expect(estadoDeConciliacion([r('aprobado')], false)).toBe('aprobado')
+    expect(estadoDeConciliacion([r('esperando'), r('aprobado')], false)).toBe('aprobado')
+  })
+
+  it('siguiendo un intento, esperar es pendiente y rechazar es rechazado', () => {
+    expect(estadoDeConciliacion([r('esperando')], true)).toBe('pendiente')
+    expect(estadoDeConciliacion([r('rechazado')], true)).toBe('rechazado')
+  })
+
+  it('a una visita comun no se le muestran avisos de espera', () => {
+    expect(estadoDeConciliacion([r('esperando')], false)).toBeNull()
+    expect(estadoDeConciliacion([r('rechazado')], false)).toBeNull()
+  })
+
+  it('un intento vencido o ninguno no muestran nada', () => {
+    expect(estadoDeConciliacion([r('vencido')], true)).toBeNull()
+    expect(estadoDeConciliacion([], true)).toBeNull()
   })
 })

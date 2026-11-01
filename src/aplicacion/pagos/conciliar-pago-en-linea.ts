@@ -1,8 +1,11 @@
+import { z } from 'zod'
+
 import { NoEncontrado } from '@/compartido/errores'
 import type { ProcesadorDePagos } from '@/dominio/contratos/procesador-pagos'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { obtenerCredencialesDescifradas } from '@/aplicacion/administradoras/credenciales-pago'
 import { confirmarPagoEnLinea } from '@/aplicacion/pagos/confirmar-pago-en-linea'
+import type { Manejador } from '@/aplicacion/pendientes/drenar'
 import { enConsorcio } from '@/infraestructura/cliente-aislado'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 
@@ -108,4 +111,33 @@ export async function conciliarPagosDelDetalle(
     resultados.push(await conciliarIntento(procesador, reloj, { ...datos, intentoId: id }))
   }
   return resultados
+}
+
+const CARGA = z.object({
+  consorcioId: z.string().uuid(),
+  detalleLiquidacionId: z.string().uuid(),
+  intentoId: z.string().uuid(),
+})
+
+/** Lo lanza el manejador para que el drenaje reintente con su espera creciente. */
+export class PagoTodaviaSinConfirmar extends Error {
+  constructor() {
+    super('Mercado Pago todavia no informa un pago aprobado para este intento.')
+  }
+}
+
+/**
+ * El trabajo `conciliar_pago`: cualquier error que no sea `NoEncontrado` (pasarela
+ * caida incluida) se relanza y el drenaje reintenta (30 s x 2^n, 6 intentos).
+ */
+export function manejadorConciliacion(procesador: ProcesadorDePagos, reloj: Reloj): Manejador {
+  return async (carga) => {
+    try {
+      const { estado } = await conciliarIntento(procesador, reloj, CARGA.parse(carga))
+      if (estado === 'esperando') throw new PagoTodaviaSinConfirmar()
+    } catch (error) {
+      if (error instanceof NoEncontrado) return
+      throw error
+    }
+  }
 }

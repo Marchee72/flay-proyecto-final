@@ -1,9 +1,13 @@
+import { randomUUID } from 'node:crypto'
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { guardarCredencialesPago } from '@/aplicacion/administradoras/credenciales-pago'
 import {
   conciliarIntento,
   conciliarPagosDelDetalle,
+  manejadorConciliacion,
+  PagoTodaviaSinConfirmar,
 } from '@/aplicacion/pagos/conciliar-pago-en-linea'
 import { confirmarPagoEnLinea } from '@/aplicacion/pagos/confirmar-pago-en-linea'
 import { iniciarPagoEnLinea } from '@/aplicacion/pagos/iniciar-pago-en-linea'
@@ -216,5 +220,43 @@ describe('conciliacion de pagos en linea (RF-28)', () => {
         detalleLiquidacionId: detalleId,
       }),
     ).toEqual([{ intentoId, estado: 'aprobado' }])
+  })
+
+  it('iniciarPagoEnLinea encola un trabajo conciliar_pago', async () => {
+    const trabajos = await prismaBase.trabajoPendiente.findMany({
+      where: { tipo: 'conciliar_pago' },
+    })
+    expect(trabajos).toHaveLength(1)
+    expect((trabajos[0].carga as { intentoId: string }).intentoId).toBe(intentoId)
+  })
+
+  it('el manejador lanza mientras no hay pago y concilia cuando aparece', async () => {
+    procesadorDePrueba.limpiar()
+    const manejar = manejadorConciliacion(procesadorDePrueba, RELOJ)
+    const carga = { consorcioId, detalleLiquidacionId: detalleId, intentoId }
+
+    await expect(manejar(carga)).rejects.toBeInstanceOf(PagoTodaviaSinConfirmar)
+
+    procesadorDePrueba.programarPago('mp-ok', {
+      estado: 'aprobado',
+      importe: '500.00',
+      referenciaExterna: intentoId,
+      fechaAprobacion: new Date(),
+    })
+    await expect(manejar(carga)).resolves.toBeUndefined()
+    expect(await pagos()).toHaveLength(1)
+  })
+
+  it('el manejador termina sin error con un intento inexistente', async () => {
+    await expect(
+      manejadorConciliacion(
+        procesadorDePrueba,
+        RELOJ,
+      )({
+        consorcioId,
+        detalleLiquidacionId: detalleId,
+        intentoId: randomUUID(),
+      }),
+    ).resolves.toBeUndefined()
   })
 })

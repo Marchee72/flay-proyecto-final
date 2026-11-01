@@ -10,6 +10,7 @@ import { ocupaUnidad } from '@/infraestructura/repositorios/ocupaciones'
 import { sinConsorcio } from '@/infraestructura/cliente-aislado'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 import { obtenerCredencialesDescifradas } from '@/aplicacion/administradoras/credenciales-pago'
+import { encolar } from '@/aplicacion/pendientes/encolar'
 import { detallesImpagosDe } from '@/aplicacion/pagos/registrar'
 
 /**
@@ -221,6 +222,12 @@ export async function iniciarPagoEnLinea(
             preferenciaId: preferencia.preferenciaId,
             urlPago: preferencia.urlPago,
           },
+        })
+
+        await encolar('conciliar_pago', {
+          consorcioId: datos.consorcioId,
+          detalleLiquidacionId: detalle.id,
+          intentoId: intento.id,
         })
 
         return {

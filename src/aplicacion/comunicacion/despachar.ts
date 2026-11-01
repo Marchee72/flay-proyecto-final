@@ -98,14 +98,19 @@ export async function despacharNotificaciones(
   )
 }
 
-/** Lo que la pantalla de pendientes muestra. La cola es global: no lleva consorcio. */
+/**
+ * Lo que la pantalla de pendientes muestra. La cola es global: no lleva consorcio.
+ * `conciliar_pago` queda afuera de pendientes, agotados y ultimo error: cada checkout
+ * abandonado se agota a proposito (`RF-28`) y taparia las fallas reales de correo.
+ */
 export async function estadoDeLaCola(): Promise<EstadoDeLaCola> {
+  const sinConciliar = { tipo: { not: 'conciliar_pago' } } as const
   const [pendientes, agotados, despachados, ultimo, avisosSinEnviar] = await Promise.all([
-    prismaBase.trabajoPendiente.count({ where: { estado: 'pendiente' } }),
-    prismaBase.trabajoPendiente.count({ where: { estado: 'agotado' } }),
+    prismaBase.trabajoPendiente.count({ where: { ...sinConciliar, estado: 'pendiente' } }),
+    prismaBase.trabajoPendiente.count({ where: { ...sinConciliar, estado: 'agotado' } }),
     prismaBase.trabajoPendiente.count({ where: { estado: 'despachado' } }),
     prismaBase.trabajoPendiente.findFirst({
-      where: { ultimoError: { not: null } },
+      where: { ...sinConciliar, ultimoError: { not: null } },
       orderBy: { actualizadoEn: 'desc' },
       select: { ultimoError: true },
     }),
@@ -137,7 +142,8 @@ export async function reintentarAgotados(
     },
     async () => {
       const agotados = await prismaBase.trabajoPendiente.findMany({
-        where: { estado: 'agotado' },
+        // Los mismos agotados que cuenta el resumen: un checkout abandonado no revive.
+        where: { estado: 'agotado', tipo: { not: 'conciliar_pago' } },
         select: { id: true },
       })
       for (const trabajo of agotados) await reintentarAhora(trabajo.id)

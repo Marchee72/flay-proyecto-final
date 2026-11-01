@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Fragment } from 'react'
 import Link from 'next/link'
 import { CheckCircle, Clock, Download, Siren, TriangleAlert } from 'lucide-react'
+import { z } from 'zod'
 
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import { fechaParaMostrar, importeParaMostrar } from '@/compartido/formato'
@@ -35,7 +36,8 @@ type ParametrosRetorno = {
   collection_id?: string
   collection_status?: string
   status?: string
-  intentoId?: string
+  /** Repetido en la URL llega como arreglo. */
+  intentoId?: string | string[]
 }
 
 /**
@@ -61,6 +63,12 @@ export default async function ExpensaPage({
 
   // Procesar confirmacion de retorno de Mercado Pago si el usuario vuelve de pagar
   const pagoExternoId = parametros.payment_id || parametros.collection_id
+  // Un id que no es uuid haria fallar a Prisma con P2023, no con NoEncontrado: se
+  // trata como ausente para no quedar «esperando» un intento que no existe.
+  const intentoValido = z.string().uuid().safeParse(parametros.intentoId)
+  const intentoId = intentoValido.success ? intentoValido.data : undefined
+  // Solo la pestaña que sigue un intento sin payment_id concilia en cada refresco.
+  const seguido = !pagoExternoId && Boolean(intentoId)
   let estadoRetorno: 'aprobado' | 'rechazado' | 'pendiente' | null = null
   let mensajeRetorno: string | null = null
 
@@ -69,7 +77,7 @@ export default async function ExpensaPage({
       const confirmacion = await confirmarPagoEnLinea(PROCESADOR_PAGOS, {
         consorcioId: activo.id,
         pagoExternoId: String(pagoExternoId),
-        intentoId: parametros.intentoId ? String(parametros.intentoId) : undefined,
+        intentoId,
       })
       estadoRetorno = confirmacion.estado as 'aprobado' | 'rechazado' | 'pendiente'
       mensajeRetorno = confirmacion.mensaje || null
@@ -82,7 +90,6 @@ export default async function ExpensaPage({
     }
   } else {
     // Sin payment_id (el inquilino no volvio desde Mercado Pago) se concilia contra la pasarela.
-    const intentoId = parametros.intentoId ? String(parametros.intentoId) : undefined
     try {
       const resultados = intentoId
         ? [
@@ -99,6 +106,7 @@ export default async function ExpensaPage({
       estadoRetorno = estadoDeConciliacion(resultados, Boolean(intentoId))
     } catch (error) {
       // Un intento ajeno o invalido no muestra aviso; una pasarela caida deja la espera.
+      if (!(error instanceof NoEncontrado)) console.error('[conciliar_pago]', error)
       estadoRetorno = intentoId && !(error instanceof NoEncontrado) ? 'pendiente' : null
     }
     if (estadoRetorno === 'pendiente') {
@@ -150,7 +158,10 @@ export default async function ExpensaPage({
             <TriangleAlert className="icono" aria-hidden="true" />
             <span>
               {mensajeRetorno ?? 'El pago fue rechazado o cancelado en la pasarela de pagos.'}
+              {seguido && ' Si lo reintentás con otra tarjeta, esta pantalla se actualiza sola.'}
             </span>
+            {/* En Checkout Pro la tarjeta se reintenta en la misma preferencia. */}
+            {seguido && <SondeoPago />}
           </p>
         )}
         {estadoRetorno === 'pendiente' && (

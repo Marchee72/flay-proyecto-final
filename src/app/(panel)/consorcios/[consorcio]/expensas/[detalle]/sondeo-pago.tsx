@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation'
 /**
  * Refresca la vista de retorno mientras el pago sigue pendiente (`RF-28`).
  *
- * La pagina lo renderiza solo con estado pendiente: al acreditarse, deja de
- * mostrarse y el intervalo se limpia solo. Cubre el webhook demorado o ausente.
+ * La pagina lo renderiza con estado pendiente, o rechazado mientras se sigue el
+ * intento (la tarjeta se puede reintentar): al acreditarse, deja de mostrarse y el
+ * intervalo se limpia solo. Cubre el webhook demorado o ausente.
  */
 export function SondeoPago({
   intentos = 120,

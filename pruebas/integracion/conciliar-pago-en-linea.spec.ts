@@ -140,6 +140,21 @@ describe('conciliacion de pagos en linea (RF-28)', () => {
     expect((await intento()).estado).toBe('rechazado')
   })
 
+  it('un rechazo ya conciliado no se vuelve a consultar ni a escribir', async () => {
+    procesadorDePrueba.limpiar()
+    programar('mp-rech', 'rechazado')
+    const consulta = vi.spyOn(procesadorDePrueba, 'consultarPago')
+
+    await conciliar()
+    const auditoria = () =>
+      prismaBase.bitacoraAuditoria.count({ where: { tabla: 'IntentoDePago', clave: intentoId } })
+    const filas = await auditoria()
+    expect((await conciliar()).estado).toBe('rechazado')
+
+    expect(consulta).toHaveBeenCalledTimes(1)
+    expect(await auditoria()).toBe(filas)
+  })
+
   it('un aprobado despues de un rechazo se concilia', async () => {
     procesadorDePrueba.limpiar()
     programar('mp-rech', 'rechazado')
@@ -209,6 +224,31 @@ describe('conciliacion de pagos en linea (RF-28)', () => {
 
     expect((await conciliar(relojFijo('2026-09-20T12:00:00Z'))).estado).toBe('vencido')
     expect(espia).toHaveBeenCalledTimes(0)
+  })
+
+  it('un intento vencido dentro del margen de 72 h se concilia', async () => {
+    await prismaBase.intentoDePago.update({ where: { id: intentoId }, data: { estado: 'vencido' } })
+
+    expect(
+      await conciliarPagosDelDetalle(procesadorDePrueba, RELOJ, {
+        consorcioId,
+        detalleLiquidacionId: detalleId,
+      }),
+    ).toEqual([{ intentoId, estado: 'aprobado' }])
+    expect(await pagos()).toHaveLength(1)
+  })
+
+  it('el margen de un intento vencido corta a las 72 h de su vencimiento', async () => {
+    await prismaBase.intentoDePago.update({ where: { id: intentoId }, data: { estado: 'vencido' } })
+    procesadorDePrueba.limpiar()
+    const espia = vi.spyOn(procesadorDePrueba, 'buscarPagosPorReferencia')
+
+    const limite = (await intento()).venceEn.getTime() + 72 * 60 * 60 * 1000
+    const a = (ms: number) => relojFijo(new Date(ms).toISOString())
+    expect((await conciliar(a(limite - 1000))).estado).toBe('vencido')
+    expect(espia).toHaveBeenCalledTimes(1)
+    expect((await conciliar(a(limite + 1000))).estado).toBe('vencido')
+    expect(espia).toHaveBeenCalledTimes(1)
   })
 
   it('propaga el error de la pasarela sin tocar el intento', async () => {
@@ -286,6 +326,22 @@ describe('conciliacion de pagos en linea (RF-28)', () => {
     })
     await expect(manejar(carga)).resolves.toBeUndefined()
     expect(await pagos()).toHaveLength(1)
+  })
+
+  it('el manejador sigue reintentando tras un rechazo: la tarjeta se puede reintentar', async () => {
+    procesadorDePrueba.limpiar()
+    programar('mp-rech', 'rechazado')
+
+    await expect(
+      manejadorConciliacion(
+        procesadorDePrueba,
+        RELOJ,
+      )({
+        consorcioId,
+        detalleLiquidacionId: detalleId,
+        intentoId,
+      }),
+    ).rejects.toBeInstanceOf(PagoTodaviaSinConfirmar)
   })
 
   it('el manejador termina sin error con un intento inexistente', async () => {

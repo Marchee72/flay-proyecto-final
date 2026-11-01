@@ -44,7 +44,9 @@ export async function conciliarIntento(
   if (!intento) throw new NoEncontrado()
 
   if (intento.estado === 'aprobado') return resultado('aprobado')
-  if (intento.estado === 'vencido' || !intento.preferenciaId) return resultado('vencido')
+  if (!intento.preferenciaId) return resultado('vencido')
+  // `vencido` no corta: el margen corre desde `venceEn`, aunque un pago nuevo ya lo
+  // haya marcado vencido antes de tiempo.
   const limite = intento.venceEn.getTime() + HORAS_MARGEN_ACREDITACION * 60 * 60 * 1000
   if (reloj.ahora().getTime() > limite) return resultado('vencido')
 
@@ -75,9 +77,15 @@ export async function conciliarIntento(
   }
 
   if (encontrados.some((pago) => pago.estado === 'pendiente')) return resultado('esperando')
+  // Vencido solo se reabre por un aprobado; sin eso no se reescribe.
+  if (intento.estado === 'vencido') return resultado('vencido')
 
   const ultimo = encontrados[0]
   if (ultimo && (ultimo.estado === 'rechazado' || ultimo.estado === 'cancelado')) {
+    // Ya conciliado: cada vista lo volveria a escribir en la bitacora.
+    if (intento.estado === 'rechazado' && intento.pagoExternoId === ultimo.pagoExternoId) {
+      return resultado('rechazado')
+    }
     await confirmarPagoEnLinea(procesador, {
       consorcioId,
       pagoExternoId: ultimo.pagoExternoId,
@@ -98,7 +106,7 @@ export async function conciliarPagosDelDetalle(
     prisma.intentoDePago.findMany({
       where: {
         detalleLiquidacionId: datos.detalleLiquidacionId,
-        estado: { in: ['iniciado', 'rechazado'] },
+        estado: { in: ['iniciado', 'rechazado', 'vencido'] },
         preferenciaId: { not: null },
       },
       orderBy: { creadoEn: 'asc' },
@@ -128,13 +136,15 @@ export class PagoTodaviaSinConfirmar extends Error {
 
 /**
  * El trabajo `conciliar_pago`: cualquier error que no sea `NoEncontrado` (pasarela
- * caida incluida) se relanza y el drenaje reintenta (30 s x 2^n, 6 intentos).
+ * caida incluida) se relanza y el drenaje reintenta (30 s x 2^n, 6 intentos). Un
+ * rechazo tambien reintenta: en Checkout Pro la tarjeta se reintenta en la misma
+ * preferencia, y lo que corta es el vencimiento.
  */
 export function manejadorConciliacion(procesador: ProcesadorDePagos, reloj: Reloj): Manejador {
   return async (carga) => {
     try {
       const { estado } = await conciliarIntento(procesador, reloj, CARGA.parse(carga))
-      if (estado === 'esperando') throw new PagoTodaviaSinConfirmar()
+      if (estado === 'esperando' || estado === 'rechazado') throw new PagoTodaviaSinConfirmar()
     } catch (error) {
       if (error instanceof NoEncontrado) return
       throw error

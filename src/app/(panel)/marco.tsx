@@ -9,7 +9,7 @@ import { salir } from './acciones'
 import { Asistente } from './asistente/asistente'
 import { Campana } from './campana'
 import { consorciosAlAlcance } from './con-consorcio'
-import { NOMBRE_GALLETA_CONSORCIO } from './consorcio-activo'
+import { destinoDeEntrada, NOMBRE_GALLETA_CONSORCIO } from './consorcio-activo'
 import { BarraInferior, Navegacion, NavegacionGlobal } from './navegacion'
 import { SelectorDeConsorcio, type ConsorcioOpcion } from './selector-consorcio'
 
@@ -51,7 +51,9 @@ export async function Marco({
     <div className="marco">
       <aside className="panel">
         <div className="panel__cabeza">
-          <Link className="marca" href="/">
+          {/* La misma cuenta que hace `/`: apuntar a `/` haria una navegacion que
+              termina donde ya se esta, y la barra de carga quedaria encendida. */}
+          <Link className="marca" href={consorcio?.base ?? destinoDeEntrada(alAlcance, recordado)}>
             FLAY
           </Link>
           <div className="panel__acciones">

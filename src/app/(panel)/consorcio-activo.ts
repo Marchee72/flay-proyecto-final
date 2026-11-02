@@ -1,3 +1,5 @@
+import { esUuid } from '@/compartido/identificadores'
+
 /**
  * Memoria del ultimo consorcio usado. Ya no es el contexto —el consorcio vive
  * en la ruta, `/consorcios/[consorcio]/...`—; solo decide a donde manda `/`
@@ -13,8 +15,6 @@ export const OPCIONES_GALLETA_CONSORCIO = {
   maxAge: 60 * 60 * 24 * 365,
 } as const
 
-const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i
-
 /**
  * El consorcio que se esta abriendo, si la ruta es `/consorcios/<uuid>[/...]`.
  * Lo usa `src/middleware.ts` para recordarlo; `nuevo` y cualquier otro
@@ -22,7 +22,7 @@ const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i
  */
 export function consorcioDeLaRuta(ruta: string): string | null {
   const segmento = ruta.match(/^\/consorcios\/([^/?#]+)/)?.[1]
-  return segmento && UUID.test(segmento) ? segmento : null
+  return esUuid(segmento) ? segmento : null
 }
 
 /** Con un solo consorcio no hay nada que elegir; con varios, el recordado si sigue al alcance. */

@@ -112,6 +112,16 @@ test('filtrar los gastos por periodo no abre el alta; ?abrir=1 si', async ({ pag
   await expect(page.getByRole('dialog', { name: 'Nuevo gasto' })).toBeVisible()
 })
 
+test('los filtros escritos a mano no rompen la pantalla (RNF-10)', async ({ page }) => {
+  await entrar(page, unico.correo)
+  await page.goto(`/consorcios/${unico.consorcioId}/gastos?periodo=x&rubro=y`)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Gastos')
+  await page.goto(
+    `/consorcios/${unico.consorcioId}/reservas/historial?mes=2026-13&espacio=x&unidad=y`,
+  )
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Historial de reservas')
+})
+
 test('un consorcio fuera del alcance no dibuja nada', async ({ page }) => {
   await entrar(page, unico.correo)
   await page.goto(`/consorcios/${segundoConsorcioId}/gastos`)

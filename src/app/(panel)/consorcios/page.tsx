@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { Building2, MessageSquareWarning, TrendingUp, TriangleAlert } from 'lucide-react'
 
 import { misAdministradoras } from '@/aplicacion/administradoras/mis-administradoras'
 import { TIPOS_DE_UNIDAD_ASIGNABLES } from '@/aplicacion/consorcios/tipos-de-unidad'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 import { verPanel, type PanelConsolidado } from '@/aplicacion/indicadores/indicadores'
 import { listarPeriodos } from '@/aplicacion/periodos/periodos'
 import { plural } from '@/compartido/formato'
@@ -26,7 +26,7 @@ export default async function ConsorciosPage({
   searchParams: Promise<{ q?: string }>
 }) {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const [consorcios, administradoras, senales] = await Promise.all([
     consorciosAlAlcance(usuarioId),

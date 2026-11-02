@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 
 import { MINIMO_DE_CONTRASENA } from '@/compartido/contrasenas'
+import { destinoSeguro } from '@/compartido/destinos'
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { DERIVADOR, RELOJ } from '@/aplicacion/dependencias'
 import { fijarContrasena } from '@/aplicacion/identidad/invitar-persona'
@@ -19,7 +20,8 @@ export async function accionIngresar(_previo: Resultado, datos: FormData): Promi
   const mensaje = await ingresar({
     correo: String(datos.get('correo') ?? ''),
     contrasena: String(datos.get('contrasena') ?? ''),
-    destino: '/',
+    // Se vuelve a validar: el campo oculto lo puede escribir cualquiera.
+    destino: destinoSeguro(datos.get('destino'), '/'),
   })
 
   return { mensaje }

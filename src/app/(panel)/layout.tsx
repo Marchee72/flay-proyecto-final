@@ -1,7 +1,7 @@
-import { redirect } from 'next/navigation'
 import { after } from 'next/server'
 
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 import { drenar } from '@/aplicacion/pendientes/drenar'
 import { MANEJADORES } from '@/aplicacion/pendientes/manejadores'
 
@@ -21,7 +21,7 @@ import { IndicadorCarga } from './indicador-carga'
  */
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   after(async () => {
     // Cada historia agrega su manejador; lo que no tiene ninguno queda

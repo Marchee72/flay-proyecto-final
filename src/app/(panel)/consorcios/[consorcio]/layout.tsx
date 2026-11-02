@@ -1,8 +1,7 @@
-import { redirect } from 'next/navigation'
-
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 
 import { AvisoFueraDeAlcance, consorciosAlAlcance } from '../../con-consorcio'
 import { Marco } from '../../marco'
@@ -22,7 +21,7 @@ export default async function ConsorcioLayout({
   params: Promise<{ consorcio: string }>
 }) {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const { consorcio: consorcioId } = await params
   const consorcios = await consorciosAlAlcance(usuarioId)

@@ -1,10 +1,9 @@
 'use server'
 
-import { redirect } from 'next/navigation'
-
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { HABILITACIONES, PROCESADOR_PAGOS, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 import { iniciarPagoEnLinea } from '@/aplicacion/pagos/iniciar-pago-en-linea'
 
 export type ResultadoInicioPago = { mensaje: string; urlPago?: string; intentoId?: string }
@@ -18,7 +17,7 @@ export async function accionPagarExpensaEnLinea(
   datos: FormData,
 ): Promise<ResultadoInicioPago> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const consorcioId = String(datos.get('consorcio') ?? '')
   const detalleId = String(datos.get('detalle') ?? '')

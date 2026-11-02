@@ -2,6 +2,7 @@ import { cookies } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 
 import { consorciosAlAlcance } from '../con-consorcio'
 import { NOMBRE_GALLETA_CONSORCIO, destinoDeEntrada } from '../consorcio-activo'
@@ -29,7 +30,7 @@ export default async function RutaVieja({
   if (ruta[0] === 'pendientes') redirect('/bandeja')
 
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const consorcios = await consorciosAlAlcance(usuarioId)
   const pedido = (await searchParams).consorcio

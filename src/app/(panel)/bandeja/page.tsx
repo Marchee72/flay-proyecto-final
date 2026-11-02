@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { Inbox, Send } from 'lucide-react'
 
 import { fechaParaMostrar, plural } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 import { verBandeja } from '@/aplicacion/pendientes/bandeja'
 
 import { accionDespachar } from '../comunicacion/acciones'
@@ -26,7 +26,7 @@ export default async function BandejaPage({
   searchParams: Promise<{ consorcio?: string }>
 }) {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   const parametros = await searchParams
 
   const bandeja = await verBandeja(HABILITACIONES, RELOJ, { usuarioId })

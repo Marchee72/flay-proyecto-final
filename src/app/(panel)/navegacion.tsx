@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -152,6 +152,12 @@ const PRINCIPALES = [
  */
 export function BarraInferior({ base, roles }: { base: string; roles: readonly string[] }) {
   const ruta = usePathname()
+  // El `<details>` no se entera de la navegacion del cliente: sin esto la hoja
+  // queda abierta tapando la seccion recien elegida.
+  const menu = useRef<HTMLDetailsElement>(null)
+  useEffect(() => {
+    if (menu.current) menu.current.open = false
+  }, [ruta])
 
   return (
     <div className="barra-inferior">
@@ -174,7 +180,7 @@ export function BarraInferior({ base, roles }: { base: string; roles: readonly s
           })}
         </ul>
       </nav>
-      <details className="menu">
+      <details className="menu" ref={menu}>
         <summary aria-label="Todas las secciones">
           <Menu className="icono" aria-hidden="true" />
         </summary>

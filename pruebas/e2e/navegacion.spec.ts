@@ -58,6 +58,11 @@ test('con un solo consorcio se entra derecho al resumen', async ({ page }) => {
   await expect(page).toHaveURL(`/consorcios/${unico.consorcioId}`)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Resumen')
   await expect(page.locator('.kpi__rotulo').first()).toHaveText('Período abierto')
+  // El logo va adonde ya lleva `/`: un clic no navega a la misma pantalla.
+  await expect(page.getByRole('link', { name: 'FLAY' })).toHaveAttribute(
+    'href',
+    `/consorcios/${unico.consorcioId}`,
+  )
   // El lateral agrupado, con sus cuatro bloques; en telefono vive en el menu.
   if (test.info().project.name === 'telefono') {
     await expect(page.getByRole('navigation', { name: 'Secciones principales' })).toBeVisible()
@@ -73,6 +78,18 @@ test('con un solo consorcio se entra derecho al resumen', async ({ page }) => {
     'Administración',
   ])
   expect(await desbordaALoAncho(page)).toBe(false)
+})
+
+test('en el teléfono, elegir una sección del menú lo cierra (RNF-01)', async ({ page }) => {
+  test.skip(test.info().project.name !== 'telefono', 'el menú «Más» solo existe en el teléfono')
+  await entrar(page, unico.correo)
+  await page.getByRole('group').locator('summary').click()
+  await page
+    .getByRole('navigation', { name: 'Todas las secciones' })
+    .getByRole('link', { name: 'Gastos' })
+    .click()
+  await expect(page).toHaveURL(`/consorcios/${unico.consorcioId}/gastos`)
+  await expect(page.locator('details.menu')).not.toHaveAttribute('open', '')
 })
 
 test('con dos consorcios se entra a la lista, y el atajo conserva la seccion', async ({ page }) => {

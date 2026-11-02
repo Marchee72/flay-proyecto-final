@@ -259,8 +259,13 @@ Veintiséis decisiones que costaron una vuelta y conviene no volver a tomar desd
     `conConsorcio(consorcioId, titulo)` es el único punto que valida el id contra el alcance, y
     `consorciosAlAlcance` está cacheado por pedido porque lo piden el armazón y la página. La galleta
     `flay_consorcio` solo recuerda el último usado para `/` y para las direcciones viejas
-    (`[...ruta]/page.tsx`); la escribe `src/middleware.ts` en cada `GET` a `/consorcios/<id>`, no
-    solo el selector, y se sigue validando contra el alcance al leerla. Las listas de secciones van en `secciones.ts` sin `'use client'`:
+    (`[...ruta]/page.tsx`), y se sigue validando contra el alcance al leerla. No la escribe solo el
+    selector: `RecordarConsorcio`, montado por el layout del consorcio, hace `POST
+    /api/consorcio-activo` al abrir uno. **No va en `src/middleware.ts`**: Next le saca al
+    middleware las cabeceras de RSC, así que ahí una precarga de `<Link>` no se distingue de una
+    navegación, y cada tarjeta de la lista de consorcios pisaba la galleta al precargarse. Un
+    efecto solo corre en lo que se montó. El middleware se quedó con `x-flay-ruta`, la ruta pedida
+    que usa `irAIngresar` para volver después de ingresar. Las listas de secciones van en `secciones.ts` sin `'use client'`:
     importar un valor de un módulo cliente desde un componente servidor da `undefined`.
 20. **La bandeja y el resumen están en la lista blanca de `filtro-unico.spec.ts`.** La bandeja
     cruza consorcios con `consorcio_id IN (...)` armado desde `misConsorcios`, nunca desde un

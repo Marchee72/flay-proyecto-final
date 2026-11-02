@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { conHecho } from '@/app/aviso-en-url'
 import { altaConsorcio } from '@/aplicacion/consorcios/alta-consorcio'
 import { tipoDeUnidadDesdeFormulario } from '@/aplicacion/consorcios/tipos-de-unidad'
 import { cargarPadron, editarPadron } from '@/aplicacion/consorcios/unidades'
@@ -157,5 +158,5 @@ export async function accionEditarPadron(_previo: Resultado, datos: FormData): P
   }
 
   revalidatePath('/consorcios/[consorcio]', 'layout')
-  redirect(`/consorcios/${consorcioId}/unidades?hecho=padron-guardado`)
+  redirect(conHecho(`/consorcios/${consorcioId}/unidades`, 'padron-guardado'))
 }

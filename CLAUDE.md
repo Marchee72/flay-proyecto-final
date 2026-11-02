@@ -280,10 +280,13 @@ Veintiséis decisiones que costaron una vuelta y conviene no volver a tomar desd
     `bajaDesde: null`; quien lee historia (una expensa vieja) no. Una consulta nueva sobre
     `prisma.unidad` que se olvida el filtro no rompe la suma, pero ofrece una unidad que ya no está.
 24. **El resultado de una acción es un toast, y viaja en la dirección.** La acción redirige con
-    `?hecho=<clave>` o `?error=<texto>`, y lo dibuja `PilaDeAvisos` (`src/app/avisos.tsx`), montada
-    una sola vez en el layout raíz —así alcanza al panel, al ingreso y a la landing—. Los textos de
-    éxito viven ahí, en el diccionario `HECHO`: antes estaban repetidos en cada página de destino, con
-    una bandera distinta por acción y `?registrado=1` queriendo decir dos cosas. Un componente cliente
+    `conHecho(ruta, clave)` o `conError(ruta, texto)` (`src/app/aviso-en-url.ts`), que escriben
+    `?hecho=`/`?error=` más `aviso=<único>`: sin ese valor, la misma acción repetida dos veces
+    seguidas terminaba en la misma dirección y la pila no volvía a avisar. Lo dibuja `PilaDeAvisos`
+    (`src/app/avisos.tsx`), montada una sola vez en el layout raíz —así alcanza al panel, al ingreso
+    y a la landing—. Los textos de éxito viven en el diccionario `HECHO` de `aviso-en-url.ts`, sin
+    `'use client'` para que lo importen las acciones: antes estaban repetidos en cada página de
+    destino, con una bandera distinta por acción y `?registrado=1` queriendo decir dos cosas. Un componente cliente
     que no navega avisa con `avisar(texto, tono)`; es un emisor de módulo, no un contexto, para poder
     importarlo sin envolver el árbol. El éxito se va a los 8 s; el problema queda hasta que se lo
     cierra. **El parámetro se queda en la dirección a propósito**: sacarlo con `history.replaceState`

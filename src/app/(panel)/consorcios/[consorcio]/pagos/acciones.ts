@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { conHecho } from '@/app/aviso-en-url'
 import { importeDesdeEntrada } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
@@ -38,7 +39,7 @@ export async function accionRegistrarPago(_previo: Resultado, datos: FormData): 
   }
 
   revalidatePath('/consorcios/[consorcio]/pagos', 'page')
-  redirect(`/consorcios/${consorcioId}/pagos?hecho=pago-registrado`)
+  redirect(conHecho(`/consorcios/${consorcioId}/pagos`, 'pago-registrado'))
 }
 
 /**
@@ -69,5 +70,5 @@ export async function accionGuardarCredencialesPago(
   }
 
   revalidatePath('/consorcios/[consorcio]/pagos', 'page')
-  redirect(`/consorcios/${consorcioId}/pagos?hecho=pasarela-configurada`)
+  redirect(conHecho(`/consorcios/${consorcioId}/pagos`, 'pasarela-configurada'))
 }

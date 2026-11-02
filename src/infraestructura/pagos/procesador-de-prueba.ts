@@ -1,5 +1,6 @@
 import type {
   DatosPreferencia,
+  PagoEncontrado,
   ProcesadorDePagos,
   ResultadoConsultaPago,
   ResultadoPreferencia,
@@ -62,6 +63,17 @@ export class ProcesadorDePrueba implements ProcesadorDePagos {
       fechaAprobacion: new Date(),
     }
   }
+
+  async buscarPagosPorReferencia(datos: { referenciaExterna: string }): Promise<PagoEncontrado[]> {
+    return [...this.pagosSimulados]
+      .filter(([, pago]) => pago.referenciaExterna === datos.referenciaExterna)
+      .map(([pagoExternoId, pago]) => ({ pagoExternoId, estado: pago.estado }))
+      .reverse()
+  }
 }
 
-export const procesadorDePrueba = new ProcesadorDePrueba()
+// Una sola instancia por proceso, como `prismaBase`: Next compila la accion
+// (capa `action-browser`) y la pagina (capa `rsc`) por separado, y con un
+// singleton de modulo el pago que programa la accion no lo veria la conciliacion.
+const global_ = globalThis as unknown as { procesadorDePrueba?: ProcesadorDePrueba }
+export const procesadorDePrueba = (global_.procesadorDePrueba ??= new ProcesadorDePrueba())

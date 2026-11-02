@@ -35,6 +35,11 @@ export interface ResultadoConsultaPago {
   fechaAprobacion: Date | null
 }
 
+export interface PagoEncontrado {
+  pagoExternoId: string
+  estado: EstadoPagoExterno
+}
+
 export interface ProcesadorDePagos {
   crearPreferencia(datos: DatosPreferencia): Promise<ResultadoPreferencia>
 
@@ -42,4 +47,10 @@ export interface ProcesadorDePagos {
     credenciales: CredencialesProcesador
     pagoExternoId: string
   }): Promise<ResultadoConsultaPago>
+
+  /** Pagos de una referencia externa (el `intentoId`), el mas reciente primero. */
+  buscarPagosPorReferencia(datos: {
+    credenciales: CredencialesProcesador
+    referenciaExterna: string
+  }): Promise<PagoEncontrado[]>
 }

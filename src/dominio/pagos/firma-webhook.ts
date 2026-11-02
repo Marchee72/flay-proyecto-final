@@ -8,6 +8,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
  *
  * El manifiesto a firmar con HMAC-SHA256 es:
  * `id:[data.id];request-id:[x-request-id];ts:[ts];`
+ * Los pares cuyo valor no viene se omiten (asi lo hace el validador oficial).
  */
 
 const TOLERANCIA_SEGUNDOS_DEFAULT = 300 // 5 minutos
@@ -31,7 +32,7 @@ export function verificarFirmaWebhookMercadoPago(params: ParametrosFirmaWebhook)
     toleranciaSegundos = TOLERANCIA_SEGUNDOS_DEFAULT,
   } = params
 
-  if (!xSignature || !xRequestId || !dataId || !secreto) {
+  if (!xSignature || !secreto) {
     return false
   }
 
@@ -61,8 +62,11 @@ export function verificarFirmaWebhookMercadoPago(params: ParametrosFirmaWebhook)
     return false
   }
 
-  // Construir manifiesto
-  const manifest = `id:${dataId};request-id:${xRequestId};ts:${tsStr};`
+  // Construir manifiesto (los pares ausentes se omiten, como el validador oficial)
+  const manifest =
+    [dataId ? `id:${dataId}` : null, xRequestId ? `request-id:${xRequestId}` : null, `ts:${tsStr}`]
+      .filter((parte): parte is string => parte !== null)
+      .join(';') + ';'
 
   // Calcular HMAC
   const hmac = createHmac('sha256', secreto).update(manifest).digest('hex')

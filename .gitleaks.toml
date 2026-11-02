@@ -1,0 +1,21 @@
+# Escaneo de secretos del historial (FR-021). Reglas por defecto de gitleaks
+# más una sola excepción acotada: las credenciales de pago de mentira que usan
+# las pruebas. Exige las dos cosas a la vez —estar bajo pruebas/ y en una línea
+# de `secreto…` (secreto, secretoWebhook) o `accessToken`—, así que un secreto
+# real en src/, o cualquier otro tipo de secreto dentro de pruebas/, sigue
+# cayendo.
+#
+# Va en la regla y no en el [allowlist] global a propósito: en gitleaks 8.24 el
+# global ignora `condition` y une ruta y patrón con OR, lo que blanquearía
+# pruebas/ entera y cualquier línea con esos nombres en src/.
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+[[rules.allowlists]]
+description = "Credenciales de pago ficticias en pruebas"
+condition = "AND"
+paths = ['''(^|/)pruebas/''']
+regexTarget = "line"
+regexes = ['''\bsecreto\w*|\baccessToken''']

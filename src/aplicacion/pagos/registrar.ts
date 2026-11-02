@@ -159,10 +159,15 @@ export async function registrarPago(
  * recargo del tramo vigente a `hoy` (RF-08): es la entrada de `imputar`. Calcula
  * el saldo propio por periodo aplicando la regla de arrastre (RN-08 ampliada); el
  * recargo sale de los vencimientos congelados de cada liquidacion. Una expensa
- * vencida en firme (o emitida antes de la regla) tiene recargo 0.
+ * vencida en firme (o emitida antes de la regla) tiene recargo 0. Dentro de una
+ * transaccion se pasa `tx`, para leer lo que ya imputo quien tenia el candado.
  */
-export async function detallesImpagosDe(unidadId: string, hoy: Date): Promise<DetalleImpago[]> {
-  const detalles = await prisma.detalleLiquidacion.findMany({
+export async function detallesImpagosDe(
+  unidadId: string,
+  hoy: Date,
+  cliente: Pick<TransaccionPrisma, 'detalleLiquidacion'> = prisma,
+): Promise<DetalleImpago[]> {
+  const detalles = await cliente.detalleLiquidacion.findMany({
     where: { unidadId, liquidacion: { estado: 'vigente' } },
     select: {
       id: true,

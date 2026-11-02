@@ -20,8 +20,8 @@ function activa(ruta: string, base: string, seccion: string): boolean {
   return ruta === `${base}/${seccion}` || ruta.startsWith(`${base}/${seccion}/`)
 }
 
-/** Lo que no depende de un consorcio: la lista y la bandeja. */
-export function NavegacionGlobal() {
+/** Lo que no depende de un consorcio: la lista y, a quien administra, la bandeja. */
+export function NavegacionGlobal({ conBandeja }: { conBandeja: boolean }) {
   const ruta = usePathname()
   return (
     <nav className="panel__global" aria-label="Panel">
@@ -29,10 +29,12 @@ export function NavegacionGlobal() {
         <Building2 className="icono" aria-hidden="true" />
         Consorcios
       </Link>
-      <Link href="/bandeja" aria-current={ruta === '/bandeja' ? 'page' : undefined}>
-        <Inbox className="icono" aria-hidden="true" />
-        Bandeja
-      </Link>
+      {conBandeja && (
+        <Link href="/bandeja" aria-current={ruta === '/bandeja' ? 'page' : undefined}>
+          <Inbox className="icono" aria-hidden="true" />
+          Bandeja
+        </Link>
+      )}
     </nav>
   )
 }

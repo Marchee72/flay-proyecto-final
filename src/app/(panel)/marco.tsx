@@ -2,6 +2,8 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { Building2, Inbox, LogOut } from 'lucide-react'
 
+import { administraAlguno } from '@/aplicacion/consorcios/administra-alguno'
+import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { nombreDelUsuario, usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { irAIngresar } from '@/app/ir-a-ingresar'
 
@@ -42,7 +44,11 @@ export async function Marco({
 
   // El asistente esta en todo el panel. Dentro de un consorcio se ancla a ese; afuera,
   // al ultimo usado (galleta, validada contra el alcance) o al primero.
-  const alAlcance = await consorciosAlAlcance(usuarioId)
+  const [alAlcance, conBandeja] = await Promise.all([
+    consorciosAlAlcance(usuarioId),
+    // La Bandeja junta lo de los consorcios administrados: sin ninguno, no se ofrece.
+    administraAlguno(HABILITACIONES, RELOJ, usuarioId),
+  ])
   const recordado = (await cookies()).get(NOMBRE_GALLETA_CONSORCIO)?.value
   const anclaId =
     consorcio?.activoId ?? alAlcance.find((c) => c.id === recordado)?.id ?? alAlcance[0]?.id
@@ -58,9 +64,11 @@ export async function Marco({
             <Link className="panel__icono" href="/consorcios" aria-label="Consorcios">
               <Building2 className="icono" aria-hidden="true" />
             </Link>
-            <Link className="panel__icono" href="/bandeja" aria-label="Bandeja">
-              <Inbox className="icono" aria-hidden="true" />
-            </Link>
+            {conBandeja && (
+              <Link className="panel__icono" href="/bandeja" aria-label="Bandeja">
+                <Inbox className="icono" aria-hidden="true" />
+              </Link>
+            )}
             <Campana />
             <form action={salir} className="solo-telefono-flex">
               <button className="panel__icono" type="submit" aria-label="Salir">
@@ -76,7 +84,7 @@ export async function Marco({
 
         {/* Adentro de un consorcio la lista y la bandeja son los iconos de arriba;
             afuera no hay secciones y van con su nombre. */}
-        {!consorcio && <NavegacionGlobal />}
+        {!consorcio && <NavegacionGlobal conBandeja={conBandeja} />}
 
         {consorcio && <Navegacion base={consorcio.base} roles={consorcio.roles} />}
 

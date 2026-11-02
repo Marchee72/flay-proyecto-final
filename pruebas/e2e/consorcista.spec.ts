@@ -85,3 +85,10 @@ test('el gasto de otro consorcio no aparece: «no encontrado», nunca «prohibid
     await limpiarEscenario(ajeno)
   }
 })
+
+test('la Bandeja no se ofrece a quien no administra (RNF-03)', async ({ page }) => {
+  await entrar(page, escenario.correo)
+  await expect(page.getByRole('link', { name: 'Bandeja' })).toHaveCount(0)
+  await page.goto('/bandeja')
+  await expect(page).toHaveURL(/\/consorcios/)
+})

@@ -8,6 +8,7 @@ import { conHecho } from '@/app/aviso-en-url'
 import { ESTADOS_RECLAMO, type EstadoReclamo } from '@/aplicacion/reclamos/estados'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 import { asignar, vincularGasto } from '@/aplicacion/reclamos/asignar'
 import { registrarReclamo, URGENCIAS } from '@/aplicacion/reclamos/registrar'
 import { aplicarSugerencia, descartarSugerencia } from '@/aplicacion/reclamos/sugerencia'
@@ -23,7 +24,7 @@ export async function accionRegistrarReclamo(
   datos: FormData,
 ): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const consorcioId = texto(datos, 'consorcio')
   const urgencia = URGENCIAS.find((u) => u.valor === texto(datos, 'urgencia'))?.valor
@@ -50,7 +51,7 @@ export async function accionRegistrarReclamo(
 /** Cualquier transicion de estado (`CU-08`), con comentario opcional. */
 export async function accionTransicionar(_previo: Resultado, datos: FormData): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const consorcioId = texto(datos, 'consorcio')
   const reclamoId = texto(datos, 'reclamo')
@@ -80,7 +81,7 @@ export async function accionTransicionar(_previo: Resultado, datos: FormData): P
 /** Responsable, proveedor y rubro; asignar sobre un reclamo abierto lo pasa a asignado. */
 export async function accionAsignar(_previo: Resultado, datos: FormData): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const consorcioId = texto(datos, 'consorcio')
   const reclamoId = texto(datos, 'reclamo')
@@ -105,7 +106,7 @@ export async function accionAsignar(_previo: Resultado, datos: FormData): Promis
 
 export async function accionVincularGasto(_previo: Resultado, datos: FormData): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const consorcioId = texto(datos, 'consorcio')
   const reclamoId = texto(datos, 'reclamo')
@@ -132,7 +133,7 @@ export async function accionResolverSugerencia(
   datos: FormData,
 ): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const consorcioId = texto(datos, 'consorcio')
   const reclamoId = texto(datos, 'reclamo')

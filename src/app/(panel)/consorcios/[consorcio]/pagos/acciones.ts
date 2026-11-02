@@ -8,6 +8,7 @@ import { conHecho } from '@/app/aviso-en-url'
 import { importeDesdeEntrada } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 import { guardarCredencialesPago } from '@/aplicacion/administradoras/credenciales-pago'
 import { medioDesdeFormulario, registrarPago } from '@/aplicacion/pagos/registrar'
 
@@ -19,7 +20,7 @@ export type Resultado = { mensaje: string }
  */
 export async function accionRegistrarPago(_previo: Resultado, datos: FormData): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const consorcioId = String(datos.get('consorcio') ?? '')
 
@@ -51,7 +52,7 @@ export async function accionGuardarCredencialesPago(
   datos: FormData,
 ): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const consorcioId = String(datos.get('consorcio') ?? '')
   const accessToken = String(datos.get('accessToken') ?? '').trim()

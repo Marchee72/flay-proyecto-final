@@ -16,6 +16,7 @@ import {
 import { descartarNovedad, publicarNovedad } from '@/aplicacion/comunicacion/novedades'
 import { ASISTENCIA, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 import { MANEJADORES } from '@/aplicacion/pendientes/manejadores'
 
 export type Resultado = { mensaje: string }
@@ -30,7 +31,7 @@ export async function accionPublicarNovedad(
   datos: FormData,
 ): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   const consorcioId = texto(datos, 'consorcio')
   const alcance = texto(datos, 'alcance')
   if (
@@ -84,7 +85,7 @@ export async function accionPublicarNovedad(
 /** Dejar de ver una novedad; vuelve a la pagina desde donde se descarto. */
 export async function accionDescartarNovedad(datos: FormData): Promise<void> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   await descartarNovedad(HABILITACIONES, RELOJ, {
     usuarioId,
     consorcioId: texto(datos, 'consorcio'),
@@ -98,7 +99,7 @@ export async function accionCargarDocumento(
   datos: FormData,
 ): Promise<{ mensaje: string; destino?: string }> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   const consorcioId = texto(datos, 'consorcio')
   const tipo = texto(datos, 'tipo')
   if (!TIPOS_DOCUMENTO.some((t) => t.valor === tipo)) {
@@ -129,7 +130,7 @@ export async function accionCargarDocumento(
 
 export async function accionReindexar(datos: FormData): Promise<void> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   const consorcioId = texto(datos, 'consorcio')
   await reindexarDocumento(HABILITACIONES, RELOJ, {
     usuarioId,
@@ -142,7 +143,7 @@ export async function accionReindexar(datos: FormData): Promise<void> {
 
 export async function accionDespachar(datos: FormData): Promise<void> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   const consorcioId = texto(datos, 'consorcio')
   try {
     if (datos.get('reintentar') === '1') {
@@ -175,7 +176,7 @@ export async function accionConsultar(
   datos: FormData,
 ): Promise<ResultadoDeConsultaVisible> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   try {
     const r = await consultarDocumentacion(ASISTENCIA, HABILITACIONES, RELOJ, {
       usuarioId,
@@ -192,7 +193,7 @@ export async function accionConsultar(
 
 export async function accionValorar(datos: FormData): Promise<void> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   await valorarConsulta(HABILITACIONES, RELOJ, {
     usuarioId,
     consorcioId: texto(datos, 'consorcio'),

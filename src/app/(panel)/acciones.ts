@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { signOut, usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 
 import {
   NOMBRE_GALLETA_CONSORCIO,
@@ -27,7 +28,7 @@ export async function salir() {
  */
 export async function elegirConsorcio(datos: FormData): Promise<never> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const elegido = String(datos.get('consorcio') ?? '')
   const alcanzables = await misConsorcios(HABILITACIONES, RELOJ, usuarioId)

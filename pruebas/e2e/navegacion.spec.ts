@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 import {
   desbordaALoAncho,
@@ -101,6 +101,36 @@ test('con dos consorcios se entra a la lista, y el atajo conserva la seccion', a
   await page.goto(`/consorcios/${conDos.consorcioId}/gastos`)
   await page.getByLabel('Cambiar de consorcio').selectOption(segundoConsorcioId)
   await expect(page).toHaveURL(`/consorcios/${segundoConsorcioId}/gastos`)
+})
+
+/** Abre un consorcio y espera a que `RecordarConsorcio` lo haya guardado. */
+async function abrirYRecordar(page: Page, consorcioId: string) {
+  const recordado = page.waitForResponse((r) => r.url().endsWith('/api/consorcio-activo'))
+  await page.goto(`/consorcios/${consorcioId}`)
+  expect((await recordado).status()).toBe(204)
+}
+
+test('el último consorcio abierto es al que vuelve la portada (FR-002)', async ({ page }) => {
+  await entrar(page, conDos.correo)
+  await abrirYRecordar(page, segundoConsorcioId)
+  await page.goto('/')
+  await expect(page).toHaveURL(`/consorcios/${segundoConsorcioId}`)
+})
+
+test('precargar un enlace a otro consorcio no lo vuelve el último usado (FR-002)', async ({
+  page,
+}) => {
+  await entrar(page, conDos.correo)
+  await abrirYRecordar(page, segundoConsorcioId)
+  // La lista dibuja un <Link> por consorcio, y cada uno visible se precarga.
+  await page.goto('/consorcios')
+  await page.waitForLoadState('networkidle')
+  // Y una precarga explicita del otro, por si la de la lista no llego a salir.
+  await page.request.get(`/consorcios/${conDos.consorcioId}`, {
+    headers: { RSC: '1', 'Next-Router-Prefetch': '1' },
+  })
+  await page.goto('/')
+  await expect(page).toHaveURL(`/consorcios/${segundoConsorcioId}`)
 })
 
 test('una direccion vieja va a la misma seccion del consorcio pedido', async ({ page }) => {

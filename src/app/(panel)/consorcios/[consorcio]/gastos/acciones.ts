@@ -16,6 +16,7 @@ import {
 } from '@/aplicacion/gastos/extraccion'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
 
 /** Un archivo «use server» solo exporta funciones asincronicas. */
@@ -23,7 +24,7 @@ export type Resultado = { mensaje: string }
 
 async function quienOpera(): Promise<string> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   return usuarioId
 }
 

@@ -11,6 +11,7 @@ import { invitarPersona } from '@/aplicacion/identidad/invitar-persona'
 import { reenviarInvitacion } from '@/aplicacion/identidad/reenviar-invitacion'
 import { rolDesdeFormulario } from '@/aplicacion/identidad/roles'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 
 /** Un archivo «use server» solo exporta funciones: el estado inicial va en el formulario. */
 export type Resultado = { mensaje: string }
@@ -18,7 +19,7 @@ export type Resultado = { mensaje: string }
 /** La identidad de quien opera sale de la sesion, nunca del formulario. */
 async function quienOpera(): Promise<string> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   return usuarioId
 }
 

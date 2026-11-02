@@ -10,13 +10,14 @@ import { tipoDeUnidadDesdeFormulario } from '@/aplicacion/consorcios/tipos-de-un
 import { cargarPadron, editarPadron } from '@/aplicacion/consorcios/unidades'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 
 /** Un archivo «use server» solo exporta funciones asincronicas. */
 export type Resultado = { mensaje: string }
 
 async function quienOpera(): Promise<string> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   return usuarioId
 }
 

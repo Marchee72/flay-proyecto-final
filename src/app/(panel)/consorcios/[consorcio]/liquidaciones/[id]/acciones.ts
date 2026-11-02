@@ -7,12 +7,13 @@ import { ErrorDeAplicacion } from '@/compartido/errores'
 import { conError } from '@/app/aviso-en-url'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 import { reintentarDocumentos } from '@/aplicacion/liquidacion/documentos'
 
 /** Revive los documentos agotados; el sondeo de la pantalla los vuelve a despachar. */
 export async function accionReintentarDocumentos(datos: FormData): Promise<void> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   const consorcioId = String(datos.get('consorcio') ?? '')
   const liquidacionId = String(datos.get('liquidacion') ?? '')
   const vuelta = `/consorcios/${consorcioId}/liquidaciones/${liquidacionId}`

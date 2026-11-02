@@ -22,12 +22,13 @@ function Error_({ mensaje, id }: { mensaje: string; id: string }) {
   )
 }
 
-export function FormularioIngreso() {
+export function FormularioIngreso({ destino }: { destino: string }) {
   const [estado, accion, enviando] = useActionState(accionIngresar, SIN_ERROR)
   const hayError = estado.mensaje !== ''
 
   return (
     <form action={accion} noValidate>
+      <input type="hidden" name="destino" value={destino} />
       <div className="campo">
         <label htmlFor="correo">Correo electrónico</label>
         <input

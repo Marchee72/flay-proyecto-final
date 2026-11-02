@@ -7,6 +7,7 @@ import { ErrorDeAplicacion } from '@/compartido/errores'
 import { conError, conHecho } from '@/app/aviso-en-url'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 import {
   altaEspacio,
   deshabilitarEspacio,
@@ -28,7 +29,7 @@ const momento = (valor: string): Date => new Date(`${valor}:00-03:00`)
 
 export async function accionReservar(_previo: Resultado, datos: FormData): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const consorcioId = texto(datos, 'consorcio')
   const desde = texto(datos, 'desde')
@@ -57,7 +58,7 @@ export async function accionReservar(_previo: Resultado, datos: FormData): Promi
 
 export async function accionCancelarReserva(datos: FormData): Promise<void> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const consorcioId = texto(datos, 'consorcio')
   try {
@@ -79,7 +80,7 @@ export async function accionGuardarEspacio(
   datos: FormData,
 ): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const consorcioId = texto(datos, 'consorcio')
   const espacioId = texto(datos, 'espacio')
@@ -112,7 +113,7 @@ export async function accionDeshabilitarEspacio(
   datos: FormData,
 ): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const consorcioId = texto(datos, 'consorcio')
   const finPlaneado = texto(datos, 'hasta')
@@ -135,7 +136,7 @@ export async function accionDeshabilitarEspacio(
 
 export async function accionHabilitarEspacio(datos: FormData): Promise<void> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const consorcioId = texto(datos, 'consorcio')
   try {

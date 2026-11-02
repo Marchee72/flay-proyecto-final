@@ -1,9 +1,9 @@
 import { cookies } from 'next/headers'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { Building2, Inbox, LogOut } from 'lucide-react'
 
 import { nombreDelUsuario, usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 
 import { salir } from './acciones'
 import { Asistente } from './asistente/asistente'
@@ -37,7 +37,7 @@ export async function Marco({
   children: React.ReactNode
 }) {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   const nombre = await nombreDelUsuario(usuarioId)
 
   // El asistente esta en todo el panel. Dentro de un consorcio se ancla a ese; afuera,

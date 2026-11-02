@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { Building, Pencil, Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
@@ -11,6 +10,7 @@ import { TIPOS_DE_UNIDAD_ASIGNABLES } from '@/aplicacion/consorcios/tipos-de-uni
 import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 import { divisionDe, pisoDe, sumarCoeficientes } from '@/aplicacion/consorcios/unidades'
 
 import { CargadorDePadron } from './cargador'
@@ -37,7 +37,7 @@ export default async function UnidadesPage({
   searchParams: Promise<Parametros>
 }) {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const { consorcio: id } = await params
   const parametros = await searchParams

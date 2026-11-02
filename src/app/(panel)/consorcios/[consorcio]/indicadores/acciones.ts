@@ -7,12 +7,13 @@ import { ErrorDeAplicacion } from '@/compartido/errores'
 import { conError, conHecho } from '@/app/aviso-en-url'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 import { refrescarVistas } from '@/aplicacion/indicadores/indicadores'
 
 /** El boton «actualizar ahora» del panel (`FR-018`). */
 export async function accionRefrescar(datos: FormData): Promise<void> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const consorcioId = String(datos.get('consorcio') ?? '')
   try {

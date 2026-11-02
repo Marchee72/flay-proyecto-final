@@ -1,5 +1,5 @@
 import { cache } from 'react'
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { Siren, TriangleAlert } from 'lucide-react'
 import type { ReactElement } from 'react'
 
@@ -7,6 +7,7 @@ import { ErrorDeAplicacion } from '@/compartido/errores'
 import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 
 export type ConsorcioAlcanzable = {
   id: string
@@ -35,7 +36,7 @@ export async function conConsorcio(
   titulo: string,
 ): Promise<{ salida: ReactElement } | { usuarioId: string; activo: ConsorcioAlcanzable }> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const activo = (await consorciosAlAlcance(usuarioId)).find((c) => c.id === consorcioId)
   if (!activo) {

@@ -31,7 +31,8 @@ test.beforeAll(async () => {
       nombre: 'Corrientes 1234',
       direccion: 'Corrientes 1234',
       localidad: 'Rosario',
-      cuit: `33-${Date.now().toString().slice(-8)}-1`,
+      // Como en `sesion.ts`: con `Date.now()` los dos proyectos chocaban en el mismo ms.
+      cuit: `33-${crypto.randomUUID().slice(0, 8)}-1`,
     },
   })
   segundoConsorcioId = segundo.id

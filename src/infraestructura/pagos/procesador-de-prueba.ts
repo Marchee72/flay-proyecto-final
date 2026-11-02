@@ -72,4 +72,8 @@ export class ProcesadorDePrueba implements ProcesadorDePagos {
   }
 }
 
-export const procesadorDePrueba = new ProcesadorDePrueba()
+// Una sola instancia por proceso, como `prismaBase`: Next compila la accion
+// (capa `action-browser`) y la pagina (capa `rsc`) por separado, y con un
+// singleton de modulo el pago que programa la accion no lo veria la conciliacion.
+const global_ = globalThis as unknown as { procesadorDePrueba?: ProcesadorDePrueba }
+export const procesadorDePrueba = (global_.procesadorDePrueba ??= new ProcesadorDePrueba())

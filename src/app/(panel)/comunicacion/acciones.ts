@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { conError, conHecho } from '@/app/aviso-en-url'
 import { consultarDocumentacion, valorarConsulta } from '@/aplicacion/comunicacion/consultar'
 import { despacharNotificaciones, reintentarAgotados } from '@/aplicacion/comunicacion/despachar'
 import {
@@ -77,7 +78,7 @@ export async function accionPublicarNovedad(
   }
 
   revalidatePath('/consorcios/[consorcio]/novedades', 'page')
-  redirect(`/consorcios/${consorcioId}/novedades?hecho=novedad-publicada`)
+  redirect(conHecho(`/consorcios/${consorcioId}/novedades`, 'novedad-publicada'))
 }
 
 /** Dejar de ver una novedad; vuelve a la pagina desde donde se descarto. */
@@ -120,7 +121,10 @@ export async function accionCargarDocumento(
     throw error
   }
   revalidatePath('/consorcios/[consorcio]/documentos', 'page')
-  return { mensaje: '', destino: `/consorcios/${consorcioId}/documentos?hecho=documento-cargado` }
+  return {
+    mensaje: '',
+    destino: conHecho(`/consorcios/${consorcioId}/documentos`, 'documento-cargado'),
+  }
 }
 
 export async function accionReindexar(datos: FormData): Promise<void> {
@@ -133,7 +137,7 @@ export async function accionReindexar(datos: FormData): Promise<void> {
     documentoId: texto(datos, 'documento'),
   })
   revalidatePath('/consorcios/[consorcio]/documentos', 'page')
-  redirect(`/consorcios/${consorcioId}/documentos?hecho=documento-reindexado`)
+  redirect(conHecho(`/consorcios/${consorcioId}/documentos`, 'documento-reindexado'))
 }
 
 export async function accionDespachar(datos: FormData): Promise<void> {
@@ -147,10 +151,10 @@ export async function accionDespachar(datos: FormData): Promise<void> {
     await despacharNotificaciones(MANEJADORES, HABILITACIONES, RELOJ, { usuarioId, consorcioId })
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
-    redirect(`/bandeja?error=${encodeURIComponent(error.mensajeParaUsuario)}`)
+    redirect(conError('/bandeja', error.mensajeParaUsuario))
   }
   revalidatePath('/bandeja')
-  redirect('/bandeja?hecho=despachado')
+  redirect(conHecho('/bandeja', 'despachado'))
 }
 
 export type ResultadoDeConsultaVisible =

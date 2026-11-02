@@ -6,7 +6,7 @@ import { FormularioPago } from './formulario'
 /**
  * Alta de pago en modal (guia §3.4, patron «Modal»). Reutiliza el formulario
  * y la Server Action existentes: el exito redirige a `/pagos` con
- * `?registrado=1`, donde ya hay un `role="status"` que lo confirma.
+ * `conHecho(…, 'pago-registrado')` y lo confirma la pila de avisos.
  */
 export function ModalPago({
   consorcioId,

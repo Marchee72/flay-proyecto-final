@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { conHecho } from '@/app/aviso-en-url'
 import { ESTADOS_RECLAMO, type EstadoReclamo } from '@/aplicacion/reclamos/estados'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
@@ -43,7 +44,7 @@ export async function accionRegistrarReclamo(
   }
 
   revalidatePath('/consorcios/[consorcio]/reclamos', 'page')
-  redirect(`/consorcios/${consorcioId}/reclamos/${reclamoId}?hecho=reclamo-registrado`)
+  redirect(conHecho(`/consorcios/${consorcioId}/reclamos/${reclamoId}`, 'reclamo-registrado'))
 }
 
 /** Cualquier transicion de estado (`CU-08`), con comentario opcional. */
@@ -73,7 +74,7 @@ export async function accionTransicionar(_previo: Resultado, datos: FormData): P
   }
 
   revalidatePath('/consorcios/[consorcio]/reclamos/[id]', 'page')
-  redirect(`/consorcios/${consorcioId}/reclamos/${reclamoId}?hecho=reclamo-actualizado`)
+  redirect(conHecho(`/consorcios/${consorcioId}/reclamos/${reclamoId}`, 'reclamo-actualizado'))
 }
 
 /** Responsable, proveedor y rubro; asignar sobre un reclamo abierto lo pasa a asignado. */
@@ -99,7 +100,7 @@ export async function accionAsignar(_previo: Resultado, datos: FormData): Promis
   }
 
   revalidatePath('/consorcios/[consorcio]/reclamos/[id]', 'page')
-  redirect(`/consorcios/${consorcioId}/reclamos/${reclamoId}?hecho=reclamo-asignado`)
+  redirect(conHecho(`/consorcios/${consorcioId}/reclamos/${reclamoId}`, 'reclamo-asignado'))
 }
 
 export async function accionVincularGasto(_previo: Resultado, datos: FormData): Promise<Resultado> {
@@ -122,7 +123,7 @@ export async function accionVincularGasto(_previo: Resultado, datos: FormData): 
   }
 
   revalidatePath('/consorcios/[consorcio]/reclamos/[id]', 'page')
-  redirect(`/consorcios/${consorcioId}/reclamos/${reclamoId}?hecho=gasto-vinculado`)
+  redirect(conHecho(`/consorcios/${consorcioId}/reclamos/${reclamoId}`, 'gasto-vinculado'))
 }
 
 /** Aplicar o descartar la sugerencia del triage (`FR-027`). Nunca cambia el estado. */
@@ -145,5 +146,5 @@ export async function accionResolverSugerencia(
   }
 
   revalidatePath('/consorcios/[consorcio]/reclamos/[id]', 'page')
-  redirect(`/consorcios/${consorcioId}/reclamos/${reclamoId}?hecho=sugerencia-resuelta`)
+  redirect(conHecho(`/consorcios/${consorcioId}/reclamos/${reclamoId}`, 'sugerencia-resuelta'))
 }

@@ -4,6 +4,7 @@ import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
+import { conError, conHecho } from '@/app/aviso-en-url'
 import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { invitarPersona } from '@/aplicacion/identidad/invitar-persona'
@@ -52,7 +53,7 @@ export async function accionInvitar(_previo: Resultado, datos: FormData): Promis
     throw error
   }
 
-  redirect(`/consorcios/${consorcio.id}/usuarios?hecho=invitado`)
+  redirect(conHecho(`/consorcios/${consorcio.id}/usuarios`, 'invitado'))
 }
 
 /**
@@ -71,12 +72,10 @@ export async function accionReenviar(datos: FormData): Promise<void> {
     })
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
-    redirect(
-      `/consorcios/${consorcioId}/usuarios?error=${encodeURIComponent('No pudimos reenviar esa invitación.')}`,
-    )
+    redirect(conError(`/consorcios/${consorcioId}/usuarios`, 'No pudimos reenviar esa invitación.'))
   }
 
-  redirect(`/consorcios/${consorcioId}/usuarios?hecho=invitacion-reenviada`)
+  redirect(conHecho(`/consorcios/${consorcioId}/usuarios`, 'invitacion-reenviada'))
 }
 
 /** Base del enlace de invitacion, tomada del pedido que la origina. */

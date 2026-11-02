@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { BadgeCheck, Bell, Siren, X } from 'lucide-react'
 
+import { HECHO } from './aviso-en-url'
+
 export type Tono = 'exito' | 'problema' | 'novedad'
 
 type Aviso = {
@@ -13,42 +15,7 @@ type Aviso = {
   accion?: { etiqueta: string; alHacerClic: () => void }
 }
 
-/**
- * Lo que acaba de pasar, dicho una sola vez. Las Server Actions redirigen con
- * `?hecho=<clave>` y el texto vive aca: antes el mismo mensaje estaba escrito
- * en la pagina de destino de cada accion, con una bandera distinta por accion
- * —y con `?registrado=1` queriendo decir dos cosas distintas, pago y reclamo—.
- */
-const HECHO: Record<string, string | undefined> = {
-  'contrasena-guardada': 'La contraseña quedó guardada. Ya se puede entrar.',
-  despachado: 'Se despachó lo que había pendiente.',
-  'periodo-cerrado': 'Período cerrado. Ya no admite más gastos.',
-  liquidado: 'Liquidación emitida. Las expensas ya están en cada unidad.',
-  anulado: 'Liquidación anulada. Los pagos aplicados quedaron como saldo a favor.',
-  'gasto-registrado': 'Gasto registrado. Si hay comprobante, adjuntarlo a continuación.',
-  'pago-registrado': 'Pago registrado e imputado a lo más viejo primero.',
-  'padron-guardado': 'Padrón guardado. Los cambios de coeficiente rigen desde hoy.',
-  'reclamo-registrado': 'Reclamo registrado. La administración lo va a asignar.',
-  'reclamo-actualizado': 'Reclamo actualizado.',
-  'reclamo-asignado': 'Reclamo asignado.',
-  'gasto-vinculado': 'Gasto vinculado al reclamo.',
-  'sugerencia-resuelta': 'Sugerencia resuelta.',
-  'reserva-confirmada': 'Reserva confirmada. Te llega un aviso por correo.',
-  'reserva-cancelada': 'Reserva cancelada.',
-  'espacio-guardado': 'Espacio guardado.',
-  'espacio-alta': 'Espacio habilitado; vuelve a admitir reservas.',
-  'espacio-baja': 'Espacio dado de baja; las reservas futuras quedaron canceladas y avisadas.',
-  'novedad-publicada': 'Novedad publicada y avisada.',
-  'documento-cargado':
-    'Documento cargado. Se procesa en segundo plano; cuando diga «Procesado» ya entra en las consultas.',
-  'documento-reindexado': 'El documento se volvió a encolar para indexar.',
-  'indicadores-actualizados': 'Indicadores actualizados.',
-  invitado:
-    'Invitación creada. El correo con el enlace sale en el próximo pedido; abajo se ve su estado.',
-  'invitacion-reenviada': 'Invitación reenviada. Si vuelve a fallar, el estado lo dice acá.',
-  'proveedor-registrado': 'Proveedor dado de alta.',
-  'extraccion-descartada': 'Extracción descartada. No se creó ningún gasto.',
-}
+const TEXTOS: Record<string, string | undefined> = HECHO
 
 const TONOS: Record<Tono, { clase: string; Icono: typeof Bell }> = {
   exito: { clase: 'aviso-tono--verde', Icono: BadgeCheck },
@@ -123,7 +90,7 @@ export function PilaDeAvisos() {
     const dentro = new URLSearchParams(consulta)
     const problema = dentro.get('error')
     const clave = dentro.get('hecho')
-    const texto = problema ?? (clave ? HECHO[clave] : undefined)
+    const texto = problema ?? (clave ? TEXTOS[clave] : undefined)
     if (!texto) return
     agregar({ id: ++ultimo, texto, tono: problema ? 'problema' : 'exito' })
   }, [consulta, agregar])

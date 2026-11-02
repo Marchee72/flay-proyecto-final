@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { conHecho } from '@/app/aviso-en-url'
 import { importeDesdeEntrada } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { confirmarComprobante } from '@/aplicacion/gastos/comprobantes'
@@ -87,7 +88,7 @@ export async function accionRegistrarGasto(
     throw error
   }
 
-  redirect(`/consorcios/${consorcioId}/gastos/${creado}?hecho=gasto-registrado`)
+  redirect(conHecho(`/consorcios/${consorcioId}/gastos/${creado}`, 'gasto-registrado'))
 }
 
 /**
@@ -154,5 +155,5 @@ export async function accionDescartarExtraccion(datos: FormData): Promise<void> 
     if (!(error instanceof ErrorDeAplicacion)) throw error
   }
   revalidatePath('/consorcios/[consorcio]/gastos/asistida', 'page')
-  redirect(`/consorcios/${consorcioId}/gastos/asistida?hecho=extraccion-descartada`)
+  redirect(conHecho(`/consorcios/${consorcioId}/gastos/asistida`, 'extraccion-descartada'))
 }

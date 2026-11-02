@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import {
+  errorDeDia,
+  errorDeRecargo,
+  errorDeTasaMora,
   escalonadoDesdeTramos,
   montoExigible,
   recargoVigente,
@@ -137,6 +140,88 @@ describe('validarReglaVencimientos — coherencia (RF-08, RNF-10)', () => {
         '10.0000',
       ),
     ).toThrow()
+  })
+
+  it('rechaza una tasa de mora en cero: no hay forma de que dejar vencer cueste más', () => {
+    expect(() =>
+      validarReglaVencimientos(
+        [{ orden: 1, diaDelMes: 10, recargoPorcentaje: '0.0000' }],
+        '0.0000',
+      ),
+    ).toThrow(ErrorDeAplicacion)
+  })
+
+  it('rechaza una mora que no supera al recargo más alto aunque no sea el último', () => {
+    expect(() =>
+      validarReglaVencimientos(
+        [
+          { orden: 1, diaDelMes: 10, recargoPorcentaje: '0.0000' },
+          { orden: 2, diaDelMes: 20, recargoPorcentaje: '12.0000' },
+          { orden: 3, diaDelMes: 28, recargoPorcentaje: '5.0000' },
+        ],
+        '10.0000',
+      ),
+    ).toThrow(ErrorDeAplicacion)
+  })
+
+  it('rechaza un porcentaje que no es un número, sin filtrar el error técnico', () => {
+    expect(() =>
+      validarReglaVencimientos([{ orden: 1, diaDelMes: 10, recargoPorcentaje: 'abc' }], '10.0000'),
+    ).toThrow(ErrorDeAplicacion)
+
+    expect(() =>
+      validarReglaVencimientos([{ orden: 1, diaDelMes: 10, recargoPorcentaje: '0.0000' }], 'diez'),
+    ).toThrow(ErrorDeAplicacion)
+  })
+
+  it('rechaza más de cuatro decimales: la columna no los guarda', () => {
+    expect(() =>
+      validarReglaVencimientos(
+        [
+          { orden: 1, diaDelMes: 10, recargoPorcentaje: '0.0000' },
+          { orden: 2, diaDelMes: 20, recargoPorcentaje: '1.23456' },
+        ],
+        '10.0000',
+      ),
+    ).toThrow(ErrorDeAplicacion)
+  })
+
+  it('rechaza un día que no es entero', () => {
+    expect(() =>
+      validarReglaVencimientos(
+        [{ orden: 1, diaDelMes: Number.NaN, recargoPorcentaje: '0.0000' }],
+        '10.0000',
+      ),
+    ).toThrow(ErrorDeAplicacion)
+  })
+})
+
+describe('validadores de campo — los mismos que usa el formulario', () => {
+  it('errorDeDia acepta 1 a 28 y rechaza vacío, decimales y fuera de rango', () => {
+    expect(errorDeDia('1')).toBeNull()
+    expect(errorDeDia('28')).toBeNull()
+    expect(errorDeDia('0')).not.toBeNull()
+    expect(errorDeDia('29')).not.toBeNull()
+    expect(errorDeDia('1.5')).not.toBeNull()
+    expect(errorDeDia('')).not.toBeNull()
+  })
+
+  it('errorDeRecargo: vacío es válido y el resto tiene rango y escala', () => {
+    expect(errorDeRecargo('')).toBeNull()
+    expect(errorDeRecargo('0')).toBeNull()
+    expect(errorDeRecargo('99.9999')).toBeNull()
+    expect(errorDeRecargo('-1')).toContain('negativo')
+    expect(errorDeRecargo('100')).toContain('menor que 100')
+    expect(errorDeRecargo('1.23456')).toContain('4 decimales')
+    expect(errorDeRecargo('abc')).toContain('número')
+  })
+
+  it('errorDeTasaMora exige positiva, menor a 100 y hasta 4 decimales', () => {
+    expect(errorDeTasaMora('3.5')).toBeNull()
+    expect(errorDeTasaMora('')).toContain('Cargá')
+    expect(errorDeTasaMora('0')).toContain('mayor que 0')
+    expect(errorDeTasaMora('100')).toContain('menor que 100')
+    expect(errorDeTasaMora('3.55555')).toContain('4 decimales')
   })
 })
 

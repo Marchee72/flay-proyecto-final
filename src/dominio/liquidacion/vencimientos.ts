@@ -1,4 +1,4 @@
-import { Decimal, importe } from '@/compartido/dinero'
+import { Decimal, importe, type Importe } from '@/compartido/dinero'
 import { ErrorDeAplicacion } from '@/compartido/errores'
 
 /**
@@ -7,8 +7,10 @@ import { ErrorDeAplicacion } from '@/compartido/errores'
  * Dentro del mes, pagar mas tarde cuesta un recargo mayor: hasta tres tramos,
  * cada uno con su dia y su porcentaje (el primero es el base, recargo 0). Pasado
  * el ultimo, la expensa vence en firme, arrastra el **base** y la mora-interes
- * (RN-08) toma el relevo; por eso la mora debe ser mayor que el ultimo recargo
- * (si no, dejar vencer saldria mas barato que pagar el ultimo tramo).
+ * (RN-08) toma el relevo; por eso la mora debe ser mayor que el recargo **mas
+ * alto** (si no, dejar vencer saldria mas barato que pagar ese tramo). Comparar
+ * contra el maximo y no contra el ultimo cubre una escalera cargada fuera de
+ * orden (20 % y despues 5 %).
  *
  * Todo porcentaje e importe es decimal; el redondeo va solo al final del importe
  * unitario (Principio II). El dominio no conoce la base (Principio III): recibe
@@ -143,14 +145,87 @@ export class ReglaVencimientosInvalida extends ErrorDeAplicacion {
   }
 }
 
+const MENSAJE_DIA = `El día de cada vencimiento va del 1 al ${DIA_MAXIMO}.`
+
+/**
+ * Formato comun a todo porcentaje: numero finito y hasta 4 decimales. Devuelve
+ * el mensaje listo para mostrar, o `null` si el valor cierra. El formulario
+ * manda `noValidate`, asi que nada de esto lo cubre el navegador.
+ */
+function errorDeFormato(valor: string, etiqueta: string): string | null {
+  let numero: Importe
+  try {
+    numero = importe(valor.trim())
+  } catch {
+    return `${etiqueta} tiene que ser un número.`
+  }
+
+  if (!numero.isFinite()) return `${etiqueta} tiene que ser un número.`
+  if (numero.decimalPlaces() > DECIMALES_TASA) {
+    return `${etiqueta} admite hasta ${DECIMALES_TASA} decimales.`
+  }
+  return null
+}
+
+/**
+ * Validadores de campo de la regla: puros y con el mensaje ya redactado.
+ *
+ * La pantalla los llama al tipear y `validarReglaVencimientos` los usa al
+ * guardar, asi la regla se escribe una sola vez y no hay dos definiciones que
+ * se desincronicen. Salvo la tasa de mora, que es obligatoria, un valor vacio
+ * significa "todavia no hay nada que decir".
+ */
+export function errorDeDia(valor: string): string | null {
+  const dia = Number(valor)
+  if (valor.trim() === '' || !Number.isInteger(dia) || dia < 1 || dia > DIA_MAXIMO) {
+    return MENSAJE_DIA
+  }
+  return null
+}
+
+export function errorDeRecargo(valor: string): string | null {
+  if (valor.trim() === '') return null // opcional: vacio vale 0 %
+  const formato = errorDeFormato(valor, 'El recargo')
+  if (formato) return formato
+
+  const numero = importe(valor.trim())
+  if (numero.isNegative()) return 'El recargo no puede ser negativo.'
+  if (numero.greaterThanOrEqualTo(CIEN)) return 'El recargo tiene que ser menor que 100 %.'
+  return null
+}
+
+export function errorDeTasaMora(valor: string): string | null {
+  if (valor.trim() === '') return 'Cargá la tasa de mora mensual.'
+  const formato = errorDeFormato(valor, 'La tasa de mora mensual')
+  if (formato) return formato
+
+  const numero = importe(valor.trim())
+  if (numero.lte(0)) return 'La tasa de mora mensual tiene que ser mayor que 0 %.'
+  if (numero.greaterThanOrEqualTo(CIEN)) {
+    return 'La tasa de mora mensual tiene que ser menor que 100 %.'
+  }
+  return null
+}
+
+/** El decimal de un valor ya validado, o el rechazo con su mensaje. */
+function exigir(valor: string, error: string | null): Importe {
+  if (error) throw new ReglaVencimientosInvalida(error)
+  return importe(valor.trim())
+}
+
 /**
  * Valida la regla completa antes de guardarla (RNF-10). Lanza con un mensaje
  * comprensible si algo no cierra.
+ *
+ * La mora es parte de la regla, no un dato aparte: sin mora positiva no hay
+ * forma de que dejar vencer cueste mas que pagar un recargo.
  */
 export function validarReglaVencimientos(
   tramos: readonly TramoRegla[],
   tasaMoraMensual: string,
 ): void {
+  const mora = exigir(tasaMoraMensual, errorDeTasaMora(tasaMoraMensual))
+
   if (tramos.length < 1 || tramos.length > 3) {
     throw new ReglaVencimientosInvalida('La regla tiene entre 1 y 3 vencimientos.')
   }
@@ -163,32 +238,39 @@ export function validarReglaVencimientos(
     }
   })
 
-  if (!importe(ordenados[0]!.recargoPorcentaje).equals(0)) {
+  const recargos = ordenados.map((tramo) =>
+    exigir(
+      tramo.recargoPorcentaje,
+      tramo.recargoPorcentaje.trim() === ''
+        ? 'El recargo tiene que ser un número.'
+        : errorDeRecargo(tramo.recargoPorcentaje),
+    ),
+  )
+
+  if (!recargos[0]!.equals(0)) {
     throw new ReglaVencimientosInvalida(
       'El primer vencimiento es el importe base: su recargo tiene que ser 0 %.',
     )
   }
 
   let diaAnterior = 0
-  for (const tramo of ordenados) {
-    if (tramo.diaDelMes < 1 || tramo.diaDelMes > DIA_MAXIMO) {
-      throw new ReglaVencimientosInvalida(`El día de cada vencimiento va del 1 al ${DIA_MAXIMO}.`)
-    }
+  ordenados.forEach((tramo) => {
+    const errorDia = errorDeDia(String(tramo.diaDelMes))
+    if (errorDia) throw new ReglaVencimientosInvalida(errorDia)
+
     if (tramo.diaDelMes <= diaAnterior) {
       throw new ReglaVencimientosInvalida('Los días de los vencimientos tienen que ser crecientes.')
     }
-    if (importe(tramo.recargoPorcentaje).isNegative()) {
-      throw new ReglaVencimientosInvalida('El recargo no puede ser negativo.')
-    }
-    diaAnterior = tramo.diaDelMes
-  }
 
-  const ultimo = ordenados[ordenados.length - 1]!
-  if (!importe(tasaMoraMensual).greaterThan(importe(ultimo.recargoPorcentaje))) {
+    diaAnterior = tramo.diaDelMes
+  })
+
+  const recargoMasAlto = Decimal.max(...recargos)
+  if (!mora.greaterThan(recargoMasAlto)) {
     throw new ReglaVencimientosInvalida(
-      `La tasa de mora mensual (${importe(tasaMoraMensual).toFixed(DECIMALES_TASA)} %) debe ser ` +
+      `La tasa de mora mensual (${mora.toFixed(DECIMALES_TASA)} %) debe ser ` +
         `mayor que el recargo más alto ` +
-        `(${importe(ultimo.recargoPorcentaje).toFixed(DECIMALES_TASA)} %): de lo contrario conviene ` +
+        `(${recargoMasAlto.toFixed(DECIMALES_TASA)} %): de lo contrario conviene ` +
         'dejar vencer en firme antes que pagar ese recargo.',
     )
   }

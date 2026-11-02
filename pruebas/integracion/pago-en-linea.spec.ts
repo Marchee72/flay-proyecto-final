@@ -6,11 +6,6 @@ import {
   guardarCredencialesPago,
   verEstadoCredencialPago,
 } from '@/aplicacion/administradoras/credenciales-pago'
-import { cargarPadron } from '@/aplicacion/consorcios/unidades'
-import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
-import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
-import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
-import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
 import { confirmarPagoEnLinea } from '@/aplicacion/pagos/confirmar-pago-en-linea'
 import {
   ExpensaNoEsUltimaVigente,
@@ -18,116 +13,29 @@ import {
   iniciarPagoEnLinea,
   PasarelaNoConfigurada,
 } from '@/aplicacion/pagos/iniciar-pago-en-linea'
-import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { procesadorDePrueba } from '@/infraestructura/pagos/procesador-de-prueba'
 import { prismaBase } from '@/infraestructura/prisma'
-import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
 
 import { relojFijo } from '../dominio/reloj-fijo'
+import { crearAdministradora, crearConsorcio } from './ayudas'
 import {
-  crearAdministradora,
-  crearConsorcio,
-  crearUsuario,
-  habilitarEnConsorcio,
-  limpiar,
-} from './ayudas'
+  administrador,
+  consorcioId,
+  emitirMes,
+  inquilino,
+  limpiarEscenario,
+  prepararEscenario,
+  RELOJ,
+  repo,
+  unidadA,
+} from './ayudas-pago-en-linea'
 
 /**
  * Pruebas de integracion del flujo completo de pago en linea con Mercado Pago (`RF-28`).
  */
 
-const RELOJ = relojFijo('2026-09-15T12:00:00Z')
-const repo = repositorioHabilitaciones
-
-let consorcioId: string
-let administrador: string
-let inquilino: string
-let unidadA: string
-let rubroId: string
-
-beforeEach(async () => {
-  process.env.MP_CLAVE_CIFRADO = Buffer.alloc(32, 9).toString('base64')
-  procesadorDePrueba.limpiar()
-
-  const administradora = await crearAdministradora()
-  consorcioId = (await crearConsorcio(administradora.id, 'Mitre 456')).id
-  administrador = (await crearUsuario('Admin')).id
-  inquilino = (await crearUsuario('Inquilino')).id
-
-  await habilitarEnConsorcio(administrador, consorcioId, 'administrador')
-  await habilitarEnConsorcio(inquilino, consorcioId, 'consorcista')
-
-  rubroId = (
-    await prismaBase.rubroGasto.upsert({
-      where: { nombre: 'Rubro de prueba' },
-      update: {},
-      create: { nombre: 'Rubro de prueba', clasificacion: 'ordinario' },
-    })
-  ).id
-
-  await cargarPadron(repo, RELOJ, {
-    usuarioId: administrador,
-    consorcioId,
-    unidades: [
-      { designacion: '1A', tipo: 'departamento', coeficiente: '50.00000000' },
-      { designacion: '1B', tipo: 'departamento', coeficiente: '50.00000000' },
-    ],
-  })
-
-  const unidades = await prismaBase.unidad.findMany({
-    where: { consorcioId },
-    orderBy: { designacion: 'asc' },
-  })
-  unidadA = unidades[0].id
-
-  const inquilinoUsuario = await prismaBase.usuario.findUniqueOrThrow({ where: { id: inquilino } })
-  await registrarOcupacion(repo, RELOJ, {
-    usuarioId: administrador,
-    consorcioId,
-    unidadId: unidadA,
-    personaId: inquilinoUsuario.personaId,
-    tipo: 'inquilino',
-    desde: new Date('2026-01-01'),
-  })
-})
-
-afterEach(async () => {
-  await prismaBase.$executeRaw`DELETE FROM "IntentoDePago"`
-  await prismaBase.$executeRaw`DELETE FROM "CredencialPagoAdministradora"`
-  await prismaBase.$executeRaw`DELETE FROM "Reserva"`
-  await prismaBase.$executeRaw`DELETE FROM "PagoImputacion"`
-  await prismaBase.$executeRaw`DELETE FROM "Pago"`
-  await prismaBase.$executeRaw`DELETE FROM "InteresLiquidado"`
-  await prismaBase.$executeRaw`DELETE FROM "DetalleLiquidacion"`
-  await prismaBase.$executeRaw`DELETE FROM "VencimientoLiquidacion"`
-  await prismaBase.$executeRaw`DELETE FROM "Liquidacion"`
-  await prismaBase.$executeRaw`DELETE FROM "Gasto"`
-  await prismaBase.$executeRaw`DELETE FROM "Periodo"`
-  await prismaBase.$executeRaw`DELETE FROM "CoeficienteHistorico"`
-  await prismaBase.$executeRaw`DELETE FROM "Ocupacion"`
-  await prismaBase.$executeRaw`DELETE FROM "Unidad"`
-  await limpiar()
-})
-
-async function emitirMes(mes: number, gastoMonto = '1000.00') {
-  const { periodoId } = await periodoPara(repo, RELOJ, {
-    usuarioId: administrador,
-    consorcioId,
-    anio: 2026,
-    mes,
-  })
-  await registrarGasto(repo, RELOJ, {
-    usuarioId: administrador,
-    consorcioId,
-    periodoId,
-    rubroId,
-    importe: gastoMonto,
-    fecha: new Date(`2026-${String(mes).padStart(2, '0')}-05`),
-    descripcion: `Gasto ${mes}`,
-  })
-  await cerrarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
-  return liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
-}
+beforeEach(prepararEscenario)
+afterEach(limpiarEscenario)
 
 describe('pago en linea de expensas (RF-28)', () => {
   it('permite al administrador configurar credenciales y estas quedan resguardadas cifradas', async () => {
@@ -340,6 +248,177 @@ describe('pago en linea de expensas (RF-28)', () => {
     expect(pagos).toHaveLength(0)
   })
 
+  it('un pago aprobado despues de un rechazo se imputa (no se pierde la plata)', async () => {
+    await guardarCredencialesPago(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      accessToken: 'TEST-TOKEN-1234',
+      secretoWebhook: 'WEBHOOK-SECRET-1234',
+    })
+
+    const liq = await emitirMes(1, '1000.00')
+    const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+      where: { liquidacionId: liq.liquidacionId, unidadId: unidadA },
+    })
+    const inicio = await iniciarPagoEnLinea(repo, RELOJ, procesadorDePrueba, {
+      usuarioId: inquilino,
+      consorcioId,
+      detalleLiquidacionId: detalle.id,
+      urlBaseRetorno: 'https://consorcio.app/volver',
+    })
+
+    const rechazadoId = `pago_rechazado_${inicio.intentoId}`
+    procesadorDePrueba.programarPago(rechazadoId, {
+      estado: 'rechazado',
+      importe: '1000.00',
+      referenciaExterna: inicio.intentoId,
+      fechaAprobacion: null,
+    })
+    await confirmarPagoEnLinea(procesadorDePrueba, {
+      consorcioId,
+      pagoExternoId: rechazadoId,
+      intentoId: inicio.intentoId,
+    })
+
+    // La misma preferencia se paga despues con otro intento del comprador.
+    const aprobadoId = `pago_tardio_${inicio.intentoId}`
+    procesadorDePrueba.programarPago(aprobadoId, {
+      estado: 'aprobado',
+      importe: '1000.00',
+      referenciaExterna: inicio.intentoId,
+      fechaAprobacion: new Date('2026-09-15T12:00:00Z'),
+    })
+
+    const confirmacion = await confirmarPagoEnLinea(procesadorDePrueba, {
+      consorcioId,
+      pagoExternoId: aprobadoId,
+      intentoId: inicio.intentoId,
+    })
+
+    expect(confirmacion.estado).toBe('aprobado')
+    expect(confirmacion.pagoId).toBeTruthy()
+
+    const intento = await prismaBase.intentoDePago.findUniqueOrThrow({
+      where: { id: inicio.intentoId },
+    })
+    expect(intento.estado).toBe('aprobado')
+    expect(intento.pagoExternoId).toBe(aprobadoId)
+    expect(await prismaBase.pago.count({ where: { consorcioId } })).toBe(1)
+  })
+
+  it('un segundo pago aprobado del mismo intento queda como saldo a favor', async () => {
+    await guardarCredencialesPago(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      accessToken: 'TEST-TOKEN-1234',
+      secretoWebhook: 'WEBHOOK-SECRET-1234',
+    })
+
+    const liq = await emitirMes(1, '1000.00')
+    const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+      where: { liquidacionId: liq.liquidacionId, unidadId: unidadA },
+    })
+    const inicio = await iniciarPagoEnLinea(repo, RELOJ, procesadorDePrueba, {
+      usuarioId: inquilino,
+      consorcioId,
+      detalleLiquidacionId: detalle.id,
+      urlBaseRetorno: 'https://consorcio.app/volver',
+    })
+
+    const primero = await confirmarPagoEnLinea(procesadorDePrueba, {
+      consorcioId,
+      pagoExternoId: `pago_simulado_${inicio.intentoId}`,
+      intentoId: inicio.intentoId,
+    })
+    expect(primero.estado).toBe('aprobado')
+
+    // Dos pestañas pagaron la misma preferencia: el segundo cobro no se descarta.
+    const extraId = `pago_extra_${inicio.intentoId}`
+    procesadorDePrueba.programarPago(extraId, {
+      estado: 'aprobado',
+      importe: '250.00',
+      referenciaExterna: inicio.intentoId,
+      fechaAprobacion: new Date('2026-09-15T12:00:00Z'),
+    })
+    const segundo = await confirmarPagoEnLinea(procesadorDePrueba, {
+      consorcioId,
+      pagoExternoId: extraId,
+      intentoId: inicio.intentoId,
+    })
+    expect(segundo.estado).toBe('aprobado')
+    expect(segundo.pagoId).not.toBe(primero.pagoId)
+
+    const pagos = await prismaBase.pago.findMany({
+      where: { consorcioId },
+      orderBy: { creadoEn: 'asc' },
+    })
+    expect(pagos).toHaveLength(2)
+    expect(pagos[1]!.saldoAFavor.toFixed(2)).toBe('250.00')
+
+    const intento = await prismaBase.intentoDePago.findUniqueOrThrow({
+      where: { id: inicio.intentoId },
+    })
+    expect(intento.pagoId).toBe(primero.pagoId)
+
+    // El reintento del webhook del segundo pago no lo duplica.
+    await confirmarPagoEnLinea(procesadorDePrueba, {
+      consorcioId,
+      pagoExternoId: extraId,
+      intentoId: inicio.intentoId,
+    })
+    expect(await prismaBase.pago.count({ where: { consorcioId } })).toBe(2)
+  })
+
+  it('un rechazo tardio no pisa un intento ya aprobado', async () => {
+    await guardarCredencialesPago(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      accessToken: 'TEST-TOKEN-1234',
+      secretoWebhook: 'WEBHOOK-SECRET-1234',
+    })
+
+    const liq = await emitirMes(1, '1000.00')
+    const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+      where: { liquidacionId: liq.liquidacionId, unidadId: unidadA },
+    })
+    const inicio = await iniciarPagoEnLinea(repo, RELOJ, procesadorDePrueba, {
+      usuarioId: inquilino,
+      consorcioId,
+      detalleLiquidacionId: detalle.id,
+      urlBaseRetorno: 'https://consorcio.app/volver',
+    })
+
+    const aprobadoId = `pago_simulado_${inicio.intentoId}`
+    const primero = await confirmarPagoEnLinea(procesadorDePrueba, {
+      consorcioId,
+      pagoExternoId: aprobadoId,
+      intentoId: inicio.intentoId,
+    })
+
+    const rechazadoId = `pago_rechazado_${inicio.intentoId}`
+    procesadorDePrueba.programarPago(rechazadoId, {
+      estado: 'rechazado',
+      importe: '10.00',
+      referenciaExterna: inicio.intentoId,
+      fechaAprobacion: null,
+    })
+    const confirmacion = await confirmarPagoEnLinea(procesadorDePrueba, {
+      consorcioId,
+      pagoExternoId: rechazadoId,
+      intentoId: inicio.intentoId,
+    })
+
+    // El intento ya tenia un pago aprobado: el rechazo de otro intento no lo pisa.
+    expect(confirmacion.estado).toBe('aprobado')
+
+    const intento = await prismaBase.intentoDePago.findUniqueOrThrow({
+      where: { id: inicio.intentoId },
+    })
+    expect(intento.estado).toBe('aprobado')
+    expect(intento.pagoExternoId).toBe(aprobadoId)
+    expect(intento.pagoId).toBe(primero.pagoId)
+  })
+
   it('aislamiento (RT-04): confirmar con un consorcio ajeno es rechazado', async () => {
     await guardarCredencialesPago(repo, RELOJ, {
       usuarioId: administrador,
@@ -516,5 +595,150 @@ describe('pago en linea de expensas (RF-28)', () => {
       expect(intentoDb.estado).toBe('aprobado')
       expect(intentoDb.pagoId).toBe(data.pagoId)
     })
+
+    it('toma data.id y type del query string, que es lo que firma Mercado Pago', async () => {
+      const secretoWebhook = 'SECRETO-QUERY-1234'
+      await guardarCredencialesPago(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        accessToken: 'TEST-TOKEN-1234',
+        secretoWebhook,
+      })
+
+      const liq = await emitirMes(1, '1000.00')
+      const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+        where: { liquidacionId: liq.liquidacionId, unidadId: unidadA },
+      })
+      const inicio = await iniciarPagoEnLinea(repo, RELOJ, procesadorDePrueba, {
+        usuarioId: inquilino,
+        consorcioId,
+        detalleLiquidacionId: detalle.id,
+        urlBaseRetorno: 'https://consorcio.app/volver',
+      })
+
+      const pagoExternoId = `pago_simulado_${inicio.intentoId}`
+      const requestId = 'req-query-1'
+      const ts = Math.floor(Date.now() / 1000).toString()
+      const manifest = `id:${pagoExternoId};request-id:${requestId};ts:${ts};`
+      const hash = createHmac('sha256', secretoWebhook).update(manifest).digest('hex')
+
+      const req = new Request(
+        `http://localhost/api/pagos/webhook?consorcio=${consorcioId}&data.id=${pagoExternoId}&type=payment`,
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'x-signature': `ts=${ts},v1=${hash}`,
+            'x-request-id': requestId,
+          },
+          // El body trae otro id y otro tipo: debe ganar el query.
+          body: JSON.stringify({ data: { id: 'id-que-no-firma' }, type: 'merchant_order' }),
+        },
+      )
+
+      const res = await webhookRoute(req)
+      expect(res.status).toBe(200)
+      expect((await res.json()).estado).toBe('aprobado')
+
+      const intentoDb = await prismaBase.intentoDePago.findUniqueOrThrow({
+        where: { id: inicio.intentoId },
+      })
+      expect(intentoDb.estado).toBe('aprobado')
+    })
+
+    it('procesa una notificacion sin body cuando data.id viene en el query', async () => {
+      const secretoWebhook = 'SECRETO-SIN-BODY-1234'
+      await guardarCredencialesPago(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        accessToken: 'TEST-TOKEN-1234',
+        secretoWebhook,
+      })
+
+      const liq = await emitirMes(1, '1000.00')
+      const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+        where: { liquidacionId: liq.liquidacionId, unidadId: unidadA },
+      })
+      const inicio = await iniciarPagoEnLinea(repo, RELOJ, procesadorDePrueba, {
+        usuarioId: inquilino,
+        consorcioId,
+        detalleLiquidacionId: detalle.id,
+        urlBaseRetorno: 'https://consorcio.app/volver',
+      })
+
+      const pagoExternoId = `pago_simulado_${inicio.intentoId}`
+      const requestId = 'req-sin-body'
+      const ts = Math.floor(Date.now() / 1000).toString()
+      const manifest = `id:${pagoExternoId};request-id:${requestId};ts:${ts};`
+      const hash = createHmac('sha256', secretoWebhook).update(manifest).digest('hex')
+
+      const req = new Request(
+        `http://localhost/api/pagos/webhook?consorcio=${consorcioId}&data.id=${pagoExternoId}&type=payment`,
+        {
+          method: 'POST',
+          headers: {
+            'x-signature': `ts=${ts},v1=${hash}`,
+            'x-request-id': requestId,
+          },
+        },
+      )
+
+      const res = await webhookRoute(req)
+      expect(res.status).toBe(200)
+      expect((await res.json()).estado).toBe('aprobado')
+    })
+  })
+})
+
+describe('vencimiento del intento de pago (RF-28)', () => {
+  async function iniciarA(instante: string) {
+    const liq = await prismaBase.liquidacion.findFirstOrThrow({ where: { consorcioId } })
+    const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+      where: { liquidacionId: liq.id, unidadId: unidadA },
+    })
+    return iniciarPagoEnLinea(repo, relojFijo(instante), procesadorDePrueba, {
+      usuarioId: inquilino,
+      consorcioId,
+      detalleLiquidacionId: detalle.id,
+      urlBaseRetorno: 'https://consorcio.app/volver',
+    })
+  }
+
+  beforeEach(async () => {
+    await guardarCredencialesPago(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      accessToken: 'TEST-TOKEN-1234',
+      secretoWebhook: 'WEBHOOK-SECRET-1234',
+    })
+    await emitirMes(1, '1000.00')
+  })
+
+  it('vence 24 h despues del instante en que se inicia, no de la medianoche', async () => {
+    // 23:50 UTC: contado desde la medianoche venceria en 10 minutos.
+    const inicio = await iniciarA('2026-09-15T23:50:00Z')
+
+    const intento = await prismaBase.intentoDePago.findUniqueOrThrow({
+      where: { id: inicio.intentoId },
+    })
+    expect(intento.venceEn.toISOString()).toBe('2026-09-16T23:50:00.000Z')
+  })
+
+  it('se reutiliza mientras no pasaron 24 h, aunque haya cambiado el dia', async () => {
+    const primero = await iniciarA('2026-09-15T23:00:00Z')
+    const segundo = await iniciarA('2026-09-16T10:00:00Z')
+
+    expect(segundo.intentoId).toBe(primero.intentoId)
+  })
+
+  it('pasadas las 24 h se marca vencido y se crea otro', async () => {
+    const primero = await iniciarA('2026-09-15T23:00:00Z')
+    const segundo = await iniciarA('2026-09-16T23:30:00Z')
+
+    expect(segundo.intentoId).not.toBe(primero.intentoId)
+    const viejo = await prismaBase.intentoDePago.findUniqueOrThrow({
+      where: { id: primero.intentoId },
+    })
+    expect(viejo.estado).toBe('vencido')
   })
 })

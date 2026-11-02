@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import type { Aviso, Notificador } from '@/dominio/contratos/notificador'
-import { manejadorNotificacion } from '@/aplicacion/comunicacion/despachar'
+import { estadoDeLaCola, manejadorNotificacion } from '@/aplicacion/comunicacion/despachar'
 import { notificarAhora } from '@/aplicacion/comunicacion/notificar'
 import { drenar } from '@/aplicacion/pendientes/drenar'
 import { enConsorcio } from '@/infraestructura/cliente-aislado'
@@ -111,5 +111,33 @@ describe('el correo caido no voltea el negocio (SC-008, RNF-14)', () => {
       where: { id: notificacion.id },
     })
     expect(enviada.estadoEnvio).toBe('enviada')
+  })
+})
+
+describe('el resumen de la cola es de avisos (RF-28)', () => {
+  it('los checkouts abandonados (conciliar_pago) no tapan el ultimo error ni suman agotados', async () => {
+    await prismaBase.trabajoPendiente.create({
+      data: {
+        tipo: 'notificacion',
+        carga: {},
+        estado: 'agotado',
+        ultimoError: 'el proveedor de correo no responde',
+        actualizadoEn: new Date(Date.now() - 60_000),
+      },
+    })
+    await prismaBase.trabajoPendiente.createMany({
+      data: (['agotado', 'pendiente'] as const).map((estado) => ({
+        tipo: 'conciliar_pago' as const,
+        carga: {},
+        estado,
+        ultimoError: 'Mercado Pago todavía no informa un pago aprobado para este intento.',
+      })),
+    })
+
+    const estado = await estadoDeLaCola()
+
+    expect(estado.agotados).toBe(1)
+    expect(estado.pendientes).toBe(0)
+    expect(estado.ultimoError).toBe('el proveedor de correo no responde')
   })
 })

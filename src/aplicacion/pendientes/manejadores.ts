@@ -3,8 +3,9 @@ import { z } from 'zod'
 
 import { manejadorNotificacion } from '@/aplicacion/comunicacion/despachar'
 import { manejadorIndexacion } from '@/aplicacion/comunicacion/indexar'
-import { ASISTENCIA } from '@/aplicacion/dependencias'
+import { ASISTENCIA, PROCESADOR_PAGOS, RELOJ } from '@/aplicacion/dependencias'
 import { manejadorExtraccion } from '@/aplicacion/gastos/extraccion'
+import { manejadorConciliacion } from '@/aplicacion/pagos/conciliar-pago-en-linea'
 import { manejadorTriage } from '@/aplicacion/reclamos/sugerencia'
 import { manejadorDocumentoExpensa } from '@/aplicacion/liquidacion/documentos'
 import type { Manejador } from '@/aplicacion/pendientes/drenar'
@@ -40,4 +41,6 @@ export const MANEJADORES: Partial<Record<TipoTrabajo, Manejador>> = {
   extraccion_comprobante: manejadorExtraccion(almacenR2, ASISTENCIA.extractor),
   triage_reclamo: manejadorTriage(ASISTENCIA.clasificador),
   indexar_documento: manejadorIndexacion(almacenR2, ASISTENCIA.vectores, textoPorPagina),
+  // Red *pull* del cobro en linea (`RF-28`): sin webhook ni retorno, pregunta a la pasarela.
+  conciliar_pago: manejadorConciliacion(PROCESADOR_PAGOS, RELOJ),
 }

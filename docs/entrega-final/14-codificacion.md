@@ -108,7 +108,7 @@ modo que desarrollo, verificación y demostración corren la misma. Las transiti
 | Entorno de ejecución y renderizado | Next.js sobre Node.js | Next 15.5.28 / Node 22.21.0 | MIT | Interfaz y lógica de servidor en un mismo proyecto mediante acciones de servidor y manejadores de ruta, conforme al punto 4.2. Portable a cualquier alojamiento con Node.js, lo que acota la dependencia de una plataforma |
 | Base de datos | PostgreSQL administrado, con extensión `pgvector` | PG 18.6 + pgvector 0.8.6 (`pgvector/pgvector:0.8.6-pg18`) | PostgreSQL License | `NUMERIC` de precisión arbitraria para C3, restricciones de exclusión para RN-09 y RN-10, disparadores para RN-15 e índice vectorial para RF-20, en un único motor |
 | Mapeador objeto-relacional | Prisma | 6.7.0 | Apache-2.0 | Esquema tipado y migraciones versionadas (C6, punto 8.3.5). Su tipo `Decimal` es el vehículo de la medida 1 de contención |
-| Validación de esquemas | Zod | 3.24.2 | MIT | Compensa el borrado de tipos en ejecución (C2): valida todo dato que cruza el límite de confianza |
+| Validación de esquemas | Zod | 4.6.7 | MIT | Compensa el borrado de tipos en ejecución (C2): valida todo dato que cruza el límite de confianza |
 | Autenticación | Auth.js | 5.0.0-beta.32 (`next-auth`) | ISC | Sesiones y control de acceso basado en roles, base de RNF-03 |
 | Derivación de contraseñas | Argon2id | 2.0.2 (`@node-rs/argon2`) | MIT | Función resistente a fuerza bruta exigida por RNF-04 |
 | Aritmética decimal | `decimal.js`, a través del tipo `Decimal` del mapeador | 10.4.3 | MIT | Contención del incumplimiento de C3 |

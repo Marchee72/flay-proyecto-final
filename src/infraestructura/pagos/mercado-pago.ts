@@ -2,6 +2,7 @@ import { ErrorDeAplicacion } from '@/compartido/errores'
 import type {
   DatosPreferencia,
   EstadoPagoExterno,
+  PagoEncontrado,
   ProcesadorDePagos,
   ResultadoConsultaPago,
   ResultadoPreferencia,
@@ -16,6 +17,30 @@ import type {
 
 const URL_BASE = 'https://api.mercadopago.com'
 
+/**
+ * Mercado Pago rechaza con 400 (`invalid_back_urls`) las `back_urls` y la
+ * `notification_url` en HTTP, y no retorna a dominios locales. Sin una URL
+ * publica no se envian: la preferencia se crea igual, pero sin retorno ni webhook.
+ */
+function esUrlPublica(url: string): boolean {
+  return (
+    /^https:\/\//i.test(url) && !/^https:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:|\/|$)/i.test(url)
+  )
+}
+
+function estadoDesdeMercadoPago(status: string): EstadoPagoExterno {
+  switch (status) {
+    case 'approved':
+      return 'aprobado'
+    case 'rejected':
+      return 'rechazado'
+    case 'cancelled':
+      return 'cancelado'
+    default:
+      return 'pendiente'
+  }
+}
+
 export class ErrorProcesadorPago extends ErrorDeAplicacion {
   constructor(mensaje: string) {
     super(mensaje, 'RF-28')
@@ -24,7 +49,6 @@ export class ErrorProcesadorPago extends ErrorDeAplicacion {
 
 export class ProcesadorMercadoPago implements ProcesadorDePagos {
   async crearPreferencia(datos: DatosPreferencia): Promise<ResultadoPreferencia> {
-    const esHttps = datos.urlRetorno.startsWith('https://')
     const payload: Record<string, unknown> = {
       items: [
         {
@@ -39,21 +63,20 @@ export class ProcesadorMercadoPago implements ProcesadorDePagos {
       payment_methods: {
         excluded_payment_types: [{ id: 'ticket' }, { id: 'atm' }],
       },
-      back_urls: {
-        success: datos.urlRetorno,
-        pending: datos.urlRetorno,
-        failure: datos.urlRetorno,
-      },
       expiration_date_to: datos.venceEn.toISOString(),
     }
 
-    // Mercado Pago exige HTTPS para auto_return; en HTTP o localhost se omite para evitar error 400
-    if (esHttps) {
+    // Mercado Pago exige HTTPS publico para back_urls, auto_return y notification_url.
+    if (esUrlPublica(datos.urlRetorno)) {
+      payload.back_urls = {
+        success: datos.urlRetorno,
+        pending: datos.urlRetorno,
+        failure: datos.urlRetorno,
+      }
       payload.auto_return = 'approved'
     }
 
-    // notification_url solo se envia si es HTTPS publicamente accesible
-    if (datos.urlNotificacion && datos.urlNotificacion.startsWith('https://')) {
+    if (esUrlPublica(datos.urlNotificacion)) {
       payload.notification_url = datos.urlNotificacion
     }
 
@@ -64,6 +87,8 @@ export class ProcesadorMercadoPago implements ProcesadorDePagos {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
+      // Sin timeout, una pasarela colgada deja la pantalla esperando para siempre.
+      signal: AbortSignal.timeout(8000),
     })
 
     if (!respuesta.ok) {
@@ -76,13 +101,11 @@ export class ProcesadorMercadoPago implements ProcesadorDePagos {
     const json = (await respuesta.json()) as {
       id: string
       init_point: string
-      sandbox_init_point?: string
     }
 
     return {
       preferenciaId: json.id,
-      // En entorno de pruebas / sandbox se prioriza sandbox_init_point
-      urlPago: json.sandbox_init_point || json.init_point,
+      urlPago: json.init_point,
     }
   }
 
@@ -90,12 +113,17 @@ export class ProcesadorMercadoPago implements ProcesadorDePagos {
     credenciales: { accessToken: string }
     pagoExternoId: string
   }): Promise<ResultadoConsultaPago> {
-    const respuesta = await fetch(`${URL_BASE}/v1/payments/${datos.pagoExternoId}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${datos.credenciales.accessToken}`,
+    const respuesta = await fetch(
+      `${URL_BASE}/v1/payments/${encodeURIComponent(datos.pagoExternoId)}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${datos.credenciales.accessToken}`,
+        },
+        // La vista de retorno consulta esto durante el render: sin timeout se cuelga.
+        signal: AbortSignal.timeout(8000),
       },
-    })
+    )
 
     if (!respuesta.ok) {
       const errorTexto = await respuesta.text().catch(() => '')
@@ -111,28 +139,37 @@ export class ProcesadorMercadoPago implements ProcesadorDePagos {
       date_approved?: string | null
     }
 
-    let estado: EstadoPagoExterno
-    switch (json.status) {
-      case 'approved':
-        estado = 'aprobado'
-        break
-      case 'rejected':
-        estado = 'rechazado'
-        break
-      case 'cancelled':
-        estado = 'cancelado'
-        break
-      default:
-        estado = 'pendiente'
-        break
-    }
-
     return {
-      estado,
+      estado: estadoDesdeMercadoPago(json.status),
       importe: Number(json.transaction_amount).toFixed(2),
       referenciaExterna: json.external_reference ?? null,
       fechaAprobacion: json.date_approved ? new Date(json.date_approved) : null,
     }
+  }
+
+  async buscarPagosPorReferencia(datos: {
+    credenciales: { accessToken: string }
+    referenciaExterna: string
+  }): Promise<PagoEncontrado[]> {
+    const consulta = `external_reference=${encodeURIComponent(datos.referenciaExterna)}&sort=date_created&criteria=desc`
+    const respuesta = await fetch(`${URL_BASE}/v1/payments/search?${consulta}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${datos.credenciales.accessToken}` },
+      signal: AbortSignal.timeout(8000),
+    })
+
+    if (!respuesta.ok) {
+      const errorTexto = await respuesta.text().catch(() => '')
+      throw new ErrorProcesadorPago(
+        `No se pudieron buscar los pagos en Mercado Pago (${respuesta.status}): ${errorTexto}`,
+      )
+    }
+
+    const json = (await respuesta.json()) as { results?: { id: number | string; status: string }[] }
+    return (json.results ?? []).map((pago) => ({
+      pagoExternoId: String(pago.id),
+      estado: estadoDesdeMercadoPago(pago.status),
+    }))
   }
 }
 

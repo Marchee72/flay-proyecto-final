@@ -2,8 +2,9 @@ import type { Metadata } from 'next'
 import { Fragment } from 'react'
 import Link from 'next/link'
 import { CheckCircle, Clock, Download, Siren, TriangleAlert } from 'lucide-react'
+import { z } from 'zod'
 
-import { ErrorDeAplicacion } from '@/compartido/errores'
+import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import { fechaParaMostrar, importeParaMostrar } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
@@ -11,12 +12,18 @@ import { ALMACEN, HABILITACIONES, PROCESADOR_PAGOS, RELOJ } from '@/aplicacion/d
 import { verExpensa, type ExpensaVisible } from '@/aplicacion/liquidacion/ver-expensa'
 import { confirmarPagoEnLinea } from '@/aplicacion/pagos/confirmar-pago-en-linea'
 import {
+  conciliarIntento,
+  conciliarPagosDelDetalle,
+} from '@/aplicacion/pagos/conciliar-pago-en-linea'
+import { estadoDeConciliacion, resultadoDeRetorno } from '@/aplicacion/pagos/resultado-retorno'
+import {
   consultarDisponibilidadPagoEnLinea,
   type DisponibilidadPagoEnLinea,
 } from '@/aplicacion/pagos/iniciar-pago-en-linea'
 import { MEDIOS_DE_PAGO } from '@/aplicacion/pagos/registrar'
 
 import { BotonPagoEnLinea } from './boton-pago-en-linea'
+import { SondeoPago } from './sondeo-pago'
 import { ModalPago } from '../../pagos/modal-pago'
 
 import { conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
@@ -29,7 +36,8 @@ type ParametrosRetorno = {
   collection_id?: string
   collection_status?: string
   status?: string
-  intentoId?: string
+  /** Repetido en la URL llega como arreglo. */
+  intentoId?: string | string[]
 }
 
 /**
@@ -55,6 +63,12 @@ export default async function ExpensaPage({
 
   // Procesar confirmacion de retorno de Mercado Pago si el usuario vuelve de pagar
   const pagoExternoId = parametros.payment_id || parametros.collection_id
+  // Un id que no es uuid haria fallar a Prisma con P2023, no con NoEncontrado: se
+  // trata como ausente para no quedar «esperando» un intento que no existe.
+  const intentoValido = z.string().uuid().safeParse(parametros.intentoId)
+  const intentoId = intentoValido.success ? intentoValido.data : undefined
+  // Solo la pestaña que sigue un intento sin payment_id concilia en cada refresco.
+  const seguido = !pagoExternoId && Boolean(intentoId)
   let estadoRetorno: 'aprobado' | 'rechazado' | 'pendiente' | null = null
   let mensajeRetorno: string | null = null
 
@@ -63,16 +77,41 @@ export default async function ExpensaPage({
       const confirmacion = await confirmarPagoEnLinea(PROCESADOR_PAGOS, {
         consorcioId: activo.id,
         pagoExternoId: String(pagoExternoId),
-        intentoId: parametros.intentoId ? String(parametros.intentoId) : undefined,
+        intentoId,
       })
       estadoRetorno = confirmacion.estado as 'aprobado' | 'rechazado' | 'pendiente'
       mensajeRetorno = confirmacion.mensaje || null
     } catch {
-      if (parametros.collection_status === 'approved' || parametros.status === 'approved') {
-        estadoRetorno = 'aprobado'
-      } else if (parametros.collection_status === 'rejected' || parametros.status === 'rejected') {
-        estadoRetorno = 'rechazado'
+      // La URL la controla el cliente: no se afirma un pago que no se pudo verificar.
+      estadoRetorno = resultadoDeRetorno(parametros)
+      if (estadoRetorno === 'pendiente') {
+        mensajeRetorno = 'Estamos verificando tu pago con la pasarela…'
       }
+    }
+  } else {
+    // Sin payment_id (el inquilino no volvio desde Mercado Pago) se concilia contra la pasarela.
+    try {
+      const resultados = intentoId
+        ? [
+            await conciliarIntento(PROCESADOR_PAGOS, RELOJ, {
+              consorcioId: activo.id,
+              detalleLiquidacionId: detalle,
+              intentoId,
+            }),
+          ]
+        : await conciliarPagosDelDetalle(PROCESADOR_PAGOS, RELOJ, {
+            consorcioId: activo.id,
+            detalleLiquidacionId: detalle,
+          })
+      estadoRetorno = estadoDeConciliacion(resultados, Boolean(intentoId))
+    } catch (error) {
+      // Un intento ajeno o invalido no muestra aviso; una pasarela caida deja la espera.
+      if (!(error instanceof NoEncontrado)) console.error('[conciliar_pago]', error)
+      estadoRetorno = intentoId && !(error instanceof NoEncontrado) ? 'pendiente' : null
+    }
+    if (estadoRetorno === 'pendiente') {
+      mensajeRetorno =
+        'Esperando la confirmación de Mercado Pago. Si ya pagaste, esta pantalla se actualiza sola.'
     }
   }
 
@@ -119,7 +158,10 @@ export default async function ExpensaPage({
             <TriangleAlert className="icono" aria-hidden="true" />
             <span>
               {mensajeRetorno ?? 'El pago fue rechazado o cancelado en la pasarela de pagos.'}
+              {seguido && ' Si lo reintentás con otra tarjeta, esta pantalla se actualiza sola.'}
             </span>
+            {/* En Checkout Pro la tarjeta se reintenta en la misma preferencia. */}
+            {seguido && <SondeoPago />}
           </p>
         )}
         {estadoRetorno === 'pendiente' && (
@@ -128,6 +170,7 @@ export default async function ExpensaPage({
             <span>
               {mensajeRetorno ?? 'El pago se encuentra pendiente de acreditación en la pasarela.'}
             </span>
+            <SondeoPago />
           </p>
         )}
 

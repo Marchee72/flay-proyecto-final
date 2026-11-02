@@ -10,6 +10,7 @@ import { ocupaUnidad } from '@/infraestructura/repositorios/ocupaciones'
 import { sinConsorcio } from '@/infraestructura/cliente-aislado'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 import { obtenerCredencialesDescifradas } from '@/aplicacion/administradoras/credenciales-pago'
+import { encolar } from '@/aplicacion/pendientes/encolar'
 import { detallesImpagosDe } from '@/aplicacion/pagos/registrar'
 
 /**
@@ -89,6 +90,9 @@ export async function iniciarPagoEnLinea(
     },
     async (acceso) => {
       const ahora = reloj.hoy()
+      // El vencimiento del intento (y de la preferencia) se cuenta desde el
+      // instante, no desde la medianoche: con `hoy()` vencia a las 21 h de Argentina.
+      const instante = reloj.ahora()
 
       const detalle = await prisma.detalleLiquidacion.findFirst({
         where: { id: datos.detalleLiquidacionId },
@@ -167,7 +171,7 @@ export async function iniciarPagoEnLinea(
       })
 
       if (intentoExistente) {
-        if (intentoExistente.venceEn.getTime() > ahora.getTime() && intentoExistente.urlPago) {
+        if (intentoExistente.venceEn.getTime() > instante.getTime() && intentoExistente.urlPago) {
           return {
             intentoId: intentoExistente.id,
             urlPago: intentoExistente.urlPago,
@@ -181,7 +185,7 @@ export async function iniciarPagoEnLinea(
         })
       }
 
-      const venceEn = new Date(ahora.getTime() + HORAS_VENCIMIENTO_INTENTO * 60 * 60 * 1000)
+      const venceEn = new Date(instante.getTime() + HORAS_VENCIMIENTO_INTENTO * 60 * 60 * 1000)
 
       // Crear intento de pago con aislamiento por consorcio
       const intento = await prisma.intentoDePago.create({
@@ -204,6 +208,7 @@ export async function iniciarPagoEnLinea(
       const periodoMes = String(detalle.liquidacion.periodo.mes).padStart(2, '0')
       const titulo = `Expensas ${periodoMes}/${detalle.liquidacion.periodo.anio} - ${detalle.unidad.designacion}`
 
+      let preferenciaUrl: string
       try {
         const preferencia = await procesador.crearPreferencia({
           credenciales,
@@ -223,10 +228,7 @@ export async function iniciarPagoEnLinea(
           },
         })
 
-        return {
-          intentoId: intento.id,
-          urlPago: preferencia.urlPago,
-        }
+        preferenciaUrl = preferencia.urlPago
       } catch (error) {
         // Si la creacion de la preferencia falla, marcar como rechazado
         await prismaBase.intentoDePago.update({
@@ -235,6 +237,20 @@ export async function iniciarPagoEnLinea(
         })
         throw error
       }
+
+      // La preferencia ya existe y esta guardada: si la cola falla, el intento sigue
+      // vivo y la conciliacion al abrir la vista cubre ese caso.
+      try {
+        await encolar('conciliar_pago', {
+          consorcioId: datos.consorcioId,
+          detalleLiquidacionId: detalle.id,
+          intentoId: intento.id,
+        })
+      } catch (error) {
+        console.error('[conciliar_pago]', error)
+      }
+
+      return { intentoId: intento.id, urlPago: preferenciaUrl }
     },
   )
 }

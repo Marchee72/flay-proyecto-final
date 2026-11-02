@@ -123,6 +123,7 @@ enum TipoTrabajo {
   extraccion_comprobante
   triage_reclamo
   indexar_documento
+  conciliar_pago
 }
 
 enum EstadoTrabajo {

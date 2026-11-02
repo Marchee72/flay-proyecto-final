@@ -15,6 +15,7 @@ import {
 } from '@/aplicacion/reservas/espacios'
 import {
   cancelarReserva,
+  esSuperposicion,
   historialDeReservas,
   listarReservas,
   reservar,
@@ -125,7 +126,7 @@ describe('superposicion (regla RN-10, SC-005)', () => {
     expect(confirmadas).toHaveLength(1)
     expect(rechazadas).toHaveLength(1)
     expect(String((rechazadas[0] as PromiseRejectedResult).reason)).toMatch(
-      /reserva_sin_superposicion|23P01|exclusion/i,
+      /reserva_sin_superposicion|23P01|exclusion|40P01|deadlock/i,
     )
     expect(await prismaBase.reserva.count({ where: { espacioId, estado: 'confirmada' } })).toBe(1)
   })
@@ -448,5 +449,19 @@ describe('historial de uso', () => {
 
     const todas = await historialDeReservas(repo, RELOJ, { ...agosto, usuarioId: administrador })
     expect(todas).toHaveLength(2)
+  })
+})
+
+describe('esSuperposicion (RN-10)', () => {
+  it('toma como choque tanto la exclusion como el deadlock entre dos altas', () => {
+    expect(
+      esSuperposicion(new Error('violates exclusion constraint "reserva_sin_superposicion"')),
+    ).toBe(true)
+    expect(esSuperposicion(new Error('Code 23P01'))).toBe(true)
+    expect(esSuperposicion(new Error('code: "40P01", message: "deadlock detected"'))).toBe(true)
+  })
+  it('no confunde otro error con un choque', () => {
+    expect(esSuperposicion(new Error('connection refused'))).toBe(false)
+    expect(esSuperposicion('23P01')).toBe(false)
   })
 })

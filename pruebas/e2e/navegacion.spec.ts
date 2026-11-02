@@ -75,6 +75,18 @@ test('con un solo consorcio se entra derecho al resumen', async ({ page }) => {
   expect(await desbordaALoAncho(page)).toBe(false)
 })
 
+test('en el teléfono, elegir una sección del menú lo cierra (RNF-01)', async ({ page }) => {
+  test.skip(test.info().project.name !== 'telefono', 'el menú «Más» solo existe en el teléfono')
+  await entrar(page, unico.correo)
+  await page.getByRole('group').locator('summary').click()
+  await page
+    .getByRole('navigation', { name: 'Todas las secciones' })
+    .getByRole('link', { name: 'Gastos' })
+    .click()
+  await expect(page).toHaveURL(`/consorcios/${unico.consorcioId}/gastos`)
+  await expect(page.locator('details.menu')).not.toHaveAttribute('open', '')
+})
+
 test('con dos consorcios se entra a la lista, y el atajo conserva la seccion', async ({ page }) => {
   await entrar(page, conDos.correo)
   await expect(page).toHaveURL(/\/consorcios$/)

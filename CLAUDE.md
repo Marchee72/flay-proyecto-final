@@ -36,6 +36,12 @@ Antes de pushear, además del gate:
 - **`npm audit` no está en el gate.** Un aviso crítico recién publicado sobre una dependencia de
   producción (típicamente `next`) rompe **todos** los PRs hasta que se sube la versión parcheada —y eso
   arrastra el § 14.1 por el punto anterior—. Corré `npm audit --omit=dev --audit-level=high` antes de pushear.
+- **gitleaks escanea los commits, no el árbol.** Un secreto de mentira que ya se commiteó voltea el PR
+  aunque después lo borres: hay que tocar `.gitleaks.toml`, no el archivo. Los secretos ficticios de las
+  pruebas van en una variable `secreto…` o `accessToken` bajo `pruebas/` (la única excepción que tiene);
+  con otro nombre, caen. Antes de pushear: `docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.24.3
+  detect --source /repo --log-opts="--no-merges --first-parent main..HEAD" --redact` (en Git Bash, con
+  `MSYS_NO_PATHCONV=1` y `$(pwd -W)`).
 
 | Guion | Para qué |
 |---|---|

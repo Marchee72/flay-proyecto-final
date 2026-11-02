@@ -90,6 +90,9 @@ export async function iniciarPagoEnLinea(
     },
     async (acceso) => {
       const ahora = reloj.hoy()
+      // El vencimiento del intento (y de la preferencia) se cuenta desde el
+      // instante, no desde la medianoche: con `hoy()` vencia a las 21 h de Argentina.
+      const instante = reloj.ahora()
 
       const detalle = await prisma.detalleLiquidacion.findFirst({
         where: { id: datos.detalleLiquidacionId },
@@ -168,7 +171,7 @@ export async function iniciarPagoEnLinea(
       })
 
       if (intentoExistente) {
-        if (intentoExistente.venceEn.getTime() > ahora.getTime() && intentoExistente.urlPago) {
+        if (intentoExistente.venceEn.getTime() > instante.getTime() && intentoExistente.urlPago) {
           return {
             intentoId: intentoExistente.id,
             urlPago: intentoExistente.urlPago,
@@ -182,7 +185,7 @@ export async function iniciarPagoEnLinea(
         })
       }
 
-      const venceEn = new Date(ahora.getTime() + HORAS_VENCIMIENTO_INTENTO * 60 * 60 * 1000)
+      const venceEn = new Date(instante.getTime() + HORAS_VENCIMIENTO_INTENTO * 60 * 60 * 1000)
 
       // Crear intento de pago con aislamiento por consorcio
       const intento = await prisma.intentoDePago.create({

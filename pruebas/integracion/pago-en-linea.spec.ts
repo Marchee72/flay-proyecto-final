@@ -16,6 +16,7 @@ import {
 import { procesadorDePrueba } from '@/infraestructura/pagos/procesador-de-prueba'
 import { prismaBase } from '@/infraestructura/prisma'
 
+import { relojFijo } from '../dominio/reloj-fijo'
 import { crearAdministradora, crearConsorcio } from './ayudas'
 import {
   administrador,
@@ -686,5 +687,58 @@ describe('pago en linea de expensas (RF-28)', () => {
       expect(res.status).toBe(200)
       expect((await res.json()).estado).toBe('aprobado')
     })
+  })
+})
+
+describe('vencimiento del intento de pago (RF-28)', () => {
+  async function iniciarA(instante: string) {
+    const liq = await prismaBase.liquidacion.findFirstOrThrow({ where: { consorcioId } })
+    const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+      where: { liquidacionId: liq.id, unidadId: unidadA },
+    })
+    return iniciarPagoEnLinea(repo, relojFijo(instante), procesadorDePrueba, {
+      usuarioId: inquilino,
+      consorcioId,
+      detalleLiquidacionId: detalle.id,
+      urlBaseRetorno: 'https://consorcio.app/volver',
+    })
+  }
+
+  beforeEach(async () => {
+    await guardarCredencialesPago(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      accessToken: 'TEST-TOKEN-1234',
+      secretoWebhook: 'WEBHOOK-SECRET-1234',
+    })
+    await emitirMes(1, '1000.00')
+  })
+
+  it('vence 24 h despues del instante en que se inicia, no de la medianoche', async () => {
+    // 23:50 UTC: contado desde la medianoche venceria en 10 minutos.
+    const inicio = await iniciarA('2026-09-15T23:50:00Z')
+
+    const intento = await prismaBase.intentoDePago.findUniqueOrThrow({
+      where: { id: inicio.intentoId },
+    })
+    expect(intento.venceEn.toISOString()).toBe('2026-09-16T23:50:00.000Z')
+  })
+
+  it('se reutiliza mientras no pasaron 24 h, aunque haya cambiado el dia', async () => {
+    const primero = await iniciarA('2026-09-15T23:00:00Z')
+    const segundo = await iniciarA('2026-09-16T10:00:00Z')
+
+    expect(segundo.intentoId).toBe(primero.intentoId)
+  })
+
+  it('pasadas las 24 h se marca vencido y se crea otro', async () => {
+    const primero = await iniciarA('2026-09-15T23:00:00Z')
+    const segundo = await iniciarA('2026-09-16T23:30:00Z')
+
+    expect(segundo.intentoId).not.toBe(primero.intentoId)
+    const viejo = await prismaBase.intentoDePago.findUniqueOrThrow({
+      where: { id: primero.intentoId },
+    })
+    expect(viejo.estado).toBe('vencido')
   })
 })

@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { conHecho } from '@/app/aviso-en-url'
+import { conError, conHecho } from '@/app/aviso-en-url'
 import { importeDesdeEntrada } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { confirmarComprobante } from '@/aplicacion/gastos/comprobantes'
@@ -145,6 +145,7 @@ export async function accionIniciarCargaAsistida(
 export async function accionDescartarExtraccion(datos: FormData): Promise<void> {
   const usuarioId = await quienOpera()
   const consorcioId = String(datos.get('consorcio') ?? '')
+  const asistida = `/consorcios/${consorcioId}/gastos/asistida`
   try {
     await descartarExtraccion(HABILITACIONES, RELOJ, {
       usuarioId,
@@ -153,7 +154,8 @@ export async function accionDescartarExtraccion(datos: FormData): Promise<void> 
     })
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
+    redirect(conError(asistida, error.mensajeParaUsuario))
   }
   revalidatePath('/consorcios/[consorcio]/gastos/asistida', 'page')
-  redirect(conHecho(`/consorcios/${consorcioId}/gastos/asistida`, 'extraccion-descartada'))
+  redirect(conHecho(asistida, 'extraccion-descartada'))
 }

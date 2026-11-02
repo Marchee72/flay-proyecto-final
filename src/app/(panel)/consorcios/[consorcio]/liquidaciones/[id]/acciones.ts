@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { conError } from '@/app/aviso-en-url'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { irAIngresar } from '@/app/ir-a-ingresar'
@@ -20,7 +21,7 @@ export async function accionReintentarDocumentos(datos: FormData): Promise<void>
     await reintentarDocumentos(HABILITACIONES, RELOJ, { usuarioId, consorcioId, liquidacionId })
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
-    redirect(`${vuelta}?error=${encodeURIComponent(error.mensajeParaUsuario)}`)
+    redirect(conError(vuelta, error.mensajeParaUsuario))
   }
   revalidatePath('/consorcios/[consorcio]/liquidaciones/[id]', 'page')
   redirect(vuelta)

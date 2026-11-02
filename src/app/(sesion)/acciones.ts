@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { MINIMO_DE_CONTRASENA } from '@/compartido/contrasenas'
 import { destinoSeguro } from '@/compartido/destinos'
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { conHecho } from '@/app/aviso-en-url'
 import { DERIVADOR, RELOJ } from '@/aplicacion/dependencias'
 import { fijarContrasena } from '@/aplicacion/identidad/invitar-persona'
 import { ingresar } from '@/aplicacion/identidad/sesion'
@@ -51,5 +52,5 @@ export async function accionFijarContrasena(
     throw error
   }
 
-  redirect('/ingresar?hecho=contrasena-guardada')
+  redirect(conHecho('/ingresar', 'contrasena-guardada'))
 }

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { conHecho } from '@/app/aviso-en-url'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { irAIngresar } from '@/app/ir-a-ingresar'
@@ -33,5 +34,5 @@ export async function accionAltaProveedor(_previo: Resultado, datos: FormData): 
   }
 
   revalidatePath('/consorcios/[consorcio]/proveedores', 'page')
-  redirect(`/consorcios/${consorcioId}/proveedores?hecho=proveedor-registrado`)
+  redirect(conHecho(`/consorcios/${consorcioId}/proveedores`, 'proveedor-registrado'))
 }

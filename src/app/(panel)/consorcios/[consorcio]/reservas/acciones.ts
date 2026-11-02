@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { conError, conHecho } from '@/app/aviso-en-url'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { irAIngresar } from '@/app/ir-a-ingresar'
@@ -52,7 +53,7 @@ export async function accionReservar(_previo: Resultado, datos: FormData): Promi
   }
 
   revalidatePath('/consorcios/[consorcio]/reservas', 'page')
-  redirect(`/consorcios/${consorcioId}/reservas?hecho=reserva-confirmada`)
+  redirect(conHecho(`/consorcios/${consorcioId}/reservas`, 'reserva-confirmada'))
 }
 
 export async function accionCancelarReserva(datos: FormData): Promise<void> {
@@ -68,12 +69,10 @@ export async function accionCancelarReserva(datos: FormData): Promise<void> {
     })
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
-    redirect(
-      `/consorcios/${consorcioId}/reservas?error=${encodeURIComponent(error.mensajeParaUsuario)}`,
-    )
+    redirect(conError(`/consorcios/${consorcioId}/reservas`, error.mensajeParaUsuario))
   }
   revalidatePath('/consorcios/[consorcio]/reservas', 'page')
-  redirect(`/consorcios/${consorcioId}/reservas?hecho=reserva-cancelada`)
+  redirect(conHecho(`/consorcios/${consorcioId}/reservas`, 'reserva-cancelada'))
 }
 
 export async function accionGuardarEspacio(
@@ -106,7 +105,7 @@ export async function accionGuardarEspacio(
   }
 
   revalidatePath('/consorcios/[consorcio]/espacios', 'page')
-  redirect(`/consorcios/${consorcioId}/espacios?hecho=espacio-guardado`)
+  redirect(conHecho(`/consorcios/${consorcioId}/espacios`, 'espacio-guardado'))
 }
 
 export async function accionDeshabilitarEspacio(
@@ -132,7 +131,7 @@ export async function accionDeshabilitarEspacio(
     throw error
   }
   revalidatePath('/consorcios/[consorcio]/espacios', 'page')
-  redirect(`/consorcios/${consorcioId}/espacios?hecho=espacio-baja`)
+  redirect(conHecho(`/consorcios/${consorcioId}/espacios`, 'espacio-baja'))
 }
 
 export async function accionHabilitarEspacio(datos: FormData): Promise<void> {
@@ -148,10 +147,8 @@ export async function accionHabilitarEspacio(datos: FormData): Promise<void> {
     })
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
-    redirect(
-      `/consorcios/${consorcioId}/espacios?error=${encodeURIComponent(error.mensajeParaUsuario)}`,
-    )
+    redirect(conError(`/consorcios/${consorcioId}/espacios`, error.mensajeParaUsuario))
   }
   revalidatePath('/consorcios/[consorcio]/espacios', 'page')
-  redirect(`/consorcios/${consorcioId}/espacios?hecho=espacio-alta`)
+  redirect(conHecho(`/consorcios/${consorcioId}/espacios`, 'espacio-alta'))
 }

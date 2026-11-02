@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { CheckCircle, Siren, Wallet } from 'lucide-react'
+import { Siren, Wallet } from 'lucide-react'
 
 import { Decimal, importe } from '@/compartido/dinero'
 import { ErrorDeAplicacion } from '@/compartido/errores'
@@ -25,8 +25,6 @@ export const metadata: Metadata = { title: 'Pagos — Flay' }
 const POR_PAGINA = 10
 
 type Parametros = {
-  registrado?: string
-  hecho?: string
   unidad?: string
   abrir?: string
   piso?: string
@@ -138,20 +136,6 @@ export default async function PagosPage({
       <>
         <h1>Pagos</h1>
         <p className="apagado">Estado de cuenta por unidad.</p>
-
-        {parametros.hecho === 'pasarela-configurada' && (
-          <p className="aviso aviso--exito" role="status">
-            <CheckCircle className="icono" aria-hidden="true" />
-            <span>Credenciales de pasarela de pagos guardadas correctamente.</span>
-          </p>
-        )}
-
-        {parametros.hecho === 'pago-registrado' && (
-          <p className="aviso aviso--exito" role="status">
-            <CheckCircle className="icono" aria-hidden="true" />
-            <span>El pago fue registrado e imputado correctamente.</span>
-          </p>
-        )}
 
         <div className="fila-acciones">
           {roles.includes('administrador') && (

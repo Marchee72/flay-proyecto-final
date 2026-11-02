@@ -50,4 +50,10 @@ test('sin sesión 401, otro consorcio 404, el propio baja el CSV', async ({ page
     'href',
     `/api/exportar/${escenario.consorcioId}/gastos.csv`,
   )
+
+  // Una descarga no navega: la barra de carga no se enciende (RNF-06).
+  const descarga = page.waitForEvent('download')
+  await page.getByRole('link', { name: 'Exportar', exact: true }).click()
+  await descarga
+  await expect(page.locator('.barra-carga')).toHaveCount(0)
 })

@@ -22,6 +22,8 @@ export function IndicadorCarga() {
     const alHacerClic = (evento: MouseEvent) => {
       const objetivo = (evento.target as HTMLElement).closest('a')
       if (!objetivo || objetivo.target === '_blank' || evento.defaultPrevented) return
+      // Una descarga no cambia la ruta: la barra no se apagaria nunca.
+      if (objetivo.hasAttribute('download')) return
       if (evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.altKey) return
 
       const urlDestino = objetivo.getAttribute('href')

@@ -18,9 +18,10 @@ const texto = (datos: FormData, campo: string) => String(datos.get(campo) ?? '')
 
 /**
  * Guarda la regla de vencimientos (RF-08). El administrador carga hasta dos
- * vencimientos con recargo (el recargo rige al pagar DESPUES de esa fecha) y la
- * fecha del vencimiento en firme, pasada la cual corre la mora. `tramosDesdeEscalonado`
- * lo traduce al modelo de boleta (primer tramo base) antes de validar y guardar.
+ * vencimientos con recargo (el recargo rige al pagar DESPUES de esa fecha), la
+ * fecha del vencimiento en firme, pasada la cual corre la mora, y la tasa de
+ * mora mensual. `tramosDesdeEscalonado` lo traduce al modelo de boleta (primer
+ * tramo base) antes de validar y guardar todo junto.
  */
 export async function accionGuardarVencimientos(
   _previo: Resultado,
@@ -46,10 +47,20 @@ export async function accionGuardarVencimientos(
     return { mensaje: 'Cargá el día del vencimiento en firme.', ok: false }
   }
 
+  const tasaMora = texto(datos, 'tasaMora')
+  if (tasaMora === '') {
+    return { mensaje: 'Cargá la tasa de mora mensual.', ok: false }
+  }
+
   const tramos = tramosDesdeEscalonado(escalones, Number(diaFirme))
 
   try {
-    await guardarReglaVencimientos(HABILITACIONES, RELOJ, { usuarioId, consorcioId, tramos })
+    await guardarReglaVencimientos(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      tramos,
+      tasaMoraMensual: tasaMora,
+    })
   } catch (error) {
     if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario, ok: false }
     throw error

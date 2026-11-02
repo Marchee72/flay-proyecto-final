@@ -264,7 +264,7 @@ function DescargaExpensa({
 
 function VerGastos({ base, periodoId }: { base: string; periodoId: string }) {
   return (
-    <Link className="enlace-seco" href={`${base}/gastos?periodo=${periodoId}`}>
+    <Link className="enlace-seco" href={`/consorcios/${base}/gastos?periodo=${periodoId}`}>
       Ver los gastos del período
     </Link>
   )

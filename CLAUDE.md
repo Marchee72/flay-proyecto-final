@@ -172,7 +172,7 @@ comprensibles (RNF-10), auditoría registrada si toca datos económicos, documen
 
 ## Lo que no se adivina leyendo el código
 
-Veintiséis decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
+Veintinueve decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
 
 1. **El orden de las semillas y las pruebas.** `npm run test:integracion` **vacía** las tablas de
    negocio, semilla incluida: en una base compartida no hay forma de distinguir lo sembrado de lo
@@ -329,7 +329,9 @@ Veintiséis decisiones que costaron una vuelta y conviene no volver a tomar desd
     `Liquidacion.vencimiento` pasa a ser el **último** tramo (el que vence en firme): así la mora
     (RN-08) sigue corriendo desde él sin tocarse. El recargo es **derivado**, no se persiste en
     `totalUnidad`; por eso al vencer en firme se arrastra el **base** y la mora toma el relevo (la
-    validación exige mora mensual > recargo del último tramo, si no conviene dejar vencer). El
+    validación exige una tasa de mora **positiva y mayor que el recargo más alto**, si no conviene
+    dejar vencer; la tasa se configura en la misma pantalla de vencimientos y rige para las
+    liquidaciones que se emitan desde entonces). El
     recargo cobrado se registra como **cargo propio** en `PagoImputacion.recargoCobrado` —no como
     saldo a favor—: `imputar` separa capital de recargo y el exigible es `base + redondeo(base ×
     recargo/100)`, al centavo igual en pantalla, en la imputación y en el cobro en línea. El monto
@@ -345,8 +347,36 @@ Veintiséis decisiones que costaron una vuelta y conviene no volver a tomar desd
     fecha es la del firme (sin recargo, mora después)—. Son equivalentes: convertir de una a otra es
     **correr el recargo un lugar**, y ese corrimiento vive **solo** en `tramosDesdeEscalonado` /
     `escalonadoDesdeTramos` (`src/dominio/liquidacion/vencimientos.ts`), que usan la acción y la
-    página de `vencimientos/`. El dominio, la validación (1er tramo 0 %, mora > recargo más alto), el
-    congelado, el PDF y los pagos siguen en el modelo de boleta, intactos.
+    página de `vencimientos/`. El dominio, la validación (1er tramo 0 %, mora positiva y > recargo
+    más alto), el congelado, el PDF y los pagos siguen en el modelo de boleta, intactos.
+
+28. **La validación de un formulario se escribe una vez en el dominio y se usa dos veces.** El
+    dominio expone validadores de campo puros que devuelven el mensaje listo para mostrar o `null`
+    (por ejemplo `errorDeDia`, `errorDeRecargo`, `errorDeTasaMora` en
+    `src/dominio/liquidacion/vencimientos.ts`). El formulario los llama **al tipear** y muestra el
+    mensaje debajo del campo, con `aria-invalid` y `aria-describedby` apuntando a `error-<campo>`;
+    el caso de uso los vuelve a correr **al guardar**, junto con las reglas que cruzan campos (en
+    vencimientos: días crecientes y mora > recargo más alto). Lo del cliente es una ayuda: la
+    garantía es el servidor. El error del submit sigue siendo **uno solo al pie** con `role="alert"`;
+    los de campo no llevan `role` para no anunciar cada tecla. Si el módulo de aplicación del que
+    depende la pantalla arrastra infraestructura, los validadores se reexportan desde un módulo
+    intermedio sin Prisma (ver `src/aplicacion/consorcios/vencimientos-reglas.ts`): presentación
+    nunca importa infraestructura. Los formularios que ya existen se migran cuando se toquen; todo
+    formulario nuevo nace así.
+
+29. **El pago en línea se confirma por tres caminos y solo uno escribe.** El webhook, la vista de
+    retorno y la conciliación (`src/aplicacion/pagos/conciliar-pago-en-linea.ts`: la vista de la
+    expensa, la pestaña original que queda en `?intentoId=` sondeando, y el trabajo de cola
+    `conciliar_pago` que encola `iniciarPagoEnLinea`) terminan los tres en `confirmarPagoEnLinea`,
+    cuya transacción abre con `SELECT … FOR UPDATE` sobre el intento: ese candado, más el chequeo de
+    `referencia = MP-<id>`, es la barrera contra el doble registro (con el intento ya aprobado, el
+    `updateMany` condicionado no bloquea nada), y lo impago se lee con `tx` *después* del candado. La
+    conciliación decide *qué* confirmar, nunca crea un `Pago`. Busca en la pasarela por
+    `external_reference = intentoId`, así que funciona sin `URL_PUBLICA`. El rechazo no corta el
+    seguimiento —en Checkout Pro la tarjeta se reintenta en la misma preferencia—: la pestaña que
+    sigue el intento mantiene el sondeo y el manejador relanza con `esperando` o `rechazado`; un
+    `vencido` sigue mirándose hasta `venceEn` + 72 h. Un checkout abandonado termina `agotado` en
+    la cola a propósito, y por eso `conciliar_pago` no cuenta en el resumen de avisos de la bandeja.
 
 ## Notas
 

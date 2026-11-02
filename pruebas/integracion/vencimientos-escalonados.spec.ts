@@ -64,6 +64,7 @@ describe('regla de vencimientos escalonados (RF-08)', () => {
       usuarioId: administrador,
       consorcioId,
       tramos: reglaValida,
+      tasaMoraMensual: '2.0000',
     })
 
     const regla = await verReglaVencimientos(repo, RELOJ, {
@@ -94,6 +95,7 @@ describe('regla de vencimientos escalonados (RF-08)', () => {
           { orden: 1, diaDelMes: 10, recargoPorcentaje: '0.0000' },
           { orden: 2, diaDelMes: 20, recargoPorcentaje: '2.0000' }, // = mora 2 %
         ],
+        tasaMoraMensual: '2.0000',
       }),
     ).rejects.toBeInstanceOf(ErrorDeAplicacion)
 
@@ -108,6 +110,7 @@ describe('regla de vencimientos escalonados (RF-08)', () => {
         usuarioId: consorcista,
         consorcioId,
         tramos: reglaValida,
+        tasaMoraMensual: '2.0000',
       }),
     ).rejects.toBeInstanceOf(RolInsuficiente)
   })
@@ -124,11 +127,48 @@ describe('regla de vencimientos escalonados (RF-08)', () => {
       usuarioId: administrador,
       consorcioId,
       tramos: reglaValida,
+      tasaMoraMensual: '2.0000',
     })
     const despues = await prismaBase.bitacoraAuditoria.count({
       where: { tabla: 'TramoVencimiento' },
     })
     expect(despues).toBeGreaterThan(antes)
+  })
+
+  it('guarda la tasa de mora junto con la regla', async () => {
+    await guardarReglaVencimientos(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      tramos: reglaValida,
+      tasaMoraMensual: '3.2500',
+    })
+
+    const regla = await verReglaVencimientos(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+    })
+    expect(regla.tasaMoraMensual).toBe('3.2500')
+
+    const consorcio = await prismaBase.consorcio.findUniqueOrThrow({ where: { id: consorcioId } })
+    expect(consorcio.tasaMoraMensual.toFixed(4)).toBe('3.2500')
+  })
+
+  it('un rechazo no cambia ni la tasa ni los tramos', async () => {
+    await expect(
+      guardarReglaVencimientos(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        tramos: reglaValida, // recargo más alto 1,5 %
+        tasaMoraMensual: '1.0000',
+      }),
+    ).rejects.toBeInstanceOf(ErrorDeAplicacion)
+
+    const regla = await verReglaVencimientos(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+    })
+    expect(regla.tasaMoraMensual).toBe('2.0000')
+    expect(regla.porOmision).toBe(true)
   })
 })
 
@@ -147,6 +187,7 @@ describe('cobro con recargo escalonado (RF-08, US2)', () => {
         { orden: 2, diaDelMes: 20, recargoPorcentaje: '1.0000' },
         { orden: 3, diaDelMes: 28, recargoPorcentaje: '1.5000' },
       ],
+      tasaMoraMensual: '2.0000',
     })
     await cargarPadron(repo, RELOJ, {
       usuarioId: administrador,
@@ -244,6 +285,7 @@ describe('vencimiento en firme, arrastre y congelado (RF-08, US3/US4)', () => {
         { orden: 2, diaDelMes: 20, recargoPorcentaje: '1.0000' },
         { orden: 3, diaDelMes: 28, recargoPorcentaje: '1.5000' },
       ],
+      tasaMoraMensual: '2.0000',
     })
     await cargarPadron(repo, RELOJ, {
       usuarioId: administrador,
@@ -300,6 +342,7 @@ describe('vencimiento en firme, arrastre y congelado (RF-08, US3/US4)', () => {
       usuarioId: administrador,
       consorcioId,
       tramos: [{ orden: 1, diaDelMes: 15, recargoPorcentaje: '0.0000' }],
+      tasaMoraMensual: '2.0000',
     })
 
     const vencimientos = await prismaBase.vencimientoLiquidacion.findMany({

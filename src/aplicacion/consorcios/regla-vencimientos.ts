@@ -85,7 +85,12 @@ export async function verReglaVencimientos(
 export async function guardarReglaVencimientos(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
-  datos: { usuarioId: string; consorcioId: string; tramos: readonly TramoRegla[] },
+  datos: {
+    usuarioId: string
+    consorcioId: string
+    tramos: readonly TramoRegla[]
+    tasaMoraMensual: string
+  },
 ): Promise<void> {
   return conAutorizacion(
     repositorio,
@@ -97,18 +102,21 @@ export async function guardarReglaVencimientos(
       accion: 'configurar la regla de vencimientos',
     },
     async () => {
-      const consorcio = await prismaBase.consorcio.findUniqueOrThrow({
-        where: { id: datos.consorcioId },
-        select: { tasaMoraMensual: true },
-      })
+      // El dominio valida tasa de mora (positiva y mayor que el recargo mas
+      // alto), 1 a 3 tramos, dias ascendentes <= 28 y primero en 0 %.
+      validarReglaVencimientos(datos.tramos, datos.tasaMoraMensual)
 
-      // El dominio valida: 1 a 3 tramos, dias ascendentes <= 28, primero en 0 %,
-      // y mora > recargo del ultimo (si no, lanza con mensaje comprensible).
-      validarReglaVencimientos(datos.tramos, consorcio.tasaMoraMensual.toFixed(4))
-
-      // Reemplazo completo en una transaccion: la regla es el conjunto, no filas
-      // sueltas. El aislamiento acota el delete y el create a este consorcio.
+      // Tasa y tramos se guardan juntos: la validez de uno depende del otro, y
+      // un guardado a medias dejaria al consorcio con una regla incoherente.
+      // Reemplazo completo de los tramos en la misma transaccion: la regla es el
+      // conjunto, no filas sueltas. El aislamiento acota el delete y el create a
+      // este consorcio; `Consorcio` no lleva `consorcioId`, por eso se actualiza
+      // por `id` explicito.
       await prisma.$transaction(async (tx) => {
+        await tx.consorcio.update({
+          where: { id: datos.consorcioId },
+          data: { tasaMoraMensual: datos.tasaMoraMensual },
+        })
         await tx.tramoVencimiento.deleteMany({})
         await tx.tramoVencimiento.createMany({
           data: datos.tramos.map((tramo) =>

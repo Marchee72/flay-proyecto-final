@@ -259,7 +259,8 @@ Veintiséis decisiones que costaron una vuelta y conviene no volver a tomar desd
     `conConsorcio(consorcioId, titulo)` es el único punto que valida el id contra el alcance, y
     `consorciosAlAlcance` está cacheado por pedido porque lo piden el armazón y la página. La galleta
     `flay_consorcio` solo recuerda el último usado para `/` y para las direcciones viejas
-    (`[...ruta]/page.tsx`). Las listas de secciones van en `secciones.ts` sin `'use client'`:
+    (`[...ruta]/page.tsx`); la escribe `src/middleware.ts` en cada `GET` a `/consorcios/<id>`, no
+    solo el selector, y se sigue validando contra el alcance al leerla. Las listas de secciones van en `secciones.ts` sin `'use client'`:
     importar un valor de un módulo cliente desde un componente servidor da `undefined`.
 20. **La bandeja y el resumen están en la lista blanca de `filtro-unico.spec.ts`.** La bandeja
     cruza consorcios con `consorcio_id IN (...)` armado desde `misConsorcios`, nunca desde un

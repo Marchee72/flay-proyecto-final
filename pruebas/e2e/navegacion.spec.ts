@@ -86,6 +86,13 @@ test('con dos consorcios se entra a la lista, y el atajo conserva la seccion', a
   await expect(page).toHaveURL(`/consorcios/${segundoConsorcioId}/gastos`)
 })
 
+test('el último consorcio abierto es al que vuelve la portada (FR-002)', async ({ page }) => {
+  await entrar(page, conDos.correo)
+  await page.goto(`/consorcios/${segundoConsorcioId}`)
+  await page.goto('/')
+  await expect(page).toHaveURL(`/consorcios/${segundoConsorcioId}`)
+})
+
 test('una direccion vieja va a la misma seccion del consorcio pedido', async ({ page }) => {
   await entrar(page, conDos.correo)
   await page.goto(`/periodos?consorcio=${segundoConsorcioId}`)

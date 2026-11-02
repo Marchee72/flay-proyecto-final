@@ -70,3 +70,41 @@ test('la expensa de otra unidad responde «no encontrado», nunca «prohibido»'
   await expect(page.locator('p.aviso--problema')).toContainText('No encontramos')
   await expect(page.getByText(/prohibido/i)).toHaveCount(0)
 })
+
+test.describe('el administrador registra un pago desde la expensa (CU-04)', () => {
+  let administrador: Escenario
+  let suya: Expensa
+
+  test.beforeAll(async () => {
+    administrador = await sembrarEscenario('administrador')
+    suya = await sembrarExpensa(administrador)
+  })
+
+  test.afterAll(async () => {
+    await prisma.pagoImputacion.deleteMany({
+      where: { pago: { consorcioId: administrador.consorcioId } },
+    })
+    await prisma.pago.deleteMany({ where: { consorcioId: administrador.consorcioId } })
+    await limpiarExpensa(administrador)
+    await limpiarEscenario(administrador)
+  })
+
+  test('el pago viene con la unidad elegida y vuelve a la expensa', async ({ page }) => {
+    // La de 3C: no es la primera del listado, asi que no se elige sola.
+    const unidad = await prisma.unidad.findFirstOrThrow({
+      where: { consorcioId: administrador.consorcioId, designacion: '3C' },
+    })
+    await entrar(page, administrador.correo)
+    await page.goto(`/consorcios/${administrador.consorcioId}/expensas/${suya.detalleAjenoId}`)
+
+    await page.getByRole('button', { name: 'Registrar un pago' }).click()
+    const dialogo = page.getByRole('dialog')
+    await expect(dialogo.getByLabel('Unidad')).toHaveValue(unidad.id)
+    await dialogo.getByLabel('Importe').fill('1000')
+    await dialogo.getByRole('button', { name: 'Registrar', exact: true }).click()
+
+    await expect(page).toHaveURL(
+      new RegExp(`/expensas/${suya.detalleAjenoId}\\?hecho=pago-registrado`),
+    )
+  })
+})

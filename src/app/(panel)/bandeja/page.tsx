@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Inbox, Send } from 'lucide-react'
 
 import { fechaParaMostrar, plural } from '@/compartido/formato'
@@ -30,6 +31,8 @@ export default async function BandejaPage({
   const parametros = await searchParams
 
   const bandeja = await verBandeja(HABILITACIONES, RELOJ, { usuarioId })
+  // Sin consorcios administrados no hay bandeja (RNF-03): el panel tampoco la ofrece.
+  if (bandeja.consorcios.length === 0) redirect('/consorcios')
   const visibles = parametros.consorcio
     ? bandeja.consorcios.filter((c) => c.id === parametros.consorcio)
     : bandeja.consorcios

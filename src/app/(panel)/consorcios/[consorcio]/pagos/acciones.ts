@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
+import { destinoSeguro } from '@/compartido/destinos'
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { conHecho } from '@/app/aviso-en-url'
 import { importeDesdeEntrada } from '@/compartido/formato'
@@ -40,7 +41,14 @@ export async function accionRegistrarPago(_previo: Resultado, datos: FormData): 
   }
 
   revalidatePath('/consorcios/[consorcio]/pagos', 'page')
-  redirect(conHecho(`/consorcios/${consorcioId}/pagos`, 'pago-registrado'))
+  // Desde la expensa se vuelve a ella; `vuelta` viene del formulario, asi que
+  // solo vale dentro de este consorcio (sin redireccion abierta).
+  const destino = destinoSeguro(
+    datos.get('vuelta'),
+    `/consorcios/${consorcioId}/pagos`,
+    `/consorcios/${consorcioId}/`,
+  )
+  redirect(conHecho(destino, 'pago-registrado'))
 }
 
 /**

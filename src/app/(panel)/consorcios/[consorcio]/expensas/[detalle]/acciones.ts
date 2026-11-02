@@ -1,5 +1,7 @@
 'use server'
 
+import { headers } from 'next/headers'
+
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { HABILITACIONES, PROCESADOR_PAGOS, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
@@ -22,7 +24,12 @@ export async function accionPagarExpensaEnLinea(
   const consorcioId = String(datos.get('consorcio') ?? '')
   const detalleId = String(datos.get('detalle') ?? '')
 
-  const urlPublica = process.env.URL_PUBLICA || 'http://localhost:3000'
+  // Sin URL_PUBLICA, el origen del propio pedido: volver a `localhost:3000` desde
+  // otro puerto o un despliegue de prueba dejaba al consorcista en ninguna parte.
+  const cabeceras = await headers()
+  const urlPublica =
+    process.env.URL_PUBLICA ||
+    `${cabeceras.get('x-forwarded-proto') ?? 'http'}://${cabeceras.get('host')}`
   const urlBaseRetorno = `${urlPublica}/consorcios/${consorcioId}/expensas/${detalleId}`
 
   try {

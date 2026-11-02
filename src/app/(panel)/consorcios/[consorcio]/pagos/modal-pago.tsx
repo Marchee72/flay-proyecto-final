@@ -5,8 +5,9 @@ import { FormularioPago } from './formulario'
 
 /**
  * Alta de pago en modal (guia §3.4, patron «Modal»). Reutiliza el formulario
- * y la Server Action existentes: el exito redirige a `/pagos` con
- * `conHecho(…, 'pago-registrado')` y lo confirma la pila de avisos.
+ * y la Server Action existentes: el exito redirige a `/pagos` —o a `vuelta`,
+ * si se abrio desde la expensa— con `conHecho(…, 'pago-registrado')` y lo
+ * confirma la pila de avisos.
  */
 export function ModalPago({
   consorcioId,
@@ -15,6 +16,8 @@ export function ModalPago({
   hoy,
   etiqueta = 'Registrar un pago',
   abrir = false,
+  unidadInicial,
+  vuelta,
 }: {
   consorcioId: string
   unidades: readonly { id: string; designacion: string }[]
@@ -22,10 +25,19 @@ export function ModalPago({
   hoy: string
   etiqueta?: string
   abrir?: boolean
+  unidadInicial?: string
+  vuelta?: string
 }) {
   return (
     <BotonModal etiqueta={etiqueta} titulo="Registrar un pago" abrirAlMontar={abrir}>
-      <FormularioPago consorcioId={consorcioId} unidades={unidades} medios={medios} hoy={hoy} />
+      <FormularioPago
+        consorcioId={consorcioId}
+        unidades={unidades}
+        medios={medios}
+        hoy={hoy}
+        unidadInicial={unidadInicial}
+        vuelta={vuelta}
+      />
     </BotonModal>
   )
 }

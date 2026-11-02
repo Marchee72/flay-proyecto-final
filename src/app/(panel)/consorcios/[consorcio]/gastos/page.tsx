@@ -5,6 +5,7 @@ import { Receipt, ScanSearch, Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { conMayuscula, fechaParaMostrar, importeParaMostrar, plural } from '@/compartido/formato'
+import { esUuid } from '@/compartido/identificadores'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarGastos } from '@/aplicacion/gastos/listar-gastos'
@@ -61,8 +62,8 @@ export default async function GastosPage({
       listarGastos(HABILITACIONES, RELOJ, {
         usuarioId,
         consorcioId: activo.id,
-        periodoId: parametros.periodo || undefined,
-        rubroId: parametros.rubro || undefined,
+        periodoId: esUuid(parametros.periodo) ? parametros.periodo : undefined,
+        rubroId: esUuid(parametros.rubro) ? parametros.rubro : undefined,
         clasificacion: esClasificacion(parametros.clasificacion)
           ? parametros.clasificacion
           : undefined,

@@ -11,11 +11,17 @@ export function FormularioPago({
   unidades,
   medios,
   hoy,
+  unidadInicial,
+  vuelta,
 }: {
   consorcioId: string
   unidades: readonly { id: string; designacion: string }[]
   medios: readonly { valor: string; etiqueta: string }[]
   hoy: string
+  /** Desde la expensa, la unidad ya elegida. */
+  unidadInicial?: string
+  /** Adonde volver con exito; la accion lo valida dentro del consorcio. */
+  vuelta?: string
 }) {
   const [estado, accion, enviando] = useActionState(accionRegistrarPago, SIN_ERROR)
   const hayError = estado.mensaje !== ''
@@ -23,12 +29,14 @@ export function FormularioPago({
   return (
     <form action={accion} noValidate>
       <input type="hidden" name="consorcio" value={consorcioId} />
+      {vuelta && <input type="hidden" name="vuelta" value={vuelta} />}
 
       <div className="campo">
         <label htmlFor="unidad">Unidad</label>
         <select
           id="unidad"
           name="unidad"
+          defaultValue={unidadInicial}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-pago' : undefined}

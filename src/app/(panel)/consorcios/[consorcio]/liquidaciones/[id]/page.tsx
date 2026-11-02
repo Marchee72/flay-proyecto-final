@@ -53,7 +53,8 @@ export default async function LiquidacionPage({
 
     return (
       <>
-        <Volver href={`/consorcios/${activo.id}/periodos`} />
+        {/* El consejo entra desde Expensas: Periodos es del administrador. */}
+        <Volver href={`/consorcios/${activo.id}/${administra ? 'periodos' : 'expensas'}`} />
         <h1>Liquidación {liquidacion.periodo}</h1>
         <p className="apagado">
           <EstadoDeLaLiquidacion estado={liquidacion.estado} /> · vence{' '}

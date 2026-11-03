@@ -33,6 +33,12 @@ const PERMITIDOS: Record<string, string> = {
     'la cabecera es el consorcio, direccionado por su propio identificador (como ver-consorcio)',
   'src/aplicacion/consorcios/regla-vencimientos.ts':
     'lee del consorcio, por su propio identificador, el dia de vencimiento y la tasa de mora (como liquidar)',
+  'src/aplicacion/asambleas/convocar.ts':
+    'lee del consorcio, por su propio identificador, el nombre y las reglas de asamblea que copia a la convocatoria (como liquidar)',
+  'src/aplicacion/asambleas/configuracion.ts':
+    'lee y escribe las reglas de asamblea del consorcio por su propio identificador (como regla-vencimientos)',
+  'src/aplicacion/asambleas/acta.ts':
+    'lee la cabecera del consorcio por su propio identificador para el encabezado del acta (como ver-consorcio)',
   'src/aplicacion/asistente/conversar.ts':
     'lee la cabecera del consorcio activo por su propio identificador, para situar al modelo (como ver-consorcio)',
 }

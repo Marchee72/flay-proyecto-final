@@ -30,6 +30,10 @@ export const GENERADOR_DOCUMENTOS: GeneradorDeDocumentos = {
     const { generadorPdf } = await import('@/infraestructura/documentos/expensa')
     return generadorPdf.expensa(datos)
   },
+  async acta(datos) {
+    const { generadorActa } = await import('@/infraestructura/documentos/acta')
+    return generadorActa.acta(datos)
+  },
 }
 
 async function resolverAsistencia(): Promise<Asistencia> {

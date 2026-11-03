@@ -158,3 +158,51 @@ export async function ocupantesVigentesDe(
   }
   return porUnidad
 }
+
+export interface PropietarioVigente {
+  unidadId: string
+  personaId: string
+  /** Nulo: la persona no tiene cuenta en Flay. */
+  usuarioId: string | null
+  nombre: string
+  correo: string | null
+}
+
+/**
+ * Los **propietarios** vigentes de esas unidades a esa fecha, con su usuario si
+ * lo tienen (016: convocatoria, poderes, acreditacion, oposicion). Varios por
+ * unidad es el condominio. Los ids tienen que venir de una consulta ya
+ * aislada: esto no filtra por consorcio.
+ */
+export async function propietariosVigentesDe(
+  unidadIds: readonly string[],
+  fecha: Date,
+): Promise<PropietarioVigente[]> {
+  if (unidadIds.length === 0) return []
+  const filas = await prismaBase.$queryRaw<
+    {
+      unidad_id: string
+      persona_id: string
+      usuario_id: string | null
+      nombre: string
+      apellido: string
+      correo: string | null
+    }[]
+  >`
+    SELECT o."unidad_id", o."persona_id", u."id" AS usuario_id, p."nombre", p."apellido",
+           COALESCE(p."correo", u."correo") AS correo
+    FROM "Ocupacion" o
+    JOIN "Persona" p ON p."id" = o."persona_id"
+    LEFT JOIN "Usuario" u ON u."persona_id" = o."persona_id"
+    WHERE o."unidad_id" = ANY(${unidadIds}::uuid[])
+      AND o."tipo" = 'propietario'
+      AND o."vigencia" @> ${fecha}::date
+    ORDER BY p."apellido", p."nombre"`
+  return filas.map((f) => ({
+    unidadId: f.unidad_id,
+    personaId: f.persona_id,
+    usuarioId: f.usuario_id,
+    nombre: `${f.nombre} ${f.apellido}`.trim(),
+    correo: f.correo,
+  }))
+}

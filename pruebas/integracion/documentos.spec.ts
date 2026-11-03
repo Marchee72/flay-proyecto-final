@@ -55,7 +55,7 @@ const almacenDoble: AlmacenObjetos = {
   async eliminar() {},
 }
 
-const generadorDoble = (falla?: string): GeneradorDeDocumentos => ({
+const generadorDoble = (falla?: string): Pick<GeneradorDeDocumentos, 'expensa'> => ({
   async expensa(datos) {
     if (datos.unidad.designacion === falla) throw new Error(`no se pudo rendear ${falla}`)
     return new Uint8Array([37, 80, 68, 70]) // %PDF

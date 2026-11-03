@@ -264,7 +264,7 @@ export function Expensa({ datos }: { datos: ExpensaParaDocumento }) {
   )
 }
 
-export const generadorPdf: GeneradorDeDocumentos = {
+export const generadorPdf: Pick<GeneradorDeDocumentos, 'expensa'> = {
   async expensa(datos: ExpensaParaDocumento): Promise<Uint8Array> {
     return renderToBuffer(<Expensa datos={datos} />)
   },

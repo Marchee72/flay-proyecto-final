@@ -27,6 +27,14 @@ const INVITACION = z.object({
   enlaceDeAlta: z.string(),
 })
 
+// 016: aviso a un propietario sin cuenta en Flay (research R-07). Mismo texto
+// que la notificacion de quien si tiene usuario; el puerto acepta destino libre.
+const CORREO_DIRECTO = z.object({
+  destino: z.string().email(),
+  titulo: z.string(),
+  cuerpo: z.string(),
+})
+
 export const MANEJADORES: Partial<Record<TipoTrabajo, Manejador>> = {
   invitacion: async (carga) => notificadorResend.enviarInvitacion(INVITACION.parse(carga)),
   // El documento de expensa (`003-liquidacion` FR-016): rendea, guarda y anota
@@ -43,4 +51,6 @@ export const MANEJADORES: Partial<Record<TipoTrabajo, Manejador>> = {
   indexar_documento: manejadorIndexacion(almacenR2, ASISTENCIA.vectores, textoPorPagina),
   // Red *pull* del cobro en linea (`RF-28`): sin webhook ni retorno, pregunta a la pasarela.
   conciliar_pago: manejadorConciliacion(PROCESADOR_PAGOS, RELOJ),
+  correo_directo: async (carga) =>
+    notificadorResend.enviarNotificacion(CORREO_DIRECTO.parse(carga)),
 }

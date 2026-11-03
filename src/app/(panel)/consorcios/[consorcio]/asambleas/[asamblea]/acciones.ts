@@ -1,0 +1,349 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
+
+import { ErrorDeAplicacion } from '@/compartido/errores'
+import {
+  ALMACEN,
+  DERIVADOR,
+  GENERADOR_DOCUMENTOS,
+  HABILITACIONES,
+  RELOJ,
+} from '@/aplicacion/dependencias'
+import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import {
+  designarFirmantes,
+  enviarAFirmar,
+  firmar,
+  redactarResumen,
+  reemplazarFirmante,
+} from '@/aplicacion/asambleas/acta'
+import {
+  abrir,
+  abrirPunto,
+  acreditar,
+  acreditarme,
+  cerrarPunto,
+  constituir,
+  designarAutoridades,
+  finalizar,
+  tomarDireccion,
+} from '@/aplicacion/asambleas/conducir'
+import { borrarBorrador, cancelar, convocar } from '@/aplicacion/asambleas/convocar'
+import { oponerme, registrarOposicionEnPapel } from '@/aplicacion/asambleas/oposicion'
+import { otorgarPoder, registrarPoderEnPapel, revocarPoder } from '@/aplicacion/asambleas/poderes'
+import { cargarVoto, votar, type Eleccion } from '@/aplicacion/asambleas/votar'
+
+/**
+ * Acciones de una asamblea. Cada una vuelve a la pantalla con `?hecho=` o
+ * `?error=` (nota 24): el aviso lo dibuja `PilaDeAvisos`. Los casos de uso
+ * autorizan de nuevo contra la base; acá solo se lee el formulario.
+ */
+
+const texto = (datos: FormData, campo: string) => String(datos.get(campo) ?? '').trim()
+
+/** `unidad|persona`: un solo `select` elige las dos, para que no puedan desencontrarse. */
+const par = (datos: FormData, campo: string): [string, string] => {
+  const [a = '', b = ''] = texto(datos, campo).split('|')
+  return [a, b]
+}
+
+type Base = { usuarioId: string; consorcioId: string; asambleaId: string }
+
+async function ejecutar(
+  datos: FormData,
+  trabajo: (base: Base) => Promise<unknown>,
+  hecho: string | (() => string),
+  destino: 'asamblea' | 'acta' | 'lista' = 'asamblea',
+): Promise<never> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) redirect('/ingresar')
+  const base = {
+    usuarioId,
+    consorcioId: texto(datos, 'consorcio'),
+    asambleaId: texto(datos, 'asamblea'),
+  }
+  const raiz = `/consorcios/${base.consorcioId}/asambleas`
+  const ruta =
+    destino === 'lista' ? raiz : `${raiz}/${base.asambleaId}${destino === 'acta' ? '/acta' : ''}`
+  try {
+    await trabajo(base)
+  } catch (error) {
+    if (!(error instanceof ErrorDeAplicacion)) throw error
+    redirect(`${ruta}?error=${encodeURIComponent(error.mensajeParaUsuario)}`)
+  }
+  revalidatePath('/consorcios/[consorcio]/asambleas', 'layout')
+  redirect(`${ruta}?hecho=${typeof hecho === 'function' ? hecho() : hecho}`)
+}
+
+const eleccion = (datos: FormData): Eleccion => {
+  const opcionId = texto(datos, 'opcion')
+  return opcionId
+    ? { opcionId }
+    : { sentido: texto(datos, 'sentido') as 'positivo' | 'negativo' | 'abstencion' }
+}
+
+// Convocatoria ---------------------------------------------------------------
+
+export async function accionConvocar(datos: FormData) {
+  let sinContacto = 0
+  await ejecutar(
+    datos,
+    async (b) => {
+      sinContacto = (await convocar(HABILITACIONES, RELOJ, b)).sinContacto.length
+    },
+    () => (sinContacto > 0 ? 'asamblea-convocada-sin-contacto' : 'asamblea-convocada'),
+  )
+}
+
+export async function accionBorrar(datos: FormData) {
+  await ejecutar(
+    datos,
+    (b) => borrarBorrador(HABILITACIONES, RELOJ, b),
+    'asamblea-borrada',
+    'lista',
+  )
+}
+
+export async function accionCancelar(datos: FormData) {
+  await ejecutar(
+    datos,
+    (b) => cancelar(HABILITACIONES, RELOJ, { ...b, motivo: texto(datos, 'motivo') }),
+    'asamblea-cancelada',
+  )
+}
+
+// Poderes --------------------------------------------------------------------
+
+export async function accionOtorgarPoder(datos: FormData) {
+  await ejecutar(
+    datos,
+    (b) =>
+      otorgarPoder(HABILITACIONES, RELOJ, {
+        ...b,
+        unidadId: texto(datos, 'unidad'),
+        apoderadoId: texto(datos, 'apoderado'),
+      }),
+    'poder-otorgado',
+  )
+}
+
+export async function accionPoderEnPapel(datos: FormData) {
+  const [unidadId, otorganteId] = par(datos, 'otorgante')
+  await ejecutar(
+    datos,
+    (b) =>
+      registrarPoderEnPapel(HABILITACIONES, RELOJ, {
+        ...b,
+        unidadId,
+        otorganteId,
+        apoderadoId: texto(datos, 'apoderado'),
+      }),
+    'poder-otorgado',
+  )
+}
+
+export async function accionRevocarPoder(datos: FormData) {
+  await ejecutar(
+    datos,
+    (b) => revocarPoder(HABILITACIONES, RELOJ, { ...b, poderId: texto(datos, 'poder') }),
+    'poder-revocado',
+  )
+}
+
+// Reunión --------------------------------------------------------------------
+
+export async function accionAbrir(datos: FormData) {
+  await ejecutar(datos, (b) => abrir(HABILITACIONES, RELOJ, b), 'asamblea-abierta')
+}
+
+export async function accionAcreditarme(datos: FormData) {
+  await ejecutar(datos, (b) => acreditarme(HABILITACIONES, RELOJ, b), 'acreditado')
+}
+
+export async function accionAcreditar(datos: FormData) {
+  await ejecutar(
+    datos,
+    (b) =>
+      acreditar(HABILITACIONES, RELOJ, {
+        ...b,
+        unidadId: texto(datos, 'unidad'),
+        nombre: texto(datos, 'nombre'),
+        representacion:
+          texto(datos, 'representacion') === 'apoderado' ? 'apoderado' : 'propietario',
+      }),
+    'acreditado',
+  )
+}
+
+export async function accionAutoridades(datos: FormData) {
+  await ejecutar(
+    datos,
+    (b) =>
+      designarAutoridades(HABILITACIONES, RELOJ, {
+        ...b,
+        presidenteId: texto(datos, 'presidente'),
+        secretarioId: texto(datos, 'secretario'),
+      }),
+    'autoridades-designadas',
+  )
+}
+
+export async function accionConstituir(datos: FormData) {
+  await ejecutar(datos, (b) => constituir(HABILITACIONES, RELOJ, b), 'asamblea-constituida')
+}
+
+export async function accionAbrirPunto(datos: FormData) {
+  await ejecutar(
+    datos,
+    (b) => abrirPunto(HABILITACIONES, RELOJ, { ...b, puntoId: texto(datos, 'punto') }),
+    'punto-abierto',
+  )
+}
+
+export async function accionCerrarPunto(datos: FormData) {
+  await ejecutar(
+    datos,
+    (b) => cerrarPunto(HABILITACIONES, RELOJ, { ...b, puntoId: texto(datos, 'punto') }),
+    'punto-cerrado',
+  )
+}
+
+export async function accionVotar(datos: FormData) {
+  await ejecutar(
+    datos,
+    (b) =>
+      votar(HABILITACIONES, RELOJ, {
+        ...b,
+        puntoId: texto(datos, 'punto'),
+        unidadId: texto(datos, 'unidad'),
+        eleccion: eleccion(datos),
+      }),
+    'voto-registrado',
+  )
+}
+
+export async function accionCargarVoto(datos: FormData) {
+  await ejecutar(
+    datos,
+    (b) =>
+      cargarVoto(HABILITACIONES, RELOJ, {
+        ...b,
+        puntoId: texto(datos, 'punto'),
+        unidadId: texto(datos, 'unidad'),
+        eleccion: eleccion(datos),
+      }),
+    'voto-registrado',
+  )
+}
+
+export async function accionTomarDireccion(datos: FormData) {
+  await ejecutar(datos, (b) => tomarDireccion(HABILITACIONES, RELOJ, b), 'direccion-tomada')
+}
+
+export async function accionFinalizar(datos: FormData) {
+  await ejecutar(datos, (b) => finalizar(HABILITACIONES, RELOJ, b), 'asamblea-finalizada', 'acta')
+}
+
+// Oposición ------------------------------------------------------------------
+
+export async function accionOponerme(datos: FormData) {
+  await ejecutar(
+    datos,
+    (b) =>
+      oponerme(HABILITACIONES, RELOJ, {
+        ...b,
+        puntoId: texto(datos, 'punto'),
+        unidadId: texto(datos, 'unidad'),
+      }),
+    'oposicion-registrada',
+  )
+}
+
+export async function accionOposicionEnPapel(datos: FormData) {
+  const [unidadId, personaId] = par(datos, 'ausente')
+  await ejecutar(
+    datos,
+    (b) =>
+      registrarOposicionEnPapel(HABILITACIONES, RELOJ, {
+        ...b,
+        puntoId: texto(datos, 'punto'),
+        unidadId,
+        personaId,
+      }),
+    'oposicion-registrada',
+  )
+}
+
+// Acta -----------------------------------------------------------------------
+
+export async function accionResumen(datos: FormData) {
+  await ejecutar(
+    datos,
+    (b) =>
+      redactarResumen(HABILITACIONES, RELOJ, {
+        ...b,
+        puntoId: texto(datos, 'punto'),
+        resumen: String(datos.get('resumen') ?? ''),
+      }),
+    'resumen-guardado',
+    'acta',
+  )
+}
+
+export async function accionFirmantes(datos: FormData) {
+  await ejecutar(
+    datos,
+    (b) =>
+      designarFirmantes(HABILITACIONES, RELOJ, {
+        ...b,
+        propietarios: datos.getAll('propietario').map(String),
+      }),
+    'firmantes-designados',
+    'acta',
+  )
+}
+
+const ACTA = { generador: GENERADOR_DOCUMENTOS, almacen: ALMACEN }
+
+export async function accionEnviarAFirmar(datos: FormData) {
+  await ejecutar(
+    datos,
+    (b) => enviarAFirmar(HABILITACIONES, RELOJ, ACTA, b),
+    'acta-enviada',
+    'acta',
+  )
+}
+
+export async function accionFirmar(datos: FormData) {
+  await ejecutar(
+    datos,
+    (b) =>
+      firmar(
+        HABILITACIONES,
+        RELOJ,
+        { ...ACTA, derivador: DERIVADOR },
+        {
+          ...b,
+          contrasena: String(datos.get('contrasena') ?? ''),
+        },
+      ),
+    'acta-firmada',
+    'acta',
+  )
+}
+
+export async function accionReemplazarFirmante(datos: FormData) {
+  await ejecutar(
+    datos,
+    (b) =>
+      reemplazarFirmante(HABILITACIONES, RELOJ, {
+        ...b,
+        firmanteId: texto(datos, 'firmante'),
+        nuevoUsuarioId: texto(datos, 'nuevo'),
+      }),
+    'firmante-reemplazado',
+    'acta',
+  )
+}

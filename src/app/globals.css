@@ -3993,3 +3993,152 @@ table.calendario th {
     width: 100%;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Asambleas (016). La sala se usa de pie, con el teléfono en la mano: los
+   botones de voto son grandes y las cifras se leen de un vistazo (RNF-01).
+   --------------------------------------------------------------------------- */
+.formulario-asamblea {
+  display: grid;
+  gap: var(--e4);
+}
+.orden-del-dia {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--e3);
+  display: grid;
+  gap: var(--e4);
+}
+.orden-del-dia__punto + .orden-del-dia__punto {
+  border-top: 1px solid var(--linea-suave);
+  padding-top: var(--e4);
+}
+.orden-del-dia__punto fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--e3);
+}
+.orden-del-dia__punto h3 {
+  margin: 0 0 var(--e2);
+}
+.orden-del-dia__punto .etiqueta {
+  margin-left: var(--e2);
+}
+.opciones-punto {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--e2);
+}
+.opciones-punto__fila {
+  display: flex;
+  gap: var(--e2);
+  align-items: center;
+}
+.opciones-punto__fila input {
+  flex: 1;
+  min-width: 0;
+}
+.lista-asambleas {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--e3);
+}
+.tarjeta-asamblea {
+  display: grid;
+  gap: var(--e2);
+  justify-items: start;
+  color: var(--tinta);
+  text-decoration: none;
+}
+.tarjeta-asamblea:hover .tarjeta-asamblea__titulo {
+  text-decoration: underline;
+}
+.tarjeta-asamblea__titulo {
+  font-weight: 600;
+  font-size: var(--t-titulo3);
+}
+.sala {
+  display: grid;
+  gap: var(--e4);
+  max-width: 760px;
+}
+.sala__cifra {
+  font-family: var(--tipografia-cifra);
+  font-size: var(--t-titulo2);
+  margin: 0;
+}
+.sala .boton,
+.direccion .boton {
+  white-space: normal;
+  height: auto;
+  min-height: var(--toque);
+  padding-block: var(--e2);
+  text-align: left;
+}
+.votar {
+  display: grid;
+  gap: var(--e2);
+  margin: var(--e4) 0;
+}
+.votar__unidad {
+  margin: 0;
+  font-weight: 600;
+}
+.votar__opciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--e2);
+}
+.votar__boton {
+  justify-content: center;
+  background: var(--superficie);
+  border-color: var(--linea-control);
+  color: var(--tinta);
+}
+.votar__boton:hover {
+  background: var(--lima);
+}
+.conteo {
+  display: grid;
+  gap: var(--e3);
+  margin: var(--e4) 0;
+}
+.conteo__fila {
+  display: grid;
+  gap: var(--e1);
+}
+.conteo__titulo {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--e2);
+}
+.sala__votos summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.direccion form + form,
+.direccion form + .fila-de-filtros {
+  margin-top: var(--e4);
+}
+.acta__punto + .acta__punto {
+  border-top: 1px solid var(--linea-suave);
+  margin-top: var(--e4);
+  padding-top: var(--e4);
+}
+.huella {
+  display: flex;
+  gap: var(--e2);
+  align-items: flex-start;
+  font-size: var(--t-menor);
+  color: var(--tinta-apagada);
+}
+.huella code {
+  word-break: break-all;
+}

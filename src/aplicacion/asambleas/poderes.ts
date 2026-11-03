@@ -81,8 +81,16 @@ async function crearPoder(
     where: { asambleaId: poder.asambleaId, apoderadoId: poder.apoderadoId, revocadoEn: null },
   })
   verificarTope(representa, poder.tope)
-  const { tope: _tope, ...datos } = poder
-  await tx.poder.create({ data: sinConsorcio(datos) })
+  await tx.poder.create({
+    data: sinConsorcio({
+      asambleaId: poder.asambleaId,
+      unidadId: poder.unidadId,
+      otorganteId: poder.otorganteId,
+      apoderadoId: poder.apoderadoId,
+      origen: poder.origen,
+      registradoPorId: poder.registradoPorId,
+    }),
+  })
 }
 
 async function avisarPoder(

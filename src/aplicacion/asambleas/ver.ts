@@ -11,10 +11,12 @@ import type {
 } from '@prisma/client'
 
 import { Decimal } from '@/compartido/dinero'
+import { NoEncontrado } from '@/compartido/errores'
 import { coeficienteSerializado, DECIMALES_COEFICIENTE } from '@/compartido/formato'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { estadoDecision, type EstadoDecision } from '@/dominio/asambleas/provisoria'
+import { textoIcs } from '@/dominio/asambleas/calendario'
 import { segundaConvocatoria } from '@/dominio/asambleas/quorum'
 import { conteo, type Conteo, type UnidadPadron, type Voto } from '@/dominio/asambleas/resultado'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
@@ -146,6 +148,13 @@ export interface VistaAsamblea {
     puedoOponerme: { puntoId: string; unidadId: string; designacion: string }[]
     esFirmantePendiente: boolean
   }
+  /** Para cargar papeles (poder, oposición): solo a quien puede dirigir o administra. */
+  propietariosSinCuenta: {
+    unidadId: string
+    designacion: string
+    personaId: string
+    nombre: string
+  }[]
 }
 
 const cuenta = (c: { unidades: number; coeficiente: Decimal }): CuentaVista => ({
@@ -470,6 +479,17 @@ export async function verAsamblea(
             asamblea.acta?.estado === 'a_firmar' &&
             asamblea.acta.firmantes.some((f) => f.usuarioId === yo && !f.firmadoEn),
         },
+        propietariosSinCuenta:
+          puedeDirigir(acceso, asamblea) || acceso.roles.includes('administrador')
+            ? propietarios
+                .filter((p) => !p.usuarioId)
+                .map((p) => ({
+                  unidadId: p.unidadId,
+                  designacion: designacion.get(p.unidadId) ?? '',
+                  personaId: p.personaId,
+                  nombre: p.nombre,
+                }))
+            : [],
       }
     },
   )
@@ -505,4 +525,23 @@ export async function listarAsambleas(
       }
     },
   )
+}
+
+/** El `.ics` de una asamblea (FR-007), armado a la hora que se pide. */
+export async function icsDeAsamblea(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: { usuarioId: string; consorcioId: string; asambleaId: string },
+) {
+  return conAutorizacion(repositorio, reloj, { ...datos, accion: 'ver asambleas' }, async () => {
+    const asamblea = await prisma.asamblea.findFirst({
+      where: { id: datos.asambleaId },
+      include: {
+        consorcio: { select: { nombre: true } },
+        puntos: { select: { orden: true, titulo: true } },
+      },
+    })
+    if (!asamblea) throw new NoEncontrado('RF-29')
+    return textoIcs(eventoDe(asamblea, asamblea.puntos, asamblea.consorcio.nombre), reloj.ahora())
+  })
 }

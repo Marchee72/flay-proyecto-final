@@ -1,4 +1,23 @@
+import {
+  designarFirmantes,
+  enviarAFirmar,
+  firmar,
+  redactarResumen,
+} from '@/aplicacion/asambleas/acta'
+import {
+  abrir,
+  abrirPunto,
+  acreditar,
+  acreditarme,
+  cerrarPunto,
+  constituir,
+  designarAutoridades,
+  finalizar,
+} from '@/aplicacion/asambleas/conducir'
+import { convocar, crearAsamblea } from '@/aplicacion/asambleas/convocar'
+import { cargarVoto, votar } from '@/aplicacion/asambleas/votar'
 import { publicarNovedad } from '@/aplicacion/comunicacion/novedades'
+import { ALMACEN, GENERADOR_DOCUMENTOS } from '@/aplicacion/dependencias'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
@@ -84,6 +103,20 @@ const CONSORCISTAS: {
     correo: 'vecinoc3b@flay.demo',
     consorcio: 'C-C',
     unidad: '3B',
+  },
+  {
+    nombre: 'Sofia',
+    apellido: 'Sosa',
+    correo: 'vecinoc2a@flay.demo',
+    consorcio: 'C-C',
+    unidad: '2A',
+  },
+  {
+    nombre: 'Tomas',
+    apellido: 'Torres',
+    correo: 'vecinoc4c@flay.demo',
+    consorcio: 'C-C',
+    unidad: '4C',
   },
   {
     nombre: 'Diego',
@@ -327,6 +360,7 @@ export interface DemoSembrada {
   reclamos: number
   reservas: number
   novedades: number
+  asambleas: number
 }
 
 export async function sembrarDemo(
@@ -343,6 +377,7 @@ export async function sembrarDemo(
     reclamos: 0,
     reservas: 0,
     novedades: 0,
+    asambleas: 0,
   }
 
   // Los dos edificios nuevos, con el mismo generador que el juego de § 13.4.
@@ -540,12 +575,15 @@ export async function sembrarDemo(
     cuenta.novedades++
   }
 
+  cuenta.asambleas += await sembrarAsambleas(consorcios['C-C'], admin.id, usuarios)
+
   // Liquidar y publicar encolan avisos por correo a direcciones `@flay.demo`:
   // sin proveedor de correo terminarian «agotados» en la bandeja. Se dan por
   // despachados; los avisos en pantalla quedan igual.
   await prismaBase.$executeRaw`
     UPDATE "TrabajoPendiente" SET estado = 'despachado', actualizado_en = now()
-    WHERE tipo = 'notificacion' AND estado = 'pendiente' AND creado_en >= ${inicio}
+    WHERE tipo IN ('notificacion', 'correo_directo') AND estado = 'pendiente'
+      AND creado_en >= ${inicio}
   `
 
   return cuenta
@@ -684,4 +722,172 @@ async function asegurarConsorcista(
     VALUES (${unidad.id}::uuid, ${persona.id}::uuid, 'propietario'::"TipoOcupacion", daterange(${HOY}::date, NULL))
   `
   return usuario.id
+}
+
+/**
+ * Asambleas de la demo (016) en Pellegrini 1234, con los casos de uso reales:
+ * una ya realizada en julio —votada, finalizada y con el acta firmada por las
+ * cuatro autoridades— y otra convocada a futuro, para probar poderes y el
+ * calendario. Idempotente por título.
+ *
+ * La firma pide la contraseña del firmante; la semilla no la conoce, así que
+ * firma con un derivador que acepta cualquiera. Es lo único que se salta: el
+ * resto (padrón congelado, quórum, doble cómputo, huella) es el de verdad.
+ * Sin almacén de objetos configurado, el acta queda en redacción.
+ */
+async function sembrarAsambleas(
+  consorcioId: string,
+  adminId: string,
+  usuarios: Record<string, string>,
+): Promise<number> {
+  let sembradas = 0
+  const admin = { usuarioId: adminId, consorcioId }
+  const carolina = usuarios['vecinoc1a@flay.demo']
+  const pedro = usuarios['vecinoc3b@flay.demo']
+  const sofia = usuarios['vecinoc2a@flay.demo']
+  const tomas = usuarios['vecinoc4c@flay.demo']
+
+  const REALIZADA = 'Asamblea ordinaria de invierno'
+  if (!(await prismaBase.asamblea.findFirst({ where: { consorcioId, titulo: REALIZADA } }))) {
+    const reunion = new Date('2026-07-20T22:00:00Z') // 19:00 en Rosario
+    const enLaReunion = relojFijo('2026-07-20T22:10:00Z')
+    const antes = relojEn(ANIO, 6, 25)
+    const { asambleaId } = await crearAsamblea(repo, antes, {
+      ...admin,
+      tipo: 'ordinaria',
+      titulo: REALIZADA,
+      fechaHora: reunion,
+      lugar: 'SUM del edificio, planta baja',
+      administracionInvitada: true,
+      puntos: [
+        {
+          titulo: 'Aprobación de la rendición de cuentas del semestre',
+          modalidad: 'binaria',
+          mayoria: 'absoluta',
+        },
+        {
+          titulo: 'Presupuesto de pintura del frente',
+          modalidad: 'opcion_multiple',
+          opciones: ['Pinturas del Litoral', 'Fachadas Rosario', 'Postergar a 2027'],
+        },
+      ],
+    })
+    await convocar(repo, antes, { ...admin, asambleaId })
+    const de = (usuarioId: string) => ({ usuarioId, consorcioId, asambleaId })
+
+    await abrir(repo, enLaReunion, de(adminId))
+    for (const vecino of [carolina, pedro, sofia, tomas]) {
+      await acreditarme(repo, enLaReunion, de(vecino))
+    }
+    // El resto de los presentes, acreditados por la administración: alcanza la mitad más uno.
+    const ausentes = await prismaBase.unidadEnAsamblea.findMany({
+      where: { asambleaId, presente: false },
+      orderBy: { designacion: 'asc' },
+    })
+    for (const u of ausentes.slice(0, 11)) {
+      await acreditar(repo, enLaReunion, {
+        ...de(adminId),
+        unidadId: u.unidadId,
+        nombre: `Propietario/a ${u.designacion}`,
+        representacion: 'propietario',
+      })
+    }
+    await designarAutoridades(repo, enLaReunion, {
+      ...de(adminId),
+      presidenteId: carolina,
+      secretarioId: pedro,
+    })
+    await constituir(repo, enLaReunion, de(adminId))
+
+    const puntos = await prismaBase.puntoAsamblea.findMany({
+      where: { asambleaId },
+      include: { opciones: { orderBy: { orden: 'asc' } } },
+      orderBy: { orden: 'asc' },
+    })
+    const presentes = await prismaBase.unidadEnAsamblea.findMany({
+      where: { asambleaId, presente: true, sinVoto: false },
+      orderBy: { designacion: 'asc' },
+    })
+    for (const punto of puntos) {
+      await abrirPunto(repo, enLaReunion, { ...de(adminId), puntoId: punto.id })
+      for (const [j, u] of presentes.entries()) {
+        const eleccion =
+          punto.modalidad === 'binaria'
+            ? {
+                sentido: (j % 5 === 4 ? 'abstencion' : j % 4 === 3 ? 'negativo' : 'positivo') as
+                  | 'positivo'
+                  | 'negativo'
+                  | 'abstencion',
+              }
+            : { opcionId: punto.opciones[j % 3 === 2 ? 1 : 0].id }
+        const voto = { puntoId: punto.id, unidadId: u.unidadId, eleccion }
+        if (u.representanteId) {
+          await votar(repo, enLaReunion, { ...de(u.representanteId), ...voto })
+        } else {
+          await cargarVoto(repo, enLaReunion, { ...de(adminId), ...voto })
+        }
+      }
+      await cerrarPunto(repo, enLaReunion, { ...de(adminId), puntoId: punto.id })
+    }
+    await finalizar(repo, enLaReunion, de(adminId))
+
+    const despues = relojFijo('2026-07-22T15:00:00Z')
+    const resumenes = [
+      'Se presentó la rendición de enero a junio. Hubo preguntas sobre el gasto de ascensores, que la administración respondió con los comprobantes.',
+      'Se compararon tres presupuestos. La mayoría prefirió Pinturas del Litoral por plazo y garantía.',
+    ]
+    for (const [i, punto] of puntos.entries()) {
+      await redactarResumen(repo, despues, {
+        ...de(pedro),
+        puntoId: punto.id,
+        resumen: resumenes[i],
+      })
+    }
+    await designarFirmantes(repo, despues, { ...de(adminId), propietarios: [sofia, tomas] })
+    if (process.env.R2_ENDPOINT) {
+      const acta = { generador: GENERADOR_DOCUMENTOS, almacen: ALMACEN }
+      await enviarAFirmar(repo, despues, acta, de(adminId))
+      const cualquiera = { derivar: async (c: string) => c, verificar: async () => true }
+      for (const firmante of [carolina, pedro, sofia, tomas]) {
+        await firmar(
+          repo,
+          despues,
+          { ...acta, derivador: cualquiera },
+          { ...de(firmante), contrasena: '' },
+        )
+      }
+    }
+    sembradas++
+  }
+
+  const PROXIMA = 'Asamblea extraordinaria: impermeabilización de la terraza'
+  if (!(await prismaBase.asamblea.findFirst({ where: { consorcioId, titulo: PROXIMA } }))) {
+    const ahora = relojDelSistema.ahora()
+    const fecha = new Date(
+      Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth(), ahora.getUTCDate() + 21, 22),
+    )
+    const { asambleaId } = await crearAsamblea(repo, relojDelSistema, {
+      ...admin,
+      tipo: 'extraordinaria',
+      titulo: PROXIMA,
+      fechaHora: fecha,
+      lugar: 'SUM del edificio, planta baja',
+      administracionInvitada: true,
+      puntos: [
+        {
+          titulo: 'Aprobación de la obra de impermeabilización',
+          modalidad: 'binaria',
+          mayoria: 'dos_tercios',
+        },
+        {
+          titulo: 'Financiación con el fondo de reserva',
+          modalidad: 'binaria',
+          mayoria: 'absoluta',
+        },
+      ],
+    })
+    await convocar(repo, relojDelSistema, { ...admin, asambleaId })
+    sembradas++
+  }
+  return sembradas
 }

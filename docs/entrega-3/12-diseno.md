@@ -25,7 +25,7 @@ flowchart TD
         direction TB
         PRES["<b>Capa de presentacion</b><br/>Vistas renderizadas en servidor<br/>Manejo de formularios y validacion de entrada"]
         APP["<b>Capa de aplicacion</b><br/>Casos de uso · Orquestacion<br/>Autorizacion por rol y consorcio · Transacciones"]
-        DOM["<b>Capa de dominio</b><br/>Reglas de negocio RN-01 a RN-15<br/>Liquidacion · Prorrateo · Intereses · Imputacion"]
+        DOM["<b>Capa de dominio</b><br/>Reglas de negocio RN-01 a RN-21<br/>Liquidacion · Prorrateo · Intereses · Imputacion"]
         INFRA["<b>Capa de infraestructura</b><br/>Repositorios · Mapeador objeto-relacional<br/>Adaptadores de servicios externos"]
         PRES --> APP --> DOM
         APP --> INFRA
@@ -56,7 +56,7 @@ flowchart TD
 |---|---|---|
 | Presentación | Renderizar vistas, recibir formularios, validar formato de entrada, presentar errores comprensibles | No contiene reglas de negocio ni consulta la base directamente |
 | Aplicación | Orquestar casos de uso, **verificar autorización por rol y por consorcio**, abrir y cerrar transacciones, registrar auditoría | No implementa cálculos de negocio |
-| Dominio | Reglas RN-01 a RN-15, cálculo de prorrateo, intereses e imputación. **No conoce la base de datos ni el entorno web** | No accede a infraestructura: depende de interfaces que la infraestructura implementa |
+| Dominio | Reglas RN-01 a RN-21, cálculo de prorrateo, intereses e imputación. **No conoce la base de datos ni el entorno web** | No accede a infraestructura: depende de interfaces que la infraestructura implementa |
 | Infraestructura | Persistencia, almacenamiento de archivos, envío de correo, invocación de servicios externos | No decide nada del negocio |
 
 La regla de dependencia es unidireccional hacia el dominio: el dominio define las interfaces que
@@ -174,6 +174,11 @@ flowchart TB
         CU14["CU-14 Clasificar<br/>reclamo"]
         CU15["CU-15 Notificar<br/>por correo"]
         CU17["CU-17 Pagar expensa<br/>en línea"]
+        CU18["CU-18 Convocar<br/>asamblea"]
+        CU19["CU-19 Otorgar<br/>poder"]
+        CU20["CU-20 Conducir asamblea<br/>y votar"]
+        CU21["CU-21 Firmar<br/>acta"]
+        CU22["CU-22 Oponerse a una<br/>decision provisoria"]
     end
 
     ADM --> CU01
@@ -190,6 +195,13 @@ flowchart TB
     CON --> CU09
     CON --> CU10
     CON --> CU17
+    OPE --> CU18
+    ADM --> CU18
+    OPE --> CU20
+    CON --> CU19
+    CON --> CU20
+    CON --> CU21
+    CON --> CU22
     SIS --> CU13
     SIS --> CU14
     SIS --> CU15
@@ -198,6 +210,8 @@ flowchart TB
     CU07 -.->|include| CU14
     CU03 -.->|include| CU15
     CU08 -.->|include| CU15
+    CU18 -.->|include| CU15
+    CU20 -.->|include| CU15
 ```
 
 *Ilustración 12 — Diagrama de casos de uso.*
@@ -389,6 +403,47 @@ Permite a los consorcistas abonar de forma inmediata el saldo exigible consolida
 | 6a | Firma de notificación inválida | El webhook rechaza la solicitud con código 401 por seguridad |
 | 6b | Pago rechazado o cancelado | El intento se marca como rechazado y se notifica al usuario sin alterar saldos |
 
+### 4.8 CU-20 — Conducir la asamblea y votar
+
+Es el caso de uso central de las asambleas: la reunión es presencial y el sistema acompaña la sala
+desde el teléfono de cada presente. CU-18 (convocar), CU-19 (otorgar poder), CU-21 (firmar el acta)
+y CU-22 (oponerse) lo rodean.
+
+| | |
+|---|---|
+| **Actor principal** | Miembro del consejo o administración invitada (quien dirige); consorcistas presentes |
+| **Requerimientos** | RF-31, RN-16, RN-17, RN-19 |
+| **Objetivo que satisface** | OBJ-5 |
+| **Precondiciones** | La asamblea está convocada con su orden del día fijo (RN-18) y llegó la hora de la primera convocatoria |
+| **Postcondición de éxito** | Cada punto queda cerrado con su resultado y su conteo por unidades y por coeficientes; la asamblea queda finalizada y el acta nace en redacción |
+| **Postcondición de fracaso** | Sin quórum, la asamblea no se constituye y se puede cancelar; ningún voto se registra |
+
+**Flujo principal**
+
+1. Quien dirige abre la asamblea. El sistema congela el padrón: una fila por unidad vigente, con su
+   coeficiente y si está sin voto por mora (RN-19).
+2. Cada presente se acredita por las unidades que representa, como propietario o apoderado (RN-20).
+   Quien dirige acredita a quien no puede hacerlo solo.
+3. Quien dirige designa presidente y secretario entre los presentes y constituye la asamblea. El
+   sistema verifica el quórum: más de la mitad de los coeficientes en primera convocatoria; con los
+   presentes, media hora después.
+4. Quien dirige abre el primer punto. Todos los presentes lo ven en su pantalla, que se actualiza sola.
+5. Cada presente vota por cada unidad que representa. El conteo se ve en vivo, por unidades y por
+   coeficientes; el voto emitido no se modifica (RN-17).
+6. Quien dirige carga el voto de quien no tiene teléfono y cierra el punto. El sistema calcula el
+   resultado por doble mayoría sobre la base que fija el consorcio (RN-16) y lo fija.
+7. Se repiten los pasos 4 a 6 por cada punto, en el orden del día. Quien dirige finaliza la asamblea.
+
+**Flujos alternativos**
+
+| # | Condición | Comportamiento |
+|---|---|---|
+| 3a | No hay quórum de primera convocatoria | Se informa el porcentaje presente y desde qué hora se puede constituir en segunda |
+| 5a | La unidad ya votó o no tiene voto | Se rechaza el voto con el motivo; el conteo no cambia |
+| 6a | Con la regla de la totalidad, lo aprueban los presentes pero no el total | El punto queda provisorio, se notifica a los ausentes y corre el plazo de oposición (RN-21, CU-22) |
+| 6b | Opción múltiple sin una opción ganadora en los dos cómputos, o con empate | El punto queda sin decisión |
+| 7a | Quien dirige se desconecta | Otro miembro del consejo, o la administración invitada, toma la dirección; los votos no se pierden |
+
 ---
 
 ## 5. Diseño de la interfaz
@@ -504,6 +559,10 @@ flowchart TD
 | Cambio de estado de reclamo | Transición de estado | Autor del reclamo y responsable | RF-14 |
 | Reserva confirmada o rechazada | Cambio de estado | Solicitante | RF-14 |
 | Novedad publicada | Alta de novedad | Consorcistas del consorcio | RF-18 |
+| Asamblea convocada o cancelada | Envío o cancelación de la convocatoria | Propietarios vigentes, por correo también los que no tienen cuenta; la administración si está invitada | RF-29 |
+| Poder otorgado o revocado | Alta o revocación del poder | Propietario y apoderado | RF-30 |
+| Decisión provisoria | Cierre de un punto aprobado solo por los presentes | Propietarios de las unidades ausentes con voto | RF-33 |
+| Acta a firmar, recordatorio y acta firmada | Envío a firmar; diez días sin todas las firmas; última firma | Firmantes y quien dirigió; al firmarse, propietarios y administración | RF-32 |
 
 El envío es asincrónico: se persiste la notificación en estado pendiente y una tarea programada la
 despacha, reintentando ante fallas. Una falla del servicio de correo no debe hacer fallar la
@@ -770,6 +829,11 @@ Verificación de que cada requerimiento tiene diseño y de que ningún objetivo 
 | RF-26 | Seguridad | Auditoria | Transversal | 1 |
 | RF-27 | OBJ-5.3 | ConversacionAsistente, MensajeAsistente | CU-16 | 3 |
 | RF-28 | OBJ-4.1 | IntentoDePago, Pago, PagoImputacion, CredencialPagoAdministradora | CU-17 | 3 |
+| RF-29 | OBJ-5 | Asamblea, PuntoAsamblea, OpcionPunto | CU-18 | 3 |
+| RF-30 | OBJ-5 | Poder | CU-19 | 3 |
+| RF-31 | OBJ-5 | UnidadEnAsamblea, VotoAsamblea | CU-20 | 3 |
+| RF-32 | OBJ-5.1 | ActaAsamblea, FirmanteActa, DocumentoConsorcio | CU-21 | 3 |
+| RF-33 | OBJ-5 | OposicionDecision | CU-22 | 3 |
 
 ### Cobertura de objetivos
 
@@ -788,7 +852,8 @@ Verificación de que cada requerimiento tiene diseño y de que ningún objetivo 
 | OBJ-4.2 Evolución del gasto y desvíos | RF-23 | Cubierto |
 | OBJ-4.3 Histórico por proveedor | RF-17, RF-24 | Cubierto |
 | OBJ-4.4 Tiempo de resolución | RF-25 | Cubierto |
-| OBJ-5.1 Fuente única de información | RF-18, RF-19 | Cubierto |
+| OBJ-5 Centralizar la comunicación con los consorcistas | RF-03, RF-29, RF-30, RF-31, RF-33 | Cubierto |
+| OBJ-5.1 Fuente única de información | RF-18, RF-19, RF-32 | Cubierto |
 | OBJ-5.2 Reservas con reglas explícitas | RF-15, RF-16 | Cubierto |
 | OBJ-5.3 Consulta en lenguaje natural | RF-20 | Cubierto |
 

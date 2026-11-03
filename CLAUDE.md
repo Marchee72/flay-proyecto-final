@@ -114,7 +114,7 @@ que permite probar la liquidación sin base de datos.
 - **Presentación**: vistas y formularios. Sin reglas de negocio, sin acceso directo a la base.
 - **Aplicación**: orquesta casos de uso, verifica autorización por rol y por consorcio, abre
   transacciones, registra auditoría. Sin cálculos de negocio.
-- **Dominio**: RN-01 a RN-15 — prorrateo, intereses, imputación.
+- **Dominio**: RN-01 a RN-21 — prorrateo, intereses, imputación, asambleas.
 - **Infraestructura**: repositorios, ORM, almacenamiento de objetos, correo, servicios externos.
 
 ### Stack
@@ -172,7 +172,7 @@ comprensibles (RNF-10), auditoría registrada si toca datos económicos, documen
 
 ## Lo que no se adivina leyendo el código
 
-Veintiséis decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
+Las decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
 
 1. **El orden de las semillas y las pruebas.** `npm run test:integracion` **vacía** las tablas de
    negocio, semilla incluida: en una base compartida no hay forma de distinguir lo sembrado de lo
@@ -338,6 +338,17 @@ Veintiséis decisiones que costaron una vuelta y conviene no volver a tomar desd
     `escalonadoDesdeTramos` (`src/dominio/liquidacion/vencimientos.ts`), que usan la acción y la
     página de `vencimientos/`. El dominio, la validación (1er tramo 0 %, mora > recargo más alto), el
     congelado, el PDF y los pagos siguen en el modelo de boleta, intactos.
+
+28. **La asamblea se protege en la base, y se borra solo por arriba (016).** Un voto no se modifica
+    (`fn_voto_inmutable`), el orden del día queda fijo desde la convocatoria y nada cambia desde
+    `finalizada`: lo hacen disparadores, no la aplicación. Ningún hijo (punto, padrón, voto, poder,
+    acta, firmante) se deja borrar mientras su padre exista; caen en cascada al borrar la
+    `Asamblea`, y por eso `limpiar()` borra solo esa tabla. Todo cómputo (quórum, doble mayoría,
+    provisoria) sale del padrón **congelado al abrir** (`UnidadEnAsamblea`), nunca del vivo: un pago o
+    un cambio de coeficiente durante la reunión no mueve un resultado. La mora para «sin voto» la
+    da `saldoImpagoPorUnidad().vencidos`. La decisión provisoria (CCyC 2060) es **derivada** de la
+    fecha y las oposiciones, sin cron; el único cron nuevo es el recordatorio de firmas
+    (`/api/tareas/asambleas`).
 
 ## Notas
 

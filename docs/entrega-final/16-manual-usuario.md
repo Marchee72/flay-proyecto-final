@@ -2,7 +2,7 @@
 
 > **Requisito de la cátedra (Última entrega, punto 16):** *"Elaboración de los manuales de usuario."*
 
-> ✅ **Estado: completo y definitivo.** Este documento constituye el cuerpo normativo y operativo de manuales de usuario del sistema Flay — Tu consorcio online. Su contenido ha sido desarrollado de forma exhaustiva para cada rol operativo (Administrador, Operador/Consejo de Propietarios y Consorcista), fundamentado en la arquitectura de software desplegada, las pantallas reales implementadas en Next.js 15 dentro de `src/app/(panel)` y `src/app/(sesion)`, las reglas de negocio vinculantes (RN-01 a RN-15) y la validación empírica sobre los consorcios piloto "Las Heras 2140" (12 unidades funcionales) y "Belgrano 1250" (96 unidades funcionales), administrados por la organización Grupo Delta en la ciudad de Rosario.
+> ✅ **Estado: completo y definitivo.** Este documento constituye el cuerpo normativo y operativo de manuales de usuario del sistema Flay — Tu consorcio online. Su contenido ha sido desarrollado de forma exhaustiva para cada rol operativo (Administrador, Operador/Consejo de Propietarios y Consorcista), fundamentado en la arquitectura de software desplegada, las pantallas reales implementadas en Next.js 15 dentro de `src/app/(panel)` y `src/app/(sesion)`, las reglas de negocio vinculantes (RN-01 a RN-21) y la validación empírica sobre los consorcios piloto "Las Heras 2140" (12 unidades funcionales) y "Belgrano 1250" (96 unidades funcionales), administrados por la organización Grupo Delta en la ciudad de Rosario.
 
 ---
 
@@ -674,6 +674,45 @@ El operador puede publicar avisos breves de convivencia o mantenimiento preventi
 
 ---
 
+### 16.3.6 Convocar y conducir una asamblea de propietarios
+
+La asamblea es presencial: la gente debate en la sala y Flay acompaña desde el teléfono. La convoca
+un miembro del consejo o la administración; si convoca el consejo, elige si invita a la
+administración.
+
+**Convocar**
+1. Ingrese a **Asambleas** → **Nueva asamblea**. Cargue tipo, fecha y hora de la primera
+   convocatoria (la segunda es media hora después), lugar y el orden del día, punto por punto. Para
+   cada punto elija si se vota *positivo, negativo o abstención* —con la mayoría que necesita:
+   absoluta, dos tercios o unanimidad— o *entre opciones*, donde gana la más votada.
+2. Revise el borrador y presione **Convocar**. Desde ese momento el orden del día no cambia (solo se
+   puede tratar lo que figura en él). Flay avisa a todos los propietarios en el sistema y por correo,
+   con el enlace para **agregar el evento al calendario**. Si algún propietario no tiene cuenta ni
+   correo, la pantalla lo indica para convocarlo por otro medio.
+3. Si un propietario sin cuenta le entrega un poder en papel, regístrelo en **Poderes**.
+
+**El día de la reunión**
+1. A la hora de la primera convocatoria presione **Abrir la asamblea**. Cada presente marca
+   **Estoy presente** en su teléfono; a quien no puede, acredítelo usted desde **Dirección**.
+2. Designe presidente y secretario entre los presentes y presione **Verificar quórum y
+   constituir**. Con más de la mitad de los coeficientes se constituye en primera convocatoria;
+   media hora después, con los presentes.
+3. Abra cada punto en orden. Los presentes votan desde el teléfono y el conteo se ve en vivo, por
+   unidades y por coeficientes. Cargue a mano el voto de quien no tiene teléfono. Un voto emitido no
+   se modifica.
+4. Cierre el punto para fijar su resultado y, tratado todo el orden del día, **Finalice la
+   asamblea**. Si se desconecta, otro miembro del consejo puede **Tomar la dirección**.
+
+**El acta**
+1. En **Acta**, el secretario redacta el resumen de lo debatido en cada punto.
+2. Quien dirigió elige a los dos propietarios presentes que firman junto con el presidente y el
+   secretario, y presiona **Enviar a firmar**: el texto queda fijo, con su huella.
+3. Cada firmante confirma su contraseña y presiona **Firmar el acta**. Con las cuatro firmas, el acta
+   queda en **Documentación**. A los diez días sin todas las firmas, Flay lo recuerda; un firmante que
+   no puede firmar se reemplaza por otro presente.
+
+---
+
 ## 16.4 Manual del Consorcista
 
 Bienvenido a **Flay**, la plataforma digital de tu consorcio. Esta guía te explica cómo consultar tus expensas, auditar las cuentas del edificio, enviar reclamos y reservar los espacios comunes desde tu teléfono celular o computadora personal de manera sencilla, transparente y sin complicaciones.
@@ -826,6 +865,23 @@ Si detectás un problema en el edificio (ejemplo: filtración en una pared, asce
    - Tu número de teléfono celular de contacto ante urgencias edilicias.
    - Tu correo electrónico principal.
    - Las preferencias de avisos por correo electrónico (notificación de emisión de expensas, aviso de novedades publicadas o recordatorio de reserva de SUM).
+
+---
+
+### 16.4.10 Cómo participar de una asamblea
+
+1. **La convocatoria.** Te llega un aviso con la fecha, el lugar y el orden del día. Tocá **Agregar a
+   Google Calendar** o **Descargar .ics** para agendarla.
+2. **Si no podés ir**, en la asamblea tocá **Poderes**, elegí tu unidad y a la persona que va a votar
+   por vos (por ejemplo, tu inquilino) y **Otorgá el poder**. Vale solo para esa asamblea y lo podés
+   revocar hasta que se abra.
+3. **En la reunión**, abrí la asamblea en el teléfono y tocá **Estoy presente**. Cuando se abre un
+   punto, aparece solo en tu pantalla: elegí tu voto. Se vota por unidad, y una vez emitido el voto
+   no se cambia. Si tu unidad debe más expensas de las que admite el reglamento, figura sin voto.
+4. **Si te toca firmar el acta**, te llega el aviso: entrá, revisala y firmala con tu contraseña.
+5. **Si estuviste ausente** y el consorcio cuenta la mayoría sobre el total, puede llegarte el aviso de
+   una *decisión provisoria*. Tenés quince días para **Oponerte** desde la asamblea; si no lo hacés,
+   la decisión queda firme.
 
 ---
 

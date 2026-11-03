@@ -82,7 +82,7 @@ try {
 
   const demo = await sembrarDemo(base, { claveDerivada })
   console.log(
-    `Demo: consorcios ${demo.consorcios} · proveedores nuevos ${demo.proveedores} · gastos ${demo.gastos} · liquidaciones ${demo.liquidaciones} · pagos ${demo.pagos} · reclamos ${demo.reclamos} · reservas ${demo.reservas} · novedades ${demo.novedades}.`,
+    `Demo: consorcios ${demo.consorcios} · proveedores nuevos ${demo.proveedores} · gastos ${demo.gastos} · liquidaciones ${demo.liquidaciones} · pagos ${demo.pagos} · reclamos ${demo.reclamos} · reservas ${demo.reservas} · novedades ${demo.novedades} · asambleas ${demo.asambleas}.`,
   )
   console.log('Para cargar el volumen anual: npm run semilla:volumen')
 } finally {

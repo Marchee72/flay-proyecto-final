@@ -43,6 +43,12 @@ sea.
 | RN-13 | La nómina nominada de deudores solo es visible para el administrador y el consejo de propietarios | Autorización por rol; el consorcista ve únicamente el dato agregado |
 | RN-14 | Ninguna salida de un servicio automático impacta en un dato económico sin confirmación humana | `ExtraccionComprobante` es una entidad separada del `Gasto`; el gasto se crea recién al confirmar |
 | RN-15 | Toda operación que modifica un dato económico queda registrada en la bitácora de auditoría | Disparadores de base de datos sobre las tablas involucradas |
+| RN-16 | En una asamblea se vota por unidad, y cada punto se decide por doble cómputo: por cantidad de unidades y por coeficientes (CCyC art. 2060). La base son los presentes con voto o la totalidad de las unidades, según lo que fije el consorcio | Función de dominio sobre el padrón congelado al abrir la asamblea |
+| RN-17 | Una unidad vota una sola vez cada punto, solo mientras el punto está en votación, y el voto emitido no se modifica ni se borra | Clave única (punto, unidad) y disparador de inmutabilidad |
+| RN-18 | Desde la convocatoria, el orden del día y los datos de la asamblea no cambian: tratar un tema que no estaba es nulo (CCyC art. 2059) | Disparador sobre la asamblea, sus puntos y sus opciones |
+| RN-19 | La unidad que adeuda más expensas que el umbral del consorcio no vota, pero cuenta para el quórum | Se evalúa una vez al abrir la asamblea y se congela en el padrón |
+| RN-20 | Un poder vale para una sola asamblea, lo otorga el propietario vigente y un apoderado no representa más unidades que el tope del consorcio | Índice único parcial por unidad; tope contado bajo candado de transacción |
+| RN-21 | Con la regla de la totalidad, lo que aprueba solo la mayoría de los presentes queda provisorio quince días: se notifica a los ausentes, y la decisión cae si sus oposiciones impiden la mayoría sobre el total (CCyC art. 2060) | Estado derivado de la fecha y de las oposiciones; oposición validada por disparador |
 
 ## 7.3 Modelo conceptual
 
@@ -93,6 +99,20 @@ erDiagram
     ESPACIO_COMUN ||--o{ RESERVA : "se reserva en"
     DOCUMENTO_CONSORCIO ||--o{ FRAGMENTO_DOCUMENTO : "se indexa en"
     DOCUMENTO_CONSORCIO ||--o{ CONSULTA_DOCUMENTAL : "responde"
+
+    CONSORCIO ||--o{ ASAMBLEA : "convoca"
+    ASAMBLEA ||--o{ PUNTO_ASAMBLEA : "trata"
+    PUNTO_ASAMBLEA ||--o{ OPCION_PUNTO : "ofrece"
+    ASAMBLEA ||--o{ UNIDAD_EN_ASAMBLEA : "congela el padron en"
+    UNIDAD ||--o{ UNIDAD_EN_ASAMBLEA : "asiste como"
+    ASAMBLEA ||--o{ PODER : "admite"
+    UNIDAD ||--o{ PODER : "es representada por"
+    PUNTO_ASAMBLEA ||--o{ VOTO_ASAMBLEA : "recibe"
+    UNIDAD ||--o{ VOTO_ASAMBLEA : "emite"
+    PUNTO_ASAMBLEA ||--o{ OPOSICION_DECISION : "admite"
+    ASAMBLEA ||--o| ACTA_ASAMBLEA : "se documenta en"
+    ACTA_ASAMBLEA ||--o{ FIRMANTE_ACTA : "es firmada por"
+    ACTA_ASAMBLEA |o--o| DOCUMENTO_CONSORCIO : "se publica como"
 ```
 
 *Ilustración 8 — Diagrama entidad-relación.*
@@ -110,6 +130,7 @@ erDiagram
 | Reservas | `Reserva` | RF-16 |
 | Comunicación | `Novedad`, `DocumentoConsorcio`, `Notificacion` | RF-14, RF-18, RF-19 |
 | Asistencia automática | `ExtraccionComprobante`, `SugerenciaReclamo`, `FragmentoDocumento`, `ConsultaDocumental` | RF-06, RF-12, RF-20 |
+| Asambleas | `Asamblea`, `PuntoAsamblea`, `OpcionPunto`, `Poder`, `UnidadEnAsamblea`, `VotoAsamblea`, `OposicionDecision`, `ActaAsamblea`, `FirmanteActa` | RF-29 a RF-33 |
 | Auditoría | `Auditoria` | RF-26 |
 
 ## 7.4 Diccionario de datos
@@ -560,6 +581,38 @@ decidir si conviene mantener, ajustar o retirar la función.
 
 El campo `sin_respaldo` registra explícitamente los casos en que el sistema se abstuvo de responder.
 Es la evidencia de que la función no improvisa cuando la documentación no contiene la respuesta.
+
+### Asambleas
+
+Las nueve entidades llevan `consorcio_id`: quedan aisladas igual que el resto (RN-12). Las
+referencias a usuarios y personas se guardan como identificadores, como el responsable de un
+reclamo.
+
+| `Asamblea` | Tipo | Restricción | Descripción |
+|---|---|---|---|
+| id | uuid | PK | Identificador |
+| consorcio_id | uuid | FK, NN | Consorcio |
+| tipo | enumerado | NN | ordinaria, extraordinaria |
+| titulo | texto(200) | NN | Título |
+| fecha_hora | marca temporal | NN | Primera convocatoria; la segunda es media hora después (reglamento, art. 20) |
+| lugar | texto(300) | NN | Lugar de la reunión presencial |
+| organizador_id | uuid | NN | Quien la creó: consejo o administración |
+| administracion_invitada | booleano | NN | Si la administración participa; sin invitación, la ve pero no la dirige |
+| estado | enumerado | NN | borrador, convocada, en curso, finalizada, acta firmada, cancelada; sin retroceso |
+| convocatoria_que_rige | enumerado | | primera o segunda; se fija al constituir |
+| dirige_id, presidente_id, secretario_id | uuid | | Quien dirige y las autoridades, elegidas entre los presentes |
+| regla_mayoria, anticipacion_dias, tope_apoderado, umbral_sin_voto | varios | | Reglas del consorcio copiadas al convocar (RN-19, RN-20, RN-21) |
+
+| Entidad | Qué guarda | Restricciones principales |
+|---|---|---|
+| `PuntoAsamblea` | Punto del orden del día: modalidad (positivo/negativo/abstención u opciones), mayoría requerida, estado, resultado y conteo congelado, si es provisorio y hasta cuándo, y el resumen del acta | Orden único por asamblea; a lo sumo un punto en votación; resultado escrito una vez (RN-18) |
+| `OpcionPunto` | Opción de un punto de opción múltiple | Solo en borrador |
+| `Poder` | Poder de un propietario a otro usuario para una asamblea, en línea o recibido en papel | Uno vigente por unidad; tope por apoderado (RN-20) |
+| `UnidadEnAsamblea` | Padrón congelado al abrir: coeficiente copiado, sin voto por mora, presencia y quién la representa | Una fila por unidad; la presencia solo pasa de ausente a presente (RN-19) |
+| `VotoAsamblea` | Voto de una unidad en un punto: sentido u opción, quién lo emitió y si fue propio o cargado por quien dirige | Único por (punto, unidad); inmutable (RN-17) |
+| `OposicionDecision` | Oposición de un ausente a una decisión provisoria | Única por (punto, unidad); dentro del plazo y solo de ausentes con voto (RN-21) |
+| `ActaAsamblea` | Estado del acta (en redacción, a firmar, firmada), huella SHA-256 del contenido enviado a firmar y documento publicado | Una por asamblea; el contenido no cambia desde que se envía a firmar |
+| `FirmanteActa` | Presidente, secretario y dos propietarios: cuándo firmó cada uno y sobre qué huella | La firma se registra una vez; solo se reemplaza a un firmante pendiente |
 
 ### Auditoria
 

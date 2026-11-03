@@ -99,7 +99,8 @@ deducen de la spec.
 
 - **Decision**: con la regla `totalidad`, un punto binario que se aprueba sobre la base de los
   presentes pero no sobre la del total queda `provisorio = true`, con
-  `vencePlazoOposicion = aviso + 15 días`.
+  `vencePlazoOposicion = cerradoEn + 15 días corridos`. Es un instante determinístico: el aviso
+  nace en la misma transacción, aunque el correo salga después por la cola.
 
   El estado vigente (`firme`, `provisoria` o `caida`) es **derivado**: lo calcula
   `src/dominio/asambleas/provisoria.ts` a partir de la fecha, los votos y las oposiciones.
@@ -118,7 +119,7 @@ deducen de la spec.
 - **Decision**:
   - Los usuarios reciben el aviso por `notificar` (`src/aplicacion/comunicacion/notificar.ts`), con
     tipos nuevos en `TipoNotificacion`: `asamblea_convocada`, `asamblea_cancelada`,
-    `poder_otorgado`, `decision_provisoria`, `acta_a_firmar` y `acta_firmada`.
+    `poder_otorgado`, `poder_revocado`, `decision_provisoria`, `acta_a_firmar` y `acta_firmada`.
   - Los propietarios con `Persona.correo` y sin `Usuario` reciben el mismo texto por un tipo de
     trabajo nuevo, `correo_directo`, con carga `{ destino, titulo, cuerpo }`, despachado con
     `Notificador.enviarNotificacion`.
@@ -162,7 +163,11 @@ deducen de la spec.
 - **Rationale**:
   - Pedir la contraseña otra vez es lo que distingue «firmar» de «estar logueado» y fortalece la
     prueba de la firma electrónica (Ley 25.506, art. 5).
-  - La huella hace detectable cualquier alteración (SC-007).
+  - La huella hace detectable cualquier alteración (SC-007). Para que se pueda comprobar,
+    `verificarHuella` recalcula el SHA-256 de los PDF guardados y la pantalla del acta muestra la
+    huella y el resultado («íntegra» o «alterada»).
+  - Si un firmante pendiente pierde el usuario, se lo **reemplaza** en el mismo rol y las firmas
+    ya hechas se mantienen, porque firmaron el mismo `hashContenido`.
 - **Alternatives considered**: firma digital con certificado (descartada por el usuario); firmar
   solo con la sesión activa (evidencia más débil); generar el PDF por la cola (innecesario para un
   documento).
@@ -172,6 +177,16 @@ deducen de la spec.
 - **Decision**: una tarea diaria nueva, `/api/tareas/asambleas`, protegida con `CRON_SECRET` igual
   que `refrescar-vistas`, entra en `vercel.json`. Busca actas `a_firmar` con más de 10 días y avisa
   una sola vez (`recordatorioEnviadoEn`).
+  - **Cómo cruza consorcios sin romper el Principio I**: la tarea no tiene usuario ni contexto. Un
+    primer paso con `prismaBase`, como hace `drenar`, lista solo `{ id, consorcioId }` filtrando
+    por estado y fecha, **sin** `consorcioId` en el `where`. Después, cada acta se procesa dentro
+    de `enConsorcio(consorcioId, …)` con el cliente aislado: la lectura de firmantes, `notificar` y
+    la marca del recordatorio. Ningún dato de negocio se lee fuera del aislamiento.
+  - Si `pruebas/dominio/filtro-unico.spec.ts` detecta el `consorcioId` del `select`, el archivo
+    entra a `PERMITIDOS` con su razón: «la tarea programada enumera actas vencidas de todos los
+    consorcios para entrar a cada uno por `enConsorcio`; no lee datos de negocio fuera de él».
+    También pueden necesitar entrada `configuracion.ts` y `convocar.ts`, que leen y escriben las
+    reglas de `Consorcio` por su propio identificador, igual que `regla-vencimientos.ts`.
 - **Rationale**: es un aviso que tiene que salir aunque nadie navegue, así que el drenaje
   oportunista no alcanza. Si el plan de Vercel no admite un segundo cron, se encadena dentro de la
   tarea diaria existente.
@@ -185,7 +200,7 @@ deducen de la spec.
   2. **Constituir**: quien dirige declara la asamblea constituida. `quorum.ts` decide con el reloj:
      - entre la primera convocatoria y la segunda (`fechaHora + 30 min`, derivada y sin columna),
        solo si coeficientes presentes `> 50 %`;
-     - desde la segunda, siempre.
+     - desde la segunda, siempre que haya al menos una unidad presente con voto.
 
      Se guardan `constituidaEn` y `convocatoriaQueRige`. Los puntos solo se abren con la asamblea
      constituida. La acreditación sigue abierta después, para quien llega tarde.
@@ -199,7 +214,8 @@ deducen de la spec.
   `pg_advisory_xact_lock(hashtext(asambleaId || apoderadoId))`, para que dos otorgamientos
   simultáneos no lo superen. Se revoca hasta que empieza la acreditación. Quien otorga tiene que
   ser propietario vigente (`ocupaUnidad`); el apoderado, un usuario con habilitación vigente en el
-  consorcio.
+  consorcio. Al acreditar por poder se vuelve a verificar con `ocupaUnidad(otorgante, unidad, hoy)`
+  que el otorgante siga siendo propietario: un poder de quien ya no lo es no vale.
 - **Rationale**: no hay restricción declarativa que cuente filas por apoderado, y el candado de
   transacción es lo más chico que evita la carrera.
 

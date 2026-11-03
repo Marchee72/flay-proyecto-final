@@ -19,7 +19,8 @@ Lo que tiene que dar:
   - no constituye antes de la hora;
   - constituye en primera convocatoria con coeficiente presente > 50 % y no lo hace con
     50,00000000 %;
-  - desde `+30 min` constituye siempre, en segunda.
+  - desde `+30 min` constituye en segunda con cualquier porcentaje, siempre que haya al menos una
+    unidad presente con voto.
 - **Binario**: los tres umbrales con las dos bases.
   - Caso testigo: 4 unidades de coeficientes 40/30/20/10. Votan 40 positivo y 30 negativo; la de
     20 se abstiene; la de 10 está ausente.

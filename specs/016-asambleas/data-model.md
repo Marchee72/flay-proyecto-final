@@ -26,7 +26,7 @@ consulta directo, sin pasar por el padre (nota 10 de `CLAUDE.md`). Toda tabla nu
 **Enums**:
 
 - `TipoNotificacion` suma `asamblea_convocada`, `asamblea_cancelada`, `poder_otorgado`,
-  `decision_provisoria`, `acta_a_firmar` y `acta_firmada`.
+  `poder_revocado`, `decision_provisoria`, `acta_a_firmar` y `acta_firmada`.
 - `TipoTrabajo` suma `correo_directo`.
 
 ## Entidades nuevas
@@ -46,7 +46,7 @@ consulta directo, sin pasar por el padre (nota 10 de `CLAUDE.md`). Toda tabla nu
 | `convocadaEn`, `canceladaEn`, `abiertaEn`, `constituidaEn`, `finalizadaEn` | `Timestamptz?` | |
 | `convocatoriaQueRige` | `ConvocatoriaAsamblea?` (`primera`, `segunda`) | se fija al constituir |
 | `dirigeId` | UUID? → `Usuario` | quien dirige ahora; cambia al tomar la dirección |
-| `presidenteId`, `secretarioId` | UUID? → `Persona` | elegidos entre los presentes |
+| `presidenteId`, `secretarioId` | UUID? → `Usuario` | elegidos entre los representantes presentes con usuario (`UnidadEnAsamblea.representanteId`); los dos firman el acta |
 | `reglaMayoria`, `anticipacionDias`, `topeApoderado`, `umbralSinVoto` | | copiados del consorcio al convocar |
 
 **Validaciones**:
@@ -81,7 +81,7 @@ borrador ──convocar──▶ convocada ──abrir──▶ en_curso ──f
 | `opcionGanadoraId` | UUID? → `OpcionPunto` | solo `opcion_multiple` |
 | `conteo` | `JsonB?` | conteos por opción en unidades y coeficientes (en texto) y bases, congelados al cerrar para el acta |
 | `provisorio` | `Boolean` | default `false` |
-| `vencePlazoOposicion` | `Timestamptz?` | aviso + 15 días |
+| `vencePlazoOposicion` | `Timestamptz?` | `cerradoEn` + 15 días corridos; el aviso sale en la misma transacción |
 | `resumen` | `Text?` | se redacta con el acta `en_redaccion` |
 
 Para los puntos binarios, las opciones `positivo`, `negativo` y `abstencion` son fijas y no se
@@ -190,6 +190,11 @@ rechaza cambios en `resumen` de los puntos y en los firmantes.
 
 Los firmantes se designan en `en_redaccion`. Firmar es un único `UPDATE` de `firmadoEn` y
 `hashFirmado` sobre la fila propia: el disparador rechaza volver a firmar o cambiarlos después.
+
+**Reemplazo**: con el acta `a_firmar`, el disparador admite un solo cambio, el de `usuarioId` en
+una fila **sin firmar** (`firmadoEn IS NULL`), que deja el rol igual. Se registra el campo
+`reemplazaA` (UUID? → `Usuario`, el anterior). Una fila firmada no admite ningún cambio. El
+reemplazo queda en la bitácora por `fn_auditar`.
 Cuando firma el último, la aplicación genera el PDF final y crea el `DocumentoConsorcio` en la
 misma transacción (research R-09).
 

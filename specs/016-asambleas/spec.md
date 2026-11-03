@@ -108,18 +108,20 @@ voto emitido se puede cambiar.
 
 **Acceptance Scenarios**:
 
-1. **Given** presentes que suman más del 50 % de los coeficientes a la hora de la primera
-   convocatoria, **When** se abre la asamblea, **Then** sesiona en primera convocatoria.
-2. **Given** presentes que no llegan al 50 % a la hora de la primera convocatoria, **When** se abre
-   la asamblea, **Then** no puede sesionar. **When** se la abre 30 minutos después, **Then**
-   sesiona en segunda convocatoria con los presentes.
+1. **Given** una asamblea abierta y en acreditación, con presentes que suman más del 50 % de los
+   coeficientes a la hora de la primera convocatoria, **When** quien dirige la constituye,
+   **Then** sesiona en primera convocatoria.
+2. **Given** presentes que no llegan al 50 % a la hora de la primera convocatoria, **When** quien
+   dirige intenta constituirla, **Then** no puede. **When** lo intenta 30 minutos después, con al
+   menos una unidad presente con voto, **Then** sesiona en segunda convocatoria con los presentes.
 3. **Given** un punto abierto, **When** un presente vota su unidad desde el teléfono, **Then** el
    voto aparece en la pantalla de todos en pocos segundos, y la unidad ya no puede volver a votar
    ese punto.
 4. **Given** una unidad que ya votó, **When** quien dirige intenta cargar un voto manual para esa
    unidad, **Then** se rechaza.
-5. **Given** una unidad con varios propietarios presentes, **When** uno vota, **Then** ese es el
-   voto de la unidad y los demás ya no pueden votar ese punto.
+5. **Given** una unidad con varios propietarios presentes, **When** se acreditan, **Then** la
+   representa el primero que se acredita, y solo esa persona vota por la unidad en todos los
+   puntos.
 6. **Given** una unidad que debe más de dos expensas, **When** está presente, **Then** cuenta para
    el quórum, se la ve marcada sin voto y no puede votar.
 7. **Given** un punto binario que pide mayoría absoluta, con la regla «presentes», **When** se
@@ -276,8 +278,10 @@ rechaza. Cambiar la regla a «totalidad» y verificar que la próxima asamblea l
 - **Quien dirige pierde la conexión.** Otro miembro del consejo, o la administración si está
   invitada, puede tomar la dirección. Los votos ya emitidos no se pierden.
 - **Punto sin votos.** Al cerrarse, queda sin decisión, y así lo consigna el acta.
-- **Un firmante deja de tener usuario o habilitación antes de firmar.** Quien dirigió designa a
-  otro propietario presente como firmante.
+- **Un firmante deja de tener usuario o habilitación antes de firmar.** Con el acta a firmar,
+  quien dirigió reemplaza a ese firmante pendiente por otro presente con usuario, en el mismo rol.
+  Las firmas ya hechas se mantienen, porque el contenido no cambió, y el reemplazo queda en la
+  bitácora.
 - **Aislamiento.** Ningún usuario ve, vota ni firma asambleas de un consorcio donde no tiene
   habilitación vigente. Un poder no da acceso a otros datos del consorcio.
 
@@ -330,14 +334,19 @@ rechaza. Cambiar la regla a «totalidad» y verificar que la próxima asamblea l
   finalizar una asamblea, y cualquiera de ellos DEBE poder tomar la dirección.
 - **FR-016**: Al abrir, el sistema DEBE permitir registrar la asistencia por unidad, indicando si
   está presente por propietario o por apoderado. Una unidad se registra una sola vez.
-- **FR-017**: El sistema DEBE calcular el quórum como el porcentaje de coeficientes presentes. En
-  primera convocatoria la asamblea sesiona con más del 50 %. Desde 30 minutos después, sesiona en
-  segunda convocatoria con los presentes.
+- **FR-017**: La asamblea se abre (empieza la acreditación) desde la hora de la primera
+  convocatoria, y quien dirige la constituye después. El sistema DEBE calcular el quórum como el
+  porcentaje de coeficientes presentes:
+  - en primera convocatoria, constituye con más del 50 %;
+  - desde 30 minutos después, constituye en segunda convocatoria con los presentes, siempre que
+    haya al menos una unidad presente con voto.
+
+  Los puntos solo se abren con la asamblea constituida.
 - **FR-018**: El sistema DEBE marcar sin voto a las unidades cuyo número de expensas adeudadas
   supere el umbral del consorcio. Cuentan para el quórum, pero no votan ni integran la base de
   votos.
-- **FR-019**: Al abrir, quien dirige DEBE registrar presidente y secretario, elegidos entre las
-  personas presentes.
+- **FR-019**: Antes de constituir, quien dirige DEBE registrar presidente y secretario, elegidos
+  entre las personas presentes **con usuario en Flay**, porque los dos firman el acta (FR-031).
 - **FR-020**: Quien dirige DEBE abrir y cerrar los puntos de a uno, en el orden del día. Solo se
   vota el punto abierto.
 - **FR-021**: Cada presente DEBE poder votar desde su teléfono, por cada unidad que representa con
@@ -368,7 +377,7 @@ rechaza. Cambiar la regla a «totalidad» y verificar que la próxima asamblea l
 - **FR-027**: Con la regla «totalidad», un punto binario aprobado por la mayoría requerida sobre los
   presentes con voto, que no la alcanza sobre el total, DEBE quedar provisorio. El sistema DEBE
   avisar a los propietarios de las unidades ausentes, en Flay y por correo.
-- **FR-028**: Durante 15 días corridos desde el aviso, el propietario de una unidad ausente DEBE
+- **FR-028**: Durante 15 días corridos desde el cierre del punto, que es cuando sale el aviso, el propietario de una unidad ausente DEBE
   poder oponerse a la decisión provisoria. La administración DEBE poder registrar la oposición de
   un propietario sin cuenta.
 - **FR-029**: Vencido el plazo, la decisión DEBE figurar firme, salvo que los votos en contra más
@@ -385,7 +394,9 @@ rechaza. Cambiar la regla a «totalidad» y verificar que la próxima asamblea l
   - por cada punto: el resumen, el voto de cada unidad, el resultado y su estado (firme o
     provisoria).
 - **FR-031**: Quien dirigió DEBE designar los firmantes: presidente, secretario y dos propietarios
-  presentes con usuario en Flay. Enviada a firmar, el acta NO DEBE poder modificarse.
+  presentes con usuario en Flay. Enviada a firmar, el contenido del acta NO DEBE poder
+  modificarse. La única excepción es reemplazar a un firmante que todavía no firmó por otro
+  presente con usuario, en el mismo rol (caso borde).
 - **FR-032**: Cada firmante DEBE poder firmar electrónicamente con su sesión. El sistema registra
   firmante, fecha y hora, y la huella del documento firmado.
 - **FR-033**: Con todas las firmas, el acta DEBE quedar publicada como documento oficial del

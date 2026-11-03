@@ -58,11 +58,11 @@ function textoIcs(e: EventoAsamblea): string // RFC 5545, CRLF, con escape de , 
 | `cancelar(id, motivo)` | dirige o puede dirigir | pasa a `cancelada` y avisa | `TransicionInvalida` |
 | `otorgarPoder(asambleaId, unidadId, apoderadoId)` | propietario vigente de la unidad | crea el poder y avisa a los dos | `NoEsPropietario`, `ApoderadoNoHabilitado`, `TopeDePoderes`, `UnidadYaTienePoder` |
 | `registrarPoderEnPapel(...)` | puede dirigir (R-14) | crea el poder con `origen: papel` | ídem |
-| `revocarPoder(poderId)` | otorgante, o quien lo registró | marca `revocadoEn` | `AsambleaYaAbierta` |
+| `revocarPoder(poderId)` | otorgante, o quien lo registró | marca `revocadoEn` y avisa `poder_revocado` al propietario y al apoderado | `AsambleaYaAbierta` |
 | `abrir(id)` | puede dirigir | congela el padrón y pasa a `en_curso`; quien abre dirige | `AntesDeHora` |
 | `acreditarme(id)` | propietario vigente o apoderado | marca presentes sus unidades | `UnidadYaAcreditada` |
 | `acreditar(id, unidadId, representante)` | dirige | marca presente a otro, con o sin cuenta | `UnidadYaAcreditada` |
-| `designarAutoridades(id, presidenteId, secretarioId)` | dirige | elige entre los presentes | `NoPresente` |
+| `designarAutoridades(id, presidenteUsuarioId, secretarioUsuarioId)` | dirige | elige entre los representantes presentes **con usuario**; antes de constituir | `NoPresente`, `AutoridadSinUsuario` |
 | `constituir(id)` | dirige | `puedeConstituir` con el reloj | `SinQuorum`, `AntesDeHora` |
 | `abrirPunto(id, puntoId)` / `cerrarPunto(id, puntoId)` | dirige | `cerrar` calcula y persiste el resultado; si queda provisorio, fija el plazo y avisa a los ausentes | `OtroPuntoAbierto`, `NoConstituida` |
 | `votar(puntoId, unidadId, eleccion)` | representante presente de la unidad | inserta el voto | `UnidadYaVoto`, `PuntoCerrado`, `SinVoto` |
@@ -76,6 +76,8 @@ function textoIcs(e: EventoAsamblea): string // RFC 5545, CRLF, con escape de , 
 | `designarFirmantes(actaId, {...})` | quien dirigió | presidente, secretario y dos propietarios presentes con usuario | `FirmanteInvalido` |
 | `enviarAFirmar(actaId)` | quien dirigió | genera el PDF, guarda la huella, pasa a `a_firmar` y avisa | `ResumenesIncompletos`, `FirmantesIncompletos` |
 | `firmar(actaId, contrasena)` | firmante designado | verifica con Argon2id y registra la firma; si es la última, genera el PDF final, crea el `DocumentoConsorcio` y pasa a `firmada` | `ContrasenaIncorrecta`, `YaFirmo` |
+| `reemplazarFirmante(actaId, firmanteId, nuevoUsuarioId)` | quien dirigió | con el acta `a_firmar`, cambia un firmante **sin firmar** por otro presente con usuario, en el mismo rol, guarda `reemplazaA` y avisa `acta_a_firmar` al nuevo | `FirmanteYaFirmo`, `FirmanteInvalido` |
+| `verificarHuella(actaId)` | cualquier habilitado | descarga los PDF guardados, recalcula el SHA-256 y lo compara con `hashContenido` y con `DocumentoConsorcio.hashSha256` | — (devuelve `{ contenido: boolean, final: boolean }`) |
 | `verConfiguracion()` / `guardarConfiguracion(datos)` | administrador | reglas del consorcio | `ConfiguracionInvalida` |
 | `recordarFirmasPendientes(ahora)` | tarea diaria | avisa por las actas a `a_firmar` con más de 10 días | — |
 

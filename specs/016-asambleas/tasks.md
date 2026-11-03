@@ -36,7 +36,7 @@ quickstart.md
   - **Modelos**: `Asamblea`, `PuntoAsamblea`, `OpcionPunto`, `Poder`, `UnidadEnAsamblea`, `VotoAsamblea`, `OposicionDecision`, `ActaAsamblea` y `FirmanteActa`.
   - **Enums**: `TipoAsamblea`, `EstadoAsamblea` (`borrador`, `convocada`, `en_curso`, `finalizada`, `acta_firmada`, `cancelada`), `ConvocatoriaAsamblea`, `ModalidadPunto` (`binaria`, `opcion_multiple`), `MayoriaRequerida` (`absoluta`, `dos_tercios`, `unanimidad`), `EstadoPunto` (`pendiente`, `abierto`, `cerrado`), `ResultadoPunto` (`aprobado`, `rechazado`, `sin_decision`), `SentidoVoto` (`positivo`, `negativo`, `abstencion`), `OrigenVoto` (`propio`, `carga_manual`), `OrigenRegistro` (`en_linea`, `papel`), `Representacion` (`propietario`, `apoderado`), `EstadoActa` (`en_redaccion`, `a_firmar`, `firmada`), `RolFirmante` (`presidente`, `secretario`, `propietario`) y `ReglaMayoria` (`presentes`, `totalidad`).
   - **Columnas nuevas en `Consorcio`**: `reglaMayoriaAsamblea` (default `presentes`), `anticipacionConvocatoriaDias` (Int, 1–60, default 15), `topeUnidadesPorApoderado` (Int, 1–10, default 3) y `umbralExpensasSinVoto` (Int, 0–24, default 2).
-  - **Valores nuevos**: `asamblea_convocada`, `asamblea_cancelada`, `poder_otorgado`, `decision_provisoria`, `acta_a_firmar` y `acta_firmada` en `TipoNotificacion`, y `correo_directo` en `TipoTrabajo`.
+  - **Valores nuevos**: `asamblea_convocada`, `asamblea_cancelada`, `poder_otorgado`, `poder_revocado`, `decision_provisoria`, `acta_a_firmar` y `acta_firmada` en `TipoNotificacion`, y `correo_directo` en `TipoTrabajo`.
 - [ ] T003 Crear `prisma/migrations/<timestamp>_asambleas/migration.sql`. Según `data-model.md` y research R-02, tiene que incluir:
   - **Únicos**: `UNIQUE (asamblea_id, orden)` en puntos, `UNIQUE (punto_id, orden)` en opciones y `UNIQUE (punto_id, unidad_id)` en votos y en oposiciones.
   - `UNIQUE (asamblea_id, unidad_id)` en `UnidadEnAsamblea`, y `UNIQUE (asamblea_id)` en `ActaAsamblea`.
@@ -44,7 +44,7 @@ quickstart.md
   - **CHECK**: `mayoria` obligatoria si `binaria` y nula si `opcion_multiple`; voto con exactamente uno de `sentido` u `opcion_id`; rangos de las columnas de `Consorcio`.
   - **`fn_voto_inmutable`**: rechaza todo `UPDATE`, y el `INSERT` si el punto no está `abierto`, la asamblea no está `en_curso` o la unidad no está `presente` o está `sinVoto`.
   - **`fn_asamblea_cerrada`**: el orden del día queda fijo desde `convocada`; nada cambia desde `finalizada`, salvo `resumen` con el acta `en_redaccion`; la presencia es solo `false → true` y el representante, una sola vez.
-  - **Más disparadores**: la transición de estados de `Asamblea` sin retroceso, las oposiciones dentro del plazo y solo de ausentes con voto, la firma única con `hashFirmado = hashContenido`, y nada editable desde `a_firmar` salvo las firmas.
+  - **Más disparadores**: la transición de estados de `Asamblea` sin retroceso, las oposiciones dentro del plazo y solo de ausentes con voto, la firma única con `hashFirmado = hashContenido`, y nada editable desde `a_firmar` salvo dos cosas: las firmas y el **reemplazo de un firmante sin firmar**, que cambia solo `usuarioId` y deja `reemplazaA`, con el mismo rol y `firmadoEn IS NULL` (data-model, `FirmanteActa`). Presidente y secretario apuntan a `Usuario`.
   - **Auditoría**: `fn_auditar` sobre las nueve tablas. Los mensajes de `RAISE EXCEPTION` van en castellano, para el usuario.
 
   Después, correr `npx prisma generate`, `npm run db:deploy` y `npm run db:drift`.
@@ -107,7 +107,7 @@ quickstart.md
 - [ ] T017 [P] [US2] Tests de dominio en `pruebas/dominio/asambleas/quorum.spec.ts`:
   - `puedeConstituir` da `antes_de_hora`;
   - con exactamente 50,00000000 % en primera convocatoria da `sin_quorum`, y con 50,00000001 % da `primera`;
-  - desde `fechaHora + 30 min` da `segunda` aunque haya 0 %;
+  - desde `fechaHora + 30 min` da `segunda` con cualquier porcentaje, siempre que haya al menos una unidad presente con voto; con ninguna, `sin_quorum`;
   - `segundaConvocatoria` suma 30 minutos.
 - [ ] T018 [P] [US2] Tests de dominio en `pruebas/dominio/asambleas/resultado.spec.ts`, con los casos de `quickstart.md` § 1:
   - el caso testigo 40/30/20/10;
@@ -127,7 +127,8 @@ quickstart.md
   - `abrir` congela el padrón: cambiar un coeficiente después no cambia `UnidadEnAsamblea`;
   - una unidad con `vencidos > umbral` (`saldoImpagoPorUnidad`) queda `sinVoto`;
   - `acreditarme` y `acreditar`: la primera acreditación gana, y la segunda falla con `UnidadYaAcreditada`;
-  - `constituir` sin quórum falla;
+  - `constituir` sin quórum falla, y en segunda convocatoria sin ninguna unidad presente con voto también;
+  - `designarAutoridades` con un presente acreditado sin usuario falla con `AutoridadSinUsuario`;
   - no se puede abrir un punto sin constituir ni dos puntos a la vez;
   - `votar`: el segundo voto de la unidad falla con `UnidadYaVoto`, `cargarVoto` sobre una unidad que ya votó falla, y un `UPDATE` directo del voto falla por el disparador;
   - votar un punto cerrado o con una unidad `sinVoto` falla;
@@ -138,8 +139,9 @@ quickstart.md
   - las operaciones quedan en la bitácora, acotadas a la corrida.
 - [ ] T021 [US2] Implementar `src/aplicacion/asambleas/conducir.ts`:
   - `abrir`: un `INSERT … SELECT` de `UnidadEnAsamblea` con las unidades vigentes, el coeficiente copiado y `sinVoto` a partir de `saldoImpagoPorUnidad(hoy)`; quien abre pasa a dirigir;
-  - `acreditarme`: las unidades donde el usuario es propietario vigente (`unidadesOcupadasPor`) más las que tiene por poder vigente;
-  - `acreditar`, `designarAutoridades`, `constituir` (con `puedeConstituir`), `abrirPunto`, `cerrarPunto` (con `resultadoBinario` o `resultadoOpcionMultiple` sobre el padrón congelado, persistiendo `resultado`, `opcionGanadoraId`, `conteo` y `provisorio`), `tomarDireccion` y `finalizar` (que crea `ActaAsamblea` en `en_redaccion`);
+  - `acreditarme`: las unidades donde el usuario es propietario vigente (`unidadesOcupadasPor`) más las que tiene por poder vigente. **Por cada poder, se vuelve a verificar que el otorgante siga siendo propietario el día de la reunión** (`ocupaUnidad(otorgante, unidad, hoy)`); si no, el poder no vale y la unidad no se acredita por él (caso borde de la spec);
+  - `designarAutoridades`: presidente y secretario son `usuarioId` de representantes presentes (`UnidadEnAsamblea.representanteId`), antes de constituir; si no, `AutoridadSinUsuario` o `NoPresente`;
+  - `acreditar`, `constituir` (con `puedeConstituir`), `abrirPunto`, `cerrarPunto` (con `resultadoBinario` o `resultadoOpcionMultiple` sobre el padrón congelado, persistiendo `resultado`, `opcionGanadoraId`, `conteo` y `provisorio`), `tomarDireccion` y `finalizar` (que crea `ActaAsamblea` en `en_redaccion`);
   - la regla de quién puede dirigir de research R-14.
 - [ ] T022 [US2] Implementar `votar` y `cargarVoto` en `src/aplicacion/asambleas/votar.ts`, con un solo `INSERT` y la traducción de `23505` y `P0001` a los errores de T007.
 - [ ] T023 [US2] Pantalla en vivo: el estado `en_curso` de `asambleas/[asamblea]/page.tsx` monta `<EnVivo />` (`src/app/(panel)/en-vivo.tsx`), solo en ese estado. Los componentes van en `asambleas/[asamblea]/en-vivo/`:
@@ -168,12 +170,13 @@ quickstart.md
   - `otorgarPoder` solo lo hace un propietario vigente (`NoEsPropietario`) y solo a un usuario habilitado (`ApoderadoNoHabilitado`);
   - un segundo poder vigente sobre la misma unidad falla (`UnidadYaTienePoder`);
   - el cuarto poder al mismo apoderado falla, también con dos otorgamientos concurrentes (`Promise.all`);
-  - `revocarPoder` falla con la asamblea abierta;
+  - `revocarPoder` falla con la asamblea abierta; antes de abrir, revoca y avisa `poder_revocado` a los dos;
+  - un poder cuyo otorgante dejó de ser propietario antes de la reunión no le permite al apoderado acreditarse por esa unidad;
   - `registrarPoderEnPapel` deja `origen: papel`;
   - el apoderado se acredita con `acreditarme` y vota;
   - un inquilino sin poder ve la asamblea, pero no vota;
   - se avisa a los dos (`poder_otorgado`).
-- [ ] T028 [US3] Implementar `src/aplicacion/asambleas/poderes.ts` (`otorgarPoder`, `registrarPoderEnPapel`, `revocarPoder`), con `pg_advisory_xact_lock(hashtext(asambleaId || apoderadoId))` dentro de la transacción antes de contar (research R-12) y `ocupaUnidad` para el otorgante.
+- [ ] T028 [US3] Implementar `src/aplicacion/asambleas/poderes.ts` (`otorgarPoder`, `registrarPoderEnPapel`, `revocarPoder`), con `pg_advisory_xact_lock(hashtext(asambleaId || apoderadoId))` dentro de la transacción antes de contar (research R-12) y `ocupaUnidad` para el otorgante. `otorgarPoder` avisa `poder_otorgado` y `revocarPoder` avisa `poder_revocado`, los dos con `notificar` al propietario y al apoderado (FR-014).
 - [ ] T029 [US3] Bloque «Mis poderes» en el estado `convocada` de `asambleas/[asamblea]/page.tsx`: otorgar, eligiendo unidad y apoderado entre los habilitados del consorcio, y revocar. Quien puede dirigir ve además la carga de un poder en papel. Las acciones van en `acciones.ts`.
 
 **Checkpoint**: los poderes funcionan, y la acreditación de US2 ya los toma en cuenta.
@@ -197,6 +200,8 @@ quickstart.md
   - `enviarAFirmar` falla con resúmenes o firmantes incompletos; si no, guarda el PDF en `ALMACEN` y `hashContenido` (SHA-256), pasa a `a_firmar` y avisa `acta_a_firmar`;
   - después de enviar a firmar, cambiar un resumen falla por el disparador;
   - `firmar` con una contraseña incorrecta da `ContrasenaIncorrecta`; un no-firmante no puede firmar; firmar dos veces falla;
+  - `reemplazarFirmante` con el acta `a_firmar` cambia un firmante pendiente y mantiene las firmas ya hechas; sobre un firmante que ya firmó, falla con `FirmanteYaFirmo`, también por SQL directo, porque lo frena el disparador;
+  - `verificarHuella` devuelve íntegro con los PDF guardados; con un PDF alterado en el doble del almacén, devuelve alterado (SC-007);
   - la cuarta firma deja `DocumentoConsorcio` (`tipo: acta`, `visibleConsorcistas: true`, `hashSha256` del PDF final) con su trabajo `indexar_documento`, el acta `firmada`, la asamblea `acta_firmada` y el aviso `acta_firmada`;
   - otro consorcio recibe `NoEncontrado`.
 
@@ -204,10 +209,15 @@ quickstart.md
 - [ ] T033 [US4] Implementar `src/aplicacion/asambleas/acta.ts`:
   - `redactarResumen` y `designarFirmantes`;
   - `enviarAFirmar`: genera el PDF sincrónico y calcula el SHA-256 con `node:crypto`;
+  - `reemplazarFirmante` y `verificarHuella`, según `contracts/contratos.md`;
   - `firmar`: verifica con `DERIVADOR`; en la última firma, genera el PDF final con la hoja de firmas y, en la misma transacción, crea el `DocumentoConsorcio` y el trabajo `indexar_documento`, igual que `cargarDocumento` en `src/aplicacion/comunicacion/documentos.ts`.
 
   Las dependencias (generador, almacén, derivador y reloj) entran por parámetro desde `src/aplicacion/dependencias.ts` (nota 5).
-- [ ] T034 [US4] Implementar `recordarFirmasPendientes(ahora)` en `src/aplicacion/asambleas/recordatorios.ts`: toma las actas `a_firmar` con `enviadaAFirmarEn < ahora − 10 días` y `recordatorioEnviadoEn` nulo, avisa a quien dirigió y a los firmantes pendientes, y marca el recordatorio. Corre por consorcio dentro de `enConsorcio`.
+- [ ] T034 [US4] Implementar `recordarFirmasPendientes(ahora)` en `src/aplicacion/asambleas/recordatorios.ts`: toma las actas `a_firmar` con `enviadaAFirmarEn < ahora − 10 días` y `recordatorioEnviadoEn` nulo, avisa a quien dirigió y a los firmantes pendientes, y marca el recordatorio. Va en dos pasos (research R-10):
+  1. `prismaBase.actaAsamblea.findMany` filtra por estado y fecha **sin** `consorcioId` en el `where`, y selecciona solo `{ id, consorcioId }`.
+  2. Cada acta se procesa dentro de `enConsorcio(consorcioId, …)` con el cliente aislado.
+
+  Correr `pruebas/dominio/filtro-unico.spec.ts`. Si marca `recordatorios.ts`, `configuracion.ts` o `convocar.ts`, sumarlos a `PERMITIDOS` con la razón de research R-10.
 
   La ruta `src/app/api/tareas/asambleas/route.ts` va protegida con `CRON_SECRET`, como `refrescar-vistas`, y se suma a `vercel.json` como diaria. Agregar un test de integración del recordatorio en `pruebas/integracion/asambleas-acta.spec.ts`.
 - [ ] T035 [US4] Pantalla `src/app/(panel)/consorcios/[consorcio]/asambleas/[asamblea]/acta/page.tsx`:
@@ -216,6 +226,8 @@ quickstart.md
   - «Enviar a firmar»;
   - «Firmar», con un modal que pide la contraseña;
   - el estado de cada firma;
+  - «Reemplazar» junto a un firmante pendiente, solo para quien dirigió;
+  - la huella SHA-256 del contenido y la del acta final, con el resultado de `verificarHuella` («íntegra» o «alterada»);
   - la descarga del PDF por enlace firmado (`src/app/api/objetos/permiso/route.ts`).
 
   Enlazar la pantalla desde `asambleas/[asamblea]/page.tsx` en `finalizada` y `acta_firmada`.

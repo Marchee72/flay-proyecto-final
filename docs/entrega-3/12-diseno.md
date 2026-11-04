@@ -427,12 +427,16 @@ y CU-22 (oponerse) lo rodean.
 3. Quien dirige designa presidente y secretario entre los presentes y constituye la asamblea. El
    sistema verifica el quórum: más de la mitad de los coeficientes en primera convocatoria; con los
    presentes, media hora después.
-4. Quien dirige abre el primer punto. Todos los presentes lo ven en su pantalla, que se actualiza sola.
+4. Quien dirige abre el primer punto: el debate ocurre con el punto abierto, y el secretario toma
+   notas hasta que se cierra. Todos los presentes lo ven en su pantalla, que se actualiza sola, junto
+   con el orden del día, el punto en curso y cuántos faltan.
 5. Cada presente vota por cada unidad que representa. El conteo se ve en vivo, por unidades y por
    coeficientes; el voto se puede cambiar hasta que se cierra el punto (RN-17).
 6. Quien dirige carga el voto de quien no tiene teléfono y cierra el punto. El sistema calcula el
    resultado por doble mayoría sobre la base que fija el consorcio (RN-16) y lo fija.
-7. Se repiten los pasos 4 a 6 por cada punto, en el orden del día. Quien dirige finaliza la asamblea.
+7. Se repiten los pasos 4 a 6 por cada punto, en el orden del día. Tratado todo, cada presente puede
+   dejar una observación para el acta, que solo leen quienes intervienen en su redacción. Quien dirige
+   finaliza la asamblea.
 
 **Flujos alternativos**
 

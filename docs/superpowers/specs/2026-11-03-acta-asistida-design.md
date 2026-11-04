@@ -8,9 +8,9 @@ no tenía de dónde redactar, y en un documento legal no debe inventar debate.
 
 ## Qué cambia
 
-- **Notas de la reunión.** El secretario o quien dirige anota por punto en la sala, desde que la asamblea se
-  constituye y en todos los puntos, porque el debate ocurre antes de abrir la votación. Se guardan solas, no
-  van al acta y solo las ven quienes redactan.
+- **Notas de la reunión.** El secretario o quien dirige anota por punto en la sala, mientras el punto está
+  abierto (ver `2026-11-04-sala-avance-y-observaciones-design.md`). Se guardan solas, no van al acta y solo las
+  ven quienes redactan.
 - **Borrador con IA.** Al finalizar se encola `redactar_acta`. El redactor recibe título, descripción,
   resultado, conteos agregados, provisoriedad y notas: nunca personas, unidades ni votos por unidad.
 - **Revisión humana.** La propuesta queda en `PuntoAsamblea.borradorResumen`, separada de `resumen`.
@@ -27,7 +27,7 @@ no tenía de dónde redactar, y en un documento legal no debe inventar debate.
 - El estado del borrador es un solo campo, `ActaAsamblea.borradorPedidoEn`: pendiente mientras tenga menos de
   2 minutos, y el manejador lo vacía al terminar. Así un trabajo trabado no bloquea la edición y las actas
   anteriores no necesitan migrar datos.
-- Disparadores: `notas` solo cambia con la asamblea `en_curso`; `borrador_resumen`, como `resumen`, solo con el
+- Disparadores: `notas` solo cambia con el punto `abierto`; `borrador_resumen`, como `resumen`, solo con el
   acta `en_redaccion`.
 - Las notas y el borrador solo viajan en la vista a quien redacta, porque la vista llega al navegador de todos
   los asistentes.

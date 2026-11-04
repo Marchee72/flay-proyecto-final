@@ -72,7 +72,8 @@ function textoIcs(e: EventoAsamblea): string // RFC 5545, CRLF, con escape de , 
 | `verAsamblea(id)` | cualquier habilitado | una consulta: asamblea, puntos, opciones, padrón, votos, conteos en vivo, estado de cada decisión, mis unidades y mis permisos | — |
 | `listarAsambleas()` | cualquier habilitado | las del consorcio, por fecha | — |
 | `oponerme(puntoId)` / `registrarOposicionEnPapel(puntoId, unidadId)` | propietario ausente / administración o quien puede dirigir | crea la oposición | `FueraDePlazo`, `NoEraAusente` |
-| `guardarNotas(puntoId, notas)` | secretario o quien dirigió | actualiza los apuntes del punto, solo durante la reunión | `NoDirige` |
+| `guardarNotas(puntoId, notas)` | secretario o quien dirigió | actualiza los apuntes del punto, solo con el punto abierto | `NoDirige` |
+| `guardarObservacion(texto)` | presente con unidad propia o con poder, o quien dirige | crea o corrige su observación, entre el último punto cerrado y la finalización | `NoPresente`, `AsambleaInvalida` |
 | `pedirBorrador()` | secretario o quien dirigió | vuelve a encolar el borrador de la IA | `ActaNoEnRedaccion` |
 | `redactarResumen(puntoId, texto)` | secretario o quien dirigió | actualiza el resumen | `ActaNoEnRedaccion` |
 | `designarFirmantes(actaId, {...})` | quien dirigió | presidente, secretario y dos propietarios presentes con usuario | `FirmanteInvalido` |

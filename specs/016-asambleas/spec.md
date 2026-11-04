@@ -358,6 +358,7 @@ rechaza. Cambiar la regla a «totalidad» y verificar que la próxima asamblea l
 - **FR-023**: Mientras la asamblea está en curso, el sistema DEBE mostrar a cualquier usuario
   habilitado del consorcio, en una vista que se actualiza sola en no más de 5 segundos:
   - el punto abierto y sus opciones;
+  - el orden del día con su avance: qué se trató, cuál va ahora y cuántos faltan;
   - la asistencia y el quórum;
   - el conteo por opción, en unidades y en coeficientes;
   - el voto de cada unidad;
@@ -395,6 +396,12 @@ rechaza. Cambiar la regla a «totalidad» y verificar que la próxima asamblea l
   - las autoridades;
   - por cada punto: el resumen, el voto de cada unidad, el resultado y su estado (firme o
     provisoria).
+
+  Las notas de la reunión se escriben solo con el punto abierto. Tratado todo el orden del día y
+  hasta finalizar, cada presente PUEDE dejar una observación, que corrige si quiere. La IA recibe
+  el texto sin autor para proponer el borrador; quienes redactan, el presidente y la administración
+  la leen con nombre y unidad, aunque la administración no haya sido invitada. Las observaciones no
+  van al PDF.
 - **FR-031**: Quien dirigió DEBE designar los firmantes: presidente, secretario y dos propietarios
   presentes con usuario en Flay. Enviada a firmar, el contenido del acta NO DEBE poder
   modificarse. La única excepción es reemplazar a un firmante que todavía no firmó por otro

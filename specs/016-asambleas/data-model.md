@@ -83,7 +83,7 @@ borrador ──convocar──▶ convocada ──abrir──▶ en_curso ──f
 | `provisorio` | `Boolean` | default `false` |
 | `vencePlazoOposicion` | `Timestamptz?` | `cerradoEn` + 15 días corridos; el aviso sale en la misma transacción |
 | `resumen` | `Text?` | se redacta con el acta `en_redaccion` |
-| `notas` | `Text?` | apuntes de la reunión, solo con la asamblea `en_curso`; no van al acta |
+| `notas` | `Text?` | apuntes de la reunión, solo con el punto `abierto`; no van al acta |
 | `borradorResumen` | `Text?` | propuesta de la IA; no cuenta hasta que una persona la guarda en `resumen` |
 
 Para los puntos binarios, las opciones `positivo`, `negativo` y `abstencion` son fijas y no se
@@ -180,6 +180,19 @@ Lo controla un disparador; no admite `UPDATE`.
 
 Nace al finalizar la asamblea, en `en_redaccion`. Con `estado <> 'en_redaccion'`, el disparador
 rechaza cambios en `resumen` de los puntos y en los firmantes.
+
+### ObservacionAsamblea
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `id`, `consorcioId`, `asambleaId` | UUID | |
+| `usuarioId` | UUID → `Usuario` | `UNIQUE (asamblea_id, usuario_id)`: una por persona |
+| `unidades` | `VarChar(200)` | las que representaba al escribir; vacío si dirige sin unidad |
+| `texto` | `VarChar(1000)` | vacío deja la observación sin efecto |
+
+El disparador solo admite altas y cambios con la asamblea `en_curso` y todos los puntos `cerrado`.
+No se borra mientras la asamblea exista; cae en cascada con ella y queda en la bitácora por
+`fn_auditar`.
 
 ### FirmanteActa
 

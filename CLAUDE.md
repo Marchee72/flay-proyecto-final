@@ -343,7 +343,7 @@ Las decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
     el punto abierto y nunca se borra (`fn_voto_inmutable`); cada cambio queda en la bitácora y quien
     dirige no pisa el voto propio de una unidad. El orden del día queda fijo desde la convocatoria y nada cambia desde
     `finalizada`: lo hacen disparadores, no la aplicación. Ningún hijo (punto, padrón, voto, poder,
-    acta, firmante) se deja borrar mientras su padre exista; caen en cascada al borrar la
+    acta, firmante, observación) se deja borrar mientras su padre exista; caen en cascada al borrar la
     `Asamblea`, y por eso `limpiar()` borra solo esa tabla. Todo cómputo (quórum, doble mayoría,
     provisoria) sale del padrón **congelado al abrir** (`UnidadEnAsamblea`), nunca del vivo: un pago o
     un cambio de coeficiente durante la reunión no mueve un resultado. La mora para «sin voto» la
@@ -360,10 +360,14 @@ Las decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
     vencido, y por eso `crearEscucha` cierra y pide otro.
 
 30. **El borrador del acta no es el resumen.** Al finalizar se encola `redactar_acta` y la IA escribe en
-    `PuntoAsamblea.borradorResumen`, con los resultados y las `notas` de la sala. `enviarAFirmar` exige
+    `PuntoAsamblea.borradorResumen`, con los resultados, las `notas` de la sala (solo se escriben con el
+    punto abierto, lo sostiene `fn_punto_reglas`) y las `ObservacionAsamblea` de los presentes. `enviarAFirmar` exige
     `resumen`, que solo se llena cuando una persona guarda: por eso nada de la IA llega a las firmas sin
-    revisar (RN-14). Al redactor no le llegan personas, unidades ni votos, y las notas y el borrador solo
-    viajan en `verAsamblea` a quien redacta, porque esa vista llega al navegador de todos los asistentes.
+    revisar (RN-14). Al redactor no le llegan personas, unidades ni votos por unidad: de las observaciones recibe solo el
+    texto, y las cifras que no hay que dejarle calcular (`noVotaron`) las saca el manejador del `conteo`
+    congelado. Las notas y el borrador solo viajan en `verAsamblea` a quien redacta, y la lista de
+    observaciones solo con acta y a quien redacta, preside o administra, porque esa vista llega al
+    navegador de todos los asistentes.
     `borradorPedidoEn` marca que se está redactando, y pasados 2 minutos se deja de esperar: un trabajo
     trabado no puede bloquear la edición.
 

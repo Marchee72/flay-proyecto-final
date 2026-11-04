@@ -1,8 +1,11 @@
 import type { Asistencia } from '@/dominio/contratos/asistencia'
+import type { AvisoEnVivo } from '@/dominio/contratos/aviso-en-vivo'
 import type { GeneradorDeDocumentos } from '@/dominio/contratos/documentos'
 import type { ProcesadorDePagos } from '@/dominio/contratos/procesador-pagos'
 import { asistenciaNula } from '@/infraestructura/asistencia/nula'
 import { argon2id } from '@/infraestructura/contrasenas/argon2'
+import { avisoAbly } from '@/infraestructura/en-vivo/ably'
+import { avisoNulo } from '@/infraestructura/en-vivo/nulo'
 import { almacenR2 } from '@/infraestructura/objetos/r2'
 import { relojDelSistema } from '@/infraestructura/reloj'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
@@ -20,6 +23,9 @@ export const HABILITACIONES = repositorioHabilitaciones
 export const RELOJ = relojDelSistema
 export const DERIVADOR = argon2id
 export const ALMACEN = almacenR2
+export const AVISO_EN_VIVO: AvisoEnVivo = process.env.ABLY_API_KEY
+  ? avisoAbly(process.env.ABLY_API_KEY)
+  : avisoNulo
 
 /**
  * Generador de PDF cargado bajo demanda: evita que `@react-pdf/renderer` y sus

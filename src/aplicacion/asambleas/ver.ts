@@ -379,7 +379,13 @@ export async function verAsamblea(
               : p.estado === 'cerrado' && p.resultado === 'aprobado'
                 ? 'firme'
                 : null,
-          conteo: enVivo ? conteoVista(conteo(padronDom, votosDom, claves)) : null,
+          // Cerrado, vale el que fijó el resultado: una llegada tardía no lo mueve.
+          conteo:
+            p.estado === 'cerrado' && p.conteo
+              ? (p.conteo as unknown as ConteoVista)
+              : enVivo
+                ? conteoVista(conteo(padronDom, votosDom, claves))
+                : null,
           votos: p.votos.map((v) => ({
             unidadId: v.unidadId,
             designacion: designacion.get(v.unidadId) ?? '',

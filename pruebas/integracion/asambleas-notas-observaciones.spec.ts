@@ -109,6 +109,19 @@ describe('notas por punto', () => {
   })
 })
 
+describe('conteo', () => {
+  it('una llegada tardía no mueve el conteo de un punto cerrado, sí el del abierto', async () => {
+    await abrirPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntos[0].id })
+    await cerrarPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntos[0].id })
+    const antes = (await verAsamblea(repo, RELOJ, de(e.carla))).puntos[0].conteo!
+    await acreditarme(repo, RELOJ, de(e.elsa!))
+    await abrirPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntos[1].id })
+    const vista = await verAsamblea(repo, RELOJ, de(e.carla))
+    expect(vista.puntos[0].conteo).toEqual(antes)
+    expect(vista.puntos[1].conteo!.basePresentes.unidades).toBe(antes.basePresentes.unidades + 1)
+  })
+})
+
 describe('observaciones', () => {
   it('con puntos sin cerrar se rechaza', async () => {
     await expect(observar(e.ana, 'Antes de tiempo')).rejects.toThrow(

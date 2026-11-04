@@ -493,7 +493,7 @@ export function Direccion({
         >
           <Ocultos vista={vista} />
           <input type="hidden" name="punto" value={siguiente.id} />
-          <button className="boton boton--primario" type="submit">
+          <button className="boton boton--primario direccion__abrir" type="submit">
             Abrir el punto {siguiente.orden}: {siguiente.titulo}
           </button>
         </form>

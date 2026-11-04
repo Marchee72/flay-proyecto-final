@@ -21,7 +21,8 @@ import type {
 } from '@/aplicacion/asambleas/ver'
 
 import { accionAcreditarme, accionVotar } from './acciones'
-import { opcionesDe, Ocultos, TablaConteo, textoResultado } from './comunes'
+import { AvanceOrden } from './avance-orden'
+import { opcionesDe, Ocultos, TablaConteo } from './comunes'
 import { Direccion, notificarResultado, type CambioOptimistaSala } from './direccion'
 import { NotasActa } from './notas-acta'
 
@@ -226,7 +227,6 @@ export function Sala({ vista: vistaServidor }: { vista: VistaAsamblea }) {
   // Quien organiza o administra no vota por su rol: el aviso es para el resto.
   const sinRepresentacion =
     vista.yo.misUnidades.length === 0 && !vista.yo.puedeDirigir && !vista.yo.esAdministrador
-  const cerrados = vista.puntos.filter((p) => p.estado === 'cerrado')
 
   const presentes = vista.padron.filter((u) => u.presente)
   const ausentes = vista.padron.filter((u) => !u.presente)
@@ -360,12 +360,13 @@ export function Sala({ vista: vistaServidor }: { vista: VistaAsamblea }) {
             </>
           ) : (
             <>
+              <AvanceOrden vista={vista} />
               <Direccion vista={vista} paso="votacion" alCambiarOptimista={aplicarOptimista} />
 
               <section className="tarjeta sala__punto" aria-labelledby="punto-titulo">
                 {abierto ? (
                   <>
-                    <p className="etiqueta etiqueta--info">En votación</p>
+                    <p className="etiqueta etiqueta--info">En debate y votación</p>
                     <h2 id="punto-titulo">
                       {abierto.orden}. {abierto.titulo}
                     </h2>
@@ -438,10 +439,10 @@ export function Sala({ vista: vistaServidor }: { vista: VistaAsamblea }) {
                   </>
                 ) : (
                   <>
-                    <h2 id="punto-titulo">Ningún punto en votación</h2>
+                    <h2 id="punto-titulo">Ningún punto abierto</h2>
                     <p className="apagado">
                       {vista.constituida
-                        ? 'Se está debatiendo. Cuando quien dirige abra el próximo punto, aparece acá.'
+                        ? 'Cuando quien dirige abra el próximo punto, aparece acá.'
                         : 'Primero se acredita la asistencia y se verifica el quórum.'}
                     </p>
                   </>
@@ -450,22 +451,6 @@ export function Sala({ vista: vistaServidor }: { vista: VistaAsamblea }) {
 
               {vista.constituida && (vista.yo.esSecretario || vista.yo.dirige) && (
                 <NotasActa vista={vista} />
-              )}
-
-              {cerrados.length > 0 && (
-                <section className="tarjeta" aria-labelledby="tratados-titulo">
-                  <h2 id="tratados-titulo">Puntos tratados</h2>
-                  <ul className="lista-simple">
-                    {cerrados.map((p) => (
-                      <li key={p.id}>
-                        <span>
-                          {p.orden}. {p.titulo}
-                        </span>
-                        <strong>{textoResultado(p)}</strong>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
               )}
             </>
           )}

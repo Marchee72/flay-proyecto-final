@@ -2,7 +2,7 @@ import { readdirSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
-import type { Asistencia } from '@/dominio/contratos/asistencia'
+import type { Asistencia, PuntoParaRedactar } from '@/dominio/contratos/asistencia'
 import { asistenciaDeterminista } from '@/infraestructura/asistencia/determinista'
 import { asistenciaGemini } from '@/infraestructura/asistencia/gemini'
 import { asistenciaNula } from '@/infraestructura/asistencia/nula'
@@ -61,11 +61,36 @@ describe('tres implementaciones por interfaz (SC-012)', () => {
     const r7 = await asistenciaNula.redactor.redactar(
       { titulo: 'Ordinaria', tipo: 'ordinaria' },
       [],
+      [],
     )
     for (const r of [r1, r2, r3, r4, r5, r6, r7]) {
       expect(r.disponible).toBe(false)
       if (!r.disponible) expect(r.motivo).toMatch(/no está configurado/)
     }
+  })
+
+  it('la determinista repite votos y observaciones sin agregar nada', async () => {
+    const punto = (orden: number): PuntoParaRedactar => ({
+      orden,
+      titulo: 'Pintura',
+      descripcion: null,
+      resultado: 'aprobado',
+      provisorio: false,
+      notas: null,
+      conteo: [{ opcion: 'Abstención', unidades: 1, coeficiente: '10,00 %' }],
+      presentesConVoto: 4,
+      noVotaron: 3,
+    })
+    const r = await asistenciaDeterminista.redactor.redactar(
+      { titulo: 'Ordinaria', tipo: 'ordinaria' },
+      [punto(1), punto(2)],
+      ['Falta el palier'],
+    )
+    if (!r.disponible) throw new Error('debía estar disponible')
+    expect(r.valor[0].resumen).toContain('Abstención: 1 unidades, 10,00 %')
+    expect(r.valor[0].resumen).toContain('No votaron 3 de 4')
+    expect(r.valor[0].resumen).toContain('Falta el palier')
+    expect(r.valor[1].resumen).not.toContain('Falta el palier')
   })
 
   it('la determinista es idempotente: mismo texto, mismo vector, y el vector tiene 768 dimensiones', async () => {

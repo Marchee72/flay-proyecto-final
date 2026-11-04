@@ -18,6 +18,7 @@ import {
   finalizar,
 } from '@/aplicacion/asambleas/conducir'
 import { ActaIncompleta, NoDirige } from '@/aplicacion/asambleas/errores'
+import { guardarObservacion } from '@/aplicacion/asambleas/observaciones'
 import { registrarPoderEnPapel } from '@/aplicacion/asambleas/poderes'
 import { verAsamblea } from '@/aplicacion/asambleas/ver'
 import type { PuntoParaRedactar, RedactorActa } from '@/dominio/contratos/asistencia'
@@ -96,6 +97,11 @@ beforeEach(async () => {
     }
     await cerrarPunto(repo, RELOJ, { ...de(e.consejo), puntoId: p.id })
   }
+  await guardarObservacion(repo, RELOJ, {
+    ...de(e.ana),
+    texto: 'Falta el palier del cuarto piso',
+  })
+  await guardarObservacion(repo, RELOJ, { ...de(e.bruno), texto: '   ' })
   await finalizar(repo, RELOJ, de(e.consejo))
   actaId = (await prismaBase.actaAsamblea.findFirstOrThrow({ where: { asambleaId } })).id
 })
@@ -161,9 +167,11 @@ describe('el borrador', () => {
 
   it('al redactor no le llegan personas, unidades ni votos', async () => {
     let recibidos: PuntoParaRedactar[] = []
+    let observaciones: string[] = []
     const espia: RedactorActa = {
-      async redactar(_, p) {
+      async redactar(_, p, o) {
         recibidos = p
+        observaciones = o
         return disponible([])
       },
     }
@@ -172,9 +180,22 @@ describe('el borrador', () => {
     expect(recibidos).toHaveLength(puntos.length)
     expect(recibidos[0].notas).toBe('Tres presupuestos de pintura')
     expect(Object.keys(recibidos[0]).sort()).toEqual(
-      ['conteo', 'descripcion', 'notas', 'orden', 'provisorio', 'resultado', 'titulo'].sort(),
+      [
+        'conteo',
+        'descripcion',
+        'noVotaron',
+        'notas',
+        'orden',
+        'presentesConVoto',
+        'provisorio',
+        'resultado',
+        'titulo',
+      ].sort(),
     )
-    const texto = JSON.stringify(recibidos)
+    expect(recibidos[0].presentesConVoto).toBe(5)
+    expect(recibidos[0].noVotaron).toBe(5)
+    expect(observaciones).toEqual(['Falta el palier del cuarto piso'])
+    const texto = JSON.stringify([recibidos, observaciones])
     for (const dato of ['Ana', 'Bruno', 'Carla', e.ana, ...Object.keys(e.unidades)]) {
       expect(texto).not.toContain(dato)
     }

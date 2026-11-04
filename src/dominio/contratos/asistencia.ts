@@ -178,7 +178,8 @@ export interface AgenteConversacional {
 /**
  * La sexta interfaz (RF-32): propone el resumen de cada punto de un acta. La
  * propuesta queda como borrador y solo cuenta cuando una persona la guarda
- * (RN-14). Recibe datos agregados y notas: nunca el padron ni el voto por unidad.
+ * (RN-14). Recibe datos agregados, notas y observaciones solo como texto: nunca
+ * el padron, el voto por unidad ni quien escribio cada observacion.
  */
 export interface PuntoParaRedactar {
   orden: number
@@ -187,6 +188,9 @@ export interface PuntoParaRedactar {
   /** Ya legible: «aprobado», «rechazado», «aprobada la opcion X». */
   resultado: string
   conteo: { opcion: string; unidades: number; coeficiente: string }[]
+  /** Calculados por Flay: la IA copia las cifras, no hace cuentas para un acta. */
+  presentesConVoto: number
+  noVotaron: number
   provisorio: boolean
   notas: string | null
 }
@@ -200,6 +204,7 @@ export interface RedactorActa {
   redactar(
     asamblea: { titulo: string; tipo: 'ordinaria' | 'extraordinaria' },
     puntos: PuntoParaRedactar[],
+    observaciones: string[],
   ): Promise<Resultado<ResumenPropuesto[]>>
 }
 

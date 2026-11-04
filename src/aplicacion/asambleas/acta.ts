@@ -310,11 +310,21 @@ export function manejadorBorradorActa(redactor: RedactorActa): Manejador {
         include: { opciones: { select: { id: true, texto: true } } },
         orderBy: { orden: 'asc' },
       })
-      // Agregados y notas: al proveedor no le llegan personas, unidades ni votos.
+      const observaciones = await prisma.observacionAsamblea.findMany({
+        where: { asambleaId: acta.asambleaId, texto: { not: '' } },
+        orderBy: { creadoEn: 'asc' },
+        select: { texto: true },
+      })
+      // Agregados y textos sueltos: al proveedor no le llegan personas, unidades ni votos.
       const resultado = await redactor.redactar(
         acta.asamblea,
         puntos.map((p) => {
           const conteo = p.conteo as unknown as ConteoVista | null
+          const presentesConVoto = conteo?.basePresentes.unidades ?? 0
+          const votaron = Object.values(conteo?.porOpcion ?? {}).reduce(
+            (total, c) => total + c.unidades,
+            0,
+          )
           return {
             orden: p.orden,
             titulo: p.titulo,
@@ -328,10 +338,13 @@ export function manejadorBorradorActa(redactor: RedactorActa): Manejador {
               unidades: conteo?.porOpcion[k]?.unidades ?? 0,
               coeficiente: `${coeficienteParaMostrar(conteo?.porOpcion[k]?.coeficiente ?? '0')} %`,
             })),
+            presentesConVoto,
+            noVotaron: Math.max(0, presentesConVoto - votaron),
             provisorio: p.provisorio,
             notas: p.notas,
           }
         }),
+        observaciones.map((o) => o.texto),
       )
       if (resultado.disponible) {
         for (const { orden, resumen } of resultado.valor) {

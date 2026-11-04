@@ -98,9 +98,9 @@ export const ASISTENCIA: Asistencia = {
     },
   },
   redactor: {
-    async redactar(asamblea, puntos) {
+    async redactar(asamblea, puntos, observaciones) {
       const impl = await resolverAsistencia()
-      return impl.redactor.redactar(asamblea, puntos)
+      return impl.redactor.redactar(asamblea, puntos, observaciones)
     },
   },
 }

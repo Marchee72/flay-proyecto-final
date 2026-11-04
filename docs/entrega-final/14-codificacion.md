@@ -126,6 +126,14 @@ modo que desarrollo, verificación y demostración corren la misma. Las transiti
 Ninguna de las licencias listadas es recíproca fuerte, conforme exige el punto 5.3.4. La verificación
 del inventario completo, incluidas las dependencias transitivas, se realiza antes de cada entrega.
 
+### Servicio de avisos en tiempo real
+
+La sala de asamblea usa **Ably** para avisar que algo cambió: el servidor publica por su API REST y
+cada pantalla escucha por SSE con un token propio de solo lectura, sin dependencias nuevas. El aviso
+no lleva datos, así que el servicio no recibe información de la asamblea. Sin clave, o si el servicio
+falla, la sala vuelve a actualizarse cada 3 s. Se relevó el plan Free: 200 conexiones simultáneas y 6
+millones de mensajes por mes.
+
 ### Condición sobre la capa gratuita
 
 La justificación 5 del punto 5.5 afirma que el prototipo puede permanecer publicado sin costo. Esa

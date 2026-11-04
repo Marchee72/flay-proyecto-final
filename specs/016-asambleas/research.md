@@ -6,17 +6,21 @@ deducen de la spec.
 
 ## R-01 Vista en vivo
 
-- **Decision**: `EnVivo` (`src/app/(panel)/en-vivo.tsx`) refresca cada 3 s, montado solo mientras
-  la asamblea está `en_curso`. Cada refresco relee el estado completo con una consulta que entra
-  por `Asamblea` e incluye puntos, opciones, padrón y votos.
+- **Decision**: `SalaEnVivo` escucha por SSE un canal de Ably, montado solo mientras la asamblea está
+  `en_curso`, y relee la sala al recibir un aviso sin datos. Cada lectura trae el estado completo con
+  una consulta que entra por `Asamblea` e incluye puntos, opciones, padrón y votos. `EnVivo` queda de
+  resguardo: refresca cada 15 s conectado y cada 3 s sin conexión con el servicio o sin clave.
 - **Rationale**:
-  - Cumple SC-001 (≤ 5 s) sin infraestructura nueva.
+  - Baja la espera de 3 s a un aviso, y si el servicio falla sigue cumpliendo SC-001 (≤ 5 s).
+  - El aviso no lleva datos: permisos, aislamiento y cómputo siguen en un solo lugar.
+  - La pantalla solo escucha: `EventSource` es nativo y no suma dependencias.
   - Cada refresco también drena la cola en el `after()` del panel, así salen los avisos.
   - Con ~100 unidades, la consulta trae unos cientos de filas.
 - **Alternatives considered**:
   - SSE con el bus de `eventos-notificaciones.ts`: el bus vive en memoria de un proceso y en
     Vercel no reparte eventos entre instancias, así que un voto podría no llegar.
-  - WebSockets o un proveedor de tiempo real: dependencia nueva para un caso que el sondeo cubre.
+  - WebSocket con el SDK del proveedor: más resistente a problemas de red, pero suma una dependencia
+    al cliente para una pantalla que no publica. Cambiarlo afecta solo a `SalaEnVivo`.
 
 ## R-02 Inmutabilidad en la base
 

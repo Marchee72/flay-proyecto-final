@@ -197,7 +197,7 @@ function aplicarCambioOptimista(actual: VistaAsamblea, cambio: CambioOptimistaSa
 /**
  * La sala en vivo (FR-023): dividida en dos pantallas según la fase (Paso 1:
  * Acreditación y constitución → Paso 2: Orden del día y votación), con un panel
- * lateral plegable de asistentes. Se refresca sola cada 3 s con `EnVivo`
+ * lateral plegable de asistentes. Se refresca sola con `SalaEnVivo`
  * (research R-01) y aplica cambios optimistas instantáneos al acreditar o votar.
  */
 export function Sala({ vista: vistaServidor }: { vista: VistaAsamblea }) {

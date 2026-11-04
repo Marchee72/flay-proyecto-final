@@ -18,13 +18,13 @@ import { verAsamblea } from '@/aplicacion/asambleas/ver'
 
 import { AvisoDeError, conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
-import { EnVivo } from '../../../../en-vivo'
 import { BotonModal } from '../../../../modal'
 import { EtiquetaEstado } from '../etiqueta-estado'
 import { accionAbrir, accionBorrar, accionCancelar, accionConvocar } from './acciones'
 import { Ocultos } from './comunes'
 import { OrdenDelDia } from './orden-del-dia'
 import { Poderes } from './poderes'
+import { SalaEnVivo } from './sala-en-vivo'
 import { Sala } from './sala'
 
 export const metadata: Metadata = { title: 'Asamblea — Flay' }
@@ -64,7 +64,9 @@ export default async function AsambleaPage({
 
     return (
       <>
-        {vista.estado === 'en_curso' && <EnVivo />}
+        {vista.estado === 'en_curso' && (
+          <SalaEnVivo consorcioId={vista.consorcioId} asambleaId={vista.id} />
+        )}
         <Volver href={base} />
         <div className="cabecera-pagina">
           <div>

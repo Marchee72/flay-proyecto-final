@@ -351,6 +351,14 @@ Las decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
     fecha y las oposiciones, sin cron; el único cron nuevo es el recordatorio de firmas
     (`/api/tareas/asambleas`).
 
+29. **La sala de asamblea escucha, no sondea (016).** El servidor publica en Ably un aviso **sin datos**
+    y cada pantalla relee con sus permisos, así que nada de la asamblea pasa por el canal. `conAviso`
+    (`src/aplicacion/asambleas/en-vivo.ts`) es el único punto que publica: después de la acción, en
+    `after()`, y un fallo se ignora. `ABLY_API_KEY` es solo de servidor; sin ella corre `avisoNulo` y
+    la sala vuelve a los 3 s. `SalaEnVivo` monta `EnVivo` de resguardo y por eso sigue drenando la cola
+    (nota 21). El token va en la URL del `EventSource`: la reconexión del navegador repetiría uno
+    vencido, y por eso `crearEscucha` cierra y pide otro.
+
 ## Notas
 
 - La organización cliente ("Grupo Delta") es **ficticia**, construida para el ejercicio académico.

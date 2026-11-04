@@ -85,13 +85,15 @@ beforeEach(async () => {
   })
   await constituir(repo, RELOJ, de(e.consejo))
   puntos = await leerPuntos()
-  await guardarNotas(repo, RELOJ, {
-    ...de(e.carla),
-    puntoId: puntos[0].id,
-    notas: 'Tres presupuestos de pintura',
-  })
   for (const p of puntos) {
     await abrirPunto(repo, RELOJ, { ...de(e.consejo), puntoId: p.id })
+    if (p.id === puntos[0].id) {
+      await guardarNotas(repo, RELOJ, {
+        ...de(e.carla),
+        puntoId: p.id,
+        notas: 'Tres presupuestos de pintura',
+      })
+    }
     await cerrarPunto(repo, RELOJ, { ...de(e.consejo), puntoId: p.id })
   }
   await finalizar(repo, RELOJ, de(e.consejo))
@@ -112,10 +114,10 @@ describe('notas de la reunión', () => {
   it('terminada la reunión, ya no cambian', async () => {
     await expect(
       guardarNotas(repo, DESPUES, { ...de(e.carla), puntoId: puntos[0].id, notas: 'otra' }),
-    ).rejects.toThrow(/durante la reunión/)
+    ).rejects.toThrow(/mientras el punto está abierto/)
     await expect(
       prismaBase.$executeRaw`UPDATE "PuntoAsamblea" SET notas = 'otra' WHERE id = ${puntos[0].id}::uuid`,
-    ).rejects.toThrow(/durante la reunión/)
+    ).rejects.toThrow(/mientras el punto está abierto/)
   })
 
   it('notas y borrador no viajan a quien no redacta', async () => {

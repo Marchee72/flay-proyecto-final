@@ -2,11 +2,13 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { after } from 'next/server'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import {
   ALMACEN,
   DERIVADOR,
+  AVISO_EN_VIVO,
   GENERADOR_DOCUMENTOS,
   HABILITACIONES,
   RELOJ,
@@ -31,6 +33,7 @@ import {
   tomarDireccion,
 } from '@/aplicacion/asambleas/conducir'
 import { borrarBorrador, cancelar, convocar } from '@/aplicacion/asambleas/convocar'
+import { conAviso } from '@/aplicacion/asambleas/en-vivo'
 import { oponerme, registrarOposicionEnPapel } from '@/aplicacion/asambleas/oposicion'
 import { otorgarPoder, registrarPoderEnPapel, revocarPoder } from '@/aplicacion/asambleas/poderes'
 import { cargarVoto, votar, type Eleccion } from '@/aplicacion/asambleas/votar'
@@ -179,7 +182,7 @@ async function ejecutarEnSala(
     asambleaId: texto(datos, 'asamblea'),
   }
   try {
-    await trabajo(base)
+    await conAviso(AVISO_EN_VIVO, after, base.asambleaId, () => trabajo(base))
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
     return { ok: false, error: error.mensajeParaUsuario }
@@ -277,7 +280,12 @@ export async function accionTomarDireccion(datos: FormData): Promise<ResultadoSa
 }
 
 export async function accionFinalizar(datos: FormData) {
-  await ejecutar(datos, (b) => finalizar(HABILITACIONES, RELOJ, b), 'asamblea-finalizada', 'acta')
+  await ejecutar(
+    datos,
+    (b) => conAviso(AVISO_EN_VIVO, after, b.asambleaId, () => finalizar(HABILITACIONES, RELOJ, b)),
+    'asamblea-finalizada',
+    'acta',
+  )
 }
 
 // Oposición ------------------------------------------------------------------

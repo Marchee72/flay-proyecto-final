@@ -117,6 +117,15 @@ const presente = async (page: Page) => {
   await expect(page.getByText('Asistencia registrada.').first()).toBeVisible()
 }
 
+test('el permiso de escucha exige sesión', async ({ browser }) => {
+  const contexto = await browser.newContext()
+  const respuesta = await contexto.request.get(
+    `/api/asambleas/${crypto.randomUUID()}/en-vivo?consorcio=${crypto.randomUUID()}`,
+  )
+  expect(respuesta.status()).toBe(401)
+  await contexto.close()
+})
+
 test('acreditarse, votar en vivo, finalizar y firmar el acta', async ({ browser, page }, info) => {
   test.skip(info.project.name !== 'telefono', 'el recorrido es del teléfono; una sola vez')
   test.setTimeout(240_000)

@@ -1,13 +1,15 @@
 /**
  * Una ráfaga de avisos no puede disparar una relectura por aviso. Un ciclo dura
  * hasta que pasó `esperaMs` y terminó la relectura; lo que llega entretanto se
- * junta en una sola relectura al final. `topeMs` libera un refresco colgado.
+ * junta en una sola relectura al final. El sondeo pasa por el mismo ciclo, porque
+ * el router encola cada relectura delante de las acciones: apiladas, un voto
+ * esperaría a todas. `topeMs` espacia los intentos con una relectura colgada.
  */
 export function crearRefrescoAcotado({
   refrescar,
   puedeRefrescar,
   esperaMs = 500,
-  topeMs = 5000,
+  topeMs = 15_000,
 }: {
   refrescar: () => void
   puedeRefrescar: () => boolean
@@ -63,6 +65,11 @@ export function crearRefrescoAcotado({
     },
     reanudar() {
       if (falta) avisar()
+    },
+    /** Devuelve cómo detenerlo. */
+    sondear(cadaMs: number) {
+      const sondeo = setInterval(avisar, cadaMs)
+      return () => clearInterval(sondeo)
     },
     cancelar() {
       limpiar()

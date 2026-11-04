@@ -86,7 +86,8 @@ Un componente `SalaEnVivo` reemplaza a `<EnVivo />` en `[asamblea]/page.tsx`:
   `https://main.realtime.ably.net/sse?v=1.2&channels=<canal>&accessToken=<token>`.
 - Al recibir `cambio`, refresca como máximo una vez cada 500 ms. Si llegan avisos durante un refresco,
   hace uno más al terminar. Así, veinte votos seguidos no disparan veinte relecturas.
-- Conectado, sondea cada 4 s. Ese sondeo sostiene FR-023 (≤ 5 s) si se pierde un aviso y mantiene el drenaje de la cola de la
+- Cada apertura de la conexión relee: lo publicado antes de escuchar no va a llegar.
+- El sondeo pasa por el mismo refresco acotado. Conectado, sondea cada 4 s. Ese sondeo sostiene FR-023 (≤ 5 s) si se pierde un aviso y mantiene el drenaje de la cola de la
   nota 21.
 - Desconectado, sondea cada 3 s, igual que hoy.
 - Ante un error de `EventSource`, cierra la conexión, pide un token nuevo y reabre con espera creciente

@@ -8,8 +8,8 @@ deducen de la spec.
 
 - **Decision**: `SalaEnVivo` escucha por SSE un canal de Ably, montado solo mientras la asamblea está
   `en_curso`, y relee la sala al recibir un aviso sin datos. Cada lectura trae el estado completo con
-  una consulta que entra por `Asamblea` e incluye puntos, opciones, padrón y votos. `EnVivo` queda de
-  resguardo: refresca cada 4 s conectado, para sostener FR-023 si se pierde un aviso, y cada 3 s sin conexión con el servicio o sin clave.
+  una consulta que entra por `Asamblea` e incluye puntos, opciones, padrón y votos. El sondeo queda de
+  resguardo, por el mismo refresco acotado: cada 4 s conectado, para sostener FR-023 si se pierde un aviso, y cada 3 s sin conexión con el servicio o sin clave.
 - **Rationale**:
   - Baja la espera de 3 s a un aviso, y si el servicio falla sigue cumpliendo SC-001 (≤ 5 s).
   - El aviso no lleva datos: permisos, aislamiento y cómputo siguen en un solo lugar.

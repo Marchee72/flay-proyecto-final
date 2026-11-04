@@ -58,6 +58,7 @@ describe('crearEscucha', () => {
     escucha().iniciar()
     await vi.advanceTimersByTimeAsync(0)
     ultima().alAbrir()
+    alCambio.mockClear()
     ultima().alMensaje()
     ultima().alMensaje()
     expect(alCambio).toHaveBeenCalledTimes(2)
@@ -114,15 +115,15 @@ describe('crearEscucha', () => {
     expect(abrir).toHaveBeenCalledTimes(1)
   })
 
-  it('al reconectar avisa un cambio, y en la primera conexión no', async () => {
+  it('cada apertura avisa un cambio: lo publicado antes de escuchar no se pierde', async () => {
     escucha().iniciar()
     await vi.advanceTimersByTimeAsync(0)
     ultima().alAbrir()
-    expect(alCambio).not.toHaveBeenCalled()
+    expect(alCambio).toHaveBeenCalledTimes(1)
     ultima().alError()
     await vi.advanceTimersByTimeAsync(1000)
     ultima().alAbrir()
-    expect(alCambio).toHaveBeenCalledTimes(1)
+    expect(alCambio).toHaveBeenCalledTimes(2)
   })
 
   it('detener cierra la conexión abierta', async () => {

@@ -39,7 +39,7 @@ const organiza = (roles: readonly Rol[]): boolean =>
 /**
  * Lo que dibujan las pantallas de asambleas (FR-023). Una sola lectura por
  * refresco, entrando por la asamblea (research R-01): la vista en vivo la pide
- * cada 3 s. Los coeficientes viajan como cadena (Principio II).
+ * con cada aviso y cada pocos segundos. Los coeficientes viajan como cadena (Principio II).
  */
 
 export interface CuentaVista {

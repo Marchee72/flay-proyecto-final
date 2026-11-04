@@ -11,8 +11,6 @@ import {
 } from '@/compartido/escucha-en-vivo'
 import { crearRefrescoAcotado } from '@/compartido/refresco-acotado'
 
-import { EnVivo } from '../../../../en-vivo'
-
 const REALTIME = 'https://main.realtime.ably.net'
 const SONDEO_CONECTADO_MS = 4000
 const SONDEO_DESCONECTADO_MS = 3000
@@ -33,9 +31,9 @@ function abrirCanal({ canal, token }: Permiso, oyentes: Oyentes) {
 }
 
 /**
- * La sala se relee apenas llega un aviso. `EnVivo` queda de resguardo: cubre un
- * aviso perdido, sigue drenando la cola (nota 21) y, sin conexión con el
- * servicio, vuelve a ser la vista en vivo de siempre.
+ * La sala se relee apenas llega un aviso. El sondeo queda de resguardo: sostiene
+ * FR-023 si se pierde un aviso, sigue drenando la cola (nota 21) y, sin conexión
+ * con el servicio, vuelve a ser la vista en vivo de siempre.
  */
 export function SalaEnVivo({
   consorcioId,
@@ -76,5 +74,10 @@ export function SalaEnVivo({
     }
   }, [router, consorcioId, asambleaId])
 
-  return <EnVivo cadaMs={conectado ? SONDEO_CONECTADO_MS : SONDEO_DESCONECTADO_MS} />
+  useEffect(
+    () => refresco.current?.sondear(conectado ? SONDEO_CONECTADO_MS : SONDEO_DESCONECTADO_MS),
+    [conectado],
+  )
+
+  return null
 }

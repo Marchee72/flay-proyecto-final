@@ -355,8 +355,8 @@ Las decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
     y cada pantalla relee con sus permisos, así que nada de la asamblea pasa por el canal. `conAviso`
     (`src/aplicacion/asambleas/en-vivo.ts`) es el único punto que publica: después de la acción, en
     `after()`, y un fallo se ignora. `ABLY_API_KEY` es solo de servidor; sin ella corre `avisoNulo` y
-    la sala vuelve a los 3 s. `SalaEnVivo` monta `EnVivo` de resguardo y por eso sigue drenando la cola
-    (nota 21). El token va en la URL del `EventSource`: la reconexión del navegador repetiría uno
+    la sala vuelve a los 3 s. `SalaEnVivo` sondea de resguardo por el mismo refresco acotado, para no
+    apilar relecturas delante de un voto, y por eso sigue drenando la cola (nota 21). El token va en la URL del `EventSource`: la reconexión del navegador repetiría uno
     vencido, y por eso `crearEscucha` cierra y pide otro.
 
 ## Notas

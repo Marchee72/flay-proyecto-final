@@ -7,8 +7,8 @@ const TOPE_ESPERA_MS = 30_000
 /**
  * Mantiene viva la escucha de una sala. El token va en la URL, así que la
  * reconexión del navegador repetiría uno vencido: ante cualquier error se
- * cierra, se pide otro y se reabre. Un aviso perdido mientras tanto se cubre
- * con un cambio al reconectar.
+ * cierra, se pide otro y se reabre. Cada apertura relee: lo publicado antes de
+ * escuchar no va a llegar, ni al cargar la sala ni al reconectar.
  */
 export function crearEscucha({
   pedirPermiso,
@@ -23,7 +23,6 @@ export function crearEscucha({
 }) {
   let detenida = false
   let intentos = 0
-  let yaConecto = false
   let conexion: { cerrar(): void } | null = null
   let reintento: ReturnType<typeof setTimeout> | null = null
 
@@ -46,8 +45,7 @@ export function crearEscucha({
       alAbrir() {
         intentos = 0
         alConectado(true)
-        if (yaConecto) alCambio()
-        yaConecto = true
+        alCambio()
       },
       alMensaje: alCambio,
       alError() {

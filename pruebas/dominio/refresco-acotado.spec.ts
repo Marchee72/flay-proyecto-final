@@ -44,16 +44,40 @@ describe('crearRefrescoAcotado', () => {
     const r = acotado()
     r.avisar()
     r.avisar()
-    vi.advanceTimersByTime(3000)
+    vi.advanceTimersByTime(14_000)
     expect(refrescar).toHaveBeenCalledTimes(1)
   })
 
-  it('un refresco colgado se libera a los 5 s', () => {
+  it('un refresco colgado se libera recién a los 15 s', () => {
     const r = acotado()
     r.avisar()
     r.avisar()
-    vi.advanceTimersByTime(5000)
+    vi.advanceTimersByTime(14_999)
+    expect(refrescar).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(1)
     expect(refrescar).toHaveBeenCalledTimes(2)
+  })
+
+  it('el sondeo pasa por el mismo ciclo: con una relectura colgada no apila', () => {
+    const r = acotado()
+    r.sondear(4000)
+    vi.advanceTimersByTime(4000)
+    expect(refrescar).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(14_999)
+    expect(refrescar).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(1)
+    expect(refrescar).toHaveBeenCalledTimes(2)
+  })
+
+  it('el sondeo se detiene', () => {
+    const r = acotado()
+    const parar = r.sondear(4000)
+    vi.advanceTimersByTime(4000)
+    r.terminado()
+    vi.advanceTimersByTime(500)
+    parar()
+    vi.advanceTimersByTime(20_000)
+    expect(refrescar).toHaveBeenCalledTimes(1)
   })
 
   it('con la pestaña oculta no refresca, y al volver lo hace una vez', () => {

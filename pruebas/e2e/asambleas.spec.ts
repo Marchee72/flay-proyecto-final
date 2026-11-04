@@ -87,6 +87,16 @@ test.beforeAll(async () => {
       mayoria: 'absoluta',
     },
   })
+  await prisma.puntoAsamblea.create({
+    data: {
+      consorcioId: ada.consorcioId,
+      asambleaId,
+      orden: 2,
+      titulo: `Reglamento_${'x'.repeat(170)}`,
+      modalidad: 'binaria',
+      mayoria: 'absoluta',
+    },
+  })
   await prisma.asamblea.update({
     where: { id: asambleaId },
     data: {
@@ -183,12 +193,22 @@ test('acreditarse, votar en vivo, finalizar y firmar el acta', async ({ browser,
   await expect(
     page.getByText('Asamblea constituida: ya se pueden tratar los puntos.').first(),
   ).toBeVisible()
-  // Las notas son la fuente del borrador del acta (RF-32).
+  // Sin punto abierto todavía no hay nada que anotar (RF-32).
   const nota = page.getByLabel('Lo que se va debatiendo')
-  await nota.fill('Tres presupuestos de pintura')
-  await nota.blur()
+  await expect(page.getByText('0 de 2 tratados, faltan 2')).toBeVisible()
+  await expect(nota).toHaveCount(0)
+  await expect(page.getByText('No hay ningún punto abierto')).toBeVisible()
   await page.getByRole('button', { name: /Abrir el punto 1/ }).click()
   await expect(page.getByText('Punto en votación.').first()).toBeVisible()
+
+  // El avance se ve, y un título larguísimo no desarma la página (RF-31, RNF-01).
+  await expect(page.getByText('punto 1 de 2, falta 1')).toBeVisible()
+  await expect(page.getByRole('listitem').filter({ hasText: 'Ahora' })).toHaveCount(1)
+  expect(await desbordaALoAncho(page)).toBe(false)
+
+  // Las notas son la fuente del borrador del acta.
+  await nota.fill('Tres presupuestos de pintura')
+  await nota.blur()
 
   // Ada ve el punto aparecer solo (EnVivo) y vota.
   await deAda
@@ -225,6 +245,28 @@ test('acreditarse, votar en vivo, finalizar y firmar el acta', async ({ browser,
   await page.getByRole('button', { name: 'Confirmar cierre' }).click()
   await expect(page.getByText('Punto cerrado con su resultado.').first()).toBeVisible()
   await expect(page.getByText('Aprobado', { exact: true })).toBeVisible()
+  await expect(page.getByText('1 de 2 tratados, falta 1')).toBeVisible()
+  await expect(page.getByText('Tres presupuestos de pintura')).toBeVisible()
+
+  await page.getByRole('button', { name: /Abrir el punto 2/ }).click()
+  await expect(page.getByText('punto 2 de 2, es el último')).toBeVisible()
+
+  // Se cierra el punto con una nota sin guardar: el texto no se pierde en silencio.
+  const secretaria = await sesion(browser, bruno.correo)
+  const sinRed = secretaria.context()
+  await sinRed.route('**/*', (pedido) =>
+    pedido.request().method() === 'POST' ? pedido.abort() : pedido.continue(),
+  )
+  await secretaria.getByLabel('Lo que se va debatiendo').fill('Texto sin guardar')
+  await expect(secretaria.getByText(/No se pudo guardar la nota/).first()).toBeVisible()
+  await page.getByRole('button', { name: /Cerrar el punto 2/ }).click()
+  await page.getByRole('button', { name: 'Confirmar cierre' }).click()
+  await expect(page.getByText('Punto cerrado con su resultado.').first()).toBeVisible()
+  await sinRed.unroute('**/*')
+  await expect(secretaria.getByLabel('No se guardó: copialo')).toHaveValue('Texto sin guardar', {
+    timeout: 15_000,
+  })
+
   await page.getByRole('button', { name: 'Finalizar la asamblea' }).click()
   await confirmarUnaVez(
     page,
@@ -234,8 +276,8 @@ test('acreditarse, votar en vivo, finalizar y firmar el acta', async ({ browser,
   )
 
   // El acta: el borrador llega solo y una persona lo revisa antes de firmantes y envío.
-  await expect(page.getByText('Borrador de IA, revisalo')).toBeVisible({ timeout: 15_000 })
-  const resumen = page.getByLabel('Resumen de lo debatido')
+  await expect(page.getByText('Borrador de IA, revisalo').first()).toBeVisible({ timeout: 15_000 })
+  const resumen = page.getByLabel('Resumen de lo debatido').first()
   await expect(resumen).toHaveValue(/Tres presupuestos de pintura/)
   await resumen.fill('Se presentaron tres presupuestos de pintura.')
   await page.getByRole('button', { name: 'Guardar resúmenes' }).click()

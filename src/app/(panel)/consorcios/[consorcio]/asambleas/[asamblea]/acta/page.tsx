@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Download, ShieldCheck, ShieldAlert } from 'lucide-react'
+import { Download, LoaderCircle, ShieldCheck, ShieldAlert } from 'lucide-react'
 
 import { momentoParaMostrar } from '@/compartido/formato'
 import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
@@ -128,7 +128,17 @@ export default async function ActaPage({
         )}
         {p.conteo && <TablaConteo punto={p} conteo={p.conteo} />}
         {p.notas && <p className="ayuda acta__notas">Notas de la reunión: {p.notas}</p>}
-        {puedeRedactar ? (
+        {redactando && !p.resumen ? (
+          <div className="campo campo--ancho">
+            <p className="acta__rotulo">Resumen de lo debatido</p>
+            <div className="acta__cargando" aria-busy="true">
+              <span className="esqueleto esqueleto--linea" />
+              <span className="esqueleto esqueleto--linea" />
+              <span className="esqueleto esqueleto--linea esqueleto--linea-corta" />
+              <span className="oculto">Redactando el resumen…</span>
+            </div>
+          </div>
+        ) : puedeRedactar ? (
           <>
             <input type="hidden" name="punto" value={p.id} />
             <div className="campo campo--ancho">
@@ -218,8 +228,9 @@ export default async function ActaPage({
               <>
                 <EnVivo />
                 <p className="aviso" role="status">
-                  La IA está redactando el borrador con los resultados y las notas de la reunión.
-                  Suele tardar unos segundos.
+                  <LoaderCircle className="icono icono--girando" aria-hidden="true" />
+                  La IA está redactando el borrador con los resultados, las notas y las
+                  observaciones. Suele tardar unos segundos.
                 </p>
               </>
             )}

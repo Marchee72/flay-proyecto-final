@@ -293,6 +293,19 @@ test('acreditarse, votar en vivo, finalizar y firmar el acta', async ({ browser,
   await deCora.goto(`${ruta()}/acta`)
   await expect(deCora.getByText('Lo tratado')).toBeVisible()
   await expect(deCora.getByText('Pido que conste el palier')).toHaveCount(0)
+
+  // Mientras la IA redacta, cada resumen muestra que su texto está por llegar.
+  const redactando = (borradorPedidoEn: Date | null) =>
+    prisma.actaAsamblea.updateMany({ where: { asambleaId }, data: { borradorPedidoEn } })
+  await redactando(new Date())
+  await page.reload()
+  await expect(page.getByText(/La IA está redactando el borrador/)).toBeVisible()
+  await expect(page.locator('.acta__punto [aria-busy="true"]')).toHaveCount(2)
+  await expect(page.getByLabel('Resumen de lo debatido')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Guardar resúmenes' })).toBeDisabled()
+  await redactando(null)
+  await page.reload()
+
   await resumen.fill('Se presentaron tres presupuestos de pintura.')
   await page.getByRole('button', { name: 'Guardar resúmenes' }).click()
   await expect(page).toHaveURL(/hecho=resumen-guardado/)

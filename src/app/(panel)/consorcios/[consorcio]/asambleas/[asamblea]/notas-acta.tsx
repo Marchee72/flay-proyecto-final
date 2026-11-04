@@ -119,7 +119,7 @@ export function NotasActa({ vista }: { vista: VistaAsamblea }) {
         </p>
       )}
       {Object.entries(perdidas).map(([puntoId, texto]) => (
-        <div key={puntoId} className="campo campo--ancho aviso aviso--atencion">
+        <div key={puntoId} className="campo campo--ancho aviso aviso--atencion notas-acta__perdida">
           <label htmlFor={`perdida-${puntoId}`}>No se guardó: copialo</label>
           <textarea id={`perdida-${puntoId}`} rows={3} readOnly value={texto} />
         </div>

@@ -3606,6 +3606,22 @@ td select {
   }
 }
 
+/* Después de `.esqueleto`, para que le gane: el bloque general de movimiento
+   reducido está antes en el archivo. */
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto {
+    animation: none;
+  }
+}
+
+.esqueleto--linea {
+  display: block;
+  height: 12px;
+}
+.esqueleto--linea-corta {
+  width: 60%;
+}
+
 /* Espacios: calendario de uso (RF-15) */
 table.calendario {
   width: 100%;
@@ -4325,6 +4341,10 @@ table.calendario th {
 .notas-acta__cerrada {
   margin-top: var(--e3);
 }
+.notas-acta__perdida {
+  flex-direction: column;
+  align-items: stretch;
+}
 
 /* Los títulos de los puntos los escribe la gente: un título largo no desarma
    la pantalla. `break-word` y no `anywhere`, para no angostar las tablas. */
@@ -4703,6 +4723,18 @@ table.calendario th {
 }
 .acta__notas {
   white-space: pre-line;
+}
+.acta__rotulo {
+  margin: 0 0 var(--e1);
+  font-size: var(--t-menor);
+  font-weight: 600;
+}
+.acta__cargando {
+  display: grid;
+  gap: var(--e2);
+  padding: var(--e3);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-chico);
 }
 .acta__observaciones {
   margin-bottom: var(--e4);

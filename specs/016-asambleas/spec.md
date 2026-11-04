@@ -96,7 +96,7 @@ Todos los presentes ven en la misma pantalla, en vivo:
   qué;
 - los resultados de los puntos ya tratados.
 
-Un voto emitido no se modifica.
+Un voto se puede cambiar mientras el punto está abierto; al cerrarse, queda firme.
 
 **Why this priority**: es el corazón de la funcionalidad. El resultado de cada punto es lo que el
 acta certifica, y un error de cómputo invalida la decisión.
@@ -104,7 +104,7 @@ acta certifica, y un error de cómputo invalida la decisión.
 **Independent Test**: abrir una asamblea con unidades de distintos coeficientes y tomar
 asistencia. Votar un punto binario desde dos teléfonos y cargar un voto manual. Cerrar el punto y
 verificar que el resultado coincide al décimo de coeficiente con el cálculo esperado, y que ningún
-voto emitido se puede cambiar.
+voto se puede cambiar una vez cerrado el punto.
 
 **Acceptance Scenarios**:
 
@@ -115,10 +115,10 @@ voto emitido se puede cambiar.
    dirige intenta constituirla, **Then** no puede. **When** lo intenta 30 minutos después, con al
    menos una unidad presente con voto, **Then** sesiona en segunda convocatoria con los presentes.
 3. **Given** un punto abierto, **When** un presente vota su unidad desde el teléfono, **Then** el
-   voto aparece en la pantalla de todos en pocos segundos, y la unidad ya no puede volver a votar
-   ese punto.
-4. **Given** una unidad que ya votó, **When** quien dirige intenta cargar un voto manual para esa
-   unidad, **Then** se rechaza.
+   voto aparece en la pantalla de todos en pocos segundos, y quien la representa puede cambiarlo
+   hasta que el punto se cierre.
+4. **Given** una unidad que votó por sí misma, **When** quien dirige intenta cargar un voto manual
+   para esa unidad, **Then** se rechaza.
 5. **Given** una unidad con varios propietarios presentes, **When** se acreditan, **Then** la
    representa el primero que se acredita, y solo esa persona vota por la unidad en todos los
    puntos.
@@ -351,8 +351,10 @@ rechaza. Cambiar la regla a «totalidad» y verificar que la próxima asamblea l
   vota el punto abierto.
 - **FR-021**: Cada presente DEBE poder votar desde su teléfono, por cada unidad que representa con
   voto. Quien dirige DEBE poder cargar el voto de una unidad presente que no votó.
-- **FR-022**: Cada unidad emite un solo voto por punto. Un voto emitido NO DEBE poder modificarse
-  ni eliminarse, ni por quien votó ni por quien dirige.
+- **FR-022**: Cada unidad tiene un solo voto por punto. Quien la representa PUEDE cambiarlo mientras
+  el punto esté abierto, y cada cambio DEBE quedar en la bitácora. Cerrado el punto, un voto NO DEBE
+  poder modificarse. Un voto NO DEBE poder eliminarse, y quien dirige NO DEBE poder pisar el que la
+  unidad emitió por sí misma.
 - **FR-023**: Mientras la asamblea está en curso, el sistema DEBE mostrar a cualquier usuario
   habilitado del consorcio, en una vista que se actualiza sola en no más de 5 segundos:
   - el punto abierto y sus opciones;
@@ -460,7 +462,7 @@ rechaza. Cambiar la regla a «totalidad» y verificar que la próxima asamblea l
 - **SC-002**: El resultado de cada punto coincide exactamente, en unidades y en coeficientes con
   ocho decimales, con el cálculo manual sobre el mismo padrón. Los casos verificados cubren los
   tres umbrales, las dos reglas de base y la opción múltiple.
-- **SC-003**: El 100 % de los intentos de modificar un voto emitido, el orden del día de una
+- **SC-003**: El 100 % de los intentos de modificar un voto de un punto cerrado, el orden del día de una
   asamblea convocada, una asamblea finalizada o un acta enviada a firmar se rechaza.
 - **SC-004**: El 100 % de los propietarios vigentes con cuenta o con correo recibe la convocatoria,
   y la convocatoria lista a los que no tienen ninguno de los dos.
@@ -484,8 +486,9 @@ rechaza. Cambiar la regla a «totalidad» y verificar que la próxima asamblea l
   es la oficial, y su respaldo probatorio es la sesión autenticada, la bitácora y la huella.
   (Confirmado con el usuario.)
 - **Voto por unidad y nominal**, no secreto. (Mi decisión.)
-- **Varios propietarios en una unidad.** Vale el primer voto. Como el voto no se modifica, la unidad
-  queda cerrada para ese punto. (Mi decisión, a partir de «no se pueden modificar votos».)
+- **Varios propietarios en una unidad.** La representa el primero que se acredita: solo esa persona
+  vota y puede cambiar el voto mientras el punto está abierto. (Cambio confirmado con el usuario el
+  2026-11-03: antes el voto no se podía modificar.)
 - **Opción múltiple por pluralidad**, siempre firme al cerrar. La regla «totalidad» y la mayoría
   requerida no aplican a estos puntos. (Confirmado con el usuario.)
 - **Segunda convocatoria a los 30 minutos**, que sesiona con los presentes (art. 20 del

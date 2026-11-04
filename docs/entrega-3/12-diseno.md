@@ -429,7 +429,7 @@ y CU-22 (oponerse) lo rodean.
    presentes, media hora después.
 4. Quien dirige abre el primer punto. Todos los presentes lo ven en su pantalla, que se actualiza sola.
 5. Cada presente vota por cada unidad que representa. El conteo se ve en vivo, por unidades y por
-   coeficientes; el voto emitido no se modifica (RN-17).
+   coeficientes; el voto se puede cambiar hasta que se cierra el punto (RN-17).
 6. Quien dirige carga el voto de quien no tiene teléfono y cierra el punto. El sistema calcula el
    resultado por doble mayoría sobre la base que fija el consorcio (RN-16) y lo fija.
 7. Se repiten los pasos 4 a 6 por cada punto, en el orden del día. Quien dirige finaliza la asamblea.
@@ -439,7 +439,7 @@ y CU-22 (oponerse) lo rodean.
 | # | Condición | Comportamiento |
 |---|---|---|
 | 3a | No hay quórum de primera convocatoria | Se informa el porcentaje presente y desde qué hora se puede constituir en segunda |
-| 5a | La unidad ya votó o no tiene voto | Se rechaza el voto con el motivo; el conteo no cambia |
+| 5a | La unidad no tiene voto, o quien dirige intenta pisar el voto que emitió por sí misma | Se rechaza el voto con el motivo; el conteo no cambia |
 | 6a | Con la regla de la totalidad, lo aprueban los presentes pero no el total | El punto queda provisorio, se notifica a los ausentes y corre el plazo de oposición (RN-21, CU-22) |
 | 6b | Opción múltiple sin una opción ganadora en los dos cómputos, o con empate | El punto queda sin decisión |
 | 7a | Quien dirige se desconecta | Otro miembro del consejo, o la administración invitada, toma la dirección; los votos no se pierden |

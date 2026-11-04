@@ -876,8 +876,8 @@ Si detectás un problema en el edificio (ejemplo: filtración en una pared, asce
    por vos (por ejemplo, tu inquilino) y **Otorgá el poder**. Vale solo para esa asamblea y lo podés
    revocar hasta que se abra.
 3. **En la reunión**, abrí la asamblea en el teléfono y tocá **Estoy presente**. Cuando se abre un
-   punto, aparece solo en tu pantalla: elegí tu voto. Se vota por unidad, y una vez emitido el voto
-   no se cambia. Si tu unidad debe más expensas de las que admite el reglamento, figura sin voto.
+   punto, aparece solo en tu pantalla: elegí tu voto. Se vota por unidad, y podés cambiar el voto
+   hasta que se cierre el punto. Si tu unidad debe más expensas de las que admite el reglamento, figura sin voto.
 4. **Si te toca firmar el acta**, te llega el aviso: entrá, revisala y firmala con tu contraseña.
 5. **Si estuviste ausente** y el consorcio cuenta la mayoría sobre el total, puede llegarte el aviso de
    una *decisión provisoria*. Tenés quince días para **Oponerte** desde la asamblea; si no lo hacés,

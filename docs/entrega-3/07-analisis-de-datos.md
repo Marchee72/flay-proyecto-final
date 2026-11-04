@@ -44,7 +44,7 @@ sea.
 | RN-14 | Ninguna salida de un servicio automático impacta en un dato económico sin confirmación humana | `ExtraccionComprobante` es una entidad separada del `Gasto`; el gasto se crea recién al confirmar |
 | RN-15 | Toda operación que modifica un dato económico queda registrada en la bitácora de auditoría | Disparadores de base de datos sobre las tablas involucradas |
 | RN-16 | En una asamblea se vota por unidad, y cada punto se decide por doble cómputo: por cantidad de unidades y por coeficientes (CCyC art. 2060). La base son los presentes con voto o la totalidad de las unidades, según lo que fije el consorcio | Función de dominio sobre el padrón congelado al abrir la asamblea |
-| RN-17 | Una unidad vota una sola vez cada punto, solo mientras el punto está en votación, y el voto emitido no se modifica ni se borra | Clave única (punto, unidad) y disparador de inmutabilidad |
+| RN-17 | Una unidad tiene un solo voto por punto, que se emite y se cambia solo mientras el punto está en votación; cerrado el punto no se modifica, y nunca se borra | Clave única (punto, unidad) y disparador de inmutabilidad |
 | RN-18 | Desde la convocatoria, el orden del día y los datos de la asamblea no cambian: tratar un tema que no estaba es nulo (CCyC art. 2059) | Disparador sobre la asamblea, sus puntos y sus opciones |
 | RN-19 | La unidad que adeuda más expensas que el umbral del consorcio no vota, pero cuenta para el quórum | Se evalúa una vez al abrir la asamblea y se congela en el padrón |
 | RN-20 | Un poder vale para una sola asamblea, lo otorga el propietario vigente y un apoderado no representa más unidades que el tope del consorcio | Índice único parcial por unidad; tope contado bajo candado de transacción |
@@ -609,7 +609,7 @@ reclamo.
 | `OpcionPunto` | Opción de un punto de opción múltiple | Solo en borrador |
 | `Poder` | Poder de un propietario a otro usuario para una asamblea, en línea o recibido en papel | Uno vigente por unidad; tope por apoderado (RN-20) |
 | `UnidadEnAsamblea` | Padrón congelado al abrir: coeficiente copiado, sin voto por mora, presencia y quién la representa | Una fila por unidad; la presencia solo pasa de ausente a presente (RN-19) |
-| `VotoAsamblea` | Voto de una unidad en un punto: sentido u opción, quién lo emitió y si fue propio o cargado por quien dirige | Único por (punto, unidad); inmutable (RN-17) |
+| `VotoAsamblea` | Voto de una unidad en un punto: sentido u opción, quién lo emitió y si fue propio o cargado por quien dirige | Único por (punto, unidad); inmutable al cerrar el punto (RN-17) |
 | `OposicionDecision` | Oposición de un ausente a una decisión provisoria | Única por (punto, unidad); dentro del plazo y solo de ausentes con voto (RN-21) |
 | `ActaAsamblea` | Estado del acta (en redacción, a firmar, firmada), huella SHA-256 del contenido enviado a firmar y documento publicado | Una por asamblea; el contenido no cambia desde que se envía a firmar |
 | `FirmanteActa` | Presidente, secretario y dos propietarios: cuándo firmó cada uno y sobre qué huella | La firma se registra una vez; solo se reemplaza a un firmante pendiente |

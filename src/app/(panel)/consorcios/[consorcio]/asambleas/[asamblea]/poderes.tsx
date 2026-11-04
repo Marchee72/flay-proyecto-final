@@ -67,6 +67,12 @@ export function Poderes({
         </ul>
       )}
 
+      {libres.length > 0 && apoderados.length === 0 && (
+        <p className="apagado">
+          Todavía no hay otra persona con usuario en este consorcio para recibir un poder.
+        </p>
+      )}
+
       {libres.length > 0 && apoderados.length > 0 && (
         <form action={accionOtorgarPoder} className="fila-de-filtros">
           <Ocultos vista={vista} />

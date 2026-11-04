@@ -14,6 +14,9 @@ export type Resultado = { mensaje: string; ok?: boolean }
 
 const texto = (datos: FormData, campo: string) => String(datos.get(campo) ?? '').trim()
 
+/** Vacío no es cero: `Number('')` daría 0 y un umbral en blanco dejaría sin voto a quien deba algo. */
+const entero = (valor: string): number => (valor === '' ? Number.NaN : Number(valor))
+
 /** El navegador manda `datetime-local` sin zona: es la hora del consorcio (Argentina, UTC-3). */
 const momento = (valor: string): Date => new Date(`${valor}:00-03:00`)
 
@@ -59,6 +62,12 @@ export async function accionGuardarAsamblea(
   const asambleaId = texto(datos, 'asamblea')
   const asamblea = leerAsamblea(datos)
   if (!asamblea) return { mensaje: 'Revisá el orden del día: algún punto quedó incompleto.' }
+  if (
+    !Number.isNaN(asamblea.fechaHora.getTime()) &&
+    asamblea.fechaHora.getTime() < RELOJ.ahora().getTime() - 60_000
+  ) {
+    return { mensaje: 'La primera convocatoria no puede ser una fecha u hora pasada.' }
+  }
 
   let id = asambleaId
   try {
@@ -94,9 +103,9 @@ export async function accionGuardarConfiguracion(
       usuarioId,
       consorcioId,
       reglaMayoria: texto(datos, 'reglaMayoria') === 'totalidad' ? 'totalidad' : 'presentes',
-      anticipacionDias: Number(texto(datos, 'anticipacionDias')),
-      topeApoderado: Number(texto(datos, 'topeApoderado')),
-      umbralSinVoto: Number(texto(datos, 'umbralSinVoto')),
+      anticipacionDias: entero(texto(datos, 'anticipacionDias')),
+      topeApoderado: entero(texto(datos, 'topeApoderado')),
+      umbralSinVoto: entero(texto(datos, 'umbralSinVoto')),
     })
   } catch (error) {
     if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }

@@ -26,17 +26,17 @@ const ESQUEMA = z.object({
   reglaMayoria: z.enum(['presentes', 'totalidad']),
   anticipacionDias: z
     .number({ message: 'Indicá los días de anticipación.' })
-    .int()
+    .int('La anticipación se indica en días enteros.')
     .min(1, 'La anticipación va de 1 a 60 días.')
     .max(60, 'La anticipación va de 1 a 60 días.'),
   topeApoderado: z
     .number({ message: 'Indicá el tope de unidades por apoderado.' })
-    .int()
+    .int('El tope de unidades tiene que ser un número entero.')
     .min(1, 'Un apoderado puede representar de 1 a 10 unidades.')
     .max(10, 'Un apoderado puede representar de 1 a 10 unidades.'),
   umbralSinVoto: z
     .number({ message: 'Indicá desde cuántas expensas adeudadas se pierde el voto.' })
-    .int()
+    .int('El umbral de mora tiene que ser un número entero.')
     .min(0, 'El umbral de mora va de 0 a 24 expensas.')
     .max(24, 'El umbral de mora va de 0 a 24 expensas.'),
 })

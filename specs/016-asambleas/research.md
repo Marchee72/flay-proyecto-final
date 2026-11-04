@@ -21,10 +21,10 @@ deducen de la spec.
 ## R-02 Inmutabilidad en la base
 
 - **Decision**:
-  - `UNIQUE (punto_id, unidad_id)` en `VotoAsamblea`: un voto por unidad y por punto, y el segundo
-    se traduce a «la unidad ya votó».
-  - El disparador `fn_voto_inmutable` rechaza **todo `UPDATE`** de `VotoAsamblea`, y rechaza el
-    `INSERT` si el punto no está `abierto` o la asamblea no está `en_curso`.
+  - `UNIQUE (punto_id, unidad_id)` en `VotoAsamblea`: un voto por unidad y por punto; el segundo
+    lo reemplaza con un `upsert`.
+  - El disparador `fn_voto_inmutable` rechaza el `DELETE` de `VotoAsamblea`, y rechaza el `INSERT` y
+    el `UPDATE` si el punto no está `abierto` o la asamblea no está `en_curso`.
   - El disparador `fn_asamblea_cerrada` rechaza `INSERT`/`UPDATE` sobre `PuntoAsamblea`,
     `OpcionPunto` y `UnidadEnAsamblea` cuando la asamblea ya no está en `borrador` o `en_curso`.
     Hay dos excepciones:

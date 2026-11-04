@@ -175,25 +175,62 @@ describe('quórum', () => {
 })
 
 describe('votación', () => {
-  it('un voto por unidad, inmutable, también para quien dirige y por SQL', async () => {
+  it('un voto por unidad: se cambia con el punto abierto y queda firme al cerrarlo', async () => {
     await constituida()
     await abrirPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntoBinario })
-    const voto = {
-      puntoId: puntoBinario,
-      unidadId: e.unidades['1A'],
-      eleccion: { sentido: 'positivo' as const },
-    }
-    await votar(repo, RELOJ, { ...de(e.ana), ...voto })
-    await expect(votar(repo, RELOJ, { ...de(e.ana), ...voto })).rejects.toBeInstanceOf(UnidadYaVoto)
-    await expect(cargarVoto(repo, RELOJ, { ...de(e.consejo), ...voto })).rejects.toBeInstanceOf(
-      UnidadYaVoto,
-    )
+    const voto = { puntoId: puntoBinario, unidadId: e.unidades['1A'] }
+    await votar(repo, RELOJ, { ...de(e.ana), ...voto, eleccion: { sentido: 'positivo' } })
+    await votar(repo, RELOJ, { ...de(e.ana), ...voto, eleccion: { sentido: 'negativo' } })
+
+    const vista = await verAsamblea(repo, RELOJ, de(e.consejo))
+    const votos = vista.puntos.find((p) => p.id === puntoBinario)?.votos
+    expect(votos).toHaveLength(1)
+    expect(votos?.[0]?.clave).toBe('negativo')
+    const { id } = await prismaBase.votoAsamblea.findFirstOrThrow({
+      where: { puntoId: puntoBinario },
+    })
+    expect(
+      await prismaBase.bitacoraAuditoria.count({
+        where: { tabla: 'VotoAsamblea', clave: id, operacion: 'MODIFICA' },
+      }),
+    ).toBe(1)
+
     await expect(
-      prismaBase.$executeRaw`UPDATE "VotoAsamblea" SET sentido = 'negativo' WHERE punto_id = ${puntoBinario}::uuid`,
+      prismaBase.$executeRaw`UPDATE "VotoAsamblea" SET unidad_id = ${e.unidades['1B']}::uuid WHERE punto_id = ${puntoBinario}::uuid`,
     ).rejects.toThrow(/no se puede modificar/)
     await expect(
       prismaBase.$executeRaw`DELETE FROM "VotoAsamblea" WHERE punto_id = ${puntoBinario}::uuid`,
     ).rejects.toThrow(/no se puede borrar/)
+
+    await cerrarPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntoBinario })
+    await expect(
+      votar(repo, RELOJ, { ...de(e.ana), ...voto, eleccion: { sentido: 'positivo' } }),
+    ).rejects.toThrow(/no está en votación/)
+    await expect(
+      prismaBase.$executeRaw`UPDATE "VotoAsamblea" SET sentido = 'positivo' WHERE punto_id = ${puntoBinario}::uuid`,
+    ).rejects.toThrow(/no se puede modificar/)
+  })
+
+  it('quien dirige no pisa el voto que una unidad emitió por sí misma (FR-022)', async () => {
+    await constituida()
+    await abrirPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntoBinario })
+    const unidadId = e.unidades['1A']
+    await votar(repo, RELOJ, {
+      ...de(e.ana),
+      puntoId: puntoBinario,
+      unidadId,
+      eleccion: { sentido: 'positivo' },
+    })
+    await expect(
+      cargarVoto(repo, RELOJ, {
+        ...de(e.consejo),
+        puntoId: puntoBinario,
+        unidadId,
+        eleccion: { sentido: 'negativo' },
+      }),
+    ).rejects.toBeInstanceOf(UnidadYaVoto)
+    const vista = await verAsamblea(repo, RELOJ, de(e.consejo))
+    expect(vista.puntos.find((p) => p.id === puntoBinario)?.votos[0]?.clave).toBe('positivo')
   })
 
   it('nadie vota por una unidad que no representa ni un punto que no está abierto', async () => {

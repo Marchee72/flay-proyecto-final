@@ -627,7 +627,7 @@ $$;
 CREATE TRIGGER padron_reglas BEFORE INSERT OR UPDATE OR DELETE ON "UnidadEnAsamblea"
 FOR EACH ROW EXECUTE FUNCTION fn_padron_reglas();
 
--- Voto: inmutable y solo en un punto abierto ----------------------------------
+-- Voto: se emite y se cambia solo con el punto abierto ------------------------
 
 CREATE OR REPLACE FUNCTION fn_voto_inmutable() RETURNS TRIGGER
 LANGUAGE plpgsql AS $$
@@ -637,10 +637,6 @@ DECLARE
   v_presente  BOOLEAN;
   v_sin_voto  BOOLEAN;
 BEGIN
-  IF TG_OP = 'UPDATE' THEN
-    RAISE EXCEPTION 'FLAY: Un voto emitido no se puede modificar.';
-  END IF;
-
   SELECT * INTO v_punto FROM "PuntoAsamblea" p WHERE p.id = (COALESCE(NEW, OLD)).punto_id;
 
   IF TG_OP = 'DELETE' THEN
@@ -650,8 +646,20 @@ BEGIN
     RETURN OLD;
   END IF;
 
+  IF TG_OP = 'UPDATE' THEN
+    IF NEW.punto_id IS DISTINCT FROM OLD.punto_id
+      OR NEW.unidad_id IS DISTINCT FROM OLD.unidad_id
+      OR NEW.consorcio_id IS DISTINCT FROM OLD.consorcio_id
+    THEN
+      RAISE EXCEPTION 'FLAY: Un voto emitido no se puede modificar.';
+    END IF;
+  END IF;
+
   SELECT a.estado INTO v_asamblea FROM "Asamblea" a WHERE a.id = v_punto.asamblea_id;
   IF v_asamblea IS DISTINCT FROM 'en_curso' OR v_punto.estado <> 'abierto' THEN
+    IF TG_OP = 'UPDATE' THEN
+      RAISE EXCEPTION 'FLAY: Un voto emitido no se puede modificar.';
+    END IF;
     RAISE EXCEPTION 'FLAY: Ese punto no está en votación.';
   END IF;
 

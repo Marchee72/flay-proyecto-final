@@ -47,6 +47,44 @@ const datos = (fechaHora = FECHA_REUNION) => ({
 })
 
 describe('crear', () => {
+  it('rechaza opciones repetidas y textos más largos que la columna', async () => {
+    const con = (cambio: object) => ({
+      ...datos(),
+      ...cambio,
+      usuarioId: e.consejo,
+      consorcioId: e.consorcioId,
+    })
+    await expect(
+      crearAsamblea(
+        repo,
+        HOY,
+        con({
+          puntos: [
+            { titulo: 'Pintura', modalidad: 'opcion_multiple', opciones: ['Azul', ' azul'] },
+          ],
+        }),
+      ),
+    ).rejects.toThrow(/opciones repetidas/)
+    await expect(crearAsamblea(repo, HOY, con({ titulo: 'x'.repeat(201) }))).rejects.toThrow(
+      /hasta 200 caracteres/,
+    )
+  })
+
+  it('un consorcista no ve los borradores; quien organiza, sí', async () => {
+    const { asambleaId } = await crearAsamblea(repo, HOY, {
+      ...datos(),
+      usuarioId: e.consejo,
+      consorcioId: e.consorcioId,
+    })
+    const consorcista = { usuarioId: e.ana, consorcioId: e.consorcioId }
+    await expect(verAsamblea(repo, HOY, { ...consorcista, asambleaId })).rejects.toBeInstanceOf(
+      NoEncontrado,
+    )
+    expect((await listarAsambleas(repo, HOY, consorcista)).asambleas).toEqual([])
+    const organizador = { usuarioId: e.consejo, consorcioId: e.consorcioId }
+    expect((await listarAsambleas(repo, HOY, organizador)).asambleas).toHaveLength(1)
+  })
+
   it('el consejo crea una asamblea en borrador con su orden del día', async () => {
     const { asambleaId } = await crearAsamblea(repo, HOY, {
       ...datos(),

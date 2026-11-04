@@ -42,7 +42,7 @@ quickstart.md
   - `UNIQUE (asamblea_id, unidad_id)` en `UnidadEnAsamblea`, y `UNIQUE (asamblea_id)` en `ActaAsamblea`.
   - **Únicos parciales**: un punto `abierto` por asamblea, y `Poder (asamblea_id, unidad_id) WHERE revocado_en IS NULL`.
   - **CHECK**: `mayoria` obligatoria si `binaria` y nula si `opcion_multiple`; voto con exactamente uno de `sentido` u `opcion_id`; rangos de las columnas de `Consorcio`.
-  - **`fn_voto_inmutable`**: rechaza todo `UPDATE`, y el `INSERT` si el punto no está `abierto`, la asamblea no está `en_curso` o la unidad no está `presente` o está `sinVoto`.
+  - **`fn_voto_inmutable`**: rechaza el `DELETE`, el `UPDATE` que cambia punto, unidad o consorcio y, con el punto cerrado, todo `UPDATE`; además rechaza el `INSERT` si el punto no está `abierto`, la asamblea no está `en_curso` o la unidad no está `presente` o está `sinVoto`.
   - **`fn_asamblea_cerrada`**: el orden del día queda fijo desde `convocada`; nada cambia desde `finalizada`, salvo `resumen` con el acta `en_redaccion`; la presencia es solo `false → true` y el representante, una sola vez.
   - **Más disparadores**: la transición de estados de `Asamblea` sin retroceso, las oposiciones dentro del plazo y solo de ausentes con voto, la firma única con `hashFirmado = hashContenido`, y nada editable desde `a_firmar` salvo dos cosas: las firmas y el **reemplazo de un firmante sin firmar**, que cambia solo `usuarioId` y deja `reemplazaA`, con el mismo rol y `firmadoEn IS NULL` (data-model, `FirmanteActa`). Presidente y secretario apuntan a `Usuario`.
   - **Auditoría**: `fn_auditar` sobre las nueve tablas. Los mensajes de `RAISE EXCEPTION` van en castellano, para el usuario.
@@ -102,7 +102,7 @@ quickstart.md
 
 **Goal**: abrir, acreditar, constituir con quórum, votar desde el teléfono y por carga manual, ver todo en vivo, cerrar puntos con resultado y finalizar.
 
-**Independent Test**: con unidades de coeficientes distintos, votar un punto binario desde dos sesiones más un voto manual, cerrarlo y comprobar el resultado exacto. Ningún voto se puede modificar.
+**Independent Test**: con unidades de coeficientes distintos, votar un punto binario desde dos sesiones más un voto manual, cerrarlo y comprobar el resultado exacto. Ningún voto se puede modificar una vez cerrado el punto.
 
 - [X] T017 [P] [US2] Tests de dominio en `pruebas/dominio/asambleas/quorum.spec.ts`:
   - `puedeConstituir` da `antes_de_hora`;
@@ -130,7 +130,7 @@ quickstart.md
   - `constituir` sin quórum falla, y en segunda convocatoria sin ninguna unidad presente con voto también;
   - `designarAutoridades` con un presente acreditado sin usuario falla con `AutoridadSinUsuario`;
   - no se puede abrir un punto sin constituir ni dos puntos a la vez;
-  - `votar`: el segundo voto de la unidad falla con `UnidadYaVoto`, `cargarVoto` sobre una unidad que ya votó falla, y un `UPDATE` directo del voto falla por el disparador;
+  - `votar`: el segundo voto de la unidad reemplaza al primero mientras el punto está abierto, `cargarVoto` sobre una unidad que votó por sí misma falla con `UnidadYaVoto`, y con el punto cerrado un `UPDATE` directo del voto falla por el disparador;
   - votar un punto cerrado o con una unidad `sinVoto` falla;
   - `cerrarPunto` persiste `resultado` y `conteo`;
   - `finalizar` con puntos sin cerrar falla; después de finalizar, cualquier cambio de voto, presencia o resultado falla;
@@ -146,7 +146,7 @@ quickstart.md
 - [X] T022 [US2] Implementar `votar` y `cargarVoto` en `src/aplicacion/asambleas/votar.ts`, con un solo `INSERT` y la traducción de `23505` y `P0001` a los errores de T007.
 - [X] T023 [US2] Pantalla en vivo: el estado `en_curso` de `asambleas/[asamblea]/page.tsx` monta `<EnVivo />` (`src/app/(panel)/en-vivo.tsx`), solo en ese estado. Los componentes van en `asambleas/[asamblea]/en-vivo/`:
   - cabecera con el quórum (coeficiente presente) y la convocatoria que rige;
-  - el punto abierto con sus opciones y un botón por cada unidad que represento, deshabilitado si ya votó;
+  - el punto abierto con sus opciones y un botón por cada unidad que represento, que permite cambiar el voto mientras el punto sigue abierto;
   - el conteo por opción en unidades y en coeficientes, y la lista de votos por unidad;
   - los puntos cerrados con su resultado;
   - el panel de quien dirige: acreditar, autoridades, constituir, abrir y cerrar punto, cargar voto manual, tomar la dirección y finalizar.
@@ -301,7 +301,7 @@ quickstart.md
   - sumar el módulo a la tabla de módulos.
 
   Sin nombres de producto (regla de `docs/entrega-1..3`).
-- [X] T047 [P] Sumar las RN nuevas a `docs/entrega-3/07-analisis-de-datos.md` § 7.2: voto por unidad con doble cómputo, voto inmutable, orden del día fijo, mora sin voto, tope de poderes y decisión provisoria. Agregar las entidades nuevas al modelo de datos, con el diagrama en Mermaid sin acentos en los nodos.
+- [X] T047 [P] Sumar las RN nuevas a `docs/entrega-3/07-analisis-de-datos.md` § 7.2: voto por unidad con doble cómputo, voto modificable solo con el punto abierto, orden del día fijo, mora sin voto, tope de poderes y decisión provisoria. Agregar las entidades nuevas al modelo de datos, con el diagrama en Mermaid sin acentos en los nodos.
 - [X] T048 [P] En `docs/entrega-3/12-diseno.md`, sumar a § 4 los CU nuevos (convocar asamblea, otorgar poder, conducir y votar, firmar acta, oponerse), más la matriz de trazabilidad RF↔CU y la tabla de notificaciones (§ 12.7), con los seis tipos nuevos.
 - [X] T049 [P] Agregar la sección «Asambleas» al manual de usuario `docs/entrega-final/16-manual-usuario.md`: la convocatoria, los poderes, cómo votar desde el teléfono, el acta y la firma. Actualizar el estado en `docs/README.md` y `README.md` si cambia.
 - [X] T050 [P] Sumar a `scripts/semilla.mjs` (la semilla demo de `npm run semilla`) una asamblea finalizada con su acta firmada y una convocada a futuro en uno de los edificios demo, usando los casos de uso reales.

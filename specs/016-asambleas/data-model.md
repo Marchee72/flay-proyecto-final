@@ -142,7 +142,8 @@ una vez fijado. Así se cumple que la primera persona que se registra representa
 
 **Disparador `fn_voto_inmutable`**:
 
-- rechaza todo `UPDATE`;
+- rechaza el `DELETE`, y el `UPDATE` que cambia punto, unidad o consorcio;
+- con el punto cerrado, rechaza todo `UPDATE`;
 - rechaza el `INSERT` si el punto no está `abierto`, si la asamblea no está `en_curso` o si la
   unidad no está `presente`, o está `sinVoto`, en `UnidadEnAsamblea`.
 

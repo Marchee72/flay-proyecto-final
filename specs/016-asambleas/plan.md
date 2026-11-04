@@ -11,7 +11,7 @@ La asamblea entera pasa a vivir en Flay:
 - convocatoria con orden del día fijo y enlace a Google Calendar o `.ics`;
 - poderes por asamblea;
 - padrón congelado al abrir, con asistencia, quórum y unidades sin voto por mora;
-- votación por unidad en vivo, binaria o de opción múltiple, con voto inmutable;
+- votación por unidad en vivo, binaria o de opción múltiple, con voto modificable hasta cerrar el punto;
 - resultado por doble cómputo (unidades y coeficientes);
 - decisión provisoria con oposición de ausentes (CCyC 2060);
 - acta redactada después y firmada electrónicamente por cuatro personas, que termina como

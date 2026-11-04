@@ -114,7 +114,7 @@ async function sesion(browser: Browser, correo: string, viewport = { width: 390,
 
 const presente = async (page: Page) => {
   await page.getByRole('button', { name: /Estoy presente/ }).click()
-  await expect(page).toHaveURL(/hecho=acreditado/)
+  await expect(page.getByText('Asistencia registrada.').first()).toBeVisible()
 }
 
 test('acreditarse, votar en vivo, finalizar y firmar el acta', async ({ browser, page }, info) => {
@@ -140,22 +140,26 @@ test('acreditarse, votar en vivo, finalizar y firmar el acta', async ({ browser,
 
   // Autoridades, quórum y primer punto.
   await page.goto(ruta())
-  await page.getByLabel('Presidente').selectOption({ label: 'Ada Diaz' })
-  await page.getByLabel('Secretario/a').selectOption({ label: 'Bruno Paz' })
+  await page.getByLabel('Presidente').selectOption({ label: '1A — Ada Diaz' })
+  await page.getByLabel('Secretario/a').selectOption({ label: '1B — Bruno Paz' })
   await page.getByRole('button', { name: 'Designar' }).click()
-  await expect(page).toHaveURL(/hecho=autoridades-designadas/)
+  await expect(page.getByText('Presidente y secretario designados.').first()).toBeVisible()
   await page.getByRole('button', { name: 'Verificar quórum y constituir' }).click()
-  await expect(page).toHaveURL(/hecho=asamblea-constituida/)
+  await expect(
+    page.getByText('Asamblea constituida: ya se pueden tratar los puntos.').first(),
+  ).toBeVisible()
   await page.getByRole('button', { name: /Abrir el punto 1/ }).click()
-  await expect(page).toHaveURL(/hecho=punto-abierto/)
+  await expect(page.getByText('Punto en votación.').first()).toBeVisible()
 
   // Ada ve el punto aparecer solo (EnVivo) y vota.
   await deAda
     .getByRole('button', { name: 'Votar Positivo por la unidad 1A' })
     .click({ timeout: 10_000 })
-  await expect(deAda).toHaveURL(/hecho=voto-registrado/)
+  await expect(deAda.getByText('Voto registrado.').first()).toBeVisible()
   expect(Date.now() - inicioAda).toBeLessThan(30_000 + 60_000) // SC-006, con el resto del alta en el medio
-  await expect(deAda.getByText(/votaste «Positivo»/)).toBeVisible()
+  await expect(
+    deAda.getByRole('button', { name: 'Votar Positivo por la unidad 1A' }),
+  ).toHaveAttribute('aria-pressed', 'true')
 
   // Quien dirige lo ve en su pantalla sin recargar (SC-001: ≤ 5 s).
   await expect(page.getByText('Votos por unidad (1)')).toBeVisible({ timeout: 5_000 })
@@ -164,18 +168,20 @@ test('acreditarse, votar en vivo, finalizar y firmar el acta', async ({ browser,
   await page.getByLabel('Cargar voto de').selectOption({ label: '2A — Cora Paz' })
   await page.getByLabel('Voto', { exact: true }).selectOption({ label: 'Negativo' })
   await page.getByRole('button', { name: 'Cargar voto' }).click()
-  await expect(page).toHaveURL(/hecho=voto-registrado/)
+  await expect(page.getByText('Voto registrado.').first()).toBeVisible()
   await deDino
     .getByRole('button', { name: 'Votar Positivo por la unidad 2B' })
     .click({ timeout: 10_000 })
-  await expect(deDino).toHaveURL(/hecho=voto-registrado/)
+  await expect(deDino.getByText('Voto registrado.').first()).toBeVisible()
   // Quien dirige también vota por su unidad: 1A + 1B + 2B = 3 de 4 unidades y 80 de 100.
   await page.getByRole('button', { name: 'Votar Positivo por la unidad 1B' }).click()
-  await expect(page).toHaveURL(/hecho=voto-registrado/)
+  await expect(page.getByText('Voto registrado.').first()).toBeVisible()
   await page.getByRole('button', { name: /Cerrar el punto 1/ }).click()
-  await expect(page).toHaveURL(/hecho=punto-cerrado/)
+  await page.getByRole('button', { name: 'Confirmar cierre' }).click()
+  await expect(page.getByText('Punto cerrado con su resultado.').first()).toBeVisible()
   await expect(page.getByText('Aprobado', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Finalizar la asamblea' }).click()
+  await page.getByRole('button', { name: 'Confirmar finalización' }).click()
   await expect(page).toHaveURL(/acta\?hecho=asamblea-finalizada/)
 
   // El acta: resumen, firmantes y envío.
@@ -189,6 +195,7 @@ test('acreditarse, votar en vivo, finalizar y firmar el acta', async ({ browser,
   await page.getByRole('button', { name: 'Guardar firmantes' }).click()
   await expect(page).toHaveURL(/hecho=firmantes-designados/)
   await page.getByRole('button', { name: 'Enviar a firmar' }).click()
+  await page.getByRole('button', { name: 'Confirmar envío' }).click()
   await expect(page).toHaveURL(/hecho=acta-enviada/)
 
   // Firman los cuatro con su contraseña.

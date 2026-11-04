@@ -211,6 +211,7 @@ export async function acreditar(
 
       let nombre = datos.nombre?.trim() ?? ''
       let representacion = datos.representacion
+      let representanteId: string | null = datos.representanteId ?? null
       if (datos.representanteId) {
         const puede = (await representables(asamblea.id, datos.representanteId, reloj.hoy())).find(
           (u) => u.unidadId === datos.unidadId,
@@ -218,6 +219,14 @@ export async function acreditar(
         if (!puede) throw new NoRepresenta()
         representacion = puede.representacion
         nombre = await nombreDe(datos.representanteId)
+      } else if (datos.representanteId === undefined && representacion === 'propietario') {
+        const titulares = await propietariosVigentesDe([datos.unidadId], reloj.hoy())
+        const coincidente =
+          titulares.find((t) => t.usuarioId && t.nombre.toLowerCase() === nombre.toLowerCase()) ??
+          titulares.find((t) => t.usuarioId)
+        if (coincidente?.usuarioId) {
+          representanteId = coincidente.usuarioId
+        }
       }
       if (!nombre) throw new AsambleaInvalida('Indicá quién está presente por la unidad.')
 
@@ -226,7 +235,7 @@ export async function acreditar(
           where: { asambleaId: asamblea.id, unidadId: datos.unidadId, presente: false },
           data: {
             presente: true,
-            representanteId: datos.representanteId ?? null,
+            representanteId,
             representanteNombre: nombre,
             representacion,
             acreditadoEn: reloj.ahora(),
@@ -259,9 +268,22 @@ export async function designarAutoridades(
 
       const presentes = await prisma.unidadEnAsamblea.findMany({
         where: { asambleaId: asamblea.id, presente: true },
-        select: { representanteId: true, representanteNombre: true },
+        select: {
+          unidadId: true,
+          representacion: true,
+          representanteId: true,
+          representanteNombre: true,
+        },
       })
-      const conUsuario = new Set(presentes.map((p) => p.representanteId).filter(Boolean))
+      const sinVincularIds = presentes
+        .filter((p) => !p.representanteId && p.representacion === 'propietario')
+        .map((p) => p.unidadId)
+      const propietariosPresentes =
+        sinVincularIds.length > 0 ? await propietariosVigentesDe(sinVincularIds, reloj.hoy()) : []
+      const conUsuario = new Set<string>([
+        ...presentes.map((p) => p.representanteId).filter((id): id is string => Boolean(id)),
+        ...propietariosPresentes.map((p) => p.usuarioId).filter((id): id is string => Boolean(id)),
+      ])
       for (const id of [datos.presidenteId, datos.secretarioId]) {
         if (!conUsuario.has(id)) {
           throw presentes.length > 0 ? new NoPresente() : new AutoridadSinUsuario()

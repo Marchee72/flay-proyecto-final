@@ -154,16 +154,50 @@ export async function accionRevocarPoder(datos: FormData) {
 
 // Reunión --------------------------------------------------------------------
 
+export type ResultadoSala = { ok: true; mensaje: string } | { ok: false; error: string }
+
+const MENSAJE_SALA: Record<string, string> = {
+  acreditado: 'Asistencia registrada.',
+  'autoridades-designadas': 'Presidente y secretario designados.',
+  'asamblea-constituida': 'Asamblea constituida: ya se pueden tratar los puntos.',
+  'punto-abierto': 'Punto en votación.',
+  'punto-cerrado': 'Punto cerrado con su resultado.',
+  'voto-registrado': 'Voto registrado.',
+  'direccion-tomada': 'Ahora dirigís la asamblea.',
+}
+
+async function ejecutarEnSala(
+  datos: FormData,
+  trabajo: (base: Base) => Promise<unknown>,
+  hecho: keyof typeof MENSAJE_SALA,
+): Promise<ResultadoSala> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) redirect('/ingresar')
+  const base = {
+    usuarioId,
+    consorcioId: texto(datos, 'consorcio'),
+    asambleaId: texto(datos, 'asamblea'),
+  }
+  try {
+    await trabajo(base)
+  } catch (error) {
+    if (!(error instanceof ErrorDeAplicacion)) throw error
+    return { ok: false, error: error.mensajeParaUsuario }
+  }
+  revalidatePath(`/consorcios/${base.consorcioId}/asambleas/${base.asambleaId}`)
+  return { ok: true, mensaje: MENSAJE_SALA[hecho] ?? 'Listo.' }
+}
+
 export async function accionAbrir(datos: FormData) {
   await ejecutar(datos, (b) => abrir(HABILITACIONES, RELOJ, b), 'asamblea-abierta')
 }
 
-export async function accionAcreditarme(datos: FormData) {
-  await ejecutar(datos, (b) => acreditarme(HABILITACIONES, RELOJ, b), 'acreditado')
+export async function accionAcreditarme(datos: FormData): Promise<ResultadoSala> {
+  return ejecutarEnSala(datos, (b) => acreditarme(HABILITACIONES, RELOJ, b), 'acreditado')
 }
 
-export async function accionAcreditar(datos: FormData) {
-  await ejecutar(
+export async function accionAcreditar(datos: FormData): Promise<ResultadoSala> {
+  return ejecutarEnSala(
     datos,
     (b) =>
       acreditar(HABILITACIONES, RELOJ, {
@@ -177,8 +211,8 @@ export async function accionAcreditar(datos: FormData) {
   )
 }
 
-export async function accionAutoridades(datos: FormData) {
-  await ejecutar(
+export async function accionAutoridades(datos: FormData): Promise<ResultadoSala> {
+  return ejecutarEnSala(
     datos,
     (b) =>
       designarAutoridades(HABILITACIONES, RELOJ, {
@@ -190,28 +224,28 @@ export async function accionAutoridades(datos: FormData) {
   )
 }
 
-export async function accionConstituir(datos: FormData) {
-  await ejecutar(datos, (b) => constituir(HABILITACIONES, RELOJ, b), 'asamblea-constituida')
+export async function accionConstituir(datos: FormData): Promise<ResultadoSala> {
+  return ejecutarEnSala(datos, (b) => constituir(HABILITACIONES, RELOJ, b), 'asamblea-constituida')
 }
 
-export async function accionAbrirPunto(datos: FormData) {
-  await ejecutar(
+export async function accionAbrirPunto(datos: FormData): Promise<ResultadoSala> {
+  return ejecutarEnSala(
     datos,
     (b) => abrirPunto(HABILITACIONES, RELOJ, { ...b, puntoId: texto(datos, 'punto') }),
     'punto-abierto',
   )
 }
 
-export async function accionCerrarPunto(datos: FormData) {
-  await ejecutar(
+export async function accionCerrarPunto(datos: FormData): Promise<ResultadoSala> {
+  return ejecutarEnSala(
     datos,
     (b) => cerrarPunto(HABILITACIONES, RELOJ, { ...b, puntoId: texto(datos, 'punto') }),
     'punto-cerrado',
   )
 }
 
-export async function accionVotar(datos: FormData) {
-  await ejecutar(
+export async function accionVotar(datos: FormData): Promise<ResultadoSala> {
+  return ejecutarEnSala(
     datos,
     (b) =>
       votar(HABILITACIONES, RELOJ, {
@@ -224,8 +258,8 @@ export async function accionVotar(datos: FormData) {
   )
 }
 
-export async function accionCargarVoto(datos: FormData) {
-  await ejecutar(
+export async function accionCargarVoto(datos: FormData): Promise<ResultadoSala> {
+  return ejecutarEnSala(
     datos,
     (b) =>
       cargarVoto(HABILITACIONES, RELOJ, {
@@ -238,8 +272,8 @@ export async function accionCargarVoto(datos: FormData) {
   )
 }
 
-export async function accionTomarDireccion(datos: FormData) {
-  await ejecutar(datos, (b) => tomarDireccion(HABILITACIONES, RELOJ, b), 'direccion-tomada')
+export async function accionTomarDireccion(datos: FormData): Promise<ResultadoSala> {
+  return ejecutarEnSala(datos, (b) => tomarDireccion(HABILITACIONES, RELOJ, b), 'direccion-tomada')
 }
 
 export async function accionFinalizar(datos: FormData) {

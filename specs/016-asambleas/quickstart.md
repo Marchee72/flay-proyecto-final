@@ -62,8 +62,8 @@ Lo que tiene que dar:
   - avisa a los usuarios y encola `correo_directo` para los propietarios sin cuenta con correo;
   - lista a los que no tienen ni cuenta ni correo.
 - **Voto**:
-  - el segundo voto de la misma unidad falla con «la unidad ya votó»;
-  - un `UPDATE` directo de un voto falla;
+  - el segundo voto de la misma unidad reemplaza al primero mientras el punto está abierto;
+  - con el punto cerrado, un `UPDATE` directo de un voto falla;
   - votar un punto cerrado falla;
   - una unidad sin voto no vota.
 - **Padrón congelado**: cambiar un coeficiente después de abrir no mueve el conteo.

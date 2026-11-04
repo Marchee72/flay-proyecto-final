@@ -86,7 +86,10 @@ export function OrdenDelDia({
                       <label htmlFor={`oposicion-${p.id}`}>Oposición recibida por escrito</label>
                       <select id={`oposicion-${p.id}`} name="ausente" required>
                         {ausentesSinCuenta(p.id).map((a) => (
-                          <option key={a.personaId} value={`${a.unidadId}|${a.personaId}`}>
+                          <option
+                            key={`${a.unidadId}-${a.personaId}`}
+                            value={`${a.unidadId}|${a.personaId}`}
+                          >
                             {a.designacion} — {a.nombre}
                           </option>
                         ))}

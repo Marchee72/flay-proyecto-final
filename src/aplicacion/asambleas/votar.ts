@@ -5,14 +5,15 @@ import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { sinConsorcio } from '@/infraestructura/cliente-aislado'
 import { prisma } from '@/infraestructura/prisma'
+import { propietariosVigentesDe } from '@/infraestructura/repositorios/ocupaciones'
 
 import { cargarAsamblea, exigirDirige, ROLES_ORGANIZADORES } from './comun'
 import { AsambleaInvalida, conReglas, NoRepresenta, UnidadYaVoto } from './errores'
 
 /**
- * El voto (FR-021, FR-022). Un solo INSERT: la base garantiza un voto por
- * unidad y por punto (clave única) y que no se modifica ni se emite fuera de
- * un punto abierto (`fn_voto_inmutable`). Acá solo se decide quién puede.
+ * El voto (FR-021, FR-022). Un voto por unidad y por punto (clave única):
+ * mientras el punto está abierto se puede cambiar (`upsert`); una vez cerrado
+ * el punto, la base impide cualquier modificación o baja (`fn_voto_inmutable`).
  */
 
 export type Eleccion = { sentido: SentidoVoto } | { opcionId: string }
@@ -26,23 +27,43 @@ type Datos = {
   eleccion: Eleccion
 }
 
-async function insertarVoto(datos: Datos, origen: 'propio' | 'carga_manual'): Promise<void> {
+async function insertarVoto(
+  datos: Datos,
+  origen: 'propio' | 'carga_manual',
+  ahora: Date,
+): Promise<void> {
   const punto = await prisma.puntoAsamblea.findFirst({
     where: { id: datos.puntoId, asambleaId: datos.asambleaId },
     select: { id: true },
   })
   if (!punto) throw new AsambleaInvalida('Ese punto no es de esta asamblea.')
+  const sentido = 'sentido' in datos.eleccion ? datos.eleccion.sentido : null
+  const opcionId = 'opcionId' in datos.eleccion ? datos.eleccion.opcionId : null
   await conReglas(
     () =>
-      prisma.votoAsamblea.create({
-        data: sinConsorcio({
+      prisma.votoAsamblea.upsert({
+        where: {
+          puntoId_unidadId: {
+            puntoId: datos.puntoId,
+            unidadId: datos.unidadId,
+          },
+        },
+        create: sinConsorcio({
           puntoId: datos.puntoId,
           unidadId: datos.unidadId,
-          sentido: 'sentido' in datos.eleccion ? datos.eleccion.sentido : null,
-          opcionId: 'opcionId' in datos.eleccion ? datos.eleccion.opcionId : null,
+          sentido,
+          opcionId,
           emitidoPorId: datos.usuarioId,
           origen,
+          emitidoEn: ahora,
         }),
+        update: {
+          sentido,
+          opcionId,
+          emitidoPorId: datos.usuarioId,
+          origen,
+          emitidoEn: ahora,
+        },
       }),
     () => new UnidadYaVoto(),
   )
@@ -58,14 +79,24 @@ export async function votar(
     const asamblea = await cargarAsamblea(datos.asambleaId)
     const unidad = await prisma.unidadEnAsamblea.findFirst({
       where: { asambleaId: asamblea.id, unidadId: datos.unidadId },
-      select: { representanteId: true, presente: true },
+      select: { representanteId: true, presente: true, representacion: true },
     })
-    if (!unidad?.presente || unidad.representanteId !== datos.usuarioId) throw new NoRepresenta()
-    await insertarVoto(datos, 'propio')
+    let representanteId = unidad?.representanteId ?? null
+    if (unidad?.presente && !representanteId && unidad.representacion === 'propietario') {
+      const titulares = await propietariosVigentesDe([datos.unidadId], reloj.hoy())
+      if (titulares.some((t) => t.usuarioId === datos.usuarioId)) {
+        representanteId = datos.usuarioId
+      }
+    }
+    if (!unidad?.presente || representanteId !== datos.usuarioId) throw new NoRepresenta()
+    await insertarVoto(datos, 'propio', reloj.ahora())
   })
 }
 
-/** Quien dirige carga el voto de una unidad presente que no puede votar sola. */
+/**
+ * Quien dirige carga el voto de una unidad presente que no puede votar sola.
+ * Nunca pisa el que la unidad emitió por sí misma (FR-022).
+ */
 export async function cargarVoto(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
@@ -78,7 +109,12 @@ export async function cargarVoto(
     async (acceso) => {
       const asamblea = await cargarAsamblea(datos.asambleaId)
       exigirDirige(acceso, asamblea)
-      await insertarVoto(datos, 'carga_manual')
+      const previo = await prisma.votoAsamblea.findFirst({
+        where: { puntoId: datos.puntoId, unidadId: datos.unidadId },
+        select: { origen: true },
+      })
+      if (previo?.origen === 'propio') throw new UnidadYaVoto()
+      await insertarVoto(datos, 'carga_manual', reloj.ahora())
     },
   )
 }

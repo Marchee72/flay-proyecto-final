@@ -339,8 +339,9 @@ Las decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
     página de `vencimientos/`. El dominio, la validación (1er tramo 0 %, mora > recargo más alto), el
     congelado, el PDF y los pagos siguen en el modelo de boleta, intactos.
 
-28. **La asamblea se protege en la base, y se borra solo por arriba (016).** Un voto no se modifica
-    (`fn_voto_inmutable`), el orden del día queda fijo desde la convocatoria y nada cambia desde
+28. **La asamblea se protege en la base, y se borra solo por arriba (016).** Un voto se cambia solo con
+    el punto abierto y nunca se borra (`fn_voto_inmutable`); cada cambio queda en la bitácora y quien
+    dirige no pisa el voto propio de una unidad. El orden del día queda fijo desde la convocatoria y nada cambia desde
     `finalizada`: lo hacen disparadores, no la aplicación. Ningún hijo (punto, padrón, voto, poder,
     acta, firmante) se deja borrar mientras su padre exista; caen en cascada al borrar la
     `Asamblea`, y por eso `limpiar()` borra solo esa tabla. Todo cómputo (quórum, doble mayoría,

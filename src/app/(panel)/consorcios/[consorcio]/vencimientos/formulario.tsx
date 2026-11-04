@@ -1,7 +1,9 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect } from 'react'
 import { Flag } from 'lucide-react'
+
+import { avisar } from '@/app/avisos'
 
 import { accionGuardarVencimientos, type Resultado } from './acciones'
 
@@ -34,6 +36,11 @@ export function FormularioVencimientos({
 }) {
   const [estado, accion, enviando] = useActionState(accionGuardarVencimientos, SIN_RESULTADO)
   const hayError = estado.mensaje !== '' && !estado.ok
+
+  useEffect(() => {
+    if (!estado.mensaje) return
+    avisar(estado.mensaje, estado.ok ? 'exito' : 'problema')
+  }, [estado])
 
   return (
     <form action={accion} noValidate>
@@ -112,16 +119,11 @@ export function FormularioVencimientos({
         </fieldset>
       </div>
 
-      {estado.mensaje &&
-        (estado.ok ? (
-          <p className="aviso aviso--exito" role="status">
-            {estado.mensaje}
-          </p>
-        ) : (
-          <p className="error" id="error-vencimientos" role="alert">
-            {estado.mensaje}
-          </p>
-        ))}
+      {hayError && (
+        <p className="error" id="error-vencimientos" role="alert">
+          {estado.mensaje}
+        </p>
+      )}
 
       <button className="boton boton--primario" type="submit" disabled={enviando}>
         {enviando ? 'Guardando…' : 'Guardar'}

@@ -17,6 +17,23 @@ describe('aislamiento por consorcio', () => {
     })
   })
 
+  it('inyecta el consorcio en el alta y en el filtro de un upsert', async () => {
+    await enConsorcio('c-1', async () => {
+      expect(
+        aplicarAislamiento(
+          'Gasto',
+          'upsert',
+          { where: { id: 'x' }, create: { monto: '1' }, update: { monto: '2' } },
+          true,
+        ),
+      ).toEqual({
+        where: { id: 'x', consorcioId: 'c-1' },
+        create: { monto: '1', consorcioId: 'c-1' },
+        update: { monto: '2' },
+      })
+    })
+  })
+
   it('inyecta el consorcio en las altas, una y muchas', async () => {
     await enConsorcio('c-1', async () => {
       expect(aplicarAislamiento('Gasto', 'create', { data: { monto: '1' } }, true)).toEqual({

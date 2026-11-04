@@ -8,6 +8,7 @@ import { verAsamblea } from '@/aplicacion/asambleas/ver'
 
 import { AvisoDeError, conConsorcio, idONoEncontrado } from '../../../../../con-consorcio'
 import { Volver } from '../../../../../encabezado-consorcio'
+import { BotonModal } from '../../../../../modal'
 import {
   accionEnviarAFirmar,
   accionFirmantes,
@@ -88,6 +89,13 @@ export default async function ActaPage({
           .map((u) => [u.representanteId!, u]),
       ).values(),
     ].filter((u) => !acta.firmantes.some((f) => f.usuarioId === u.representanteId))
+
+    const faltanResumenes = vista.puntos.filter((p) => !p.resumen).length
+    const faltaParaEnviar = [
+      acta.firmantes.length !== 4 && 'designar a los dos propietarios que firman',
+      faltanResumenes === 1 && 'el resumen de un punto',
+      faltanResumenes > 1 && `los resúmenes de ${faltanResumenes} puntos`,
+    ].filter(Boolean)
 
     return (
       <>
@@ -190,7 +198,14 @@ export default async function ActaPage({
             </ul>
           )}
 
-          {enRedaccion && dirigio && (
+          {enRedaccion && dirigio && propietariosPresentes.length < 2 && (
+            <p className="aviso aviso--atencion" role="status">
+              Hacen falta dos propietarios presentes con usuario en Flay, además del presidente y
+              del secretario/a, y hay {propietariosPresentes.length}.
+            </p>
+          )}
+
+          {enRedaccion && dirigio && propietariosPresentes.length > 0 && (
             <form action={accionFirmantes}>
               <Ocultos vista={vista} />
               <fieldset className="campo">
@@ -217,13 +232,26 @@ export default async function ActaPage({
           )}
 
           {enRedaccion && dirigio && (
-            <form action={accionEnviarAFirmar} className="fila-acciones">
-              <Ocultos vista={vista} />
-              <button className="boton boton--primario" type="submit">
-                Enviar a firmar
-              </button>
-              <span className="apagado">Después de esto, el texto del acta no cambia.</span>
-            </form>
+            <div className="fila-acciones">
+              {faltaParaEnviar.length > 0 ? (
+                <p className="ayuda">Para enviar a firmar falta: {faltaParaEnviar.join(' y ')}.</p>
+              ) : (
+                <BotonModal etiqueta="Enviar a firmar" titulo="Enviar el acta a firmar">
+                  <form action={accionEnviarAFirmar}>
+                    <Ocultos vista={vista} />
+                    <p className="ayuda">
+                      Después de esto, el texto del acta no cambia y los firmantes tienen 10 días
+                      para firmar.
+                    </p>
+                    <div className="fila-acciones">
+                      <button className="boton boton--primario" type="submit">
+                        Confirmar envío
+                      </button>
+                    </div>
+                  </form>
+                </BotonModal>
+              )}
+            </div>
           )}
 
           {vista.yo.esFirmantePendiente && (

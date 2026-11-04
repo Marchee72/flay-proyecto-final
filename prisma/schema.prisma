@@ -1406,7 +1406,7 @@ model UnidadEnAsamblea {
   @@index([consorcioId])
 }
 
-/// Un voto por unidad y por punto, inmutable (FR-022, disparador `fn_voto_inmutable`).
+/// Un voto por unidad y por punto; se cambia solo con el punto abierto (FR-022, `fn_voto_inmutable`).
 model VotoAsamblea {
   id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   consorcioId  String       @map("consorcio_id") @db.Uuid

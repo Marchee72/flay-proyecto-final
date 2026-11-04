@@ -49,9 +49,19 @@ export interface DatosAsamblea {
   puntos: PuntoNuevo[]
 }
 
+/** Los topes de las columnas: pasarlos daría un error de base, no un mensaje. */
+const TOPE_TITULO = 200
+const TOPE_LUGAR = 300
+
 function validar(datos: DatosAsamblea): void {
   if (!datos.titulo.trim()) throw new AsambleaInvalida('Poné un título a la asamblea.')
+  if (datos.titulo.trim().length > TOPE_TITULO) {
+    throw new AsambleaInvalida(`El título puede tener hasta ${TOPE_TITULO} caracteres.`)
+  }
   if (!datos.lugar.trim()) throw new AsambleaInvalida('Indicá el lugar de la reunión.')
+  if (datos.lugar.trim().length > TOPE_LUGAR) {
+    throw new AsambleaInvalida(`El lugar puede tener hasta ${TOPE_LUGAR} caracteres.`)
+  }
   if (Number.isNaN(datos.fechaHora.getTime())) {
     throw new AsambleaInvalida('Indicá la fecha y la hora de la primera convocatoria.')
   }
@@ -61,6 +71,11 @@ function validar(datos: DatosAsamblea): void {
   datos.puntos.forEach((p, i) => {
     const n = i + 1
     if (!p.titulo.trim()) throw new AsambleaInvalida(`El punto ${n} no tiene título.`)
+    if (p.titulo.trim().length > TOPE_TITULO) {
+      throw new AsambleaInvalida(
+        `El título del punto ${n} puede tener hasta ${TOPE_TITULO} caracteres.`,
+      )
+    }
     if (p.modalidad === 'binaria' && !p.mayoria) {
       throw new AsambleaInvalida(`Elegí qué mayoría necesita el punto ${n}.`)
     }
@@ -68,6 +83,14 @@ function validar(datos: DatosAsamblea): void {
       const opciones = (p.opciones ?? []).map((o) => o.trim()).filter(Boolean)
       if (opciones.length < 2) {
         throw new AsambleaInvalida(`El punto ${n} es de opciones: necesita al menos dos.`)
+      }
+      if (opciones.some((o) => o.length > TOPE_TITULO)) {
+        throw new AsambleaInvalida(
+          `Las opciones del punto ${n} pueden tener hasta ${TOPE_TITULO} caracteres.`,
+        )
+      }
+      if (new Set(opciones.map((o) => o.toLocaleLowerCase('es'))).size < opciones.length) {
+        throw new AsambleaInvalida(`El punto ${n} tiene opciones repetidas.`)
       }
     }
   })

@@ -15,6 +15,7 @@ import { NoEncontrado } from '@/compartido/errores'
 import { coeficienteSerializado, DECIMALES_COEFICIENTE } from '@/compartido/formato'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
+import type { Rol } from '@/dominio/identidad/rol'
 import { estadoDecision, type EstadoDecision } from '@/dominio/asambleas/provisoria'
 import { textoIcs } from '@/dominio/asambleas/calendario'
 import { segundaConvocatoria } from '@/dominio/asambleas/quorum'
@@ -23,7 +24,17 @@ import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 import { propietariosVigentesDe } from '@/infraestructura/repositorios/ocupaciones'
 
-import { cargarAsamblea, enlaceCalendario, eventoDe, puedeDirigir, unidadesVigentes } from './comun'
+import {
+  cargarAsamblea,
+  enlaceCalendario,
+  eventoDe,
+  puedeDirigir,
+  ROLES_ORGANIZADORES,
+  unidadesVigentes,
+} from './comun'
+
+const organiza = (roles: readonly Rol[]): boolean =>
+  roles.some((r) => ROLES_ORGANIZADORES.includes(r))
 
 /**
  * Lo que dibujan las pantallas de asambleas (FR-023). Una sola lectura por
@@ -57,7 +68,13 @@ export interface PuntoVista {
   vencePlazoOposicion: string | null
   estadoDecision: EstadoDecision | null
   conteo: ConteoVista | null
-  votos: { unidadId: string; designacion: string; eleccion: string; cargaManual: boolean }[]
+  votos: {
+    unidadId: string
+    designacion: string
+    clave: string
+    eleccion: string
+    cargaManual: boolean
+  }[]
   oposiciones: string[]
   resumen: string | null
 }
@@ -72,6 +89,8 @@ export interface UnidadVista {
   representacion: 'propietario' | 'apoderado' | null
   /** Usuario que la representa; nulo si se acreditó a alguien sin cuenta. */
   representanteId: string | null
+  /** Nombres de los propietarios vigentes de la unidad (para buscar al acreditar). */
+  propietarios?: string[]
 }
 
 export interface MiUnidad {
@@ -226,6 +245,8 @@ export async function verAsamblea(
     { usuarioId: datos.usuarioId, consorcioId: datos.consorcioId, accion: 'ver asambleas' },
     async (acceso) => {
       const base = await cargarAsamblea(datos.asambleaId)
+      // Un borrador todavía no se publicó: para el resto del consorcio no existe.
+      if (base.estado === 'borrador' && !organiza(acceso.roles)) throw new NoEncontrado('RF-29')
       const asamblea = await prisma.asamblea.findFirstOrThrow({
         where: { id: base.id },
         include: {
@@ -268,10 +289,18 @@ export async function verAsamblea(
       const unidadIds = padron.map((u) => u.unidadId)
       const propietarios = await propietariosVigentesDe(unidadIds, hoy)
       const propietariosPorUnidad = new Map<string, Set<string>>()
+      const nombresPropietariosPorUnidad = new Map<string, string[]>()
+      const usuarioPropietarioPorUnidad = new Map<string, string>()
       for (const p of propietarios) {
         const s = propietariosPorUnidad.get(p.unidadId) ?? new Set<string>()
         s.add(p.personaId)
         propietariosPorUnidad.set(p.unidadId, s)
+        const lista = nombresPropietariosPorUnidad.get(p.unidadId) ?? []
+        if (!lista.includes(p.nombre)) lista.push(p.nombre)
+        nombresPropietariosPorUnidad.set(p.unidadId, lista)
+        if (p.usuarioId && !usuarioPropietarioPorUnidad.has(p.unidadId)) {
+          usuarioPropietarioPorUnidad.set(p.unidadId, p.usuarioId)
+        }
       }
 
       const usuarios = await nombresDeUsuarios([
@@ -327,6 +356,7 @@ export async function verAsamblea(
           votos: p.votos.map((v) => ({
             unidadId: v.unidadId,
             designacion: designacion.get(v.unidadId) ?? '',
+            clave: v.sentido ?? v.opcionId ?? '',
             eleccion: v.sentido
               ? ETIQUETA_SENTIDO[v.sentido]
               : (textoOpcion.get(v.opcionId ?? '') ?? ''),
@@ -354,12 +384,17 @@ export async function verAsamblea(
       const misUnidades: MiUnidad[] = []
       for (const unidadId of propiaIds) {
         const u = representadas.get(unidadId)
+        const repId =
+          u?.representanteId ??
+          (u?.presente && u?.representacion === 'propietario'
+            ? (usuarioPropietarioPorUnidad.get(unidadId) ?? null)
+            : null)
         misUnidades.push({
           unidadId,
           designacion: designacion.get(unidadId) ?? '',
           como: 'propietario',
           acreditada: !!u?.presente,
-          laRepresentoYo: u?.representanteId === yo,
+          laRepresentoYo: repId === yo,
         })
       }
       const poderes = asamblea.poderes.map((p) => ({
@@ -438,7 +473,12 @@ export async function verAsamblea(
           presente: u.presente,
           representante: u.representanteNombre,
           representacion: u.representacion,
-          representanteId: u.representanteId,
+          representanteId:
+            u.representanteId ??
+            (u.presente && u.representacion === 'propietario'
+              ? (usuarioPropietarioPorUnidad.get(u.unidadId) ?? null)
+              : null),
+          propietarios: nombresPropietariosPorUnidad.get(u.unidadId) ?? [],
         })),
         quorum: {
           coeficientePresente: coefPresente.toFixed(DECIMALES_COEFICIENTE),
@@ -515,12 +555,13 @@ export async function listarAsambleas(
     { ...datos, accion: 'ver asambleas' },
     async (acceso) => {
       const filas = await prisma.asamblea.findMany({
+        where: organiza(acceso.roles) ? {} : { estado: { not: 'borrador' } },
         orderBy: { fechaHora: 'desc' },
         select: { id: true, titulo: true, tipo: true, fechaHora: true, lugar: true, estado: true },
       })
       return {
         asambleas: filas.map((a) => ({ ...a, fechaHora: a.fechaHora.toISOString() })),
-        puedeCrear: acceso.roles.some((r) => r === 'administrador' || r === 'consejo'),
+        puedeCrear: organiza(acceso.roles),
         esAdministrador: acceso.roles.includes('administrador'),
       }
     },
@@ -533,15 +574,22 @@ export async function icsDeAsamblea(
   reloj: Reloj,
   datos: { usuarioId: string; consorcioId: string; asambleaId: string },
 ) {
-  return conAutorizacion(repositorio, reloj, { ...datos, accion: 'ver asambleas' }, async () => {
-    const asamblea = await prisma.asamblea.findFirst({
-      where: { id: datos.asambleaId },
-      include: {
-        consorcio: { select: { nombre: true } },
-        puntos: { select: { orden: true, titulo: true } },
-      },
-    })
-    if (!asamblea) throw new NoEncontrado('RF-29')
-    return textoIcs(eventoDe(asamblea, asamblea.puntos, asamblea.consorcio.nombre), reloj.ahora())
-  })
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    { ...datos, accion: 'ver asambleas' },
+    async (acceso) => {
+      const asamblea = await prisma.asamblea.findFirst({
+        where: { id: datos.asambleaId },
+        include: {
+          consorcio: { select: { nombre: true } },
+          puntos: { select: { orden: true, titulo: true } },
+        },
+      })
+      if (!asamblea || (asamblea.estado === 'borrador' && !organiza(acceso.roles))) {
+        throw new NoEncontrado('RF-29')
+      }
+      return textoIcs(eventoDe(asamblea, asamblea.puntos, asamblea.consorcio.nombre), reloj.ahora())
+    },
+  )
 }

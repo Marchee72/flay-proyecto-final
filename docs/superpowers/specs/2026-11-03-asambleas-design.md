@@ -32,7 +32,8 @@ firmada por presidente + dos propietarios.
    tratamiento y sus opciones, asistencia y quórum, votos que van entrando (conteo por opción en unidades
    y coeficientes, y quién votó qué), resultado de cada punto al cerrarse y los puntos ya tratados. Un
    presente vota desde esa misma pantalla.
-8. **Un voto emitido no se modifica**: ni por quien votó ni por quien dirige.
+8. **Un voto se cambia solo con el punto abierto**: lo cambia quien representa a la unidad; quien
+   dirige no pisa el voto propio de una unidad, y cerrado el punto ya nadie lo modifica.
 9. **Regla de mayoría configurable por consorcio**: sobre los presentes (reglamento) o sobre la totalidad
    (CCyC 2060), en cuyo caso lo aprobado solo por mayoría de presentes queda **provisorio**, se notifica a
    los ausentes, pueden **oponerse en Flay durante 15 días** y luego queda firme o cae.
@@ -52,8 +53,8 @@ firmada por presidente + dos propietarios.
 - Configuración por consorcio, con defaults del reglamento: anticipación de convocatoria 15 días,
   máximo 3 unidades por apoderado, pierde el voto quien adeuda **más de 2** expensas (deuda calculada con
   lo existente en `src/aplicacion/pagos/estado-de-cuenta.ts` / `saldosDeUnidad`), regla de mayoría.
-- **Voto por unidad**, nominal (no secreto). Condominio: vota el primer copropietario presente que vota;
-  como el voto no se modifica, la unidad queda cerrada para ese punto.
+- **Voto por unidad**, nominal (no secreto). Condominio: vota quien se acreditó primero, y puede
+  cambiar el voto mientras el punto está abierto.
 - Cada punto declara su mayoría requerida: absoluta / dos tercios / unanimidad. Resultado por **doble
   cómputo** (unidades y coeficientes) sobre la base que dicte la regla del consorcio.
 - Quórum en primera convocatoria: coeficientes presentes > 50 %. **Segunda convocatoria** a los 30 min
@@ -135,8 +136,8 @@ estado de la decisión provisoria tras 15 días y oposiciones. Coeficientes con 
 
 - `npm run test:dominio`: quórum, doble mayoría en los tres umbrales, multiple choice, moroso, tope de
   poderes, provisoria → firme / caída.
-- `npm run test:integracion`: aislamiento entre consorcios, voto no modificable (también para quien
-  dirige), inmutabilidad tras finalizar, firma con hash.
+- `npm run test:integracion`: aislamiento entre consorcios, voto firme al cerrar el punto (también para
+  quien dirige), inmutabilidad tras finalizar, firma con hash.
 - `npm run test:e2e` en teléfono 390×844: un presente entra, ve el punto en vivo y vota; quien dirige
   carga un voto manual.
 - `npm run verificar` completo antes del PR, más `docs:versiones`, `npm audit` y gitleaks.

@@ -66,6 +66,22 @@ describe('configuración', () => {
         consorcioId: e.consorcioId,
       }),
     ).rejects.toBeInstanceOf(ConfiguracionInvalida)
+    await expect(
+      guardarConfiguracion(repo, HOY, {
+        ...valores,
+        umbralSinVoto: Number.NaN,
+        usuarioId: e.administracion,
+        consorcioId: e.consorcioId,
+      }),
+    ).rejects.toThrow(/Indicá desde cuántas expensas/)
+    await expect(
+      guardarConfiguracion(repo, HOY, {
+        ...valores,
+        topeApoderado: 1.5,
+        usuarioId: e.administracion,
+        consorcioId: e.consorcioId,
+      }),
+    ).rejects.toThrow(/número entero/)
   })
 
   it('el consejo y los consorcistas no la cambian', async () => {

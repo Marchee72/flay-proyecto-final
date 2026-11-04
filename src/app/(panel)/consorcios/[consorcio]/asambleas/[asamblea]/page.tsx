@@ -1,6 +1,15 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { CalendarPlus, Download, FileSignature, Pencil } from 'lucide-react'
+import {
+  Ban,
+  CalendarPlus,
+  Download,
+  FileSignature,
+  Pencil,
+  Play,
+  Send,
+  Trash2,
+} from 'lucide-react'
 
 import { momentoParaMostrar } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
@@ -10,10 +19,10 @@ import { verAsamblea } from '@/aplicacion/asambleas/ver'
 import { AvisoDeError, conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
 import { EnVivo } from '../../../../en-vivo'
+import { BotonModal } from '../../../../modal'
 import { EtiquetaEstado } from '../etiqueta-estado'
 import { accionAbrir, accionBorrar, accionCancelar, accionConvocar } from './acciones'
 import { Ocultos } from './comunes'
-import { Direccion } from './direccion'
 import { OrdenDelDia } from './orden-del-dia'
 import { Poderes } from './poderes'
 import { Sala } from './sala'
@@ -50,7 +59,7 @@ export default async function AsambleaPage({
         ? await apoderadosPosibles(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id })
         : []
     const yaEsHora = RELOJ.ahora() >= new Date(vista.fechaHora)
-    const agendable = vista.estado === 'convocada' || vista.estado === 'en_curso'
+    const agendable = vista.estado === 'convocada'
     const conActa = vista.estado === 'finalizada' || vista.estado === 'acta_firmada'
 
     return (
@@ -108,36 +117,68 @@ export default async function AsambleaPage({
         )}
 
         {vista.estado === 'borrador' && vista.yo.puedeDirigir && (
-          <section className="tarjeta" aria-labelledby="borrador-titulo">
-            <h2 id="borrador-titulo">Borrador</h2>
-            <p className="apagado">
-              Todavía no se avisó a nadie. Al convocar, el orden del día queda fijo y sale el aviso
-              a todos los propietarios, en Flay y por correo.
+          <section className="borrador-barra" aria-label="Acciones del borrador">
+            <p className="borrador-barra__texto">
+              <strong>Borrador sin publicar:</strong> todavía no se avisó a nadie. Al convocar, el
+              orden del día queda fijo y se notifica en Flay y por correo.
             </p>
-            <div className="fila-acciones">
+            <div className="borrador-barra__acciones">
+              <BotonModal
+                etiqueta={
+                  <>
+                    <Trash2 className="icono" aria-hidden="true" />
+                    Borrar
+                  </>
+                }
+                titulo="Borrar el borrador"
+                variante="boton--peligro"
+                claseBoton="borrador-barra__borrar"
+              >
+                <form action={accionBorrar}>
+                  <Ocultos vista={vista} />
+                  <p className="ayuda">
+                    Se borran los datos y el orden del día. No se puede deshacer.
+                  </p>
+                  <div className="fila-acciones">
+                    <button className="boton boton--peligro" type="submit">
+                      Confirmar borrado
+                    </button>
+                  </div>
+                </form>
+              </BotonModal>
+              <span className="borrador-barra__separador" aria-hidden="true" />
               <Link className="boton boton--fantasma" href={`${base}/${vista.id}/editar`}>
                 <Pencil className="icono" aria-hidden="true" />
                 Editar
               </Link>
-              <form action={accionConvocar}>
-                <Ocultos vista={vista} />
-                <button className="boton boton--primario" type="submit">
-                  Convocar
-                </button>
-              </form>
-              <form action={accionBorrar}>
-                <Ocultos vista={vista} />
-                <button className="boton boton--peligro" type="submit">
-                  Borrar
-                </button>
-              </form>
+              <BotonModal
+                etiqueta={
+                  <>
+                    <Send className="icono" aria-hidden="true" />
+                    Convocar
+                  </>
+                }
+                titulo="Enviar la convocatoria"
+              >
+                <form action={accionConvocar}>
+                  <Ocultos vista={vista} />
+                  <p className="ayuda">
+                    Se avisa a los propietarios en Flay y por correo, y el orden del día ya no se
+                    puede cambiar.
+                  </p>
+                  <div className="fila-acciones">
+                    <button className="boton boton--primario" type="submit">
+                      Confirmar convocatoria
+                    </button>
+                  </div>
+                </form>
+              </BotonModal>
             </div>
           </section>
         )}
 
         {vista.estado === 'convocada' && vista.yo.puedeDirigir && (
-          <section className="tarjeta" aria-labelledby="dirigir-titulo">
-            <h2 id="dirigir-titulo">El día de la reunión</h2>
+          <section aria-label="El día de la reunión">
             {vista.propietariosSinCuenta.length > 0 && (
               <p className="aviso aviso--atencion" role="status">
                 {vista.propietariosSinCuenta.length === 1
@@ -147,36 +188,64 @@ export default async function AsambleaPage({
                 convocarlos por otro medio.
               </p>
             )}
-            <div className="fila-acciones">
-              <form action={accionAbrir}>
-                <Ocultos vista={vista} />
-                <button className="boton boton--primario" type="submit" disabled={!yaEsHora}>
-                  Abrir la asamblea
-                </button>
-              </form>
-              {!yaEsHora && (
-                <span className="apagado">
-                  Se abre desde {momentoParaMostrar(vista.fechaHora)}.
-                </span>
-              )}
-            </div>
-            <form action={accionCancelar} className="fila-de-filtros">
-              <Ocultos vista={vista} />
-              <div className="campo">
-                <label htmlFor="motivo">Motivo de la cancelación</label>
-                <input id="motivo" name="motivo" maxLength={300} />
+            <div className="borrador-barra">
+              <p className="borrador-barra__texto">
+                <strong>El día de la reunión:</strong>{' '}
+                {yaEsHora
+                  ? 'Ya está en horario para iniciar la acreditación y abrir la sesión.'
+                  : `Se habilita la apertura desde el ${momentoParaMostrar(vista.fechaHora)}.`}
+              </p>
+              <div className="borrador-barra__acciones">
+                <BotonModal
+                  etiqueta={
+                    <>
+                      <Ban className="icono" aria-hidden="true" />
+                      Cancelar la asamblea
+                    </>
+                  }
+                  titulo="Cancelar la asamblea"
+                  variante="boton--peligro"
+                  claseBoton="borrador-barra__borrar"
+                >
+                  <form action={accionCancelar}>
+                    <Ocultos vista={vista} />
+                    <p className="ayuda">
+                      Se notificará la cancelación a todos los propietarios convocados en Flay y por
+                      correo.
+                    </p>
+                    <div className="campo campo--ancho">
+                      <label htmlFor="motivo">Motivo de la cancelación</label>
+                      <textarea
+                        id="motivo"
+                        name="motivo"
+                        rows={3}
+                        maxLength={300}
+                        placeholder="Ej.: reprogramación por falta de disponibilidad del salón…"
+                      />
+                    </div>
+                    <div className="fila-acciones">
+                      <button className="boton boton--peligro" type="submit">
+                        Confirmar cancelación
+                      </button>
+                    </div>
+                  </form>
+                </BotonModal>
+                <span className="borrador-barra__separador" aria-hidden="true" />
+                <form action={accionAbrir}>
+                  <Ocultos vista={vista} />
+                  <button className="boton boton--primario" type="submit" disabled={!yaEsHora}>
+                    <Play className="icono" aria-hidden="true" />
+                    Abrir la asamblea
+                  </button>
+                </form>
               </div>
-              <button className="boton boton--peligro" type="submit">
-                Cancelar la asamblea
-              </button>
-            </form>
+            </div>
           </section>
         )}
 
         {vista.estado === 'en_curso' && (
           <div className="sala">
             <Sala vista={vista} />
-            <Direccion vista={vista} />
           </div>
         )}
 

@@ -99,7 +99,7 @@ export class AutoridadSinUsuario extends ErrorDeAsamblea {
 
 export class UnidadYaVoto extends ErrorDeAsamblea {
   constructor() {
-    super('Esa unidad ya votó este punto. Un voto emitido no se modifica.')
+    super('Esa unidad ya votó este punto: solo quien la representa puede cambiar su voto.')
   }
 }
 

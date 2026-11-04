@@ -71,6 +71,8 @@ const HECHO: Record<string, string | undefined> = {
   'acta-enviada': 'Acta enviada a firmar. Su texto ya no cambia.',
   'acta-firmada': 'Firma registrada.',
   'firmante-reemplazado': 'Firmante reemplazado. Se le avisó para que firme.',
+  'reglas-guardadas': 'Reglas guardadas. Rigen para las próximas convocatorias.',
+  'vencimientos-guardados': 'Vencimientos guardados.',
 }
 
 const TONOS: Record<Tono, { clase: string; Icono: typeof Bell }> = {

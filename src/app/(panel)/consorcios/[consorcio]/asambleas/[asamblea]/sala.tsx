@@ -25,6 +25,7 @@ import { AvanceOrden } from './avance-orden'
 import { opcionesDe, Ocultos, TablaConteo } from './comunes'
 import { Direccion, notificarResultado, type CambioOptimistaSala } from './direccion'
 import { NotasActa } from './notas-acta'
+import { Observacion } from './observacion'
 
 function recalcularQuorum(padron: UnidadVista[], unidadesTotales: number): VistaAsamblea['quorum'] {
   let coef = new Decimal(0)
@@ -363,91 +364,97 @@ export function Sala({ vista: vistaServidor }: { vista: VistaAsamblea }) {
               <AvanceOrden vista={vista} />
               <Direccion vista={vista} paso="votacion" alCambiarOptimista={aplicarOptimista} />
 
-              <section className="tarjeta sala__punto" aria-labelledby="punto-titulo">
-                {abierto ? (
-                  <>
-                    <p className="etiqueta etiqueta--info">En debate y votación</p>
-                    <h2 id="punto-titulo">
-                      {abierto.orden}. {abierto.titulo}
-                    </h2>
-                    {abierto.descripcion && <p>{abierto.descripcion}</p>}
+              {!vista.observacionesAbiertas && (
+                <section className="tarjeta sala__punto" aria-labelledby="punto-titulo">
+                  {abierto ? (
+                    <>
+                      <p className="etiqueta etiqueta--info">En debate y votación</p>
+                      <h2 id="punto-titulo">
+                        {abierto.orden}. {abierto.titulo}
+                      </h2>
+                      {abierto.descripcion && <p>{abierto.descripcion}</p>}
 
-                    {sinRepresentacion && (
-                      <p className="aviso aviso--atencion" role="status">
-                        No representás ninguna unidad en esta asamblea, así que no podés votar.
-                        Votan los propietarios y quienes tengan un poder de un propietario.
-                      </p>
-                    )}
+                      {sinRepresentacion && (
+                        <p className="aviso aviso--atencion" role="status">
+                          No representás ninguna unidad en esta asamblea, así que no podés votar.
+                          Votan los propietarios y quienes tengan un poder de un propietario.
+                        </p>
+                      )}
 
-                    {mias.map((u) => {
-                      const votoActual = abierto.votos.find((v) => v.unidadId === u.unidadId)
-                      if (sinVoto.has(u.unidadId)) {
-                        return (
-                          <p key={u.unidadId} className="aviso aviso--atencion" role="status">
-                            La unidad {u.designacion} no vota por deuda de expensas.
-                          </p>
-                        )
-                      }
-                      return (
-                        <div key={u.unidadId} className="votar">
-                          <p className="votar__unidad">Tu voto por la unidad {u.designacion}</p>
-                          <div className="votar__opciones">
-                            {opcionesDe(abierto).map(({ clave, texto }) => {
-                              const esElegido = votoActual?.clave === clave
-                              return (
-                                <button
-                                  key={clave}
-                                  className={`boton boton--grande votar__boton${esElegido ? ' votar__boton--elegido' : ''}`}
-                                  type="button"
-                                  aria-pressed={esElegido}
-                                  aria-label={`Votar ${texto} por la unidad ${u.designacion}`}
-                                  onClick={() => emitirVoto(abierto, u.unidadId, clave, texto)}
-                                >
-                                  {esElegido && (
-                                    <CircleCheck className="icono" aria-hidden="true" />
-                                  )}
-                                  {texto}
-                                </button>
-                              )
-                            })}
-                          </div>
-                          {votoActual && (
-                            <p className="ayuda">
-                              Podés cambiar tu voto hasta que se cierre el punto.
+                      {mias.map((u) => {
+                        const votoActual = abierto.votos.find((v) => v.unidadId === u.unidadId)
+                        if (sinVoto.has(u.unidadId)) {
+                          return (
+                            <p key={u.unidadId} className="aviso aviso--atencion" role="status">
+                              La unidad {u.designacion} no vota por deuda de expensas.
                             </p>
-                          )}
-                        </div>
-                      )
-                    })}
+                          )
+                        }
+                        return (
+                          <div key={u.unidadId} className="votar">
+                            <p className="votar__unidad">Tu voto por la unidad {u.designacion}</p>
+                            <div className="votar__opciones">
+                              {opcionesDe(abierto).map(({ clave, texto }) => {
+                                const esElegido = votoActual?.clave === clave
+                                return (
+                                  <button
+                                    key={clave}
+                                    className={`boton boton--grande votar__boton${esElegido ? ' votar__boton--elegido' : ''}`}
+                                    type="button"
+                                    aria-pressed={esElegido}
+                                    aria-label={`Votar ${texto} por la unidad ${u.designacion}`}
+                                    onClick={() => emitirVoto(abierto, u.unidadId, clave, texto)}
+                                  >
+                                    {esElegido && (
+                                      <CircleCheck className="icono" aria-hidden="true" />
+                                    )}
+                                    {texto}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                            {votoActual && (
+                              <p className="ayuda">
+                                Podés cambiar tu voto hasta que se cierre el punto.
+                              </p>
+                            )}
+                          </div>
+                        )
+                      })}
 
-                    {abierto.conteo && <TablaConteo punto={abierto} conteo={abierto.conteo} />}
+                      {abierto.conteo && <TablaConteo punto={abierto} conteo={abierto.conteo} />}
 
-                    <details className="sala__votos">
-                      <summary>Votos por unidad ({abierto.votos.length})</summary>
-                      <ul className="lista-simple">
-                        {abierto.votos.map((v) => (
-                          <li key={v.unidadId}>
-                            <span>{v.designacion}</span>
-                            <span>
-                              {v.eleccion}
-                              {v.cargaManual && <span className="apagado"> (cargado)</span>}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  </>
-                ) : (
-                  <>
-                    <h2 id="punto-titulo">Ningún punto abierto</h2>
-                    <p className="apagado">
-                      {vista.constituida
-                        ? 'Cuando quien dirige abra el próximo punto, aparece acá.'
-                        : 'Primero se acredita la asistencia y se verifica el quórum.'}
-                    </p>
-                  </>
-                )}
-              </section>
+                      <details className="sala__votos">
+                        <summary>Votos por unidad ({abierto.votos.length})</summary>
+                        <ul className="lista-simple">
+                          {abierto.votos.map((v) => (
+                            <li key={v.unidadId}>
+                              <span>{v.designacion}</span>
+                              <span>
+                                {v.eleccion}
+                                {v.cargaManual && <span className="apagado"> (cargado)</span>}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    </>
+                  ) : (
+                    <>
+                      <h2 id="punto-titulo">Ningún punto abierto</h2>
+                      <p className="apagado">
+                        {vista.constituida
+                          ? 'Cuando quien dirige abra el próximo punto, aparece acá.'
+                          : 'Primero se acredita la asistencia y se verifica el quórum.'}
+                      </p>
+                    </>
+                  )}
+                </section>
+              )}
+
+              {vista.observacionesAbiertas && vista.yo.puedeObservar && (
+                <Observacion vista={vista} />
+              )}
 
               {vista.constituida && (vista.yo.esSecretario || vista.yo.dirige) && (
                 <NotasActa vista={vista} />

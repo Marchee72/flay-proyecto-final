@@ -267,6 +267,12 @@ test('acreditarse, votar en vivo, finalizar y firmar el acta', async ({ browser,
     timeout: 15_000,
   })
 
+  // Se trató todo: cada presente deja lo que quiere que se tenga en cuenta (RF-32).
+  await deAda.getByRole('textbox', { name: 'Tu observación' }).fill('Pido que conste el palier')
+  await deAda.getByRole('button', { name: 'Guardar observación' }).click()
+  await expect(deAda.getByText('Observación guardada.').first()).toBeVisible()
+  await expect(page.getByText('1 observación recibida')).toBeVisible({ timeout: 5_000 })
+
   await page.getByRole('button', { name: 'Finalizar la asamblea' }).click()
   await confirmarUnaVez(
     page,
@@ -279,6 +285,14 @@ test('acreditarse, votar en vivo, finalizar y firmar el acta', async ({ browser,
   await expect(page.getByText('Borrador de IA, revisalo').first()).toBeVisible({ timeout: 15_000 })
   const resumen = page.getByLabel('Resumen de lo debatido').first()
   await expect(resumen).toHaveValue(/Tres presupuestos de pintura/)
+  await expect(resumen).toHaveValue(/Pido que conste el palier/)
+  const observaciones = page.getByRole('region', { name: 'Observaciones de los presentes (1)' })
+  await expect(observaciones.getByText('Pido que conste el palier')).toBeVisible()
+  await expect(observaciones.getByText(/1A/)).toBeVisible()
+  // Ada preside y la lee; Cora solo asistió.
+  await deCora.goto(`${ruta()}/acta`)
+  await expect(deCora.getByText('Lo tratado')).toBeVisible()
+  await expect(deCora.getByText('Pido que conste el palier')).toHaveCount(0)
   await resumen.fill('Se presentaron tres presupuestos de pintura.')
   await page.getByRole('button', { name: 'Guardar resúmenes' }).click()
   await expect(page).toHaveURL(/hecho=resumen-guardado/)

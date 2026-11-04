@@ -36,6 +36,7 @@ import {
 } from '@/aplicacion/asambleas/conducir'
 import { borrarBorrador, cancelar, convocar } from '@/aplicacion/asambleas/convocar'
 import { conAviso } from '@/aplicacion/asambleas/en-vivo'
+import { guardarObservacion } from '@/aplicacion/asambleas/observaciones'
 import { oponerme, registrarOposicionEnPapel } from '@/aplicacion/asambleas/oposicion'
 import { otorgarPoder, registrarPoderEnPapel, revocarPoder } from '@/aplicacion/asambleas/poderes'
 import { cargarVoto, votar, type Eleccion } from '@/aplicacion/asambleas/votar'
@@ -168,6 +169,7 @@ const MENSAJE_SALA: Record<string, string> = {
   'punto-abierto': 'Punto en votación.',
   'punto-cerrado': 'Punto cerrado con su resultado.',
   'voto-registrado': 'Voto registrado.',
+  'observacion-guardada': 'Observación guardada.',
   'direccion-tomada': 'Ahora dirigís la asamblea.',
 }
 
@@ -323,6 +325,18 @@ export async function accionOposicionEnPapel(datos: FormData) {
 // Acta -----------------------------------------------------------------------
 
 /** Se guarda sola mientras se escribe: no refresca la sala de nadie, ni avisa si salió bien. */
+export async function accionObservacion(datos: FormData): Promise<ResultadoSala> {
+  return ejecutarEnSala(
+    datos,
+    (b) =>
+      guardarObservacion(HABILITACIONES, RELOJ, {
+        ...b,
+        texto: String(datos.get('texto') ?? ''),
+      }),
+    'observacion-guardada',
+  )
+}
+
 export async function accionNotas(datos: FormData): Promise<ResultadoSala> {
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) redirect('/ingresar')

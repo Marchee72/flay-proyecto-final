@@ -192,6 +192,28 @@ export default async function ActaPage({
         <div className="acta__cuerpo">
           <section className="tarjeta" aria-labelledby="resumenes-titulo">
             <h2 id="resumenes-titulo">Lo tratado</h2>
+            {vista.observaciones.length > 0 && (
+              <section className="acta__observaciones" aria-labelledby="observaciones-titulo">
+                <h3 id="observaciones-titulo">
+                  Observaciones de los presentes ({vista.observaciones.length})
+                </h3>
+                <p className="ayuda">
+                  La IA las tuvo en cuenta para el borrador, sin saber quién las escribió. No van al
+                  acta tal cual.
+                </p>
+                <ul>
+                  {vista.observaciones.map((o) => (
+                    <li key={o.id}>
+                      <strong>
+                        {o.autor}
+                        {o.unidades && ` · ${o.unidades}`}
+                      </strong>
+                      <p>{o.texto}</p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
             {redactando && (
               <>
                 <EnVivo />

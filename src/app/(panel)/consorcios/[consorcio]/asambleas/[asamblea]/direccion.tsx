@@ -283,6 +283,7 @@ export function Direccion({
   const cargables = presentesConVoto.filter((u) => !votosPropios.has(u.unidadId))
   const faltanVotar = presentesConVoto.length - (abierto?.votos.length ?? 0)
   const sinAutoridades = !vista.presidente || !vista.secretario
+  const recibidas = vista.observacionesRecibidas
 
   if (pasoActivo === 'acreditacion') {
     return (
@@ -504,12 +505,22 @@ export function Direccion({
           <p className="apagado">
             Se trató todo el orden del día. Al finalizar, la asistencia y los votos quedan fijos.
           </p>
+          {recibidas > 0 && (
+            <p>
+              <strong>
+                {recibidas === 1
+                  ? '1 observación recibida'
+                  : `${recibidas} observaciones recibidas`}
+              </strong>
+            </p>
+          )}
           <BotonModal etiqueta="Finalizar la asamblea" titulo="Finalizar la asamblea">
             <form action={accionFinalizar}>
               <Ocultos vista={vista} />
               <p className="ayuda">
                 La asistencia, los votos y los resultados quedan fijos y empieza la redacción del
-                acta. No se puede deshacer.
+                acta. No se puede deshacer. Las observaciones sin guardar se pierden y ya no se
+                pueden escribir más.
               </p>
               <div className="fila-acciones">
                 <BotonEnviar texto="Confirmar finalización" enviando="Finalizando…" />

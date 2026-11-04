@@ -4704,6 +4704,21 @@ table.calendario th {
 .acta__notas {
   white-space: pre-line;
 }
+.acta__observaciones {
+  margin-bottom: var(--e4);
+}
+.acta__observaciones ul {
+  margin: var(--e2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.acta__observaciones li {
+  padding: var(--e2) 0;
+  border-top: 1px solid var(--linea-suave);
+}
+.acta__observaciones li p {
+  margin: var(--e1) 0 0;
+}
 .acta__punto {
   margin-top: var(--e3);
 }

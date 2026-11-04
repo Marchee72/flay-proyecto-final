@@ -14,7 +14,7 @@ import { crearRefrescoAcotado } from '@/compartido/refresco-acotado'
 import { EnVivo } from '../../../../en-vivo'
 
 const REALTIME = 'https://main.realtime.ably.net'
-const SONDEO_CONECTADO_MS = 15_000
+const SONDEO_CONECTADO_MS = 4000
 const SONDEO_DESCONECTADO_MS = 3000
 
 async function pedirPermiso(consorcioId: string, asambleaId: string): Promise<ResultadoPermiso> {

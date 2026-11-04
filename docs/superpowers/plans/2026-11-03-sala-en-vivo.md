@@ -4,7 +4,7 @@
 
 **Goal:** que un voto, una acreditación o un cambio de punto aparezcan en las demás pantallas abiertas en alrededor de un segundo, sin depender del servicio de tiempo real para funcionar.
 
-**Architecture:** el servidor publica en Ably un aviso sin datos después de cada acción confirmada; cada pantalla escucha por `EventSource`, con un token propio de solo lectura, y relee la sala por el camino de siempre. Los sondeos de `EnVivo` quedan como resguardo: cada 15 s conectado y cada 3 s desconectado.
+**Architecture:** el servidor publica en Ably un aviso sin datos después de cada acción confirmada; cada pantalla escucha por `EventSource`, con un token propio de solo lectura, y relee la sala por el camino de siempre. Los sondeos de `EnVivo` quedan como resguardo: cada 4 s conectado y cada 3 s desconectado.
 
 **Tech Stack:** Next.js 15 (`after`, route handlers, `useTransition`), `fetch` y `EventSource` nativos, Ably REST y SSE, Vitest, Playwright.
 
@@ -304,7 +304,7 @@ Expected: PASS.
 
 Componente cliente que une las piezas:
 
-- Dibuja `<EnVivo cadaMs={conectado ? 15_000 : 3_000} />`.
+- Dibuja `<EnVivo cadaMs={conectado ? 4000 : 3000} />`.
 - `refrescar` es `iniciar(() => router.refresh())`, con `iniciar` de `useTransition`. Cuando `pendiente` pasa a `false`, llama a `terminado()`.
 - `puedeRefrescar` es `!document.hidden && navigator.onLine`. Los eventos `visibilitychange` y `online` llaman a `reanudar()`.
 - `pedirPermiso` hace `fetch` a la ruta. 204, 401 y 404 son `'sin-servicio'`; otro estado no `ok` es `'reintentar'`.

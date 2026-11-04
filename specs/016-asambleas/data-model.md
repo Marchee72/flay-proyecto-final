@@ -187,7 +187,7 @@ rechaza cambios en `resumen` de los puntos y en los firmantes.
 |---|---|---|
 | `id`, `consorcioId`, `asambleaId` | UUID | |
 | `usuarioId` | UUID → `Usuario` | `UNIQUE (asamblea_id, usuario_id)`: una por persona |
-| `unidades` | `VarChar(200)` | las que representaba al escribir; vacío si dirige sin unidad |
+| `unidades` | `Text` | las que representaba al escribir; vacío si dirige sin unidad |
 | `texto` | `VarChar(1000)` | vacío deja la observación sin efecto |
 
 El disparador solo admite altas y cambios con la asamblea `en_curso` y todos los puntos `cerrado`.

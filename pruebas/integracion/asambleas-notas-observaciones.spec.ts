@@ -151,6 +151,15 @@ describe('observaciones', () => {
     expect(await filas()).toMatchObject([{ usuarioId: e.ivan, unidades: '2B' }])
   })
 
+  it('la lista de unidades de quien tiene muchas no tiene tope', async () => {
+    await cerrarTodo()
+    const unidades = Array.from({ length: 96 }, (_, i) => `Piso ${i}`).join(', ')
+    await prismaBase.observacionAsamblea.create({
+      data: { consorcioId: e.consorcioId, asambleaId, usuarioId: e.ana, unidades, texto: 'Todas' },
+    })
+    expect((await filas())[0].unidades).toBe(unidades)
+  })
+
   it('quien no está presente no escribe', async () => {
     await cerrarTodo()
     const vista = await verAsamblea(repo, RELOJ, de(e.elsa!))

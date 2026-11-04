@@ -113,7 +113,7 @@ export async function abrir(
 }
 
 /** Las unidades que el usuario puede representar: propietario vigente, o poder que vale. */
-async function representables(
+export async function representables(
   asambleaId: string,
   usuarioId: string,
   hoy: Date,

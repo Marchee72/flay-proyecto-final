@@ -108,6 +108,13 @@ export interface MiUnidad {
   laRepresentoYo: boolean
 }
 
+export interface ObservacionVista {
+  id: string
+  autor: string
+  unidades: string
+  texto: string
+}
+
 export interface VistaAsamblea {
   id: string
   consorcioId: string
@@ -131,6 +138,12 @@ export interface VistaAsamblea {
   puntos: PuntoVista[]
   padron: UnidadVista[]
   quorum: { coeficientePresente: string; unidadesPresentes: number; unidadesTotales: number }
+  /** Terminó el orden del día y todavía no se finalizó: se pueden escribir. */
+  observacionesAbiertas: boolean
+  /** Solo para quien dirige: durante la reunión nadie lee las ajenas. */
+  observacionesRecibidas: number
+  /** Solo con acta y para quien la lee: la vista viaja al navegador de todos. */
+  observaciones: ObservacionVista[]
   poderes: {
     id: string
     unidadId: string
@@ -165,6 +178,8 @@ export interface VistaAsamblea {
     esOrganizador: boolean
     esAdministrador: boolean
     esSecretario: boolean
+    puedeObservar: boolean
+    miObservacion: string
     misUnidades: MiUnidad[]
     /** Unidades donde soy propietario vigente: para otorgar poderes. */
     unidadesPropias: { unidadId: string; designacion: string }[]
@@ -269,6 +284,7 @@ export async function verAsamblea(
           padron: true,
           poderes: { orderBy: { creadoEn: 'asc' } },
           acta: { include: { firmantes: { orderBy: { creadoEn: 'asc' } } } },
+          observaciones: { orderBy: { creadoEn: 'asc' } },
         },
       })
 
@@ -317,6 +333,7 @@ export async function verAsamblea(
         asamblea.secretarioId,
         ...asamblea.poderes.map((p) => p.apoderadoId),
         ...(asamblea.acta?.firmantes.map((f) => f.usuarioId) ?? []),
+        ...asamblea.observaciones.map((o) => o.usuarioId),
       ])
       const personas = await nombresDePersonas(asamblea.poderes.map((p) => p.otorganteId))
 
@@ -456,6 +473,11 @@ export async function verAsamblea(
 
       const evento = eventoDe(asamblea, asamblea.puntos, asamblea.consorcio.nombre)
 
+      const conTexto = asamblea.observaciones.filter((o) => o.texto !== '')
+      const leeObservaciones =
+        asamblea.acta !== null &&
+        (redacta || yo === asamblea.presidenteId || acceso.roles.includes('administrador'))
+
       return {
         id: asamblea.id,
         consorcioId: asamblea.consorcioId,
@@ -477,6 +499,19 @@ export async function verAsamblea(
         secretario: conNombre(asamblea.secretarioId),
         enlaceGoogleCalendar: enlaceCalendario(evento),
         puntos,
+        observacionesAbiertas:
+          asamblea.estado === 'en_curso' &&
+          asamblea.puntos.length > 0 &&
+          asamblea.puntos.every((p) => p.estado === 'cerrado'),
+        observacionesRecibidas: asamblea.dirigeId === yo ? conTexto.length : 0,
+        observaciones: leeObservaciones
+          ? conTexto.map((o) => ({
+              id: o.id,
+              autor: usuarios.get(o.usuarioId) ?? 'Usuario',
+              unidades: o.unidades,
+              texto: o.texto,
+            }))
+          : [],
         padron: padron.map((u) => ({
           unidadId: u.unidadId,
           designacion: u.designacion,
@@ -524,6 +559,8 @@ export async function verAsamblea(
           esOrganizador: asamblea.organizadorId === yo,
           esAdministrador: acceso.roles.includes('administrador'),
           esSecretario: asamblea.secretarioId === yo,
+          puedeObservar: misUnidades.some((m) => m.acreditada) || asamblea.dirigeId === yo,
+          miObservacion: asamblea.observaciones.find((o) => o.usuarioId === yo)?.texto ?? '',
           misUnidades,
           unidadesPropias: [...propiaIds].map((unidadId) => ({
             unidadId,

@@ -64,34 +64,35 @@ model Consorcio {
   creadoEn                     DateTime     @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn                DateTime     @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  administradora    Administradora          @relation(fields: [administradoraId], references: [id])
-  unidades          Unidad[]
-  proveedores       Proveedor[]
-  periodos          Periodo[]
-  gastos            Gasto[]
-  liquidaciones     Liquidacion[]
-  pagos             Pago[]
-  reclamos          Reclamo[]
-  espacios          EspacioComun[]
-  suspensiones      SuspensionEspacio[]
-  reservas          Reserva[]
-  novedades         Novedad[]
-  documentos        DocumentoConsorcio[]
-  consultas         ConsultaDocumental[]
-  extracciones      ExtraccionComprobante[]
-  conversaciones    ConversacionAsistente[]
-  intentosDePago    IntentoDePago[]
-  notificaciones    Notificacion[]
-  tramosVencimiento TramoVencimiento[]
-  asambleas         Asamblea[]
-  puntosAsamblea    PuntoAsamblea[]
-  opcionesPunto     OpcionPunto[]
-  poderes           Poder[]
-  padronesAsamblea  UnidadEnAsamblea[]
-  votosAsamblea     VotoAsamblea[]
-  oposiciones       OposicionDecision[]
-  actasAsamblea     ActaAsamblea[]
-  firmantesActa     FirmanteActa[]
+  administradora        Administradora          @relation(fields: [administradoraId], references: [id])
+  unidades              Unidad[]
+  proveedores           Proveedor[]
+  periodos              Periodo[]
+  gastos                Gasto[]
+  liquidaciones         Liquidacion[]
+  pagos                 Pago[]
+  reclamos              Reclamo[]
+  espacios              EspacioComun[]
+  suspensiones          SuspensionEspacio[]
+  reservas              Reserva[]
+  novedades             Novedad[]
+  documentos            DocumentoConsorcio[]
+  consultas             ConsultaDocumental[]
+  extracciones          ExtraccionComprobante[]
+  conversaciones        ConversacionAsistente[]
+  intentosDePago        IntentoDePago[]
+  notificaciones        Notificacion[]
+  tramosVencimiento     TramoVencimiento[]
+  asambleas             Asamblea[]
+  puntosAsamblea        PuntoAsamblea[]
+  opcionesPunto         OpcionPunto[]
+  poderes               Poder[]
+  padronesAsamblea      UnidadEnAsamblea[]
+  votosAsamblea         VotoAsamblea[]
+  oposiciones           OposicionDecision[]
+  actasAsamblea         ActaAsamblea[]
+  observacionesAsamblea ObservacionAsamblea[]
+  firmantesActa         FirmanteActa[]
 
   @@index([administradoraId])
 }
@@ -1299,11 +1300,12 @@ model Asamblea {
   creadoEn               DateTime              @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn          DateTime              @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  consorcio Consorcio          @relation(fields: [consorcioId], references: [id])
-  puntos    PuntoAsamblea[]
-  poderes   Poder[]
-  padron    UnidadEnAsamblea[]
-  acta      ActaAsamblea?
+  consorcio     Consorcio             @relation(fields: [consorcioId], references: [id])
+  puntos        PuntoAsamblea[]
+  poderes       Poder[]
+  padron        UnidadEnAsamblea[]
+  acta          ActaAsamblea?
+  observaciones ObservacionAsamblea[]
 
   @@index([consorcioId, fechaHora])
 }
@@ -1448,6 +1450,24 @@ model OposicionDecision {
   unidad    Unidad        @relation(fields: [unidadId], references: [id])
 
   @@unique([puntoId, unidadId])
+  @@index([consorcioId])
+}
+
+model ObservacionAsamblea {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId   String   @map("consorcio_id") @db.Uuid
+  asambleaId    String   @map("asamblea_id") @db.Uuid
+  usuarioId     String   @map("usuario_id") @db.Uuid
+  /// Unidades que representaba al escribir; vacio si dirige sin unidad.
+  unidades      String   @db.VarChar(200)
+  texto         String   @db.VarChar(1000)
+  creadoEn      DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio Consorcio @relation(fields: [consorcioId], references: [id])
+  asamblea  Asamblea  @relation(fields: [asambleaId], references: [id], onDelete: Cascade)
+
+  @@unique([asambleaId, usuarioId])
   @@index([consorcioId])
 }
 

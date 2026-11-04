@@ -149,7 +149,7 @@ Estas atraviesan todo el sistema; violarlas es un defecto, no una preferencia de
 4. **Ninguna salida de un servicio automático impacta un dato económico sin confirmación humana**
    (RN-14). `ExtraccionComprobante` es una entidad separada de `Gasto`; el gasto nace al confirmar.
 5. **Cada interfaz de IA del dominio** (`ExtractorDocumental`, `ClasificadorTexto`,
-   `GeneradorVectores`, `GeneradorRespuesta`) **tiene tres implementaciones**: la del proveedor, una
+   `GeneradorVectores`, `GeneradorRespuesta`, `AgenteConversacional`, `RedactorActa`) **tiene tres implementaciones**: la del proveedor, una
    determinística para pruebas y una nula para degradación (RNF-14, RNF-15).
 6. **Auditoría por disparadores de base de datos** (RN-15), sin permisos de update/delete para el
    usuario de la aplicación: ninguna ruta de código puede omitirla.
@@ -358,6 +358,14 @@ Las decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
     la sala vuelve a los 3 s. `SalaEnVivo` sondea de resguardo por el mismo refresco acotado, para no
     apilar relecturas delante de un voto, y por eso sigue drenando la cola (nota 21). El token va en la URL del `EventSource`: la reconexión del navegador repetiría uno
     vencido, y por eso `crearEscucha` cierra y pide otro.
+
+30. **El borrador del acta no es el resumen.** Al finalizar se encola `redactar_acta` y la IA escribe en
+    `PuntoAsamblea.borradorResumen`, con los resultados y las `notas` de la sala. `enviarAFirmar` exige
+    `resumen`, que solo se llena cuando una persona guarda: por eso nada de la IA llega a las firmas sin
+    revisar (RN-14). Al redactor no le llegan personas, unidades ni votos, y las notas y el borrador solo
+    viajan en `verAsamblea` a quien redacta, porque esa vista llega al navegador de todos los asistentes.
+    `borradorPedidoEn` marca que se está redactando, y pasados 2 minutos se deja de esperar: un trabajo
+    trabado no puede bloquear la edición.
 
 ## Notas
 

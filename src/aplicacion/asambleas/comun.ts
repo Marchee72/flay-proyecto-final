@@ -68,6 +68,12 @@ export function diaEnArgentina(instante: Date): Date {
 
 export const DIA_MS = 86_400_000
 
+/** Pide el borrador del acta (RF-32). Sin `proximo_intento`, que usa el reloj de la base (nota 9). */
+export const encolarBorrador = (tx: Transaccion, actaId: string) =>
+  tx.$executeRaw`
+    INSERT INTO "TrabajoPendiente" (tipo, carga)
+    VALUES ('redactar_acta'::"TipoTrabajo", jsonb_build_object('actaId', ${actaId}::text))`
+
 export const horaParaMostrar = (instante: Date): string =>
   momentoParaMostrar(instante.toISOString())
 

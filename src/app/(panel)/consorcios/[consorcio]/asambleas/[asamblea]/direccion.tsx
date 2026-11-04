@@ -19,6 +19,7 @@ import {
   accionTomarDireccion,
   type ResultadoSala,
 } from './acciones'
+import { BotonEnviar } from './boton-enviar'
 import { opcionesDe, Ocultos } from './comunes'
 import { BotonModal } from '../../../../modal'
 
@@ -511,9 +512,7 @@ export function Direccion({
                 acta. No se puede deshacer.
               </p>
               <div className="fila-acciones">
-                <button className="boton boton--primario" type="submit">
-                  Confirmar finalización
-                </button>
+                <BotonEnviar texto="Confirmar finalización" enviando="Finalizando…" />
               </div>
             </form>
           </BotonModal>

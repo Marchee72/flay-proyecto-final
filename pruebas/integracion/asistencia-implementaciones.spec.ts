@@ -18,13 +18,14 @@ const RUBROS = [
   { codigo: 'R02', nombre: 'Mantenimiento de ascensores', descripcion: 'Gasto corriente' },
 ]
 
-const exponeLasCinco = (a: Asistencia) =>
+const exponeLasSeis = (a: Asistencia) =>
   typeof a.extractor.extraer === 'function' &&
   typeof a.clasificador.clasificar === 'function' &&
   typeof a.vectores.vectorizar === 'function' &&
   typeof a.respuestas.responder === 'function' &&
   typeof a.agente.conversar === 'function' &&
   typeof a.agente.sugerir === 'function' &&
+  typeof a.redactor.redactar === 'function' &&
   a.vectores.dimensiones === 768
 
 describe('tres implementaciones por interfaz (SC-012)', () => {
@@ -33,13 +34,13 @@ describe('tres implementaciones por interfaz (SC-012)', () => {
     expect(archivos).toEqual(['determinista.ts', 'gemini.ts', 'nula.ts'])
   })
 
-  it('cada una expone las cinco interfaces', () => {
+  it('cada una expone las seis interfaces', () => {
     for (const a of [asistenciaGemini, asistenciaDeterminista, asistenciaNula]) {
-      expect(exponeLasCinco(a)).toBe(true)
+      expect(exponeLasSeis(a)).toBe(true)
     }
   })
 
-  it('la nula responde «no disponible» en los seis metodos, sin lanzar', async () => {
+  it('la nula responde «no disponible» en los siete metodos, sin lanzar', async () => {
     const r1 = await asistenciaNula.extractor.extraer(
       { bytes: new Uint8Array(), tipoContenido: 'application/pdf' },
       { rubros: RUBROS },
@@ -57,7 +58,11 @@ describe('tres implementaciones por interfaz (SC-012)', () => {
       () => {},
     )
     const r6 = await asistenciaNula.agente.sugerir({ hoy: 'hoy', rolTexto: 'consorcista' }, [], [])
-    for (const r of [r1, r2, r3, r4, r5, r6]) {
+    const r7 = await asistenciaNula.redactor.redactar(
+      { titulo: 'Ordinaria', tipo: 'ordinaria' },
+      [],
+    )
+    for (const r of [r1, r2, r3, r4, r5, r6, r7]) {
       expect(r.disponible).toBe(false)
       if (!r.disponible) expect(r.motivo).toMatch(/no está configurado/)
     }

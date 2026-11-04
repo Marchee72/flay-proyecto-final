@@ -83,6 +83,8 @@ borrador ──convocar──▶ convocada ──abrir──▶ en_curso ──f
 | `provisorio` | `Boolean` | default `false` |
 | `vencePlazoOposicion` | `Timestamptz?` | `cerradoEn` + 15 días corridos; el aviso sale en la misma transacción |
 | `resumen` | `Text?` | se redacta con el acta `en_redaccion` |
+| `notas` | `Text?` | apuntes de la reunión, solo con la asamblea `en_curso`; no van al acta |
+| `borradorResumen` | `Text?` | propuesta de la IA; no cuenta hasta que una persona la guarda en `resumen` |
 
 Para los puntos binarios, las opciones `positivo`, `negativo` y `abstencion` son fijas y no se
 guardan en `OpcionPunto`: se modelan como enum `SentidoVoto`.

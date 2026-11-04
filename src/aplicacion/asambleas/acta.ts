@@ -1,7 +1,10 @@
 import { createHash } from 'node:crypto'
 
+import { z } from 'zod'
+
 import type { AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
 import type { DerivadorDeContrasenas } from '@/dominio/contratos/derivador-contrasenas'
+import type { RedactorActa } from '@/dominio/contratos/asistencia'
 import type { ActaParaDocumento, GeneradorDeDocumentos } from '@/dominio/contratos/documentos'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
@@ -9,12 +12,14 @@ import { NoEncontrado } from '@/compartido/errores'
 import { coeficienteParaMostrar } from '@/compartido/formato'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { notificar, type Transaccion } from '@/aplicacion/comunicacion/notificar'
-import { sinConsorcio } from '@/infraestructura/cliente-aislado'
+import type { Manejador } from '@/aplicacion/pendientes/drenar'
+import { enConsorcio, sinConsorcio } from '@/infraestructura/cliente-aislado'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 
 import {
   administradoresDelConsorcio,
   cargarAsamblea,
+  encolarBorrador,
   horaParaMostrar,
   propietariosPorCanal,
   unidadesVigentes,
@@ -29,7 +34,7 @@ import {
   NoDirige,
   YaFirmo,
 } from './errores'
-import { verAsamblea, type VistaAsamblea } from './ver'
+import { verAsamblea, type ConteoVista, type VistaAsamblea } from './ver'
 
 /**
  * El acta (RF-32, FR-030 a FR-034, research R-09). Se redacta después de la
@@ -64,6 +69,36 @@ function exigioDirigio(asamblea: { dirigeId: string | null }, usuarioId: string)
   if (asamblea.dirigeId !== usuarioId) throw new NoDirige()
 }
 
+/** Redactan la secretaría y quien dirigió. */
+function exigirRedacta(
+  asamblea: { dirigeId: string | null; secretarioId: string | null },
+  usuarioId: string,
+) {
+  if (asamblea.secretarioId !== usuarioId && asamblea.dirigeId !== usuarioId) throw new NoDirige()
+}
+
+/**
+ * Los apuntes de la reunión, por punto: la fuente del borrador. No van al acta.
+ * Que solo cambien durante la reunión lo sostiene el disparador (`conReglas`).
+ */
+export async function guardarNotas(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: Datos & { puntoId: string; notas: string },
+): Promise<void> {
+  await conAutorizacion(repositorio, reloj, { ...datos, accion: 'redactar el acta' }, async () => {
+    const asamblea = await cargarAsamblea(datos.asambleaId)
+    exigirRedacta(asamblea, datos.usuarioId)
+    const { count } = await conReglas(() =>
+      prisma.puntoAsamblea.updateMany({
+        where: { id: datos.puntoId, asambleaId: asamblea.id },
+        data: { notas: datos.notas.trim() || null },
+      }),
+    )
+    if (count === 0) throw new NoEncontrado('RF-32')
+  })
+}
+
 export async function redactarResumen(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
@@ -71,9 +106,7 @@ export async function redactarResumen(
 ): Promise<void> {
   await conAutorizacion(repositorio, reloj, { ...datos, accion: 'redactar el acta' }, async () => {
     const asamblea = await cargarAsamblea(datos.asambleaId)
-    if (asamblea.secretarioId !== datos.usuarioId && asamblea.dirigeId !== datos.usuarioId) {
-      throw new NoDirige()
-    }
+    exigirRedacta(asamblea, datos.usuarioId)
     const acta = await actaDe(asamblea.id)
     if (acta.estado !== 'en_redaccion') throw new ActaNoEnRedaccion()
     const { count } = await conReglas(() =>
@@ -174,6 +207,25 @@ const ETIQUETA_ROL: Record<string, string> = {
   propietario: 'Propietario/a',
 }
 
+type PuntoConOpciones = {
+  modalidad: 'binaria' | 'opcion_multiple'
+  opciones: { id: string; texto: string }[]
+}
+
+const clavesDelPunto = (p: PuntoConOpciones) =>
+  p.modalidad === 'binaria'
+    ? ['positivo', 'negativo', 'abstencion'].map((k) => ({ k, texto: ETIQUETA_SENTIDO[k] }))
+    : p.opciones.map((o) => ({ k: o.id, texto: o.texto }))
+
+const resultadoEnTexto = (p: {
+  modalidad: PuntoConOpciones['modalidad']
+  resultado: string | null
+  opcionGanadora: string | null
+}) =>
+  p.modalidad === 'opcion_multiple' && p.opcionGanadora
+    ? `aprobada la opción «${p.opcionGanadora}»`
+    : ETIQUETA_RESULTADO[p.resultado ?? 'sin_decision']
+
 /** Todo como cadena, ya formateado: el generador no calcula (Principio II). */
 async function paraDocumento(
   vista: VistaAsamblea,
@@ -202,10 +254,7 @@ async function paraDocumento(
         : '—',
     })),
     puntos: vista.puntos.map((p) => {
-      const claves =
-        p.modalidad === 'binaria'
-          ? ['positivo', 'negativo', 'abstencion'].map((k) => ({ k, texto: ETIQUETA_SENTIDO[k] }))
-          : p.opciones.map((o) => ({ k: o.id, texto: o.texto }))
+      const claves = clavesDelPunto(p)
       const estado =
         p.resultado !== 'aprobado'
           ? ''
@@ -230,14 +279,95 @@ async function paraDocumento(
           unidades: String(p.conteo?.porOpcion[k]?.unidades ?? 0),
           coeficiente: `${coeficienteParaMostrar(p.conteo?.porOpcion[k]?.coeficiente ?? '0')} %`,
         })),
-        resultado:
-          p.modalidad === 'opcion_multiple' && p.opcionGanadora
-            ? `aprobada la opción «${p.opcionGanadora}»`
-            : ETIQUETA_RESULTADO[p.resultado ?? 'sin_decision'],
+        resultado: resultadoEnTexto(p),
         estado,
       }
     }),
   }
+}
+
+/**
+ * El borrador del acta (RF-32, RN-14). Corre en la cola, con el redactor que
+ * eligió el punto de composición. Escribe `borradorResumen` y nunca `resumen`:
+ * enviar a firmar exige este último, así que a las firmas solo llega lo que una
+ * persona guardó. Sin servicio no hay borrador y se redacta a mano (RNF-14).
+ */
+const CARGA_BORRADOR = z.object({ actaId: z.string().uuid() })
+
+export function manejadorBorradorActa(redactor: RedactorActa): Manejador {
+  return async (carga) => {
+    const { actaId } = CARGA_BORRADOR.parse(carga)
+    // Fuera de todo contexto de aislamiento: la cola no tiene consorcio activo.
+    const acta = await prismaBase.actaAsamblea.findUnique({
+      where: { id: actaId },
+      include: { asamblea: { select: { titulo: true, tipo: true } } },
+    })
+    if (!acta || acta.estado !== 'en_redaccion') return
+
+    await enConsorcio(acta.consorcioId, async () => {
+      const puntos = await prisma.puntoAsamblea.findMany({
+        where: { asambleaId: acta.asambleaId },
+        include: { opciones: { select: { id: true, texto: true } } },
+        orderBy: { orden: 'asc' },
+      })
+      // Agregados y notas: al proveedor no le llegan personas, unidades ni votos.
+      const resultado = await redactor.redactar(
+        acta.asamblea,
+        puntos.map((p) => {
+          const conteo = p.conteo as unknown as ConteoVista | null
+          return {
+            orden: p.orden,
+            titulo: p.titulo,
+            descripcion: p.descripcion,
+            resultado: resultadoEnTexto({
+              ...p,
+              opcionGanadora: p.opciones.find((o) => o.id === p.opcionGanadoraId)?.texto ?? null,
+            }),
+            conteo: clavesDelPunto(p).map(({ k, texto }) => ({
+              opcion: texto,
+              unidades: conteo?.porOpcion[k]?.unidades ?? 0,
+              coeficiente: `${coeficienteParaMostrar(conteo?.porOpcion[k]?.coeficiente ?? '0')} %`,
+            })),
+            provisorio: p.provisorio,
+            notas: p.notas,
+          }
+        }),
+      )
+      if (resultado.disponible) {
+        for (const { orden, resumen } of resultado.valor) {
+          await prisma.puntoAsamblea.updateMany({
+            where: { asambleaId: acta.asambleaId, orden },
+            data: { borradorResumen: resumen.trim() || null },
+          })
+        }
+      }
+      await prisma.actaAsamblea.update({
+        where: { id: actaId },
+        data: { borradorPedidoEn: null },
+      })
+    })
+  }
+}
+
+/** Reintento a mano: el servicio no estaba, o el borrador no llegó. */
+export async function pedirBorrador(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: Datos,
+): Promise<void> {
+  await conAutorizacion(repositorio, reloj, { ...datos, accion: 'redactar el acta' }, async () => {
+    const asamblea = await cargarAsamblea(datos.asambleaId)
+    exigirRedacta(asamblea, datos.usuarioId)
+    const acta = await actaDe(asamblea.id)
+    if (acta.estado !== 'en_redaccion') throw new ActaNoEnRedaccion()
+    await prisma.$transaction(async (tx) => {
+      await tx.actaAsamblea.update({
+        where: { id: acta.id },
+        data: { borradorPedidoEn: reloj.ahora() },
+      })
+      await encolarBorrador(tx, acta.id)
+    })
+  })
 }
 
 const claveActa = (consorcioId: string, asambleaId: string, cual: 'contenido' | 'firmada') =>

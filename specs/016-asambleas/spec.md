@@ -507,5 +507,5 @@ rechaza. Cambiar la regla a «totalidad» y verificar que la próxima asamblea l
   del usuario. Un evento ya guardado no se actualiza si la asamblea cambia.
 - **Administración no invitada.** No recibe la convocatoria y no dirige ni vota, pero ve la
   asamblea y el acta. (Confirmado con el usuario.)
-- **Fuera de alcance**: elegir el consejo o autoridades permanentes desde Flay, y redactar el acta
-  con ayuda de IA.
+- **Fuera de alcance**: elegir el consejo o autoridades permanentes desde Flay. La redacción del acta
+  con ayuda de IA se sumó después: ver `docs/superpowers/specs/2026-11-03-acta-asistida-design.md`.

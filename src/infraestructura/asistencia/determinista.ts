@@ -283,4 +283,16 @@ export const asistenciaDeterminista: Asistencia = {
       return disponible(hallada.filter((s) => !s.herramienta || ofrecidas.has(s.herramienta)))
     },
   },
+
+  redactor: {
+    // Solo repite lo recibido: nunca agrega un hecho (RN-14).
+    async redactar(_asamblea, puntos) {
+      return disponible(
+        puntos.map((p) => ({
+          orden: p.orden,
+          resumen: `Se trató «${p.titulo}»: ${p.resultado}.${p.notas ? ` ${p.notas}` : ''}`,
+        })),
+      )
+    },
+  },
 }

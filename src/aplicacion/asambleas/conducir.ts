@@ -15,6 +15,7 @@ import { propietariosVigentesDe } from '@/infraestructura/repositorios/ocupacion
 import {
   avisarPorLosDosCanales,
   cargarAsamblea,
+  encolarBorrador,
   DIA_MS,
   exigirDirige,
   exigirPuedeDirigir,
@@ -526,6 +527,8 @@ export async function finalizar(
     async (acceso) => {
       const asamblea = await cargarAsamblea(datos.asambleaId)
       exigirDirige(acceso, asamblea)
+      // Un doble clic u otra pestaña con la sala vieja: ya quedó hecho, no es un error.
+      if (asamblea.estado === 'finalizada') return
       const pendientes = await prisma.puntoAsamblea.count({
         where: { asambleaId: asamblea.id, estado: { not: 'cerrado' } },
       })
@@ -540,8 +543,12 @@ export async function finalizar(
             where: { id: asamblea.id },
             data: { estado: 'finalizada', finalizadaEn: reloj.ahora() },
           })
-          // El acta nace en redacción (FR-030): los resúmenes van después.
-          await tx.actaAsamblea.create({ data: sinConsorcio({ asambleaId: asamblea.id }) })
+          // El acta nace en redacción (FR-030) y con su borrador en camino (RF-32).
+          const acta = await tx.actaAsamblea.create({
+            data: sinConsorcio({ asambleaId: asamblea.id, borradorPedidoEn: reloj.ahora() }),
+            select: { id: true },
+          })
+          await encolarBorrador(tx, acta.id)
         }),
       )
     },

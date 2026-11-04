@@ -141,6 +141,7 @@ enum TipoTrabajo {
   indexar_documento
   conciliar_pago
   correo_directo
+  redactar_acta
 }
 
 enum EstadoTrabajo {
@@ -1327,6 +1328,10 @@ model PuntoAsamblea {
   provisorio          Boolean           @default(false)
   vencePlazoOposicion DateTime?         @map("vence_plazo_oposicion") @db.Timestamptz(6)
   resumen             String?           @db.Text
+  /// Apuntes de la reunion: la fuente del borrador; no van al acta.
+  notas               String?           @db.Text
+  /// Propuesta de la IA (RN-14): no cuenta hasta que una persona la guarda en `resumen`.
+  borradorResumen     String?           @map("borrador_resumen") @db.Text
   creadoEn            DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn       DateTime          @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
@@ -1456,6 +1461,8 @@ model ActaAsamblea {
   enviadaAFirmarEn      DateTime?  @map("enviada_a_firmar_en") @db.Timestamptz(6)
   recordatorioEnviadoEn DateTime?  @map("recordatorio_enviado_en") @db.Timestamptz(6)
   documentoId           String?    @map("documento_id") @db.Uuid
+  /// Con valor mientras se redacta el borrador; el manejador lo vacia al terminar.
+  borradorPedidoEn      DateTime?  @map("borrador_pedido_en") @db.Timestamptz(6)
   creadoEn              DateTime   @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn         DateTime   @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 

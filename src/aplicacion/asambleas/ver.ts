@@ -53,6 +53,8 @@ export interface ConteoVista {
   baseTotal: CuentaVista
 }
 
+const ESPERA_BORRADOR_MS = 2 * 60 * 1000
+
 export interface PuntoVista {
   id: string
   orden: number
@@ -77,6 +79,9 @@ export interface PuntoVista {
   }[]
   oposiciones: string[]
   resumen: string | null
+  /** Solo para quien redacta: la vista viaja al navegador de todos los asistentes. */
+  notas: string | null
+  borradorResumen: string | null
 }
 
 export interface UnidadVista {
@@ -142,6 +147,8 @@ export interface VistaAsamblea {
     estado: EstadoActa
     hashContenido: string | null
     documentoId: string | null
+    /** La IA está redactando; pasado el plazo, no se la espera más. */
+    borradorPendiente: boolean
     firmantes: {
       id: string
       usuarioId: string
@@ -316,6 +323,9 @@ export async function verAsamblea(
       const conNombre = (id: string | null) =>
         id ? { id, nombre: usuarios.get(id) ?? 'Usuario' } : null
 
+      const redacta =
+        datos.usuarioId === asamblea.secretarioId || datos.usuarioId === asamblea.dirigeId
+
       const puntos: PuntoVista[] = asamblea.puntos.map((p) => {
         const opciones = p.opciones.map((o) => ({ id: o.id, texto: o.texto }))
         const textoOpcion = new Map(opciones.map((o) => [o.id, o.texto]))
@@ -364,6 +374,8 @@ export async function verAsamblea(
           })),
           oposiciones: p.oposiciones.map((o) => o.unidadId),
           resumen: p.resumen,
+          notas: redacta ? p.notas : null,
+          borradorResumen: redacta ? p.borradorResumen : null,
         }
       })
 
@@ -491,6 +503,10 @@ export async function verAsamblea(
               estado: asamblea.acta.estado,
               hashContenido: asamblea.acta.hashContenido,
               documentoId: asamblea.acta.documentoId,
+              borradorPendiente:
+                asamblea.acta.estado === 'en_redaccion' &&
+                asamblea.acta.borradorPedidoEn !== null &&
+                ahora.getTime() - asamblea.acta.borradorPedidoEn.getTime() < ESPERA_BORRADOR_MS,
               firmantes: asamblea.acta.firmantes.map((f) => ({
                 id: f.id,
                 usuarioId: f.usuarioId,

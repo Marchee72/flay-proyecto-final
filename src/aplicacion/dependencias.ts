@@ -97,6 +97,12 @@ export const ASISTENCIA: Asistencia = {
       return impl.agente.sugerir(contexto, historial, herramientas)
     },
   },
+  redactor: {
+    async redactar(asamblea, puntos) {
+      const impl = await resolverAsistencia()
+      return impl.redactor.redactar(asamblea, puntos)
+    },
+  },
 }
 
 async function resolverProcesadorPagos(): Promise<ProcesadorDePagos> {

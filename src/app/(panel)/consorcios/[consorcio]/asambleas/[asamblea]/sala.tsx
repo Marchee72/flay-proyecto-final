@@ -23,6 +23,7 @@ import type {
 import { accionAcreditarme, accionVotar } from './acciones'
 import { opcionesDe, Ocultos, TablaConteo, textoResultado } from './comunes'
 import { Direccion, notificarResultado, type CambioOptimistaSala } from './direccion'
+import { NotasActa } from './notas-acta'
 
 function recalcularQuorum(padron: UnidadVista[], unidadesTotales: number): VistaAsamblea['quorum'] {
   let coef = new Decimal(0)
@@ -222,6 +223,9 @@ export function Sala({ vista: vistaServidor }: { vista: VistaAsamblea }) {
   const sinAcreditar = vista.yo.misUnidades.filter((u) => !u.acreditada)
   const sinVoto = new Set(vista.padron.filter((u) => u.sinVoto).map((u) => u.unidadId))
   const mias = vista.yo.misUnidades.filter((u) => u.laRepresentoYo)
+  // Quien organiza o administra no vota por su rol: el aviso es para el resto.
+  const sinRepresentacion =
+    vista.yo.misUnidades.length === 0 && !vista.yo.puedeDirigir && !vista.yo.esAdministrador
   const cerrados = vista.puntos.filter((p) => p.estado === 'cerrado')
 
   const presentes = vista.padron.filter((u) => u.presente)
@@ -367,6 +371,13 @@ export function Sala({ vista: vistaServidor }: { vista: VistaAsamblea }) {
                     </h2>
                     {abierto.descripcion && <p>{abierto.descripcion}</p>}
 
+                    {sinRepresentacion && (
+                      <p className="aviso aviso--atencion" role="status">
+                        No representás ninguna unidad en esta asamblea, así que no podés votar.
+                        Votan los propietarios y quienes tengan un poder de un propietario.
+                      </p>
+                    )}
+
                     {mias.map((u) => {
                       const votoActual = abierto.votos.find((v) => v.unidadId === u.unidadId)
                       if (sinVoto.has(u.unidadId)) {
@@ -436,6 +447,10 @@ export function Sala({ vista: vistaServidor }: { vista: VistaAsamblea }) {
                   </>
                 )}
               </section>
+
+              {vista.constituida && (vista.yo.esSecretario || vista.yo.dirige) && (
+                <NotasActa vista={vista} />
+              )}
 
               {cerrados.length > 0 && (
                 <section className="tarjeta" aria-labelledby="tratados-titulo">

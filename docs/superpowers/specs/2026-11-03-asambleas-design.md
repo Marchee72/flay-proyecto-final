@@ -111,7 +111,8 @@ firmada por presidente + dos propietarios.
 
 - Asamblea virtual o híbrida, videollamada, grabación.
 - Firma digital con certificado (Ley 25.506) — se justifica la firma electrónica en el doc.
-- Redacción del acta asistida por IA (posible después, respetando RN-14).
+- ~~Redacción del acta asistida por IA.~~ Se sumó después, respetando RN-14: ver
+  `2026-11-03-acta-asistida-design.md`.
 - Elegir al consejo o a autoridades permanentes desde Flay.
 
 ## Dominio con TDD (obligatorio, toca votos y coeficientes)

@@ -295,15 +295,16 @@ Las tres implementaciones del punto 12.8.2 existen, y son exactamente tres archi
 | `determinista.ts` | La de pruebas | Expresiones regulares para CUIT, fecha e importe; rubro y urgencia por palabras; bolsa de palabras proyectada por hash como vector; cita el fragmento que comparte más palabras con sentido o se abstiene. Mismo texto, misma salida, sin red |
 | `nula.ts` | La de degradación | Cada método responde «no disponible» con un motivo legible y nada lanza |
 
-Las cuatro interfaces del dominio (`ExtractorDocumental`, `ClasificadorTexto`,
-`GeneradorVectores`, `GeneradorRespuesta`, en `src/dominio/contratos/asistencia.ts`) devuelven
+Las seis interfaces del dominio (`ExtractorDocumental`, `ClasificadorTexto`,
+`GeneradorVectores`, `GeneradorRespuesta`, `AgenteConversacional` y `RedactorActa`, en
+`src/dominio/contratos/asistencia.ts`) devuelven
 `Resultado<T>`: `{ disponible: true, valor }` o `{ disponible: false, motivo }`. Ningún caso de
 uso conoce cuál de las tres corre: la elige una sola vez `src/aplicacion/dependencias.ts` según el
 entorno (`FLAY_ASISTENCIA=determinista` → pruebas; `GEMINI_API_KEY` → proveedor; ninguna → nula).
 
 La verificación es una prueba y no una afirmación: `pruebas/integracion/asistencia-implementaciones.spec.ts`
-cuenta los archivos del directorio (exactamente tres), comprueba que cada uno expone las cuatro
-interfaces, que la nula responde «no disponible» en los cuatro métodos sin lanzar y que la
+cuenta los archivos del directorio (exactamente tres), comprueba que cada uno expone las seis
+interfaces, que la nula responde «no disponible» en los siete métodos sin lanzar y que la
 determinista es idempotente (SC-012). Reemplazar el proveedor es escribir un cuarto archivo con la
 misma forma y cambiar una línea en `dependencias.ts`; el resto del sistema, incluidas las pruebas
 de extremo a extremo que corren con la determinista, no se entera.

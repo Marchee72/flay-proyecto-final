@@ -18,6 +18,8 @@ import {
   designarFirmantes,
   enviarAFirmar,
   firmar,
+  guardarNotas,
+  pedirBorrador,
   redactarResumen,
   reemplazarFirmante,
 } from '@/aplicacion/asambleas/acta'
@@ -320,18 +322,44 @@ export async function accionOposicionEnPapel(datos: FormData) {
 
 // Acta -----------------------------------------------------------------------
 
+/** Se guarda sola mientras se escribe: no refresca la sala de nadie, ni avisa si salió bien. */
+export async function accionNotas(datos: FormData): Promise<ResultadoSala> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) redirect('/ingresar')
+  try {
+    await guardarNotas(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId: texto(datos, 'consorcio'),
+      asambleaId: texto(datos, 'asamblea'),
+      puntoId: texto(datos, 'punto'),
+      notas: String(datos.get('notas') ?? ''),
+    })
+  } catch (error) {
+    if (!(error instanceof ErrorDeAplicacion)) throw error
+    return { ok: false, error: error.mensajeParaUsuario }
+  }
+  return { ok: true, mensaje: '' }
+}
+
 export async function accionResumen(datos: FormData) {
   await ejecutar(
     datos,
-    (b) =>
-      redactarResumen(HABILITACIONES, RELOJ, {
-        ...b,
-        puntoId: texto(datos, 'punto'),
-        resumen: String(datos.get('resumen') ?? ''),
-      }),
+    async (b) => {
+      for (const puntoId of datos.getAll('punto').map(String)) {
+        await redactarResumen(HABILITACIONES, RELOJ, {
+          ...b,
+          puntoId,
+          resumen: String(datos.get(`resumen-${puntoId}`) ?? ''),
+        })
+      }
+    },
     'resumen-guardado',
     'acta',
   )
+}
+
+export async function accionPedirBorrador(datos: FormData) {
+  await ejecutar(datos, (b) => pedirBorrador(HABILITACIONES, RELOJ, b), 'borrador-pedido', 'acta')
 }
 
 export async function accionFirmantes(datos: FormData) {

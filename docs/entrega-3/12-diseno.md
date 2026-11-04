@@ -593,6 +593,7 @@ flowchart TD
         I2["Interfaz<br/>ClasificadorTexto"]
         I3["Interfaz<br/>GeneradorVectores"]
         I4["Interfaz<br/>GeneradorRespuesta"]
+        I5["Interfaz<br/>RedactorActa"]
     end
 
     subgraph INF["Capa de infraestructura"]
@@ -605,6 +606,7 @@ flowchart TD
     I2 --> AD
     I3 --> AD
     I4 --> AD
+    I5 --> AD
     I1 -.-> ST
     I2 -.-> ST
     I1 -.-> NL

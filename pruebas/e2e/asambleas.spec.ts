@@ -26,6 +26,7 @@ let ada: Escenario
 let bruno: Extra // consejo: convoca y dirige; secretario
 let cora: Extra
 let dino: Extra
+let eva: Extra // del consorcio, sin unidad ni poder: mira, pero no vota
 let asambleaId: string
 
 const ruta = () => `/consorcios/${ada.consorcioId}/asambleas/${asambleaId}`
@@ -35,6 +36,7 @@ test.beforeAll(async () => {
   bruno = await sembrarUsuarioEn(ada, 'consejo')
   cora = await sembrarUsuarioEn(ada, 'consorcista')
   dino = await sembrarUsuarioEn(ada, 'consorcista')
+  eva = await sembrarUsuarioEn(ada, 'consorcista')
   for (const [extra, nombre] of [
     [bruno, 'Bruno'],
     [cora, 'Cora'],
@@ -99,7 +101,7 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
-  await limpiarServicios(ada, [bruno, cora, dino])
+  await limpiarServicios(ada, [bruno, cora, dino, eva])
   await limpiarEscenario(ada)
   await prisma.$disconnect()
 })
@@ -115,6 +117,30 @@ async function sesion(browser: Browser, correo: string, viewport = { width: 390,
 const presente = async (page: Page) => {
   await page.getByRole('button', { name: /Estoy presente/ }).click()
   await expect(page.getByText('Asistencia registrada.').first()).toBeVisible()
+}
+
+/**
+ * Doble clic a propósito, con la respuesta retenida: el botón avisa que está
+ * trabajando y el segundo clic no sale.
+ */
+const confirmarUnaVez = async (page: Page, etiqueta: string, enviando: string, destino: RegExp) => {
+  let soltar = () => {}
+  const retenido = new Promise<void>((resolver) => (soltar = resolver))
+  const envios: string[] = []
+  const patron = `**/asambleas/${asambleaId}**`
+  await page.route(patron, async (pedido) => {
+    if (pedido.request().method() === 'POST') {
+      envios.push(pedido.request().url())
+      await retenido
+    }
+    await pedido.continue()
+  })
+  await page.getByRole('button', { name: etiqueta }).dblclick()
+  await expect(page.getByRole('button', { name: enviando })).toBeDisabled()
+  soltar()
+  await expect(page).toHaveURL(destino)
+  expect(envios).toHaveLength(1)
+  await page.unroute(patron)
 }
 
 test('el permiso de escucha exige sesión', async ({ browser }) => {
@@ -157,6 +183,10 @@ test('acreditarse, votar en vivo, finalizar y firmar el acta', async ({ browser,
   await expect(
     page.getByText('Asamblea constituida: ya se pueden tratar los puntos.').first(),
   ).toBeVisible()
+  // Las notas son la fuente del borrador del acta (RF-32).
+  const nota = page.getByLabel('Lo que se va debatiendo')
+  await nota.fill('Tres presupuestos de pintura')
+  await nota.blur()
   await page.getByRole('button', { name: /Abrir el punto 1/ }).click()
   await expect(page.getByText('Punto en votación.').first()).toBeVisible()
 
@@ -172,6 +202,12 @@ test('acreditarse, votar en vivo, finalizar y firmar el acta', async ({ browser,
 
   // Quien dirige lo ve en su pantalla sin recargar (SC-001: ≤ 5 s).
   await expect(page.getByText('Votos por unidad (1)')).toBeVisible({ timeout: 5_000 })
+
+  // Sin unidad ni poder: ve el punto y el motivo, pero no tiene con qué votar.
+  await expect(deAda.getByText('No representás ninguna unidad')).toHaveCount(0)
+  const deEva = await sesion(browser, eva.correo)
+  await expect(deEva.getByText('No representás ninguna unidad')).toBeVisible()
+  await expect(deEva.getByRole('button', { name: /^Votar / })).toHaveCount(0)
 
   // Voto a mano por Cora; Dino y quien dirige votan solos; cierre.
   await page.getByLabel('Cargar voto de').selectOption({ label: '2A — Cora Paz' })
@@ -190,22 +226,26 @@ test('acreditarse, votar en vivo, finalizar y firmar el acta', async ({ browser,
   await expect(page.getByText('Punto cerrado con su resultado.').first()).toBeVisible()
   await expect(page.getByText('Aprobado', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Finalizar la asamblea' }).click()
-  await page.getByRole('button', { name: 'Confirmar finalización' }).click()
-  await expect(page).toHaveURL(/acta\?hecho=asamblea-finalizada/)
+  await confirmarUnaVez(
+    page,
+    'Confirmar finalización',
+    'Finalizando…',
+    /acta\?hecho=asamblea-finalizada/,
+  )
 
-  // El acta: resumen, firmantes y envío.
-  await page
-    .getByLabel('Resumen de lo debatido')
-    .fill('Se presentaron tres presupuestos de pintura.')
-  await page.getByRole('button', { name: 'Guardar resumen' }).click()
+  // El acta: el borrador llega solo y una persona lo revisa antes de firmantes y envío.
+  await expect(page.getByText('Borrador de IA, revisalo')).toBeVisible({ timeout: 15_000 })
+  const resumen = page.getByLabel('Resumen de lo debatido')
+  await expect(resumen).toHaveValue(/Tres presupuestos de pintura/)
+  await resumen.fill('Se presentaron tres presupuestos de pintura.')
+  await page.getByRole('button', { name: 'Guardar resúmenes' }).click()
   await expect(page).toHaveURL(/hecho=resumen-guardado/)
   await page.getByRole('checkbox', { name: /Cora/ }).check()
   await page.getByRole('checkbox', { name: /Dino/ }).check()
   await page.getByRole('button', { name: 'Guardar firmantes' }).click()
   await expect(page).toHaveURL(/hecho=firmantes-designados/)
   await page.getByRole('button', { name: 'Enviar a firmar' }).click()
-  await page.getByRole('button', { name: 'Confirmar envío' }).click()
-  await expect(page).toHaveURL(/hecho=acta-enviada/)
+  await confirmarUnaVez(page, 'Confirmar envío', 'Enviando…', /hecho=acta-enviada/)
 
   // Firman los cuatro con su contraseña.
   for (const firmante of [page, deAda, deCora, deDino]) {

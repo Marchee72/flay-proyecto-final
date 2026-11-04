@@ -10,6 +10,8 @@ on:
     branches: [main]
   push:
     tags: ['v*']
+  # Pruebas: se lanza a mano desde la pestana Actions, eligiendo la rama.
+  workflow_dispatch:
 
 env:
   VERSION_VERCEL: 59.13.1
@@ -114,6 +116,48 @@ jobs:
           url=$(npx --yes vercel@$VERSION_VERCEL deploy --prod --yes \
             --token=${{ secrets.VERCEL_TOKEN }} \
             --env FLAY_VERSION=${{ github.ref_name }})
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Comprobar salud
+        run: |
+          salud=$(curl -fsS --retry 5 --retry-delay 5 "${{ steps.publicar.outputs.url }}/api/salud")
+          echo "$salud"
+          echo "$salud" | grep -q '"estado":"ok"'
+
+  pruebas:
+    # Ambiente aparte de la demostracion, para probar una rama sin integrarla.
+    # Usa los secretos del entorno `pruebas` (otra base, otro proyecto de Vercel):
+    # nunca los de demo. Solo corre a mano.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pruebas
+      url: ${{ steps.publicar.outputs.url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Migraciones
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+        run: npm run db:deploy
+
+      - name: Publicar
+        id: publicar
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          url=$(npx --yes vercel@$VERSION_VERCEL deploy --prod --yes             --token=${{ secrets.VERCEL_TOKEN }}             --env FLAY_VERSION=${{ github.sha }})
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: Comprobar salud

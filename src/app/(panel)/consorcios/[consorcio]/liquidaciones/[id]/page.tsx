@@ -161,7 +161,8 @@ export default async function LiquidacionPage({
                         <summary>{importeParaMostrar(detalle.interesMora)}</summary>
                         <ul>
                           {detalle.intereses.map((linea) => (
-                            <li key={`${linea.capital}-${linea.meses}`}>
+                            <li key={`${linea.tipo}-${linea.capital}-${linea.meses}`}>
+                              {linea.tipo === 'recargo' ? 'Recargo' : 'Mora'}:{' '}
                               <span className="cifra">{importeParaMostrar(linea.capital)}</span> ×{' '}
                               {linea.tasaMensual} % × {plural(linea.meses, 'mes', 'meses')} ={' '}
                               <span className="cifra">{importeParaMostrar(linea.importe)}</span>

@@ -4,9 +4,10 @@ import { ErrorDeAplicacion } from '@/compartido/errores'
 import { Decimal, importe } from '@/compartido/dinero'
 import { coeficienteSerializado, importeSerializado } from '@/compartido/formato'
 import { imputar } from '@/dominio/liquidacion/imputacion'
-import { interesPorMora, type DeudaVencida } from '@/dominio/liquidacion/interes'
+import { cargosPorArrastre, type DeudaArrastrada } from '@/dominio/liquidacion/interes'
 import { prorratear, type UnidadDelPadron } from '@/dominio/liquidacion/prorrateo'
 import { saldosDeUnidad } from '@/dominio/liquidacion/saldo'
+import { recargoMaximo } from '@/dominio/liquidacion/vencimientos'
 import { transicionValida } from '@/dominio/periodos/estado'
 import { ordenarUnidades } from '@/dominio/unidades/division'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
@@ -152,7 +153,9 @@ async function calcular(reloj: Reloj, consorcioId: string, periodoId: string) {
   const detalles = reparto.detalles.map((detalle) => {
     const infoDeuda = deudaPorUnidad.get(detalle.unidadId)
     const deudas = infoDeuda?.deudasParaInteres ?? []
-    const interes = interesPorMora(deudas, tasa, hoy)
+    // Recargo mas alto (una vez) y mora (una por liquidacion) sobre lo que
+    // arrastra vencido en firme (FR-024, decision 2026-11-10).
+    const interes = cargosPorArrastre(deudas, tasa, hoy)
 
     const deudaAnterior = infoDeuda?.deudaTotal ?? '0.00'
 
@@ -274,6 +277,7 @@ export async function liquidarPeriodo(
           detalle.desglose.map((linea) => ({
             detalleId: detalle.id,
             liquidacionOrigenId: linea.liquidacionId,
+            tipo: linea.tipo,
             capital: linea.capital,
             tasaMensual: linea.tasaMensual,
             meses: linea.meses,
@@ -297,6 +301,8 @@ export async function liquidarPeriodo(
             recargoPorcentaje: v.recargoPorcentaje,
           })),
         })
+
+        await consumirSaldosAFavor(tx, detalles)
 
         await encolarDocumentos(tx, liquidacion.id)
         await avisarALosHabilitados(tx, liquidacion.id, periodo)
@@ -468,11 +474,12 @@ async function avisarALosHabilitados(
 }
 
 /**
- * Lo impago por unidad, liquidacion por liquidacion: capital y **su propio**
- * vencimiento, que es lo que el interes necesita (`FR-024`).
+ * Lo impago por unidad, liquidacion por liquidacion: capital, **su propio**
+ * vencimiento en firme y su recargo mas alto, que es lo que los cargos por
+ * arrastre necesitan (`FR-024`).
  */
 interface DeudaVigenteUnidad {
-  deudasParaInteres: DeudaVencida[]
+  deudasParaInteres: DeudaArrastrada[]
   deudaTotal: string
 }
 
@@ -487,6 +494,7 @@ async function deudaVigentePorUnidad(
     select: {
       id: true,
       vencimiento: true,
+      vencimientos: { select: { recargoPorcentaje: true } },
       detalles: {
         select: {
           id: true,
@@ -495,10 +503,28 @@ async function deudaVigentePorUnidad(
           deudaAnterior: true,
           interesMora: true,
           imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
+          intereses: { where: { tipo: 'recargo' }, select: { liquidacionOrigenId: true } },
         },
       },
     },
   })
+
+  const recargoDe = new Map(
+    liquidaciones.map((l) => [
+      l.id,
+      recargoMaximo(
+        l.vencimientos.map((v) => ({ recargoPorcentaje: v.recargoPorcentaje.toFixed(4) })),
+      ),
+    ]),
+  )
+
+  // El recargo de un origen se cobra una sola vez: si una liquidacion vigente
+  // ya lo liquido, no vuelve. Anulada esa, vuelve a cobrarse en la reemision.
+  const recargoLiquidado = new Set(
+    liquidaciones.flatMap((l) =>
+      l.detalles.flatMap((d) => d.intereses.map((i) => `${d.unidadId}:${i.liquidacionOrigenId}`)),
+    ),
+  )
 
   const porUnidadId = new Map<
     string,
@@ -541,13 +567,18 @@ async function deudaVigentePorUnidad(
 
     const mapLiquidacionId = new Map(lista.map((x) => [x.detalleId, x.liquidacionId]))
 
-    const deudasParaInteres: DeudaVencida[] = saldos.detalles
+    const deudasParaInteres: DeudaArrastrada[] = saldos.detalles
       .filter((d) => importe(d.capitalPendiente).greaterThan(0))
-      .map((d) => ({
-        liquidacionId: mapLiquidacionId.get(d.detalleId)!,
-        capital: d.capitalPendiente,
-        vencimiento: d.vencimiento,
-      }))
+      .map((d) => {
+        const liquidacionId = mapLiquidacionId.get(d.detalleId)!
+        return {
+          liquidacionId,
+          capital: d.capitalPendiente,
+          vencimiento: d.vencimiento,
+          recargoMaximo: recargoDe.get(liquidacionId) ?? '0',
+          recargoYaLiquidado: recargoLiquidado.has(`${unidadId}:${liquidacionId}`),
+        }
+      })
 
     resultado.set(unidadId, {
       deudasParaInteres,
@@ -573,6 +604,41 @@ async function saldosAFavorPorUnidad(): Promise<Map<string, Decimal>> {
   }
 
   return porUnidad
+}
+
+/**
+ * El saldo a favor aplicado se descuenta de los pagos que lo tenian, del mas
+ * viejo al mas nuevo (`FR-026b`): sin esto, la emision siguiente lo volvia a
+ * aplicar y el estado de cuenta lo seguia mostrando disponible.
+ */
+async function consumirSaldosAFavor(
+  tx: Transaccion,
+  detalles: readonly { unidadId: string; saldoAFavorAplicado: string }[],
+): Promise<void> {
+  const aplicados = detalles.filter((d) => importe(d.saldoAFavorAplicado).greaterThan(0))
+  if (aplicados.length === 0) return
+
+  const pagos = await tx.pago.findMany({
+    where: {
+      unidadId: { in: aplicados.map((d) => d.unidadId) },
+      saldoAFavor: { gt: new Prisma.Decimal(0) },
+    },
+    select: { id: true, unidadId: true, saldoAFavor: true },
+    orderBy: [{ fechaPago: 'asc' }, { creadoEn: 'asc' }],
+  })
+
+  for (const detalle of aplicados) {
+    let resta = importe(detalle.saldoAFavorAplicado)
+    for (const pago of pagos.filter((p) => p.unidadId === detalle.unidadId)) {
+      if (resta.lessThanOrEqualTo(0)) break
+      const tomado = Decimal.min(resta, importe(pago.saldoAFavor.toFixed(2)))
+      await tx.pago.update({
+        where: { id: pago.id },
+        data: { saldoAFavor: { decrement: tomado.toFixed(DECIMALES_IMPORTE) } },
+      })
+      resta = resta.minus(tomado)
+    }
+  }
 }
 
 /** Reexportado para que el caso de uso de pagos use el mismo criterio. */

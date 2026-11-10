@@ -110,7 +110,8 @@ const pagar = (importePagado: string) =>
     consorcioId,
     unidadId: unidadA,
     importe: importePagado,
-    fechaPago: new Date('2026-09-15'),
+    // Antes del firme de enero (10/02): despues no se acepta el pago (RF-08).
+    fechaPago: new Date('2026-02-05'),
     medio: 'transferencia',
   })
 

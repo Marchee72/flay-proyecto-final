@@ -8,11 +8,16 @@ import {
 } from '@/aplicacion/administradoras/credenciales-pago'
 import { confirmarPagoEnLinea } from '@/aplicacion/pagos/confirmar-pago-en-linea'
 import {
+  consultarDisponibilidadPagoEnLinea,
   ExpensaNoEsUltimaVigente,
   ExpensaSinSaldoPendiente,
   iniciarPagoEnLinea,
   PasarelaNoConfigurada,
 } from '@/aplicacion/pagos/iniciar-pago-en-linea'
+import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
+import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
+import { PagoBloqueadoHastaLiquidar, registrarPago } from '@/aplicacion/pagos/registrar'
+import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { procesadorDePrueba } from '@/infraestructura/pagos/procesador-de-prueba'
 import { prismaBase } from '@/infraestructura/prisma'
 
@@ -27,6 +32,7 @@ import {
   prepararEscenario,
   RELOJ,
   repo,
+  rubroId,
   unidadA,
 } from './ayudas-pago-en-linea'
 
@@ -716,29 +722,171 @@ describe('vencimiento del intento de pago (RF-28)', () => {
 
   it('vence 24 h despues del instante en que se inicia, no de la medianoche', async () => {
     // 23:50 UTC: contado desde la medianoche venceria en 10 minutos.
-    const inicio = await iniciarA('2026-09-15T23:50:00Z')
+    const inicio = await iniciarA('2026-02-05T23:50:00Z')
 
     const intento = await prismaBase.intentoDePago.findUniqueOrThrow({
       where: { id: inicio.intentoId },
     })
-    expect(intento.venceEn.toISOString()).toBe('2026-09-16T23:50:00.000Z')
+    expect(intento.venceEn.toISOString()).toBe('2026-02-06T23:50:00.000Z')
   })
 
   it('se reutiliza mientras no pasaron 24 h, aunque haya cambiado el dia', async () => {
-    const primero = await iniciarA('2026-09-15T23:00:00Z')
-    const segundo = await iniciarA('2026-09-16T10:00:00Z')
+    const primero = await iniciarA('2026-02-05T23:00:00Z')
+    const segundo = await iniciarA('2026-02-06T10:00:00Z')
 
     expect(segundo.intentoId).toBe(primero.intentoId)
   })
 
   it('pasadas las 24 h se marca vencido y se crea otro', async () => {
-    const primero = await iniciarA('2026-09-15T23:00:00Z')
-    const segundo = await iniciarA('2026-09-16T23:30:00Z')
+    const primero = await iniciarA('2026-02-05T23:00:00Z')
+    const segundo = await iniciarA('2026-02-06T23:30:00Z')
 
     expect(segundo.intentoId).not.toBe(primero.intentoId)
     const viejo = await prismaBase.intentoDePago.findUniqueOrThrow({
       where: { id: primero.intentoId },
     })
     expect(viejo.estado).toBe('vencido')
+  })
+
+  it('no pasa del fin del dia del vencimiento: despues el monto es otro', async () => {
+    // Enero vence en firme el 10/02; las 24 h llegarian al 11/02 a mediodia.
+    const inicio = await iniciarA('2026-02-10T12:00:00Z')
+
+    const intento = await prismaBase.intentoDePago.findUniqueOrThrow({
+      where: { id: inicio.intentoId },
+    })
+    // Fin del 10/02 en Argentina (UTC-3).
+    expect(intento.venceEn.toISOString()).toBe('2026-02-11T03:00:00.000Z')
+  })
+
+  it('si el monto cambio (un pago manual en el medio) no reutiliza el intento viejo', async () => {
+    const primero = await iniciarA('2026-02-05T12:00:00Z')
+    await registrarPago(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidadId: unidadA,
+      importe: '100.00',
+      fechaPago: new Date('2026-02-05'),
+      medio: 'efectivo',
+    })
+    const segundo = await iniciarA('2026-02-05T13:00:00Z')
+
+    expect(segundo.intentoId).not.toBe(primero.intentoId)
+    const nuevo = await prismaBase.intentoDePago.findUniqueOrThrow({
+      where: { id: segundo.intentoId },
+    })
+    expect(nuevo.importe.toFixed(2)).toBe('400.00')
+    const viejo = await prismaBase.intentoDePago.findUniqueOrThrow({
+      where: { id: primero.intentoId },
+    })
+    expect(viejo.estado).toBe('vencido')
+  })
+
+  it('pasado el vencimiento en firme no se puede pagar hasta la liquidacion siguiente', async () => {
+    await expect(iniciarA('2026-02-11T12:00:00Z')).rejects.toBeInstanceOf(
+      PagoBloqueadoHastaLiquidar,
+    )
+
+    const liq = await prismaBase.liquidacion.findFirstOrThrow({ where: { consorcioId } })
+    const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+      where: { liquidacionId: liq.id, unidadId: unidadA },
+    })
+    const disponibilidad = await consultarDisponibilidadPagoEnLinea(
+      repo,
+      relojFijo('2026-02-11T12:00:00Z'),
+      { usuarioId: inquilino, consorcioId, detalleLiquidacionId: detalle.id },
+    )
+    expect(disponibilidad).toEqual({ pagable: false, motivo: 'vencida-en-firme' })
+
+    // Tampoco a mano (decision 2026-11-10).
+    await expect(
+      registrarPago(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        unidadId: unidadA,
+        importe: '500.00',
+        fechaPago: new Date('2026-02-11'),
+        medio: 'efectivo',
+      }),
+    ).rejects.toBeInstanceOf(PagoBloqueadoHastaLiquidar)
+  })
+})
+
+describe('monto del pago en linea con vencimientos escalonados (RF-08)', () => {
+  beforeEach(async () => {
+    await guardarCredencialesPago(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      accessToken: 'TEST-TOKEN-1234',
+      secretoWebhook: 'WEBHOOK-SECRET-1234',
+    })
+    // Enero vence 05/02 (base), 08/02 (+5 %) y 10/02 (+10 %, firme).
+    await prismaBase.tramoVencimiento.createMany({
+      data: [
+        { consorcioId, orden: 1, diaDelMes: 5, recargoPorcentaje: '0' },
+        { consorcioId, orden: 2, diaDelMes: 8, recargoPorcentaje: '5' },
+        { consorcioId, orden: 3, diaDelMes: 10, recargoPorcentaje: '10' },
+      ],
+    })
+  })
+
+  it('la pantalla y la preferencia piden lo mismo, con el recargo del tramo', async () => {
+    const liq = await emitirMes(1, '1000.00')
+    const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+      where: { liquidacionId: liq.liquidacionId, unidadId: unidadA },
+    })
+    const reloj = relojFijo('2026-02-07T12:00:00Z')
+    const datos = { usuarioId: inquilino, consorcioId, detalleLiquidacionId: detalle.id }
+
+    const disponibilidad = await consultarDisponibilidadPagoEnLinea(repo, reloj, datos)
+    expect(disponibilidad.saldoExigible).toBe('525.00')
+
+    const inicio = await iniciarPagoEnLinea(repo, reloj, procesadorDePrueba, {
+      ...datos,
+      urlBaseRetorno: 'https://consorcio.app/volver',
+    })
+    const intento = await prismaBase.intentoDePago.findUniqueOrThrow({
+      where: { id: inicio.intentoId },
+    })
+    expect(intento.importe.toFixed(2)).toBe('525.00')
+  })
+
+  it('la liquidacion siguiente le suma a lo impago el recargo mas alto y la mora', async () => {
+    await emitirMes(1, '1000.00')
+    // Febrero se emite el 01/03, con enero vencido en firme el 10/02.
+    const { periodoId } = await periodoPara(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      anio: 2026,
+      mes: 2,
+    })
+    await registrarGasto(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId,
+      rubroId,
+      importe: '1000.00',
+      fecha: new Date('2026-02-05'),
+      descripcion: 'Gasto 2',
+    })
+    const emision = relojFijo('2026-03-01T12:00:00Z')
+    const febrero = await liquidarPeriodo(repo, emision, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId,
+    })
+    const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+      where: { liquidacionId: febrero.liquidacionId, unidadId: unidadA },
+    })
+    // 500 propio + 500 arrastrado + 50 (10 %) + 10 (2 % de mora).
+    expect(detalle.totalUnidad.toFixed(2)).toBe('1060.00')
+
+    // Y se paga entero, sin recargo, antes del primer vencimiento de febrero.
+    const disponibilidad = await consultarDisponibilidadPagoEnLinea(repo, emision, {
+      usuarioId: inquilino,
+      consorcioId,
+      detalleLiquidacionId: detalle.id,
+    })
+    expect(disponibilidad.saldoExigible).toBe('1060.00')
   })
 })

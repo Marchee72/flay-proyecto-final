@@ -571,16 +571,25 @@ model DetalleLiquidacion {
 /// por cada liquidacion vencida desde su propio vencimiento (FR-024). Guardar
 /// solo el total no lo reconstruye: apenas llega un pago posterior ya no se sabe
 /// que estaba impago al emitir (research R-07).
+/// Cargo que la liquidacion le suma a una deuda arrastrada vencida en firme
+/// (FR-024, decision 2026-11-10): el recargo mas alto una vez, la mora una vez
+/// por liquidacion.
+enum TipoCargo {
+  mora
+  recargo
+}
+
 model InteresLiquidado {
-  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  detalleId           String   @map("detalle_id") @db.Uuid
-  liquidacionOrigenId String   @map("liquidacion_origen_id") @db.Uuid
-  capital             Decimal  @db.Decimal(14, 2)
-  tasaMensual         Decimal  @map("tasa_mensual") @db.Decimal(6, 4)
-  meses               Int      @db.SmallInt
-  importe             Decimal  @db.Decimal(14, 2)
-  creadoEn            DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
-  actualizadoEn       DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  detalleId           String    @map("detalle_id") @db.Uuid
+  liquidacionOrigenId String    @map("liquidacion_origen_id") @db.Uuid
+  tipo                TipoCargo @default(mora)
+  capital             Decimal   @db.Decimal(14, 2)
+  tasaMensual         Decimal   @map("tasa_mensual") @db.Decimal(6, 4)
+  meses               Int       @db.SmallInt
+  importe             Decimal   @db.Decimal(14, 2)
+  creadoEn            DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn       DateTime  @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
   detalle           DetalleLiquidacion @relation(fields: [detalleId], references: [id])
   liquidacionOrigen Liquidacion        @relation("Origen", fields: [liquidacionOrigenId], references: [id])

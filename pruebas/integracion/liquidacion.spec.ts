@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { importe } from '@/compartido/dinero'
 import { anularLiquidacion, LiquidacionNoEsLaUltima } from '@/aplicacion/liquidacion/anular'
 import {
   GastosCambiaron,
@@ -326,6 +325,47 @@ describe('anulacion y reemision (FR-003b)', () => {
     })
     expect(detalle1A.saldoAFavorAplicado.toFixed(2)).toBe('500.00')
     expect(detalle1A.totalUnidad.toFixed(2)).toBe('0.00')
+
+    // Aplicado, se consume: no vuelve a descontarse en la emision siguiente
+    // ni figura como disponible en el estado de cuenta (FR-026b).
+    const pagoTrasReemitir = await prismaBase.pago.findUniqueOrThrow({ where: { id: pago.pagoId } })
+    expect(pagoTrasReemitir.saldoAFavor.toFixed(2)).toBe('0.00')
+  })
+
+  it('anular devuelve el saldo a favor que la liquidacion habia aplicado (FR-026b)', async () => {
+    const unidad1A = await prismaBase.unidad.findFirstOrThrow({
+      where: { consorcioId, designacion: '1A' },
+    })
+    const enero = await periodoConGasto(1)
+    await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId: enero })
+    // Paga 800 por 500: quedan 300 a favor.
+    const pago = await registrarPago(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidadId: unidad1A.id,
+      importe: '800.00',
+      fechaPago: new Date('2026-02-05'),
+      medio: 'transferencia',
+    })
+
+    const febrero = await periodoConGasto(2)
+    const segunda = await liquidarPeriodo(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId: febrero,
+    })
+    const leer = async () =>
+      (await prismaBase.pago.findUniqueOrThrow({ where: { id: pago.pagoId } })).saldoAFavor.toFixed(
+        2,
+      )
+    expect(await leer()).toBe('0.00')
+
+    await anularLiquidacion(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      liquidacionId: segunda.liquidacionId,
+    })
+    expect(await leer()).toBe('300.00')
   })
 
   it('anular reabre el período y la reemisión procede (FR-003b)', async () => {
@@ -384,12 +424,13 @@ describe('anulacion y reemision (FR-003b)', () => {
   })
 })
 
-describe('deuda anterior e interes (FR-024b)', () => {
-  it('la liquidacion siguiente arrastra lo impago y su interes por mes vencido', async () => {
+describe('cargos por arrastre (FR-024, decision 2026-11-10)', () => {
+  it('sin escalonado, la liquidacion siguiente arrastra lo impago con una mora', async () => {
     const enero = await periodoConGasto(1)
     await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId: enero })
 
-    // Marzo se liquida el 15/09: enero vencio el 10/02, siete meses completos.
+    // Marzo se liquida el 15/09: enero vencio en firme el 10/02. Una mora por
+    // liquidacion, no siete meses acumulados.
     const marzo = await periodoConGasto(3)
     const segunda = await liquidarPeriodo(repo, RELOJ, {
       usuarioId: administrador,
@@ -402,15 +443,63 @@ describe('deuda anterior e interes (FR-024b)', () => {
     })
 
     expect(detalle.deudaAnterior.toFixed(2)).toBe('500.00')
-    // 500 × 2 % × 7 meses = 70.00
-    expect(detalle.interesMora.toFixed(2)).toBe('70.00')
+    // 500 × 2 % = 10.00
+    expect(detalle.interesMora.toFixed(2)).toBe('10.00')
 
     const desglose = await prismaBase.interesLiquidado.findMany({
       where: { detalleId: detalle.id },
     })
-    expect(desglose).toHaveLength(1)
-    expect(desglose[0].meses).toBe(7)
-    expect(importe(desglose[0].capital.toFixed(2)).toFixed(2)).toBe('500.00')
+    expect(desglose.map((l) => [l.tipo, l.capital.toFixed(2), l.importe.toFixed(2)])).toEqual([
+      ['mora', '500.00', '10.00'],
+    ])
+  })
+
+  it('con escalonado: el recargo mas alto una sola vez y la mora en cada liquidacion', async () => {
+    await prismaBase.tramoVencimiento.createMany({
+      data: [
+        { consorcioId, orden: 1, diaDelMes: 10, recargoPorcentaje: '0' },
+        { consorcioId, orden: 2, diaDelMes: 20, recargoPorcentaje: '5' },
+        { consorcioId, orden: 3, diaDelMes: 28, recargoPorcentaje: '10' },
+      ],
+    })
+
+    // Enero (1A debe 500) queda impago; vence en firme el 28/02.
+    const enero = await periodoConGasto(1)
+    await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId: enero })
+    const febrero = await periodoConGasto(2)
+    const segunda = await liquidarPeriodo(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId: febrero,
+    })
+    const marzo = await periodoConGasto(3)
+    const tercera = await liquidarPeriodo(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      periodoId: marzo,
+    })
+
+    const unidad1A = await prismaBase.unidad.findFirstOrThrow({
+      where: { consorcioId, designacion: '1A' },
+    })
+    const cargos = async (liquidacionId: string) => {
+      const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+        where: { liquidacionId, unidadId: unidad1A.id },
+        include: { intereses: { include: { liquidacionOrigen: { include: { periodo: true } } } } },
+      })
+      return detalle.intereses
+        .map((l) => `${l.liquidacionOrigen.periodo.mes}:${l.tipo}:${l.importe.toFixed(2)}`)
+        .sort()
+    }
+
+    // Febrero: enero lleva 10 % (50) y 2 % (10).
+    expect(await cargos(segunda.liquidacionId)).toEqual(['1:mora:10.00', '1:recargo:50.00'])
+    // Marzo: enero solo otra mora (10); febrero su recargo (50) y su mora (10).
+    expect(await cargos(tercera.liquidacionId)).toEqual([
+      '1:mora:10.00',
+      '2:mora:10.00',
+      '2:recargo:50.00',
+    ])
   })
 })
 

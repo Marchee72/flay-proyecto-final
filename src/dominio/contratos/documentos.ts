@@ -11,10 +11,12 @@
  * defecto que la regla previene.
  */
 
-/** Una liquidacion impaga y el interes que genero (`FR-025`, research R-07). */
+/** Un cargo sobre una liquidacion impaga arrastrada (`FR-025`, research R-07). */
 export interface LineaDeInteres {
   /** `07/2026`: el periodo de la liquidacion que quedo impaga. */
   periodo: string
+  /** El recargo mas alto (una vez) o la mora (una por liquidacion), decision 2026-11-10. */
+  tipo: 'mora' | 'recargo'
   capital: string
   tasaMensual: string
   meses: number

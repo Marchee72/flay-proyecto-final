@@ -1,31 +1,29 @@
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
-import { Decimal, importe } from '@/compartido/dinero'
+import { importe } from '@/compartido/dinero'
 import type { ProcesadorDePagos } from '@/dominio/contratos/procesador-pagos'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
-import { saldosDeUnidad } from '@/dominio/liquidacion/saldo'
-import { montoExigible } from '@/dominio/liquidacion/vencimientos'
+import { exigible } from '@/dominio/liquidacion/vencimientos'
 import { ocupaUnidad } from '@/infraestructura/repositorios/ocupaciones'
 import { sinConsorcio } from '@/infraestructura/cliente-aislado'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
+import { finDelDiaArgentino } from '@/infraestructura/reloj'
 import { obtenerCredencialesDescifradas } from '@/aplicacion/administradoras/credenciales-pago'
 import { encolar } from '@/aplicacion/pendientes/encolar'
-import { detallesImpagosDe } from '@/aplicacion/pagos/registrar'
+import { deudaDeUnidad, PagoBloqueadoHastaLiquidar } from '@/aplicacion/pagos/registrar'
 
 /**
- * El monto a cobrar hoy: la deuda consolidada mas el recargo del tramo vigente
- * de cada expensa (RF-08). Coincide con lo que la imputacion consumira al
- * acreditarse (base a la deuda, recargo como cargo propio).
+ * El detalle es la ultima expensa vigente de su unidad: la unica que se paga en
+ * linea, porque arrastra la deuda de los meses anteriores.
  */
-async function exigibleConRecargo(unidadId: string, hoy: Date): Promise<string> {
-  const impagos = await detallesImpagosDe(unidadId, hoy)
-  return impagos
-    .reduce(
-      (total, i) => total.plus(importe(montoExigible(i.saldo, i.recargoPorcentaje ?? '0'))),
-      new Decimal(0),
-    )
-    .toFixed(DECIMALES_IMPORTE)
+async function esUltimaVigente(unidadId: string, detalleId: string): Promise<boolean> {
+  const ultimo = await prisma.detalleLiquidacion.findFirst({
+    where: { unidadId, liquidacion: { estado: 'vigente' } },
+    select: { id: true },
+    orderBy: { liquidacion: { vencimiento: 'desc' } },
+  })
+  return ultimo?.id === detalleId
 }
 
 /**
@@ -35,7 +33,6 @@ async function exigibleConRecargo(unidadId: string, hoy: Date): Promise<string> 
  * IntentoDePago con el saldo exigible exacto calculado por el dominio.
  */
 
-const DECIMALES_IMPORTE = 2
 const HORAS_VENCIMIENTO_INTENTO = 24
 
 export class ExpensaNoEsUltimaVigente extends ErrorDeAplicacion {
@@ -112,48 +109,20 @@ export async function iniciarPagoEnLinea(
         throw new NoEncontrado()
       }
 
-      // Obtener todas las liquidaciones vigentes de la unidad para verificar que sea la ultima
-      const todosDetalles = await prisma.detalleLiquidacion.findMany({
-        where: {
-          unidadId: detalle.unidadId,
-          liquidacion: { estado: 'vigente' },
-        },
-        include: {
-          liquidacion: { select: { vencimiento: true, emitidaEn: true } },
-          imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
-        },
-        orderBy: { liquidacion: { vencimiento: 'asc' } },
-      })
-
-      if (todosDetalles.length === 0) {
-        throw new NoEncontrado()
-      }
-
-      const ultimoDetalle = todosDetalles[todosDetalles.length - 1]
-      if (ultimoDetalle.id !== detalle.id) {
+      if (!(await esUltimaVigente(detalle.unidadId, detalle.id))) {
         throw new ExpensaNoEsUltimaVigente()
       }
 
-      // Calcular saldos propios y saldo exigible consolidado
-      const saldos = saldosDeUnidad(
-        todosDetalles.map((d) => ({
-          detalleId: d.id,
-          totalUnidad: d.totalUnidad.toFixed(DECIMALES_IMPORTE),
-          deudaAnterior: d.deudaAnterior.toFixed(DECIMALES_IMPORTE),
-          interesMora: d.interesMora.toFixed(DECIMALES_IMPORTE),
-          vencimiento: d.liquidacion.vencimiento,
-          imputado: d.imputaciones
-            .reduce((tot, i) => tot.plus(importe(i.importeImputado.toFixed(2))), new Decimal(0))
-            .toFixed(DECIMALES_IMPORTE),
-        })),
-      )
-
-      if (importe(saldos.saldoExigible).lessThanOrEqualTo(0)) {
+      // La misma lectura que el pago manual y la pantalla: deuda consolidada mas
+      // el recargo del tramo vigente de cada expensa (RF-08), que es lo que la
+      // imputacion consume al acreditarse.
+      const deuda = await deudaDeUnidad(detalle.unidadId, ahora)
+      if (importe(deuda.saldoTotal).lessThanOrEqualTo(0)) {
         throw new ExpensaSinSaldoPendiente()
       }
+      if (deuda.bloqueado) throw new PagoBloqueadoHastaLiquidar()
 
-      // Lo que se cobra incluye el recargo del tramo vigente (RF-08).
-      const importeACobrar = await exigibleConRecargo(detalle.unidadId, ahora)
+      const importeACobrar = exigible(deuda.impagos)
 
       const credenciales = await obtenerCredencialesDescifradas(
         detalle.liquidacion.consorcio.administradoraId,
@@ -171,21 +140,31 @@ export async function iniciarPagoEnLinea(
       })
 
       if (intentoExistente) {
-        if (intentoExistente.venceEn.getTime() > instante.getTime() && intentoExistente.urlPago) {
+        // Solo se reutiliza si sigue pidiendo lo mismo: un cambio de tramo o un
+        // pago manual en el medio dejaban a la pasarela cobrando el monto viejo.
+        if (
+          intentoExistente.venceEn.getTime() > instante.getTime() &&
+          intentoExistente.urlPago &&
+          importe(intentoExistente.importe.toFixed(2)).equals(importe(importeACobrar))
+        ) {
           return {
             intentoId: intentoExistente.id,
             urlPago: intentoExistente.urlPago,
           }
         }
 
-        // Si ya expiro, marcarlo como vencido
+        // Vencido o con otro monto: se descarta y se crea otro.
         await prismaBase.intentoDePago.update({
           where: { id: intentoExistente.id },
           data: { estado: 'vencido' },
         })
       }
 
-      const venceEn = new Date(instante.getTime() + HORAS_VENCIMIENTO_INTENTO * 60 * 60 * 1000)
+      // 24 h, pero nunca mas alla del dia en que cambia el tramo: pasado ese dia
+      // el monto es otro (o, pasado el firme, no se acepta el pago).
+      const en24h = new Date(instante.getTime() + HORAS_VENCIMIENTO_INTENTO * 60 * 60 * 1000)
+      const finDelTramo = deuda.vigenteHasta ? finDelDiaArgentino(deuda.vigenteHasta) : null
+      const venceEn = finDelTramo && finDelTramo < en24h ? finDelTramo : en24h
 
       // Crear intento de pago con aislamiento por consorcio
       const intento = await prisma.intentoDePago.create({
@@ -261,6 +240,7 @@ export interface DisponibilidadPagoEnLinea {
     | 'no-es-ultima'
     | 'saldada'
     | 'pasarela-no-configurada'
+    | 'vencida-en-firme'
     | 'no-encontrada'
     | 'no-autorizado'
   saldoExigible?: string
@@ -287,46 +267,18 @@ export async function consultarDisponibilidadPagoEnLinea(
     return { pagable: false, motivo: 'no-encontrada' }
   }
 
-  const todosDetalles = await prisma.detalleLiquidacion.findMany({
-    where: {
-      unidadId: detalle.unidadId,
-      liquidacion: { estado: 'vigente' },
-    },
-    include: {
-      liquidacion: { select: { vencimiento: true } },
-      imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
-    },
-    orderBy: { liquidacion: { vencimiento: 'asc' } },
-  })
-
-  if (todosDetalles.length === 0) {
-    return { pagable: false, motivo: 'no-encontrada' }
-  }
-
-  const ultimo = todosDetalles[todosDetalles.length - 1]
-  if (ultimo.id !== detalle.id) {
+  if (!(await esUltimaVigente(detalle.unidadId, detalle.id))) {
     return { pagable: false, motivo: 'no-es-ultima' }
   }
 
-  const saldos = saldosDeUnidad(
-    todosDetalles.map((d) => ({
-      detalleId: d.id,
-      totalUnidad: d.totalUnidad.toFixed(DECIMALES_IMPORTE),
-      deudaAnterior: d.deudaAnterior.toFixed(DECIMALES_IMPORTE),
-      interesMora: d.interesMora.toFixed(DECIMALES_IMPORTE),
-      vencimiento: d.liquidacion.vencimiento,
-      imputado: d.imputaciones
-        .reduce((tot, i) => tot.plus(importe(i.importeImputado.toFixed(2))), new Decimal(0))
-        .toFixed(DECIMALES_IMPORTE),
-    })),
-  )
-
-  if (importe(saldos.saldoExigible).lessThanOrEqualTo(0)) {
+  const deuda = await deudaDeUnidad(detalle.unidadId, reloj.hoy())
+  if (importe(deuda.saldoTotal).lessThanOrEqualTo(0)) {
     return { pagable: false, motivo: 'saldada', saldoExigible: '0.00' }
   }
+  if (deuda.bloqueado) return { pagable: false, motivo: 'vencida-en-firme' }
 
   // El monto a cobrar incluye el recargo del tramo vigente (RF-08).
-  const importeACobrar = await exigibleConRecargo(detalle.unidadId, reloj.hoy())
+  const importeACobrar = exigible(deuda.impagos)
 
   const credencial = await prismaBase.credencialPagoAdministradora.findUnique({
     where: { administradoraId: detalle.liquidacion.consorcio.administradoraId },

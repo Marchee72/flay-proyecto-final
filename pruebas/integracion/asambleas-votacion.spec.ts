@@ -382,7 +382,8 @@ describe('mora sin voto (FR-018)', () => {
         ...admin,
         unidadId: e.unidades[unidad],
         importe: '100000.00',
-        fechaPago: new Date('2026-11-01'),
+        // Antes del firme de marzo (10/04): despues no se acepta el pago (RF-08).
+        fechaPago: new Date('2026-04-05'),
         medio: 'transferencia',
       })
     }

@@ -24,7 +24,9 @@ import {
  * archivo ve los valores del `beforeEach` en curso.
  */
 
-export const RELOJ = relojFijo('2026-09-15T12:00:00Z')
+// Antes del vencimiento de enero (10/02): pasado el firme no se acepta ningun
+// pago hasta la liquidacion siguiente (RF-08, decision 2026-11-10).
+export const RELOJ = relojFijo('2026-02-05T12:00:00Z')
 export const repo = repositorioHabilitaciones
 
 export let consorcioId: string

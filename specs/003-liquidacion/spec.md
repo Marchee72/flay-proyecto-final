@@ -221,9 +221,9 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
   lo extraordinario separados adentro. El sistema no parte la deuda en dos ni persigue a dos
   personas: quién paga qué parte es un acuerdo entre propietario e inquilino, y el documento se lo
   dice a los dos.
-- **Un atraso de veintinueve días.** Interés **cero**: el interés corre por mes vencido completo.
-  Es consecuencia deliberada de la fórmula elegida y hay que probarla, porque es la que sorprende:
-  pagar el día 29 no cuesta nada y el día 31 cuesta un mes entero.
+- **Un pago al día siguiente del vencimiento en firme.** Se **rechaza**: la deuda se paga con la
+  liquidación siguiente, que le suma el recargo más alto y la mora (FR-024, regla del 2026-11-10).
+  Antes, pagar ese día salía más barato que pagar en el último tramo.
 - **Una tasa de interés cambiada a mitad del período.** La tasa aplicada se copia al cálculo y
   queda registrada, igual que el coeficiente: una liquidación pasada debe poder reconstruirse.
 
@@ -327,16 +327,16 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
 - **FR-023**: La suma de las imputaciones de un pago **DEBE** igualar el importe del pago con
   tolerancia cero.
 - **FR-024**: El cálculo de intereses por mora **DEBE** residir en el dominio, desarrollarse con
-  pruebas primero y probarse sin base de datos (§ 8.3.3). La fórmula es **interés simple por mes
-  vencido completo**: `capital impago × tasa mensual × meses completos de atraso`, contados de
-  fecha a fecha desde el vencimiento. **Sin prorrateo de días y sin capitalizar**: veintinueve días
-  de atraso son cero meses y por lo tanto interés cero, y el segundo mes se calcula sobre el mismo
-  capital que el primero.
-  El cálculo es **por cada liquidación impaga, desde su propio vencimiento**, y el interés de la
-  unidad es la suma de esos cálculos: una deuda de tres meses no devenga tres meses sobre el total,
-  sino tres, dos y un mes sobre cada liquidación. Es lo que permite explicarle a un propietario de
-  dónde sale cada peso, y lo que hace que pagar la más vieja primero (regla RN-08 § 7.2) tenga el
-  efecto que esa regla busca.
+  pruebas primero y probarse sin base de datos (§ 8.3.3). **Regla del 2026-11-10**, que reemplaza
+  la de meses completos del 2026-09-10 (recalculada en cada emisión, esa cobraba el mismo mes dos
+  veces): pasado el vencimiento en firme (el último tramo, RF-08) la expensa **no se paga** —ni en
+  línea ni a mano— hasta que se emite la liquidación siguiente. Esa liquidación le carga a cada
+  deuda arrastrada vencida en firme el **recargo más alto** de su escalonado, **una sola vez**, y la
+  **tasa de mora** del consorcio, **una vez por cada liquidación** que la arrastra. Ambos son
+  `capital impago × tasa`, **sin capitalizar** (lo ya liquidado como cargo no devenga), y se
+  calculan **por cada liquidación impaga**: es lo que permite explicarle a un propietario de dónde
+  sale cada peso. Ejemplo: $100.000 con tramos de +5 % y +10 % y mora del 3 % arrastran 10.000 +
+  3.000 en la liquidación siguiente y otros 3.000 en cada una que sigan impagos.
 - **FR-024b**: Los intereses **DEBEN** calcularse **al emitir**, sobre el saldo impago de la unidad
   a la fecha de emisión, y viajar como una línea propia del detalle. El consorcista tiene que poder
   leer cuánto debe en la expensa que recibe, sin que el saldo se mueva solo con el calendario.
@@ -424,10 +424,10 @@ la imputación reparte por antigüedad y que la suma de imputaciones iguala el p
 - **SC-014**: La cobertura de pruebas del paquete de dominio de liquidación, prorrateo, intereses e
   imputación es del **100 % de las ramas de decisión**. Es el único paquete del sistema con ese
   umbral, y se justifica en que un error aquí invalida el sistema.
-- **SC-014b**: El interés es reconstruible con una calculadora: veintinueve días de atraso dan
-  **cero**, sesenta dan dos meses sobre el mismo capital, y el detalle muestra tasa, meses y capital
-  aplicados (FR-024, FR-025). Con tres liquidaciones impagas, el interés es la suma de tres cálculos
-  independientes —tres, dos y un mes— y no dos meses sobre el total. Probado sin base de datos.
+- **SC-014b**: Los cargos son reconstruibles con una calculadora: cada línea es `capital × tasa`,
+  rotulada como recargo o mora, con su capital y su tasa (FR-024, FR-025). El recargo de una deuda
+  se cobra una sola vez y la mora una vez por liquidación: tres emisiones con enero impago cobran un
+  recargo y tres moras, no meses acumulados. Probado sin base de datos.
 - **SC-014c**: Un pago que excede la deuda deja el excedente a favor, y la liquidación siguiente de
   esa unidad lo muestra descontado sin que nadie lo aplique a mano; la suma de imputaciones sigue
   igualando el pago con tolerancia cero (FR-026b).

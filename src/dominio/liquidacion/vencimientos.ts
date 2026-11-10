@@ -139,6 +139,47 @@ export function montoExigible(base: string, recargoPorcentaje: string): string {
     .toFixed(DECIMALES_IMPORTE)
 }
 
+/**
+ * El recargo que viaja con la deuda arrastrada a la liquidacion siguiente: el
+ * mas alto del escalonado (decision 2026-11-10). Sin tramos, cero.
+ */
+export function recargoMaximo(tramos: readonly { recargoPorcentaje: string }[]): string {
+  return tramos
+    .reduce((maximo, t) => Decimal.max(maximo, importe(t.recargoPorcentaje)), new Decimal(0))
+    .toFixed(DECIMALES_TASA)
+}
+
+/**
+ * Lo que hay que pagar hoy por un conjunto de deudas: cada saldo mas el recargo
+ * de su tramo vigente. Es el **unico** calculo del monto a pagar: lo usan la
+ * pantalla, el cobro en linea y la imputacion (que cobra el mismo recargo).
+ */
+export function exigible(
+  impagos: readonly { saldo: string; recargoPorcentaje?: string }[],
+): string {
+  return impagos
+    .reduce(
+      (total, i) => total.plus(importe(montoExigible(i.saldo, i.recargoPorcentaje ?? '0'))),
+      new Decimal(0),
+    )
+    .toFixed(DECIMALES_IMPORTE)
+}
+
+/**
+ * Pasado el vencimiento en firme de la ultima liquidacion de la unidad no se
+ * acepta ningun pago hasta emitir la siguiente, que le carga el recargo y la
+ * mora (decision 2026-11-10). El dia del vencimiento todavia se paga. Si la
+ * ultima no vencio, lo anterior ya viaja dentro de ella con sus cargos.
+ */
+export function pagoBloqueadoHastaLiquidar(
+  saldoTotal: string,
+  vencimientoUltima: Date | null,
+  hoy: Date,
+): boolean {
+  if (!vencimientoUltima || importe(saldoTotal).lessThanOrEqualTo(0)) return false
+  return diaUTC(hoy) > diaUTC(vencimientoUltima)
+}
+
 export class ReglaVencimientosInvalida extends ErrorDeAplicacion {
   constructor(mensaje: string, detalle?: Record<string, unknown>) {
     super(mensaje, 'RF-08', detalle)

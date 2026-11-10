@@ -337,6 +337,7 @@ describe('el renderizador real', () => {
       desgloseInteres: [
         {
           periodo: '06/2026',
+          tipo: 'mora',
           capital: '500.00',
           tasaMensual: '2.0000',
           meses: 1,

@@ -117,6 +117,7 @@ export function manejadorDocumentoExpensa(
       interesMora: importeSerializado(detalle.interesMora),
       desgloseInteres: detalle.intereses.map((linea) => ({
         periodo: periodoDe(linea.liquidacionOrigen.periodo),
+        tipo: linea.tipo,
         capital: importeSerializado(linea.capital),
         tasaMensual: linea.tasaMensual.toFixed(4),
         meses: linea.meses,

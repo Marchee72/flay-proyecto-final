@@ -326,17 +326,21 @@ Treinta y dos decisiones que costaron una vuelta y conviene no volver a tomar de
 27. **Los vencimientos escalonados no reemplazan la mora, conviven (RF-08).** Un consorcio puede
     tener hasta tres vencimientos con recargo (`TramoVencimiento`, regla fija; el 1º es el base, 0 %).
     Al emitir, la liquidación **congela** sus tramos en `VencimientoLiquidacion` y
-    `Liquidacion.vencimiento` pasa a ser el **último** tramo (el que vence en firme): así la mora
-    (RN-08) sigue corriendo desde él sin tocarse. El recargo es **derivado**, no se persiste en
-    `totalUnidad`; por eso al vencer en firme se arrastra el **base** y la mora toma el relevo (la
-    validación exige una tasa de mora **positiva y mayor que el recargo más alto**, si no conviene
-    dejar vencer; la tasa se configura en la misma pantalla de vencimientos y rige para las
-    liquidaciones que se emitan desde entonces). El
+    `Liquidacion.vencimiento` pasa a ser el **último** tramo (el que vence en firme). El recargo
+    es **derivado**, no se persiste en `totalUnidad`. **Pasado el firme no se acepta ningún pago**
+    —ni en línea ni manual, `PagoBloqueadoHastaLiquidar`— hasta emitir la liquidación siguiente, que
+    arrastra el **base** y le suma, en `InteresLiquidado` con `tipo`, el **recargo más alto** del
+    escalonado **una sola vez** y la **mora** **una vez por liquidación** (`cargosPorArrastre`,
+    decisión del 2026-11-10; la regla vieja de meses acumulados cobraba dos veces el mismo mes). La
+    tasa se configura en la misma pantalla de vencimientos. El
     recargo cobrado se registra como **cargo propio** en `PagoImputacion.recargoCobrado` —no como
     saldo a favor—: `imputar` separa capital de recargo y el exigible es `base + redondeo(base ×
     recargo/100)`, al centavo igual en pantalla, en la imputación y en el cobro en línea. El monto
     exigible y el estado («vencida» solo al vencer en firme) **dependen de la fecha** (hora de
-    Argentina). Una liquidación emitida antes de la regla no tiene tramos: se la trata como un solo
+    Argentina: `relojDelSistema.hoy()` y `diaArgentino`, nunca el día UTC). Hay **una sola cuenta**
+    del monto: `exigible(deudaDeUnidad(...).impagos)`, que usan la pantalla, el pago en línea y el
+    bloqueo; el `IntentoDePago` se reutiliza solo si pide el mismo importe y vence a más tardar al
+    fin del día del tramo vigente, así la preferencia nunca cobra un monto viejo. Una liquidación emitida antes de la regla no tiene tramos: se la trata como un solo
     vencimiento sin recargo, idéntico a antes.
 
     **La regla se lee de dos formas y no hay que confundirlas.** En la **boleta y el almacenamiento**

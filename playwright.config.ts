@@ -26,14 +26,23 @@ export default defineConfig({
   webServer: [
     {
       command: `npm run start -- --port ${PUERTO}`,
-      env: { FLAY_ASISTENCIA: process.env.FLAY_ASISTENCIA, ABLY_API_KEY: '' },
+      env: {
+        FLAY_ASISTENCIA: process.env.FLAY_ASISTENCIA,
+        ABLY_API_KEY: '',
+        FLAY_ALMACEN: process.env.CI ? 'memoria' : '',
+      },
       url: `${URL_BASE}/api/salud`,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
     },
     {
       command: `npm run start -- --port ${PUERTO_NULA}`,
-      env: { FLAY_ASISTENCIA: 'nula', GEMINI_API_KEY: '', ABLY_API_KEY: '' },
+      env: {
+        FLAY_ASISTENCIA: 'nula',
+        GEMINI_API_KEY: '',
+        ABLY_API_KEY: '',
+        FLAY_ALMACEN: process.env.CI ? 'memoria' : '',
+      },
       url: `${URL_NULA}/api/salud`,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,

@@ -6,6 +6,7 @@ import { asistenciaNula } from '@/infraestructura/asistencia/nula'
 import { argon2id } from '@/infraestructura/contrasenas/argon2'
 import { avisoAbly } from '@/infraestructura/en-vivo/ably'
 import { avisoNulo } from '@/infraestructura/en-vivo/nulo'
+import { almacenEnMemoria } from '@/infraestructura/objetos/memoria'
 import { almacenR2 } from '@/infraestructura/objetos/r2'
 import { relojDelSistema } from '@/infraestructura/reloj'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
@@ -22,7 +23,7 @@ import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habili
 export const HABILITACIONES = repositorioHabilitaciones
 export const RELOJ = relojDelSistema
 export const DERIVADOR = argon2id
-export const ALMACEN = almacenR2
+export const ALMACEN = process.env.FLAY_ALMACEN === 'memoria' ? almacenEnMemoria : almacenR2
 export const AVISO_EN_VIVO: AvisoEnVivo = process.env.ABLY_API_KEY
   ? avisoAbly(process.env.ABLY_API_KEY)
   : avisoNulo

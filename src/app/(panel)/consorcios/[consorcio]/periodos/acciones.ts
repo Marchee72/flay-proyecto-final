@@ -4,8 +4,10 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { conHecho, type ClaveHecho } from '@/app/aviso-en-url'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 import { anularLiquidacion } from '@/aplicacion/liquidacion/anular'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
@@ -58,17 +60,17 @@ export async function accionAnularLiquidacion(
 }
 
 /**
- * Con exito vuelve a la lista con `?hecho=`, que la pila de avisos saca como
+ * Con exito vuelve a la lista con `conHecho`, que la pila de avisos saca como
  * toast: la fila que disparo la accion cambia de botones al re-dibujarse, asi
  * que un mensaje en la fila no sobreviviria.
  */
 async function conSesion(
   datos: FormData,
-  hecho: 'periodo-cerrado' | 'liquidado' | 'anulado',
+  hecho: ClaveHecho,
   trabajo: (usuarioId: string, consorcioId: string) => Promise<unknown>,
 ): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   const consorcioId = String(datos.get('consorcio') ?? '')
 
   try {
@@ -80,5 +82,5 @@ async function conSesion(
 
   revalidatePath('/consorcios/[consorcio]/periodos', 'page')
   revalidatePath('/consorcios/[consorcio]/periodos/[id]', 'page')
-  redirect(`/consorcios/${consorcioId}/periodos?hecho=${hecho}`)
+  redirect(conHecho(`/consorcios/${consorcioId}/periodos`, hecho))
 }

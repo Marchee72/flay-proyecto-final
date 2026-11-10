@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 import {
   desbordaALoAncho,
@@ -31,7 +31,8 @@ test.beforeAll(async () => {
       nombre: 'Corrientes 1234',
       direccion: 'Corrientes 1234',
       localidad: 'Rosario',
-      cuit: `33-${Date.now().toString().slice(-8)}-1`,
+      // Como en `sesion.ts`: con `Date.now()` los dos proyectos chocaban en el mismo ms.
+      cuit: `33-${crypto.randomUUID().slice(0, 8)}-1`,
     },
   })
   segundoConsorcioId = segundo.id
@@ -58,6 +59,11 @@ test('con un solo consorcio se entra derecho al resumen', async ({ page }) => {
   await expect(page).toHaveURL(`/consorcios/${unico.consorcioId}`)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Resumen')
   await expect(page.locator('.kpi__rotulo').first()).toHaveText('Período abierto')
+  // El logo va adonde ya lleva `/`: un clic no navega a la misma pantalla.
+  await expect(page.getByRole('link', { name: 'FLAY' })).toHaveAttribute(
+    'href',
+    `/consorcios/${unico.consorcioId}`,
+  )
   // El lateral agrupado, con sus cuatro bloques; en telefono vive en el menu.
   if (test.info().project.name === 'telefono') {
     await expect(page.getByRole('navigation', { name: 'Secciones principales' })).toBeVisible()
@@ -75,6 +81,18 @@ test('con un solo consorcio se entra derecho al resumen', async ({ page }) => {
   expect(await desbordaALoAncho(page)).toBe(false)
 })
 
+test('en el teléfono, elegir una sección del menú lo cierra (RNF-01)', async ({ page }) => {
+  test.skip(test.info().project.name !== 'telefono', 'el menú «Más» solo existe en el teléfono')
+  await entrar(page, unico.correo)
+  await page.getByRole('group').locator('summary').click()
+  await page
+    .getByRole('navigation', { name: 'Todas las secciones' })
+    .getByRole('link', { name: 'Gastos' })
+    .click()
+  await expect(page).toHaveURL(`/consorcios/${unico.consorcioId}/gastos`)
+  await expect(page.locator('details.menu')).not.toHaveAttribute('open', '')
+})
+
 test('con dos consorcios se entra a la lista, y el atajo conserva la seccion', async ({ page }) => {
   await entrar(page, conDos.correo)
   await expect(page).toHaveURL(/\/consorcios$/)
@@ -84,6 +102,36 @@ test('con dos consorcios se entra a la lista, y el atajo conserva la seccion', a
   await page.goto(`/consorcios/${conDos.consorcioId}/gastos`)
   await page.getByLabel('Cambiar de consorcio').selectOption(segundoConsorcioId)
   await expect(page).toHaveURL(`/consorcios/${segundoConsorcioId}/gastos`)
+})
+
+/** Abre un consorcio y espera a que `RecordarConsorcio` lo haya guardado. */
+async function abrirYRecordar(page: Page, consorcioId: string) {
+  const recordado = page.waitForResponse((r) => r.url().endsWith('/api/consorcio-activo'))
+  await page.goto(`/consorcios/${consorcioId}`)
+  expect((await recordado).status()).toBe(204)
+}
+
+test('el último consorcio abierto es al que vuelve la portada (FR-002)', async ({ page }) => {
+  await entrar(page, conDos.correo)
+  await abrirYRecordar(page, segundoConsorcioId)
+  await page.goto('/')
+  await expect(page).toHaveURL(`/consorcios/${segundoConsorcioId}`)
+})
+
+test('precargar un enlace a otro consorcio no lo vuelve el último usado (FR-002)', async ({
+  page,
+}) => {
+  await entrar(page, conDos.correo)
+  await abrirYRecordar(page, segundoConsorcioId)
+  // La lista dibuja un <Link> por consorcio, y cada uno visible se precarga.
+  await page.goto('/consorcios')
+  await page.waitForLoadState('networkidle')
+  // Y una precarga explicita del otro, por si la de la lista no llego a salir.
+  await page.request.get(`/consorcios/${conDos.consorcioId}`, {
+    headers: { RSC: '1', 'Next-Router-Prefetch': '1' },
+  })
+  await page.goto('/')
+  await expect(page).toHaveURL(`/consorcios/${segundoConsorcioId}`)
 })
 
 test('una direccion vieja va a la misma seccion del consorcio pedido', async ({ page }) => {
@@ -103,6 +151,16 @@ test('filtrar los gastos por periodo no abre el alta; ?abrir=1 si', async ({ pag
 
   await page.goto(`/consorcios/${unico.consorcioId}/gastos?abrir=1`)
   await expect(page.getByRole('dialog', { name: 'Nuevo gasto' })).toBeVisible()
+})
+
+test('los filtros escritos a mano no rompen la pantalla (RNF-10)', async ({ page }) => {
+  await entrar(page, unico.correo)
+  await page.goto(`/consorcios/${unico.consorcioId}/gastos?periodo=x&rubro=y`)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Gastos')
+  await page.goto(
+    `/consorcios/${unico.consorcioId}/reservas/historial?mes=2026-13&espacio=x&unidad=y`,
+  )
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Historial de reservas')
 })
 
 test('un consorcio fuera del alcance no dibuja nada', async ({ page }) => {

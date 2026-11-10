@@ -321,7 +321,10 @@ function PeriodoEnCurso({
           No hay ninguno abierto. El próximo nace solo, con el primer gasto que se le impute.
         </p>
         <div className="fila-acciones">
-          <Link className="boton boton--fantasma" href={`/consorcios/${consorcioId}/gastos`}>
+          <Link
+            className="boton boton--fantasma"
+            href={`/consorcios/${consorcioId}/gastos${administra ? '?abrir=1' : ''}`}
+          >
             {administra ? 'Cargar un gasto' : 'Ver gastos'}
           </Link>
         </div>

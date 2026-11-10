@@ -4,8 +4,10 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { conHecho } from '@/app/aviso-en-url'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 import { altaProveedor } from '@/aplicacion/proveedores/proveedores'
 
 /** Un archivo «use server» solo exporta funciones asincronicas. */
@@ -13,7 +15,7 @@ export type Resultado = { mensaje: string }
 
 export async function accionAltaProveedor(_previo: Resultado, datos: FormData): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   const consorcioId = String(datos.get('consorcio') ?? '')
 
   try {
@@ -32,5 +34,5 @@ export async function accionAltaProveedor(_previo: Resultado, datos: FormData): 
   }
 
   revalidatePath('/consorcios/[consorcio]/proveedores', 'page')
-  redirect(`/consorcios/${consorcioId}/proveedores?hecho=proveedor-registrado`)
+  redirect(conHecho(`/consorcios/${consorcioId}/proveedores`, 'proveedor-registrado'))
 }

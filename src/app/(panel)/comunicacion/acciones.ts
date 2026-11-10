@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { conError, conHecho } from '@/app/aviso-en-url'
 import { consultarDocumentacion, valorarConsulta } from '@/aplicacion/comunicacion/consultar'
 import { despacharNotificaciones, reintentarAgotados } from '@/aplicacion/comunicacion/despachar'
 import {
@@ -15,6 +16,7 @@ import {
 import { descartarNovedad, publicarNovedad } from '@/aplicacion/comunicacion/novedades'
 import { ASISTENCIA, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 import { MANEJADORES } from '@/aplicacion/pendientes/manejadores'
 
 export type Resultado = { mensaje: string }
@@ -29,7 +31,7 @@ export async function accionPublicarNovedad(
   datos: FormData,
 ): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   const consorcioId = texto(datos, 'consorcio')
   const alcance = texto(datos, 'alcance')
   if (
@@ -77,13 +79,13 @@ export async function accionPublicarNovedad(
   }
 
   revalidatePath('/consorcios/[consorcio]/novedades', 'page')
-  redirect(`/consorcios/${consorcioId}/novedades?hecho=novedad-publicada`)
+  redirect(conHecho(`/consorcios/${consorcioId}/novedades`, 'novedad-publicada'))
 }
 
 /** Dejar de ver una novedad; vuelve a la pagina desde donde se descarto. */
 export async function accionDescartarNovedad(datos: FormData): Promise<void> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   await descartarNovedad(HABILITACIONES, RELOJ, {
     usuarioId,
     consorcioId: texto(datos, 'consorcio'),
@@ -97,7 +99,7 @@ export async function accionCargarDocumento(
   datos: FormData,
 ): Promise<{ mensaje: string; destino?: string }> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   const consorcioId = texto(datos, 'consorcio')
   const tipo = texto(datos, 'tipo')
   if (!TIPOS_DOCUMENTO.some((t) => t.valor === tipo)) {
@@ -120,12 +122,15 @@ export async function accionCargarDocumento(
     throw error
   }
   revalidatePath('/consorcios/[consorcio]/documentos', 'page')
-  return { mensaje: '', destino: `/consorcios/${consorcioId}/documentos?hecho=documento-cargado` }
+  return {
+    mensaje: '',
+    destino: conHecho(`/consorcios/${consorcioId}/documentos`, 'documento-cargado'),
+  }
 }
 
 export async function accionReindexar(datos: FormData): Promise<void> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   const consorcioId = texto(datos, 'consorcio')
   await reindexarDocumento(HABILITACIONES, RELOJ, {
     usuarioId,
@@ -133,12 +138,12 @@ export async function accionReindexar(datos: FormData): Promise<void> {
     documentoId: texto(datos, 'documento'),
   })
   revalidatePath('/consorcios/[consorcio]/documentos', 'page')
-  redirect(`/consorcios/${consorcioId}/documentos?hecho=documento-reindexado`)
+  redirect(conHecho(`/consorcios/${consorcioId}/documentos`, 'documento-reindexado'))
 }
 
 export async function accionDespachar(datos: FormData): Promise<void> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   const consorcioId = texto(datos, 'consorcio')
   try {
     if (datos.get('reintentar') === '1') {
@@ -147,10 +152,10 @@ export async function accionDespachar(datos: FormData): Promise<void> {
     await despacharNotificaciones(MANEJADORES, HABILITACIONES, RELOJ, { usuarioId, consorcioId })
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
-    redirect(`/bandeja?error=${encodeURIComponent(error.mensajeParaUsuario)}`)
+    redirect(conError('/bandeja', error.mensajeParaUsuario))
   }
   revalidatePath('/bandeja')
-  redirect('/bandeja?hecho=despachado')
+  redirect(conHecho('/bandeja', 'despachado'))
 }
 
 export type ResultadoDeConsultaVisible =
@@ -171,7 +176,7 @@ export async function accionConsultar(
   datos: FormData,
 ): Promise<ResultadoDeConsultaVisible> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   try {
     const r = await consultarDocumentacion(ASISTENCIA, HABILITACIONES, RELOJ, {
       usuarioId,
@@ -188,7 +193,7 @@ export async function accionConsultar(
 
 export async function accionValorar(datos: FormData): Promise<void> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   await valorarConsulta(HABILITACIONES, RELOJ, {
     usuarioId,
     consorcioId: texto(datos, 'consorcio'),

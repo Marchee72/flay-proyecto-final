@@ -1,11 +1,14 @@
-import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 
 import { AvisoFueraDeAlcance, consorciosAlAlcance } from '../../con-consorcio'
+import { NOMBRE_GALLETA_CONSORCIO } from '../../consorcio-activo'
 import { Marco } from '../../marco'
+import { RecordarConsorcio } from './recordar-consorcio'
 
 /**
  * Dentro de un consorcio: el marco con el selector y las secciones agrupadas,
@@ -22,7 +25,7 @@ export default async function ConsorcioLayout({
   params: Promise<{ consorcio: string }>
 }) {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const { consorcio: consorcioId } = await params
   const consorcios = await consorciosAlAlcance(usuarioId)
@@ -37,9 +40,11 @@ export default async function ConsorcioLayout({
   }
 
   const roles = await rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id)
+  const recordado = (await cookies()).get(NOMBRE_GALLETA_CONSORCIO)?.value
 
   return (
     <Marco consorcio={{ consorcios, activoId: activo.id, base: `/consorcios/${activo.id}`, roles }}>
+      {recordado !== activo.id && <RecordarConsorcio id={activo.id} />}
       {children}
     </Marco>
   )

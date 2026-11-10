@@ -4,18 +4,20 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { conHecho } from '@/app/aviso-en-url'
 import { altaConsorcio } from '@/aplicacion/consorcios/alta-consorcio'
 import { tipoDeUnidadDesdeFormulario } from '@/aplicacion/consorcios/tipos-de-unidad'
 import { cargarPadron, editarPadron } from '@/aplicacion/consorcios/unidades'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 
 /** Un archivo «use server» solo exporta funciones asincronicas. */
 export type Resultado = { mensaje: string }
 
 async function quienOpera(): Promise<string> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
   return usuarioId
 }
 
@@ -157,5 +159,5 @@ export async function accionEditarPadron(_previo: Resultado, datos: FormData): P
   }
 
   revalidatePath('/consorcios/[consorcio]', 'layout')
-  redirect(`/consorcios/${consorcioId}/unidades?hecho=padron-guardado`)
+  redirect(conHecho(`/consorcios/${consorcioId}/unidades`, 'padron-guardado'))
 }

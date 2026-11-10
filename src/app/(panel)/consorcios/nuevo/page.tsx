@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { Building2 } from 'lucide-react'
 
 import { misAdministradoras } from '@/aplicacion/administradoras/mis-administradoras'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 
 import { Marco } from '../../marco'
 import { FormularioConsorcio } from './formulario'
@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: 'Nuevo consorcio — Flay' }
 
 export default async function NuevoConsorcioPage() {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const administradoras = await misAdministradoras(HABILITACIONES, RELOJ, usuarioId)
 

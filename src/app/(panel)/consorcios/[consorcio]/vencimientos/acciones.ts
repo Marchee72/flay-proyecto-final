@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import {
@@ -11,6 +10,7 @@ import {
 } from '@/aplicacion/consorcios/regla-vencimientos'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 
 export type Resultado = { mensaje: string; ok: boolean }
 
@@ -18,16 +18,17 @@ const texto = (datos: FormData, campo: string) => String(datos.get(campo) ?? '')
 
 /**
  * Guarda la regla de vencimientos (RF-08). El administrador carga hasta dos
- * vencimientos con recargo (el recargo rige al pagar DESPUES de esa fecha) y la
- * fecha del vencimiento en firme, pasada la cual corre la mora. `tramosDesdeEscalonado`
- * lo traduce al modelo de boleta (primer tramo base) antes de validar y guardar.
+ * vencimientos con recargo (el recargo rige al pagar DESPUES de esa fecha), la
+ * fecha del vencimiento en firme, pasada la cual corre la mora, y la tasa de
+ * mora mensual. `tramosDesdeEscalonado` lo traduce al modelo de boleta (primer
+ * tramo base) antes de validar y guardar todo junto.
  */
 export async function accionGuardarVencimientos(
   _previo: Resultado,
   datos: FormData,
 ): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const consorcioId = texto(datos, 'consorcio')
 
@@ -46,10 +47,20 @@ export async function accionGuardarVencimientos(
     return { mensaje: 'Cargá el día del vencimiento en firme.', ok: false }
   }
 
+  const tasaMora = texto(datos, 'tasaMora')
+  if (tasaMora === '') {
+    return { mensaje: 'Cargá la tasa de mora mensual.', ok: false }
+  }
+
   const tramos = tramosDesdeEscalonado(escalones, Number(diaFirme))
 
   try {
-    await guardarReglaVencimientos(HABILITACIONES, RELOJ, { usuarioId, consorcioId, tramos })
+    await guardarReglaVencimientos(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      tramos,
+      tasaMoraMensual: tasaMora,
+    })
   } catch (error) {
     if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario, ok: false }
     throw error

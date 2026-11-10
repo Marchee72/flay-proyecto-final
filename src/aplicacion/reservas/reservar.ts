@@ -27,8 +27,15 @@ export class ReservaRechazada extends ErrorDeAplicacion {
   }
 }
 
-const esSuperposicion = (error: unknown) =>
-  error instanceof Error && /reserva_sin_superposicion|23P01/.test(error.message)
+/**
+ * Dos reservas superpuestas que entran a la vez pueden chocar de dos formas: la
+ * restriccion de exclusion (`23P01`) o, si cada una espera a la otra, un
+ * deadlock (`40P01`) que la base resuelve abortando una. Es el mismo
+ * resultado —queda una sola—, asi que se dice igual.
+ */
+export const esSuperposicion = (error: unknown) =>
+  error instanceof Error &&
+  /reserva_sin_superposicion|23P01|40P01|deadlock detected/.test(error.message)
 
 export interface ReservaDelConsorcio {
   id: string

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -20,8 +20,8 @@ function activa(ruta: string, base: string, seccion: string): boolean {
   return ruta === `${base}/${seccion}` || ruta.startsWith(`${base}/${seccion}/`)
 }
 
-/** Lo que no depende de un consorcio: la lista y la bandeja. */
-export function NavegacionGlobal() {
+/** Lo que no depende de un consorcio: la lista y, a quien administra, la bandeja. */
+export function NavegacionGlobal({ conBandeja }: { conBandeja: boolean }) {
   const ruta = usePathname()
   return (
     <nav className="panel__global" aria-label="Panel">
@@ -29,10 +29,12 @@ export function NavegacionGlobal() {
         <Building2 className="icono" aria-hidden="true" />
         Consorcios
       </Link>
-      <Link href="/bandeja" aria-current={ruta === '/bandeja' ? 'page' : undefined}>
-        <Inbox className="icono" aria-hidden="true" />
-        Bandeja
-      </Link>
+      {conBandeja && (
+        <Link href="/bandeja" aria-current={ruta === '/bandeja' ? 'page' : undefined}>
+          <Inbox className="icono" aria-hidden="true" />
+          Bandeja
+        </Link>
+      )}
     </nav>
   )
 }
@@ -152,6 +154,12 @@ const PRINCIPALES = [
  */
 export function BarraInferior({ base, roles }: { base: string; roles: readonly string[] }) {
   const ruta = usePathname()
+  // El `<details>` no se entera de la navegacion del cliente: sin esto la hoja
+  // queda abierta tapando la seccion recien elegida.
+  const menu = useRef<HTMLDetailsElement>(null)
+  useEffect(() => {
+    if (menu.current) menu.current.open = false
+  }, [ruta])
 
   return (
     <div className="barra-inferior">
@@ -174,7 +182,7 @@ export function BarraInferior({ base, roles }: { base: string; roles: readonly s
           })}
         </ul>
       </nav>
-      <details className="menu">
+      <details className="menu" ref={menu}>
         <summary aria-label="Todas las secciones">
           <Menu className="icono" aria-hidden="true" />
         </summary>

@@ -210,8 +210,18 @@ function EstadoExpensa({ estado }: { estado: string }) {
   return <span className={`etiqueta ${e.clase}`}>{e.texto}</span>
 }
 
-function PagoExpensa({ base, consorcio }: { base: string; consorcio: false | Consorcio }) {
+function PagoExpensa({
+  base,
+  expensa,
+  consorcio,
+}: {
+  base: string
+  expensa: ExpensaVisible
+  consorcio: false | Consorcio
+}) {
   if (!consorcio) return null
+  // La unidad de la expensa ya elegida, y con exito se vuelve aca (CU-04).
+  const unidad = consorcio.unidades.find((u) => u.designacion === expensa.designacion)
   return (
     <span className="exp-pago">
       <ModalPago
@@ -219,6 +229,8 @@ function PagoExpensa({ base, consorcio }: { base: string; consorcio: false | Con
         unidades={consorcio.unidades}
         medios={MEDIOS_DE_PAGO}
         hoy={RELOJ.hoy().toISOString().slice(0, 10)}
+        unidadInicial={unidad?.id}
+        vuelta={`/consorcios/${base}/expensas/${expensa.detalleId}`}
       />
     </span>
   )
@@ -252,7 +264,7 @@ function DescargaExpensa({
 
 function VerGastos({ base, periodoId }: { base: string; periodoId: string }) {
   return (
-    <Link className="enlace-seco" href={`${base}/gastos?periodo=${periodoId}`}>
+    <Link className="enlace-seco" href={`/consorcios/${base}/gastos?periodo=${periodoId}`}>
       Ver los gastos del período
     </Link>
   )
@@ -322,7 +334,7 @@ function ExpensaTarjetaBanda({ base, expensa, consorcio, disponibilidadPago }: P
 
         <div className="expensa-banda__acciones">
           <DescargaExpensa direccion={expensa.direccion} claseAviso="" />
-          <PagoExpensa base={base} consorcio={consorcio} />
+          <PagoExpensa base={base} expensa={expensa} consorcio={consorcio} />
         </div>
         <VerGastos base={base} periodoId={expensa.periodoId} />
       </div>

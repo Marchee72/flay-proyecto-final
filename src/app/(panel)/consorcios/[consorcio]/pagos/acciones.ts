@@ -3,10 +3,13 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
+import { destinoSeguro } from '@/compartido/destinos'
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { conHecho } from '@/app/aviso-en-url'
 import { importeDesdeEntrada } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { irAIngresar } from '@/app/ir-a-ingresar'
 import { guardarCredencialesPago } from '@/aplicacion/administradoras/credenciales-pago'
 import { medioDesdeFormulario, registrarPago } from '@/aplicacion/pagos/registrar'
 
@@ -18,7 +21,7 @@ export type Resultado = { mensaje: string }
  */
 export async function accionRegistrarPago(_previo: Resultado, datos: FormData): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const consorcioId = String(datos.get('consorcio') ?? '')
 
@@ -38,7 +41,14 @@ export async function accionRegistrarPago(_previo: Resultado, datos: FormData): 
   }
 
   revalidatePath('/consorcios/[consorcio]/pagos', 'page')
-  redirect(`/consorcios/${consorcioId}/pagos?hecho=pago-registrado`)
+  // Desde la expensa se vuelve a ella; `vuelta` viene del formulario, asi que
+  // solo vale dentro de este consorcio (sin redireccion abierta).
+  const destino = destinoSeguro(
+    datos.get('vuelta'),
+    `/consorcios/${consorcioId}/pagos`,
+    `/consorcios/${consorcioId}/`,
+  )
+  redirect(conHecho(destino, 'pago-registrado'))
 }
 
 /**
@@ -50,7 +60,7 @@ export async function accionGuardarCredencialesPago(
   datos: FormData,
 ): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
-  if (!usuarioId) redirect('/ingresar')
+  if (!usuarioId) return irAIngresar()
 
   const consorcioId = String(datos.get('consorcio') ?? '')
   const accessToken = String(datos.get('accessToken') ?? '').trim()
@@ -69,5 +79,5 @@ export async function accionGuardarCredencialesPago(
   }
 
   revalidatePath('/consorcios/[consorcio]/pagos', 'page')
-  redirect(`/consorcios/${consorcioId}/pagos?hecho=pasarela-configurada`)
+  redirect(conHecho(`/consorcios/${consorcioId}/pagos`, 'pasarela-configurada'))
 }

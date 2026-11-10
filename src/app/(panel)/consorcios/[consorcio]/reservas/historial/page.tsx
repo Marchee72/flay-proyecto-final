@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { History } from 'lucide-react'
 
 import { momentoParaMostrar } from '@/compartido/formato'
+import { esUuid } from '@/compartido/identificadores'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarEspacios, suspensionesEnRango } from '@/aplicacion/reservas/espacios'
 import {
@@ -46,7 +47,11 @@ export default async function HistorialDeReservasPage({
   if ('salida' in pantalla) return pantalla.salida
   const { usuarioId, activo } = pantalla
 
-  const mes = /^\d{4}-\d{2}$/.test(parametros.mes ?? '')
+  // Escritos a mano no llegan a la base: un id que no es uuid o un mes 13 la
+  // hacen fallar con un error que la pantalla no sabe decir (RNF-10).
+  const espacioId = esUuid(parametros.espacio) ? parametros.espacio : undefined
+  const unidadId = esUuid(parametros.unidad) ? parametros.unidad : undefined
+  const mes = /^\d{4}-(0[1-9]|1[0-2])$/.test(parametros.mes ?? '')
     ? parametros.mes!
     : RELOJ.hoy().toISOString().slice(0, 7)
   const [anio, numero] = mes.split('-').map(Number)
@@ -69,15 +74,15 @@ export default async function HistorialDeReservasPage({
         consorcioId: activo.id,
         desde,
         hasta,
-        espacioId: parametros.espacio || undefined,
-        unidadId: parametros.unidad || undefined,
+        espacioId,
+        unidadId,
       }),
       suspensionesEnRango(HABILITACIONES, RELOJ, {
         usuarioId,
         consorcioId: activo.id,
         desde,
         hasta,
-        espacioId: parametros.espacio || undefined,
+        espacioId,
       }),
     ])
     const calendario = construirCalendario(mes, reservas, tramos, RELOJ.hoy().toISOString())

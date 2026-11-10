@@ -172,7 +172,7 @@ comprensibles (RNF-10), auditoría registrada si toca datos económicos, documen
 
 ## Lo que no se adivina leyendo el código
 
-Las decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
+Treinta y dos decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
 
 1. **El orden de las semillas y las pruebas.** `npm run test:integracion` **vacía** las tablas de
    negocio, semilla incluida: en una base compartida no hay forma de distinguir lo sembrado de lo
@@ -259,7 +259,13 @@ Las decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
     `conConsorcio(consorcioId, titulo)` es el único punto que valida el id contra el alcance, y
     `consorciosAlAlcance` está cacheado por pedido porque lo piden el armazón y la página. La galleta
     `flay_consorcio` solo recuerda el último usado para `/` y para las direcciones viejas
-    (`[...ruta]/page.tsx`). Las listas de secciones van en `secciones.ts` sin `'use client'`:
+    (`[...ruta]/page.tsx`), y se sigue validando contra el alcance al leerla. No la escribe solo el
+    selector: `RecordarConsorcio`, montado por el layout del consorcio, hace `POST
+    /api/consorcio-activo` al abrir uno. **No va en `src/middleware.ts`**: Next le saca al
+    middleware las cabeceras de RSC, así que ahí una precarga de `<Link>` no se distingue de una
+    navegación, y cada tarjeta de la lista de consorcios pisaba la galleta al precargarse. Un
+    efecto solo corre en lo que se montó. El middleware se quedó con `x-flay-ruta`, la ruta pedida
+    que usa `irAIngresar` para volver después de ingresar. Las listas de secciones van en `secciones.ts` sin `'use client'`:
     importar un valor de un módulo cliente desde un componente servidor da `undefined`.
 20. **La bandeja y el resumen están en la lista blanca de `filtro-unico.spec.ts`.** La bandeja
     cruza consorcios con `consorcio_id IN (...)` armado desde `misConsorcios`, nunca desde un
@@ -280,10 +286,13 @@ Las decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
     `bajaDesde: null`; quien lee historia (una expensa vieja) no. Una consulta nueva sobre
     `prisma.unidad` que se olvida el filtro no rompe la suma, pero ofrece una unidad que ya no está.
 24. **El resultado de una acción es un toast, y viaja en la dirección.** La acción redirige con
-    `?hecho=<clave>` o `?error=<texto>`, y lo dibuja `PilaDeAvisos` (`src/app/avisos.tsx`), montada
-    una sola vez en el layout raíz —así alcanza al panel, al ingreso y a la landing—. Los textos de
-    éxito viven ahí, en el diccionario `HECHO`: antes estaban repetidos en cada página de destino, con
-    una bandera distinta por acción y `?registrado=1` queriendo decir dos cosas. Un componente cliente
+    `conHecho(ruta, clave)` o `conError(ruta, texto)` (`src/app/aviso-en-url.ts`), que escriben
+    `?hecho=`/`?error=` más `aviso=<único>`: sin ese valor, la misma acción repetida dos veces
+    seguidas terminaba en la misma dirección y la pila no volvía a avisar. Lo dibuja `PilaDeAvisos`
+    (`src/app/avisos.tsx`), montada una sola vez en el layout raíz —así alcanza al panel, al ingreso
+    y a la landing—. Los textos de éxito viven en el diccionario `HECHO` de `aviso-en-url.ts`, sin
+    `'use client'` para que lo importen las acciones: antes estaban repetidos en cada página de
+    destino, con una bandera distinta por acción y `?registrado=1` queriendo decir dos cosas. Un componente cliente
     que no navega avisa con `avisar(texto, tono)`; es un emisor de módulo, no un contexto, para poder
     importarlo sin envolver el árbol. El éxito se va a los 8 s; el problema queda hasta que se lo
     cierra. **El parámetro se queda en la dirección a propósito**: sacarlo con `history.replaceState`
@@ -320,7 +329,9 @@ Las decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
     `Liquidacion.vencimiento` pasa a ser el **último** tramo (el que vence en firme): así la mora
     (RN-08) sigue corriendo desde él sin tocarse. El recargo es **derivado**, no se persiste en
     `totalUnidad`; por eso al vencer en firme se arrastra el **base** y la mora toma el relevo (la
-    validación exige mora mensual > recargo del último tramo, si no conviene dejar vencer). El
+    validación exige una tasa de mora **positiva y mayor que el recargo más alto**, si no conviene
+    dejar vencer; la tasa se configura en la misma pantalla de vencimientos y rige para las
+    liquidaciones que se emitan desde entonces). El
     recargo cobrado se registra como **cargo propio** en `PagoImputacion.recargoCobrado` —no como
     saldo a favor—: `imputar` separa capital de recargo y el exigible es `base + redondeo(base ×
     recargo/100)`, al centavo igual en pantalla, en la imputación y en el cobro en línea. El monto
@@ -336,10 +347,38 @@ Las decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
     fecha es la del firme (sin recargo, mora después)—. Son equivalentes: convertir de una a otra es
     **correr el recargo un lugar**, y ese corrimiento vive **solo** en `tramosDesdeEscalonado` /
     `escalonadoDesdeTramos` (`src/dominio/liquidacion/vencimientos.ts`), que usan la acción y la
-    página de `vencimientos/`. El dominio, la validación (1er tramo 0 %, mora > recargo más alto), el
-    congelado, el PDF y los pagos siguen en el modelo de boleta, intactos.
+    página de `vencimientos/`. El dominio, la validación (1er tramo 0 %, mora positiva y > recargo
+    más alto), el congelado, el PDF y los pagos siguen en el modelo de boleta, intactos.
 
-28. **La asamblea se protege en la base, y se borra solo por arriba (016).** Un voto se cambia solo con
+28. **La validación de un formulario se escribe una vez en el dominio y se usa dos veces.** El
+    dominio expone validadores de campo puros que devuelven el mensaje listo para mostrar o `null`
+    (por ejemplo `errorDeDia`, `errorDeRecargo`, `errorDeTasaMora` en
+    `src/dominio/liquidacion/vencimientos.ts`). El formulario los llama **al tipear** y muestra el
+    mensaje debajo del campo, con `aria-invalid` y `aria-describedby` apuntando a `error-<campo>`;
+    el caso de uso los vuelve a correr **al guardar**, junto con las reglas que cruzan campos (en
+    vencimientos: días crecientes y mora > recargo más alto). Lo del cliente es una ayuda: la
+    garantía es el servidor. El error del submit sigue siendo **uno solo al pie** con `role="alert"`;
+    los de campo no llevan `role` para no anunciar cada tecla. Si el módulo de aplicación del que
+    depende la pantalla arrastra infraestructura, los validadores se reexportan desde un módulo
+    intermedio sin Prisma (ver `src/aplicacion/consorcios/vencimientos-reglas.ts`): presentación
+    nunca importa infraestructura. Los formularios que ya existen se migran cuando se toquen; todo
+    formulario nuevo nace así.
+
+29. **El pago en línea se confirma por tres caminos y solo uno escribe.** El webhook, la vista de
+    retorno y la conciliación (`src/aplicacion/pagos/conciliar-pago-en-linea.ts`: la vista de la
+    expensa, la pestaña original que queda en `?intentoId=` sondeando, y el trabajo de cola
+    `conciliar_pago` que encola `iniciarPagoEnLinea`) terminan los tres en `confirmarPagoEnLinea`,
+    cuya transacción abre con `SELECT … FOR UPDATE` sobre el intento: ese candado, más el chequeo de
+    `referencia = MP-<id>`, es la barrera contra el doble registro (con el intento ya aprobado, el
+    `updateMany` condicionado no bloquea nada), y lo impago se lee con `tx` *después* del candado. La
+    conciliación decide *qué* confirmar, nunca crea un `Pago`. Busca en la pasarela por
+    `external_reference = intentoId`, así que funciona sin `URL_PUBLICA`. El rechazo no corta el
+    seguimiento —en Checkout Pro la tarjeta se reintenta en la misma preferencia—: la pestaña que
+    sigue el intento mantiene el sondeo y el manejador relanza con `esperando` o `rechazado`; un
+    `vencido` sigue mirándose hasta `venceEn` + 72 h. Un checkout abandonado termina `agotado` en
+    la cola a propósito, y por eso `conciliar_pago` no cuenta en el resumen de avisos de la bandeja.
+
+30. **La asamblea se protege en la base, y se borra solo por arriba (016).** Un voto se cambia solo con
     el punto abierto y nunca se borra (`fn_voto_inmutable`); cada cambio queda en la bitácora y quien
     dirige no pisa el voto propio de una unidad. El orden del día queda fijo desde la convocatoria y nada cambia desde
     `finalizada`: lo hacen disparadores, no la aplicación. Ningún hijo (punto, padrón, voto, poder,
@@ -351,7 +390,7 @@ Las decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
     fecha y las oposiciones, sin cron; el único cron nuevo es el recordatorio de firmas
     (`/api/tareas/asambleas`).
 
-29. **La sala de asamblea escucha, no sondea (016).** El servidor publica en Ably un aviso **sin datos**
+31. **La sala de asamblea escucha, no sondea (016).** El servidor publica en Ably un aviso **sin datos**
     y cada pantalla relee con sus permisos, así que nada de la asamblea pasa por el canal. `conAviso`
     (`src/aplicacion/asambleas/en-vivo.ts`) es el único punto que publica: después de la acción, en
     `after()`, y un fallo se ignora. `ABLY_API_KEY` es solo de servidor; sin ella corre `avisoNulo` y
@@ -359,7 +398,7 @@ Las decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
     apilar relecturas delante de un voto, y por eso sigue drenando la cola (nota 21). El token va en la URL del `EventSource`: la reconexión del navegador repetiría uno
     vencido, y por eso `crearEscucha` cierra y pide otro.
 
-30. **El borrador del acta no es el resumen.** Al finalizar se encola `redactar_acta` y la IA escribe en
+32. **El borrador del acta no es el resumen.** Al finalizar se encola `redactar_acta` y la IA escribe en
     `PuntoAsamblea.borradorResumen`, con los resultados, las `notas` de la sala (solo se escriben con el
     punto abierto, lo sostiene `fn_punto_reglas`) y las `ObservacionAsamblea` de los presentes. `enviarAFirmar` exige
     `resumen`, que solo se llena cuando una persona guarda: por eso nada de la IA llega a las firmas sin

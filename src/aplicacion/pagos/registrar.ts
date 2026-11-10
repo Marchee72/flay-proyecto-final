@@ -4,7 +4,7 @@ import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import { Decimal, importe } from '@/compartido/dinero'
 import { imputar, type DetalleImpago } from '@/dominio/liquidacion/imputacion'
 import { saldosDeUnidad } from '@/dominio/liquidacion/saldo'
-import { recargoVigente } from '@/dominio/liquidacion/vencimientos'
+import { pagoBloqueadoHastaLiquidar, recargoVigente } from '@/dominio/liquidacion/vencimientos'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
@@ -39,6 +39,15 @@ export class ImporteDePagoInvalido extends ErrorDeAplicacion {
 export class MedioDePagoDesconocido extends ErrorDeAplicacion {
   constructor() {
     super('Elegí un medio de pago de la lista.', 'RF-09')
+  }
+}
+
+export class PagoBloqueadoHastaLiquidar extends ErrorDeAplicacion {
+  constructor() {
+    super(
+      'La expensa venció en firme: se podrá pagar con la próxima liquidación, que le suma el recargo y la mora.',
+      'RF-08',
+    )
   }
 }
 
@@ -137,7 +146,9 @@ export async function registrarPago(
       if (!unidad) throw new NoEncontrado()
 
       // El recargo se mide a la fecha del pago: es cuando se considera pagado.
-      const impagos = await detallesImpagosDe(unidad.id, datos.fechaPago)
+      // Pasado el firme no se acepta hasta la liquidacion siguiente (RF-08).
+      const { impagos, bloqueado } = await deudaDeUnidad(unidad.id, datos.fechaPago)
+      if (bloqueado) throw new PagoBloqueadoHastaLiquidar()
 
       return prisma.$transaction(async (tx) => {
         return imputarYRegistrar(tx, {
@@ -167,6 +178,28 @@ export async function detallesImpagosDe(
   hoy: Date,
   cliente: Pick<TransaccionPrisma, 'detalleLiquidacion'> = prisma,
 ): Promise<DetalleImpago[]> {
+  return (await deudaDeUnidad(unidadId, hoy, cliente)).impagos
+}
+
+/**
+ * Lo impago de la unidad (ver `detallesImpagosDe`) y si se puede pagar hoy:
+ * pasado el vencimiento en firme de su ultima liquidacion no se acepta ningun
+ * pago hasta emitir la siguiente (RF-08, decision 2026-11-10). Es la misma
+ * lectura para el pago manual, el cobro en linea y la pantalla.
+ */
+export async function deudaDeUnidad(
+  unidadId: string,
+  hoy: Date,
+  cliente: Pick<TransaccionPrisma, 'detalleLiquidacion'> = prisma,
+): Promise<{
+  impagos: DetalleImpago[]
+  bloqueado: boolean
+  saldoTotal: string
+  /** La ultima liquidacion vigente de la unidad: la que se paga, con todo lo arrastrado. */
+  ultimaId: string | null
+  /** El ultimo dia en que el monto de hoy sigue valiendo (cambio de tramo), o nulo. */
+  vigenteHasta: Date | null
+}> {
   const detalles = await cliente.detalleLiquidacion.findMany({
     where: { unidadId, liquidacion: { estado: 'vigente' } },
     select: {
@@ -195,7 +228,7 @@ export async function detallesImpagosDe(
       .toFixed(DECIMALES_IMPORTE),
   }))
 
-  const recargoPorDetalle = new Map(
+  const vigentePorDetalle = new Map(
     detalles.map((d) => [
       d.id,
       recargoVigente(
@@ -205,18 +238,35 @@ export async function detallesImpagosDe(
           recargoPorcentaje: v.recargoPorcentaje.toFixed(4),
         })),
         hoy,
-      ).recargoPorcentaje,
+      ),
     ]),
   )
 
   const saldos = saldosDeUnidad(formateados)
+  const ultima = detalles.reduce<(typeof detalles)[number] | null>(
+    (max, d) => (max && max.liquidacion.vencimiento >= d.liquidacion.vencimiento ? max : d),
+    null,
+  )
 
-  return saldos.detalles
-    .filter((detalle) => importe(detalle.saldo).greaterThan(0))
-    .map((detalle) => ({
+  const impagos = saldos.detalles.filter((detalle) => importe(detalle.saldo).greaterThan(0))
+  const vigenteHasta = impagos
+    .map((d) => vigentePorDetalle.get(d.detalleId)?.proximoVencimiento ?? null)
+    .reduce<Date | null>((min, f) => (f && (!min || f < min) ? f : min), null)
+
+  return {
+    impagos: impagos.map((detalle) => ({
       detalleId: detalle.detalleId,
       saldo: detalle.saldo,
       vencimiento: detalle.vencimiento,
-      recargoPorcentaje: recargoPorDetalle.get(detalle.detalleId) ?? '0',
-    }))
+      recargoPorcentaje: vigentePorDetalle.get(detalle.detalleId)?.recargoPorcentaje ?? '0',
+    })),
+    bloqueado: pagoBloqueadoHastaLiquidar(
+      saldos.saldoTotal,
+      ultima?.liquidacion.vencimiento ?? null,
+      hoy,
+    ),
+    saldoTotal: saldos.saldoTotal,
+    ultimaId: ultima?.id ?? null,
+    vigenteHasta,
+  }
 }

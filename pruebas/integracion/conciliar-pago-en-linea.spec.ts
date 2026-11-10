@@ -92,7 +92,7 @@ function programar(pagoExternoId: string, estado: 'aprobado' | 'rechazado' | 'pe
     estado,
     importe: '500.00',
     referenciaExterna: intentoId,
-    fechaAprobacion: estado === 'aprobado' ? new Date('2026-09-15T13:00:00Z') : null,
+    fechaAprobacion: estado === 'aprobado' ? new Date('2026-02-05T13:00:00Z') : null,
   })
 }
 

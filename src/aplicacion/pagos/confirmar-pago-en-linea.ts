@@ -3,6 +3,7 @@ import type { ProcesadorDePagos } from '@/dominio/contratos/procesador-pagos'
 import { verificarFirmaWebhookMercadoPago } from '@/dominio/pagos/firma-webhook'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 import { enConsorcio } from '@/infraestructura/cliente-aislado'
+import { diaArgentino } from '@/infraestructura/reloj'
 import { obtenerCredencialesDescifradas } from '@/aplicacion/administradoras/credenciales-pago'
 import { notificar } from '@/aplicacion/comunicacion/notificar'
 import { detallesImpagosDe, imputarYRegistrar } from '@/aplicacion/pagos/registrar'
@@ -164,9 +165,11 @@ export async function confirmarPagoEnLinea(
       // Lo impago se lee con el candado tomado: leido antes, un pago concurrente del
       // mismo intento ya pudo haberlo imputado. El recargo se mide a la fecha en que
       // se acredito el pago (RF-08).
+      // En el dia argentino: con el instante UTC, un pago de las 22 h ya caia
+      // en el tramo del dia siguiente.
       const impagos = await detallesImpagosDe(
         intento.unidadId,
-        pagoApi.fechaAprobacion ?? new Date(),
+        diaArgentino(pagoApi.fechaAprobacion ?? new Date()),
         tx,
       )
 
@@ -174,7 +177,7 @@ export async function confirmarPagoEnLinea(
       const pago = await imputarYRegistrar(tx, {
         unidadId: intento.unidadId,
         importe: pagoApi.importe,
-        fechaPago: pagoApi.fechaAprobacion ?? new Date(),
+        fechaPago: diaArgentino(pagoApi.fechaAprobacion ?? new Date()),
         medio: 'mercado_pago',
         referencia: `MP-${datos.pagoExternoId}`,
         registradoPor: intento.iniciadoPor,

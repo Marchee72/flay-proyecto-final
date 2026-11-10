@@ -1,13 +1,18 @@
 import { Decimal, importe } from '@/compartido/dinero'
 import { importeSerializado } from '@/compartido/formato'
 import { NoEncontrado } from '@/compartido/errores'
-import { saldosDeUnidad } from '@/dominio/liquidacion/saldo'
-import { montoExigible, recargoVigente } from '@/dominio/liquidacion/vencimientos'
+import {
+  exigible,
+  montoExigible,
+  recargoMaximo,
+  recargoVigente,
+} from '@/dominio/liquidacion/vencimientos'
 import { ordenarUnidades } from '@/dominio/unidades/division'
 import type { AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
+import { deudaDeUnidad } from '@/aplicacion/pagos/registrar'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 
 /**
@@ -20,6 +25,9 @@ import { prisma, prismaBase } from '@/infraestructura/prisma'
  */
 
 const SEGUNDOS_DE_LECTURA = 600
+
+/** Lo que debe la unidad hoy, ya des-arrastrado (`deudaDeUnidad`). */
+type Deuda = Awaited<ReturnType<typeof deudaDeUnidad>>
 
 /**
  * Como viene cobrada **esta** expensa. No es un campo de la liquidacion: sale
@@ -49,14 +57,27 @@ export interface ExpensaVisible {
   totalUnidad: string
   /** Lo que falta pagar de capital, `'0.00'` si esta saldada. Cadena, como todo importe. */
   saldo: string
-  /** Lo que hay que pagar HOY: saldo + recargo del tramo vigente. `'0.00'` si saldada. */
+  /**
+   * Lo que hay que pagar HOY: saldo + recargo del tramo vigente, `'0.00'` si
+   * saldada. En la ultima expensa vigente es el **consolidado** (lo arrastrado
+   * incluido): el mismo monto que cobra el pago en linea, al centavo.
+   */
   exigibleHoy: string
   /** El recargo en pesos aplicable hoy sobre el saldo. */
   recargo: string
+  /** El recargo mas alto del escalonado: el que se arrastra pasado el firme. */
+  recargoArrastre: string
+  /** La tasa de mora mensual del consorcio, que suma cada liquidacion que la arrastra. */
+  tasaMora: string
   /** El porcentaje del tramo vigente (`'0.0000'` si es el base o vencio en firme). */
   recargoPorcentaje: string
   /** Verdadero si ya paso el ultimo vencimiento: la expensa vence en firme. */
   venceEnFirme: boolean
+  /**
+   * Es la ultima vigente, vencio en firme y debe: no se acepta ningun pago hasta
+   * la liquidacion siguiente, que le suma el recargo y la mora (RF-08).
+   */
+  bloqueada: boolean
   /** Los tramos de vencimiento, con el monto a pagar en cada uno. */
   vencimientos: TramoExpensa[]
   estadoPago: EstadoPagoExpensa
@@ -149,12 +170,8 @@ export async function verExpensa(
       const detalle = await prismaBase.detalleLiquidacion.findUnique({
         where: { id: datos.detalleId },
         include: {
-          liquidacion: { include: { periodo: true, vencimientos: true } },
+          liquidacion: { include: { periodo: true, vencimientos: true, consorcio: true } },
           unidad: true,
-          // La imputacion revertida no descuenta: la anulacion la deja en la
-          // tabla con `revertidaEn` y el saldo vuelve a deber. Lo mismo hacen
-          // `registrarPago`, `liquidarPeriodo` y `saldoImpagoPorUnidad`.
-          imputaciones: { where: { revertidaEn: null } },
         },
       })
 
@@ -169,11 +186,10 @@ export async function verExpensa(
       // El saldo de esta expensa sale del des-arrastre sobre TODAS las
       // liquidaciones vigentes de la unidad, no de esta fila suelta: `totalUnidad`
       // arrastra la deuda anterior y los pagos se imputan contra el saldo propio
-      // de cada periodo (misma cuenta que `detallesImpagosDe` y la morosidad).
-      const saldos = await saldosVigentesDeUnidad(detalle.unidadId)
-      const saldo = saldos.get(detalle.id) ?? new Decimal(0)
+      // de cada periodo (la misma lectura que el pago manual y en linea).
+      const deuda = await deudaDeUnidad(detalle.unidadId, reloj.hoy())
 
-      return aVisible(almacen, detalle, reloj.hoy(), saldo)
+      return aVisible(almacen, detalle, reloj.hoy(), deuda)
     },
   )
 }
@@ -183,9 +199,8 @@ type DetalleConContexto = NonNullable<
     ReturnType<
       typeof prismaBase.detalleLiquidacion.findFirst<{
         include: {
-          liquidacion: { include: { periodo: true; vencimientos: true } }
+          liquidacion: { include: { periodo: true; vencimientos: true; consorcio: true } }
           unidad: true
-          imputaciones: { where: { revertidaEn: null } }
         }
       }>
     >
@@ -200,81 +215,32 @@ async function expensasDe(
   const detalles = await prismaBase.detalleLiquidacion.findMany({
     where: { unidadId, liquidacion: { estado: 'vigente' } },
     include: {
-      liquidacion: { include: { periodo: true, vencimientos: true } },
+      liquidacion: { include: { periodo: true, vencimientos: true, consorcio: true } },
       unidad: true,
-      // La imputacion revertida no descuenta: la anulacion la deja en la
-      // tabla con `revertidaEn` y el saldo vuelve a deber. Lo mismo hacen
-      // `registrarPago`, `liquidarPeriodo` y `saldoImpagoPorUnidad`.
-      imputaciones: { where: { revertidaEn: null } },
     },
     orderBy: { liquidacion: { emitidaEn: 'desc' } },
   })
 
   // Un solo des-arrastre sobre todas las vigentes de la unidad; cada expensa
-  // toma su saldo del mapa, no de su `totalUnidad` (que incluye el arrastre).
-  const saldos = mapaDeSaldos(detalles)
+  // toma su saldo de ahi, no de su `totalUnidad` (que incluye el arrastre).
+  const deuda = await deudaDeUnidad(unidadId, hoy)
 
-  return Promise.all(
-    detalles.map((detalle) =>
-      aVisible(almacen, detalle, hoy, saldos.get(detalle.id) ?? new Decimal(0)),
-    ),
-  )
-}
-
-/**
- * Saldo des-arrastrado por detalle, igual que `detallesImpagosDe` y la
- * morosidad: `totalUnidad` arrastra la deuda anterior, asi que el saldo propio
- * de cada periodo sale de `saldosDeUnidad`, no de `totalUnidad − imputado`.
- */
-function mapaDeSaldos(
-  detalles: readonly {
-    id: string
-    totalUnidad: { toFixed(decimales: number): string }
-    deudaAnterior: { toFixed(decimales: number): string }
-    interesMora: { toFixed(decimales: number): string }
-    liquidacion: { vencimiento: Date }
-    imputaciones: readonly { importeImputado: { toFixed(decimales: number): string } }[]
-  }[],
-): Map<string, Decimal> {
-  const resumen = saldosDeUnidad(
-    detalles.map((d) => ({
-      detalleId: d.id,
-      totalUnidad: d.totalUnidad.toFixed(2),
-      deudaAnterior: d.deudaAnterior.toFixed(2),
-      interesMora: d.interesMora.toFixed(2),
-      imputado: d.imputaciones
-        .reduce((total, i) => total.plus(importe(i.importeImputado.toFixed(2))), new Decimal(0))
-        .toFixed(2),
-      vencimiento: d.liquidacion.vencimiento,
-    })),
-  )
-  return new Map(resumen.detalles.map((d) => [d.detalleId, importe(d.saldo)]))
-}
-
-/** Lo mismo pero para una sola unidad por id: consulta sus vigentes y des-arrastra. */
-async function saldosVigentesDeUnidad(unidadId: string): Promise<Map<string, Decimal>> {
-  const detalles = await prismaBase.detalleLiquidacion.findMany({
-    where: { unidadId, liquidacion: { estado: 'vigente' } },
-    select: {
-      id: true,
-      totalUnidad: true,
-      deudaAnterior: true,
-      interesMora: true,
-      liquidacion: { select: { vencimiento: true } },
-      imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
-    },
-  })
-  return mapaDeSaldos(detalles)
+  return Promise.all(detalles.map((detalle) => aVisible(almacen, detalle, hoy, deuda)))
 }
 
 async function aVisible(
   almacen: AlmacenObjetos,
   detalle: DetalleConContexto,
   hoy: Date,
-  saldo: Decimal,
+  deuda: Deuda,
 ): Promise<ExpensaVisible> {
   const { periodo } = detalle.liquidacion
+  const propio = deuda.impagos.find((i) => i.detalleId === detalle.id)
+  const saldo = importe(propio?.saldo ?? '0')
   const saldoPositivo = Decimal.max(saldo, 0)
+  // La ultima vigente se paga con todo lo arrastrado: su base es la deuda total.
+  const esUltima = deuda.ultimaId === detalle.id
+  const base = esUltima ? importe(deuda.saldoTotal) : saldoPositivo
 
   // Los tramos congelados (RF-08). Una liquidacion emitida antes de la regla no
   // tiene filas: se usa su vencimiento unico como un solo tramo sin recargo, de
@@ -293,8 +259,10 @@ async function aVisible(
   const vigente = recargoVigente(tramos, hoy)
   const exigibleHoy = saldoPositivo.lessThanOrEqualTo(0)
     ? '0.00'
-    : montoExigible(saldoPositivo.toFixed(2), vigente.recargoPorcentaje)
-  const recargo = importe(exigibleHoy).minus(saldoPositivo).toFixed(2)
+    : esUltima
+      ? exigible(deuda.impagos)
+      : montoExigible(saldoPositivo.toFixed(2), vigente.recargoPorcentaje)
+  const recargo = Decimal.max(importe(exigibleHoy).minus(base), 0).toFixed(2)
 
   // El saldo ya viene des-arrastrado (saldo propio del periodo, no `totalUnidad`):
   // una expensa saldada queda en cero aunque su total siga arrastrando la deuda
@@ -319,12 +287,15 @@ async function aVisible(
     exigibleHoy,
     recargo,
     recargoPorcentaje: vigente.recargoPorcentaje,
+    recargoArrastre: recargoMaximo(tramos),
+    tasaMora: detalle.liquidacion.consorcio.tasaMoraMensual.toFixed(4),
     venceEnFirme: vigente.venceEnFirme,
+    bloqueada: esUltima && deuda.bloqueado,
     vencimientos: tramos.map((t) => ({
       orden: t.orden,
       fecha: t.fecha.toISOString().slice(0, 10),
       recargoPorcentaje: t.recargoPorcentaje,
-      monto: montoExigible(saldoPositivo.toFixed(2), t.recargoPorcentaje),
+      monto: montoExigible(base.toFixed(2), t.recargoPorcentaje),
     })),
     estadoPago,
     direccion: detalle.claveDocumento

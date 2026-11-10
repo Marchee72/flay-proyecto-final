@@ -94,17 +94,19 @@ function DesgloseDeInteres({ lineas }: { lineas: LineaDeInteres[] }) {
 
   return (
     <View style={estilos.bloque}>
-      <Text style={estilos.subtitulo}>Intereses por mora</Text>
+      <Text style={estilos.subtitulo}>Recargos e intereses por mora</Text>
       <View style={estilos.fila}>
         <Text style={estilos.celdaAncha}>Periodo impago</Text>
         <Text style={estilos.celda}>Capital</Text>
         <Text style={estilos.celda}>Tasa</Text>
         <Text style={estilos.celda}>Meses</Text>
-        <Text style={estilos.celda}>Interes</Text>
+        <Text style={estilos.celda}>Importe</Text>
       </View>
       {lineas.map((linea) => (
-        <View key={`${linea.periodo}-${linea.capital}`} style={estilos.filaConLinea}>
-          <Text style={estilos.celdaAncha}>{linea.periodo}</Text>
+        <View key={`${linea.periodo}-${linea.tipo}-${linea.capital}`} style={estilos.filaConLinea}>
+          <Text style={estilos.celdaAncha}>
+            {linea.periodo} · {linea.tipo === 'recargo' ? 'Recargo' : 'Mora'}
+          </Text>
           <Text style={estilos.celda}>{importeParaMostrar(linea.capital)}</Text>
           <Text style={estilos.celda}>{linea.tasaMensual} %</Text>
           <Text style={estilos.celda}>{linea.meses}</Text>

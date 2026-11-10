@@ -6,7 +6,10 @@ import {
   errorDeRecargo,
   errorDeTasaMora,
   escalonadoDesdeTramos,
+  exigible,
   montoExigible,
+  pagoBloqueadoHastaLiquidar,
+  recargoMaximo,
   recargoVigente,
   tramosDesdeEscalonado,
   validarReglaVencimientos,
@@ -74,6 +77,57 @@ describe('montoExigible — base más recargo (Principio II)', () => {
 
   it('redondea a dos decimales solo al final (1234.57 × 1.05 = 1296.2985)', () => {
     expect(montoExigible('1234.57', '5.0000')).toBe('1296.30')
+  })
+})
+
+describe('recargoMaximo — el que viaja con la deuda arrastrada (decision 2026-11-10)', () => {
+  it('es el porcentaje mas alto del escalonado, aunque no sea el ultimo', () => {
+    expect(recargoMaximo(tramos)).toBe('8.0000')
+    expect(
+      recargoMaximo([
+        { recargoPorcentaje: '0' },
+        { recargoPorcentaje: '20' },
+        { recargoPorcentaje: '5' },
+      ]),
+    ).toBe('20.0000')
+  })
+
+  it('sin tramos (liquidacion anterior a la regla) es cero', () => {
+    expect(recargoMaximo([])).toBe('0.0000')
+  })
+})
+
+describe('exigible — el unico calculo del monto a pagar (RF-28)', () => {
+  it('suma saldo mas recargo de cada deuda, redondeando cada recargo', () => {
+    expect(
+      exigible([
+        { saldo: '1000.00', recargoPorcentaje: '0' },
+        { saldo: '1234.57', recargoPorcentaje: '5.0000' },
+      ]),
+    ).toBe('2296.30')
+  })
+
+  it('sin deudas es cero', () => {
+    expect(exigible([])).toBe('0.00')
+  })
+})
+
+describe('pagoBloqueadoHastaLiquidar — pasado el firme no se paga (decision 2026-11-10)', () => {
+  it('bloquea al dia siguiente del vencimiento en firme si queda saldo', () => {
+    expect(pagoBloqueadoHastaLiquidar('100.00', fecha('2026-11-28'), fecha('2026-11-29'))).toBe(
+      true,
+    )
+  })
+
+  it('el dia del vencimiento en firme todavia se paga', () => {
+    expect(pagoBloqueadoHastaLiquidar('100.00', fecha('2026-11-28'), fecha('2026-11-28'))).toBe(
+      false,
+    )
+  })
+
+  it('sin saldo o sin liquidacion no hay nada que bloquear', () => {
+    expect(pagoBloqueadoHastaLiquidar('0.00', fecha('2026-11-28'), fecha('2026-12-05'))).toBe(false)
+    expect(pagoBloqueadoHastaLiquidar('100.00', null, fecha('2026-12-05'))).toBe(false)
   })
 })
 

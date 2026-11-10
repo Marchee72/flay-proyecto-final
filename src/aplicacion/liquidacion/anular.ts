@@ -1,3 +1,4 @@
+import { Decimal, importe } from '@/compartido/dinero'
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
@@ -92,16 +93,55 @@ export async function anularLiquidacion(
 
         // Lo revertido vuelve a estar disponible: el pago recupera como saldo a
         // favor lo que estaba aplicado a esta liquidacion (FR-027).
+        // Vuelve todo lo que el pago puso: el capital **y** el recargo cobrado
+        // con el (RF-08); devolver solo el capital perdia el recargo.
         const revertidas = await tx.pagoImputacion.findMany({
           where: { detalle: { liquidacionId: liquidacion.id }, revertidaEn: { not: null } },
-          select: { pagoId: true, importeImputado: true },
+          select: { pagoId: true, importeImputado: true, recargoCobrado: true },
         })
 
         for (const imputacion of revertidas) {
           await tx.pago.update({
             where: { id: imputacion.pagoId },
-            data: { saldoAFavor: { increment: imputacion.importeImputado } },
+            data: {
+              saldoAFavor: {
+                increment: importe(imputacion.importeImputado.toFixed(2))
+                  .plus(importe(imputacion.recargoCobrado.toFixed(2)))
+                  .toFixed(2),
+              },
+            },
           })
+        }
+
+        // El saldo a favor que esta liquidacion consumio al emitirse vuelve a los
+        // pagos de la unidad (FR-026b), del mas nuevo al mas viejo y sin pasar el
+        // importe de cada pago (`pago_saldo_a_favor_en_rango`).
+        // ponytail: no hay rastro de que pago se consumio; alcanza porque el
+        // saldo a favor se lee sumado por unidad.
+        const aplicados = await tx.detalleLiquidacion.findMany({
+          where: { liquidacionId: liquidacion.id, saldoAFavorAplicado: { gt: 0 } },
+          select: { unidadId: true, saldoAFavorAplicado: true },
+        })
+        for (const detalle of aplicados) {
+          let resta = importe(detalle.saldoAFavorAplicado.toFixed(2))
+          const pagos = await tx.pago.findMany({
+            where: { unidadId: detalle.unidadId },
+            select: { id: true, importe: true, saldoAFavor: true },
+            orderBy: [{ fechaPago: 'desc' }, { creadoEn: 'desc' }],
+          })
+          for (const pago of pagos) {
+            if (resta.lessThanOrEqualTo(0)) break
+            const lugar = importe(pago.importe.toFixed(2)).minus(
+              importe(pago.saldoAFavor.toFixed(2)),
+            )
+            const repuesto = Decimal.min(resta, lugar)
+            if (repuesto.lessThanOrEqualTo(0)) continue
+            await tx.pago.update({
+              where: { id: pago.id },
+              data: { saldoAFavor: { increment: repuesto.toFixed(2) } },
+            })
+            resta = resta.minus(repuesto)
+          }
         }
 
         await tx.liquidacion.update({

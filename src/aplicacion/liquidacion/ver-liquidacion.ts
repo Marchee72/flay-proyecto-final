@@ -14,6 +14,7 @@ import { prisma } from '@/infraestructura/prisma'
  */
 
 export interface LineaDeInteresVista {
+  tipo: 'mora' | 'recargo'
   capital: string
   tasaMensual: string
   meses: number
@@ -106,6 +107,7 @@ export async function verLiquidacion(
           ajusteRedondeo: importeSerializado(detalle.ajusteRedondeo),
           totalUnidad: importeSerializado(detalle.totalUnidad),
           intereses: detalle.intereses.map((linea) => ({
+            tipo: linea.tipo,
             capital: importeSerializado(linea.capital),
             tasaMensual: linea.tasaMensual.toFixed(4),
             meses: linea.meses,

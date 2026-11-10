@@ -57,7 +57,9 @@ test('la expensa propia se abre por identificador directo', async ({ page }) => 
   await expect(page.getByRole('heading', { name: /unidad 3B/ })).toBeVisible()
   // El documento todavia no se genero en este escenario: la pantalla lo dice,
   // y la liquidacion existe igual (FR-019).
-  await expect(page.getByRole('status')).toContainText('se está generando')
+  // Vencida en firme (la sembrada vence en agosto), la pantalla trae otro aviso de
+  // estado: se apunta al del documento.
+  await expect(page.getByRole('status').filter({ hasText: 'se está generando' })).toBeVisible()
   expect(await desbordaALoAncho(page)).toBe(false)
 })
 
@@ -93,6 +95,12 @@ test.describe('el administrador registra un pago desde la expensa (CU-04)', () =
     // La de 3C: no es la primera del listado, asi que no se elige sola.
     const unidad = await prisma.unidad.findFirstOrThrow({
       where: { consorcioId: administrador.consorcioId, designacion: '3C' },
+    })
+    // Pasado el vencimiento en firme no se acepta ningun pago (RF-08): para este
+    // recorrido la expensa todavia esta en termino.
+    await prisma.liquidacion.updateMany({
+      where: { consorcioId: administrador.consorcioId },
+      data: { vencimiento: new Date(Date.now() + 30 * 86_400_000) },
     })
     await entrar(page, administrador.correo)
     await page.goto(`/consorcios/${administrador.consorcioId}/expensas/${suya.detalleAjenoId}`)

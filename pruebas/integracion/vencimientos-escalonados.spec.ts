@@ -10,7 +10,7 @@ import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
-import { registrarPago } from '@/aplicacion/pagos/registrar'
+import { registrarPago, PagoBloqueadoHastaLiquidar } from '@/aplicacion/pagos/registrar'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
 
@@ -321,17 +321,35 @@ describe('vencimiento en firme, arrastre y congelado (RF-08, US3/US4)', () => {
     return liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
   }
 
-  it('impaga tras el ultimo vencimiento: arrastra el base (no el recargado) y la mora corre sobre el base', async () => {
+  it('impaga tras el ultimo vencimiento: arrastra el base y le suma el recargo mas alto y la mora', async () => {
     await emitirMes(1) // vence 10/20/28 de 02/2026; queda impaga
     const febrero = await emitirMes(2)
 
     const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
       where: { liquidacionId: febrero.liquidacionId },
     })
-    // El arrastre es el base 1000, no 1015 (1,5 %): el recargo del mes no se traslada.
+    // El arrastre es el base 1000; los cargos van aparte, sin capitalizar.
     expect(detalle.deudaAnterior.toFixed(2)).toBe('1000.00')
-    // La mora (2 % mensual del consorcio) corre sobre el base arrastrado.
-    expect(Number(detalle.interesMora)).toBeGreaterThan(0)
+    // Recargo mas alto 1,5 % (15) + mora 2 % (20), decision 2026-11-10.
+    expect(detalle.interesMora.toFixed(2)).toBe('35.00')
+  })
+
+  it('pasado el ultimo vencimiento no se acepta el pago hasta la liquidacion siguiente', async () => {
+    const enero = await emitirMes(1)
+    const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
+      where: { liquidacionId: enero.liquidacionId },
+    })
+
+    await expect(
+      registrarPago(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        unidadId: detalle.unidadId,
+        importe: '1000.00',
+        fechaPago: new Date('2026-03-01'),
+        medio: 'transferencia',
+      }),
+    ).rejects.toBeInstanceOf(PagoBloqueadoHastaLiquidar)
   })
 
   it('cambiar la regla del consorcio no altera una liquidacion ya emitida (congelado)', async () => {

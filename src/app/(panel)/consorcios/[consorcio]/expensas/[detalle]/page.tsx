@@ -303,7 +303,17 @@ function ExpensaTarjetaBanda({ base, expensa, consorcio, disponibilidadPago }: P
       <div className="expensa-banda__cuerpo">
         <EstadoExpensa estado={expensa.estadoPago} />
 
-        {expensa.estadoPago !== 'pagada' && (
+        {expensa.bloqueada && (
+          <p className="aviso aviso--atencion" role="status">
+            <Clock className="icono" aria-hidden="true" />
+            <span>
+              Venció en firme: se paga con la próxima liquidación, que le suma el recargo del{' '}
+              {Number(expensa.recargoArrastre)} % y la mora del {Number(expensa.tasaMora)} %.
+            </span>
+          </p>
+        )}
+
+        {expensa.estadoPago !== 'pagada' && !expensa.bloqueada && (
           <p className="exp-exigible">
             A pagar hoy <strong className="cifra">{importeParaMostrar(expensa.exigibleHoy)}</strong>
             {expensa.recargo !== '0.00' && (
@@ -315,7 +325,7 @@ function ExpensaTarjetaBanda({ base, expensa, consorcio, disponibilidadPago }: P
               </span>
             )}
             {expensa.venceEnFirme && (
-              <span className="apagado"> · venció en firme: se traslada al período siguiente</span>
+              <span className="apagado"> · venció en firme: se paga con la última expensa</span>
             )}
           </p>
         )}

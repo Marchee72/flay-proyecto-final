@@ -591,9 +591,10 @@ export async function sembrarDemo(
 
 /**
  * Los pagos de una liquidacion recien emitida. Por posicion de la unidad en el
- * padron: los morosos nunca; una de cada diez paga la mitad; otra paga tarde
- * (y en la siguiente liquidacion aparece el interes); el resto paga entera y
- * a tiempo.
+ * padron: los morosos nunca; una de cada diez paga la mitad (y en la
+ * siguiente liquidacion aparecen el recargo y la mora sobre el resto); otra
+ * paga el ultimo dia, con el recargo del tramo; el resto paga entera y a tiempo.
+ * Pasado el vencimiento en firme no se acepta ningun pago (RF-08).
  */
 async function pagar(
   clave: Clave,
@@ -617,7 +618,7 @@ async function pagar(
 
     const tarde = indice % 10 === 7
     const parcial = indice % 10 === 3
-    const dia = new Date(vence.getTime() + (tarde ? 12 : -3) * 86_400_000)
+    const dia = new Date(vence.getTime() + (tarde ? 0 : -3) * 86_400_000)
     const importe = parcial ? enPesos(Math.round(Number(total) * 50) / 100) : total
 
     await registrarPago(repo, relojFijo(dia.toISOString()), {

@@ -412,11 +412,12 @@ La vinculación de un consorcista a su unidad (ocupación, RN-09) no se hace des
 
 **Liquidación (§ 4.1)**. Por unidad: `ordinario × coeficiente` + `extraordinario × coeficiente`
 + deuda anterior + interés − saldo a favor (aplicado **después** del interés) ± ajuste de redondeo.
-Vencimiento: el día de vencimiento del consorcio sobre el mes siguiente al período. Interés simple
-por **mes vencido completo**: `capital × tasa mensual × meses`, por cada liquidación impaga desde su
-propio vencimiento, sin prorrateo de días ni capitalización (29 días de atraso no cuestan nada; 31,
-un mes entero — decisión del 2026-09-10). El desglose se guarda en `InteresLiquidado` y se muestra en
-el detalle.
+Vencimiento: el día de vencimiento del consorcio sobre el mes siguiente al período (o los tramos
+escalonados, RF-08). Pasado el vencimiento en firme no se acepta ningún pago hasta la liquidación
+siguiente, que le suma a cada deuda arrastrada el **recargo más alto** de su escalonado (una vez) y
+la **mora** del consorcio (una vez por liquidación), los dos `capital × tasa` y sin capitalizar
+(decisión del 2026-11-10). El desglose se guarda en `InteresLiquidado`, rotulado por tipo, y se
+muestra en el detalle.
 
 **Períodos**: `abierto → cerrado → liquidado` o `abierto → liquidado`; `cerrado → abierto` permitido;
 `liquidado` no vuelve.

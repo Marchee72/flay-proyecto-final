@@ -300,7 +300,7 @@ stateDiagram-v2
    - **Prorrateo por unidad:** Multiplica el total de cada categoría por el coeficiente porcentual vigente de la unidad:
      $$\text{Importe Unitario} = \frac{\text{Gasto Total} \times \text{Coeficiente}}{100}$$
    - **Copia inmutable del coeficiente (RN-02):** Registra el valor exacto del coeficiente en la fila de `DetalleLiquidacion` de cada unidad para asegurar la reconstrucción histórica en caso de auditorías judiciales futuras.
-   - **Liquidación de intereses punitorios desglosados:** Examina la cuenta corriente de la unidad. Si registra liquidaciones anteriores impagas vencidas, liquida el recargo por mora aplicando la tasa mensual fijada en el reglamento del consorcio (ejemplo: *3,5 % mensual*). El cálculo no guarda un número cerrado, sino el desglose individual en la tabla `InteresLiquidado`: `Capital adeudado × Tasa mensual × Meses en mora`.
+   - **Liquidación de intereses punitorios desglosados:** Examina la cuenta corriente de la unidad. Si registra liquidaciones anteriores impagas vencidas en firme, le suma a cada una el **recargo más alto** de sus vencimientos escalonados (una sola vez) y la **tasa de mora** mensual del consorcio (una vez por cada liquidación que la arrastra; ejemplo: *3,5 %*). El cálculo no guarda un número cerrado, sino el desglose individual en la tabla `InteresLiquidado`, una línea por cargo: `Capital adeudado × Tasa`.
 
 #### Etapa 4: Cuadratura matemática con tolerancia cero (RN-07)
 Antes de confirmar la escritura en la base de datos, el motor suma todos los importes calculados en `DetalleLiquidacion` y los compara contra el importe total de `Liquidacion`:
@@ -788,7 +788,8 @@ Flay permite abonar las expensas mensuales de forma 100 % digital mediante la pa
 1. Ingresá a la sección **Expensas** (`/expensas`) y abrí el detalle de la última expensa emitida de tu unidad (`/expensas/[detalle]`).
 2. **Cálculo del saldo consolidado exigible (D-1, D-2, D-3):**
    - El sistema calcula y fija en el servidor el saldo exigible exacto, consolidando la expensa corriente emitida junto con todos los períodos anteriores adeudados y los intereses punitorios vigentes devengados (calculados sobre el saldo propio de cada mes impago sin capitalización de intereses, conforme a **RN-08**).
-   - El importe no es editable por el usuario, evitando errores de tipeo o transferencias parciales incompletas.
+   - El importe no es editable por el usuario, evitando errores de tipeo o transferencias parciales incompletas. Es el mismo que muestra la expensa en «A pagar hoy», con el recargo del tramo vigente.
+   - **Pasado el último vencimiento** la expensa no se puede pagar (ni en línea ni en la administración): se paga con la liquidación siguiente, que le suma el recargo más alto y la mora. La pantalla lo avisa en lugar de mostrar el botón.
 3. Si la administración configuró la pasarela de cobros, verás el botón **Pagar expensas en línea**.
 4. Al presionar el botón, Flay registra un intento de pago e interactúa de servidor a servidor con la pasarela para abrir el **Checkout Pro** seguro (mediante redirección externa).
 5. **Aboná en la pasarela:** Completá el pago con el medio de tu preferencia (tarjeta de débito/crédito, dinero en cuenta o transferencia en Sandbox). Flay **nunca tiene acceso a los datos de tus tarjetas** (cumplimiento PCI-DSS).

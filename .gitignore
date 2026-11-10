@@ -45,3 +45,4 @@ playwright-report/
 # Lienzo de diseno: los .dc.html y canvas.json se versionan; el archivo
 # publicado se regenera con la semilla y pesa dos megabytes.
 /diseno/flay-navegabilidad.html
+.neon

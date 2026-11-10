@@ -64,6 +64,10 @@ export async function limpiar() {
   // proveedores. Historial, sugerencia y fragmentos caen en cascada.
   // RF-27: la conversacion referencia al consorcio con RESTRICT; los mensajes caen en cascada.
   await prismaBase.conversacionAsistente.deleteMany({})
+  // 016: la asamblea arrastra en cascada puntos, opciones, padron, votos,
+  // poderes, oposiciones, acta y firmantes. Sus disparadores solo dejan borrar
+  // un hijo cuando su padre ya no existe, asi que se borra por arriba.
+  await prismaBase.asamblea.deleteMany({})
   await prismaBase.extraccionComprobante.deleteMany({})
   await prismaBase.consultaDocumental.deleteMany({})
   await prismaBase.documentoConsorcio.deleteMany({})

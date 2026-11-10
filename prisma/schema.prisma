@@ -41,41 +41,58 @@ enum Operacion {
 /// Un edificio de propiedad horizontal. Raiz del aislamiento: casi toda entidad
 /// cuelga de el (regla RN-12 § 7.2).
 model Consorcio {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  administradoraId String   @map("administradora_id") @db.Uuid
-  nombre           String   @db.Text
-  direccion        String   @db.Text
-  localidad        String   @db.Text
-  cuit             String   @unique @db.Text
+  id                           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  administradoraId             String       @map("administradora_id") @db.Uuid
+  nombre                       String       @db.Text
+  direccion                    String       @db.Text
+  localidad                    String       @db.Text
+  cuit                         String       @unique @db.Text
   /// Dia del mes siguiente en que vence la liquidacion (FR-002b). Tope 28 por
   /// `CHECK`: el 30 no existe en febrero, y resolver esa excepcion en cada
   /// calculo es la clase de defecto que aparece una vez al año.
-  diaVencimiento   Int      @default(10) @map("dia_vencimiento") @db.SmallInt
+  diaVencimiento               Int          @default(10) @map("dia_vencimiento") @db.SmallInt
   /// Tasa mensual de mora, la fija el administrador. Cero es valido: hay
   /// consorcios que no cobran mora.
-  tasaMoraMensual  Decimal  @default(0) @map("tasa_mora_mensual") @db.Decimal(6, 4)
-  creadoEn         DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
-  actualizadoEn    DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+  tasaMoraMensual              Decimal      @default(0) @map("tasa_mora_mensual") @db.Decimal(6, 4)
+  /// Reglas de asamblea (016, research R-13). Se copian a cada asamblea al
+  /// convocarla, asi un cambio no mueve una ya convocada (FR-035).
+  reglaMayoriaAsamblea         ReglaMayoria @default(presentes) @map("regla_mayoria_asamblea")
+  anticipacionConvocatoriaDias Int          @default(15) @map("anticipacion_convocatoria_dias") @db.SmallInt
+  topeUnidadesPorApoderado     Int          @default(3) @map("tope_unidades_por_apoderado") @db.SmallInt
+  /// Sin voto quien adeuda **mas de** este numero de expensas (art. 23).
+  umbralExpensasSinVoto        Int          @default(2) @map("umbral_expensas_sin_voto") @db.SmallInt
+  creadoEn                     DateTime     @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn                DateTime     @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  administradora    Administradora          @relation(fields: [administradoraId], references: [id])
-  unidades          Unidad[]
-  proveedores       Proveedor[]
-  periodos          Periodo[]
-  gastos            Gasto[]
-  liquidaciones     Liquidacion[]
-  pagos             Pago[]
-  reclamos          Reclamo[]
-  espacios          EspacioComun[]
-  suspensiones      SuspensionEspacio[]
-  reservas          Reserva[]
-  novedades         Novedad[]
-  documentos        DocumentoConsorcio[]
-  consultas         ConsultaDocumental[]
-  extracciones      ExtraccionComprobante[]
-  conversaciones    ConversacionAsistente[]
-  intentosDePago    IntentoDePago[]
-  notificaciones    Notificacion[]
-  tramosVencimiento TramoVencimiento[]
+  administradora        Administradora          @relation(fields: [administradoraId], references: [id])
+  unidades              Unidad[]
+  proveedores           Proveedor[]
+  periodos              Periodo[]
+  gastos                Gasto[]
+  liquidaciones         Liquidacion[]
+  pagos                 Pago[]
+  reclamos              Reclamo[]
+  espacios              EspacioComun[]
+  suspensiones          SuspensionEspacio[]
+  reservas              Reserva[]
+  novedades             Novedad[]
+  documentos            DocumentoConsorcio[]
+  consultas             ConsultaDocumental[]
+  extracciones          ExtraccionComprobante[]
+  conversaciones        ConversacionAsistente[]
+  intentosDePago        IntentoDePago[]
+  notificaciones        Notificacion[]
+  tramosVencimiento     TramoVencimiento[]
+  asambleas             Asamblea[]
+  puntosAsamblea        PuntoAsamblea[]
+  opcionesPunto         OpcionPunto[]
+  poderes               Poder[]
+  padronesAsamblea      UnidadEnAsamblea[]
+  votosAsamblea         VotoAsamblea[]
+  oposiciones           OposicionDecision[]
+  actasAsamblea         ActaAsamblea[]
+  observacionesAsamblea ObservacionAsamblea[]
+  firmantesActa         FirmanteActa[]
 
   @@index([administradoraId])
 }
@@ -124,6 +141,8 @@ enum TipoTrabajo {
   triage_reclamo
   indexar_documento
   conciliar_pago
+  correo_directo
+  redactar_acta
 }
 
 enum EstadoTrabajo {
@@ -276,6 +295,10 @@ model Unidad {
   reservas       Reserva[]
   novedades      Novedad[]
   intentosDePago IntentoDePago[]
+  enAsambleas    UnidadEnAsamblea[]
+  poderes        Poder[]
+  votosAsamblea  VotoAsamblea[]
+  oposiciones    OposicionDecision[]
 
   @@unique([consorcioId, designacion])
   @@index([consorcioId])
@@ -693,6 +716,13 @@ enum TipoNotificacion {
   vencimiento_proximo
   novedad
   pago_acreditado
+  asamblea_convocada
+  asamblea_cancelada
+  poder_otorgado
+  poder_revocado
+  decision_provisoria
+  acta_a_firmar
+  acta_firmada
 }
 
 enum EstadoEnvio {
@@ -1150,4 +1180,335 @@ model IntentoDePago {
   @@index([consorcioId])
   @@index([unidadId])
   @@index([detalleLiquidacionId])
+}
+
+// ---------------------------------------------------------------------------
+// Asambleas de consorcio (016, RF-29 a RF-33). Toda tabla lleva consorcio_id:
+// la extension de aislamiento las filtra a todas (Principio I) y ninguna se
+// alcanza por el padre (nota 10 de CLAUDE.md). Las referencias a usuarios y
+// personas van como UUID sin FK, como `Reclamo.responsableId`. La
+// inmutabilidad la ponen disparadores (research R-02).
+// ---------------------------------------------------------------------------
+
+enum ReglaMayoria {
+  presentes
+  totalidad
+}
+
+enum TipoAsamblea {
+  ordinaria
+  extraordinaria
+}
+
+enum EstadoAsamblea {
+  borrador
+  convocada
+  en_curso
+  finalizada
+  acta_firmada
+  cancelada
+}
+
+enum ConvocatoriaAsamblea {
+  primera
+  segunda
+}
+
+enum ModalidadPunto {
+  binaria
+  opcion_multiple
+}
+
+enum MayoriaRequerida {
+  absoluta
+  dos_tercios
+  unanimidad
+}
+
+enum EstadoPunto {
+  pendiente
+  abierto
+  cerrado
+}
+
+enum ResultadoPunto {
+  aprobado
+  rechazado
+  sin_decision
+}
+
+enum SentidoVoto {
+  positivo
+  negativo
+  abstencion
+}
+
+enum OrigenVoto {
+  propio
+  carga_manual
+}
+
+enum OrigenRegistro {
+  en_linea
+  papel
+}
+
+enum Representacion {
+  propietario
+  apoderado
+}
+
+enum EstadoActa {
+  en_redaccion
+  a_firmar
+  firmada
+}
+
+enum RolFirmante {
+  presidente
+  secretario
+  propietario
+}
+
+/// Asamblea de propietarios (CCyC arts. 2058 a 2064). La segunda convocatoria
+/// es `fechaHora + 30 min`, derivada (art. 20 del reglamento).
+model Asamblea {
+  id                     String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId            String                @map("consorcio_id") @db.Uuid
+  tipo                   TipoAsamblea
+  titulo                 String                @db.VarChar(200)
+  fechaHora              DateTime              @map("fecha_hora") @db.Timestamptz(6)
+  lugar                  String                @db.VarChar(300)
+  organizadorId          String                @map("organizador_id") @db.Uuid
+  administracionInvitada Boolean               @default(true) @map("administracion_invitada")
+  estado                 EstadoAsamblea        @default(borrador)
+  convocadaEn            DateTime?             @map("convocada_en") @db.Timestamptz(6)
+  canceladaEn            DateTime?             @map("cancelada_en") @db.Timestamptz(6)
+  motivoCancelacion      String?               @map("motivo_cancelacion") @db.Text
+  abiertaEn              DateTime?             @map("abierta_en") @db.Timestamptz(6)
+  constituidaEn          DateTime?             @map("constituida_en") @db.Timestamptz(6)
+  finalizadaEn           DateTime?             @map("finalizada_en") @db.Timestamptz(6)
+  convocatoriaQueRige    ConvocatoriaAsamblea? @map("convocatoria_que_rige")
+  dirigeId               String?               @map("dirige_id") @db.Uuid
+  presidenteId           String?               @map("presidente_id") @db.Uuid
+  secretarioId           String?               @map("secretario_id") @db.Uuid
+  /// Copiadas del consorcio al convocar (FR-035).
+  reglaMayoria           ReglaMayoria?         @map("regla_mayoria")
+  anticipacionDias       Int?                  @map("anticipacion_dias") @db.SmallInt
+  topeApoderado          Int?                  @map("tope_apoderado") @db.SmallInt
+  umbralSinVoto          Int?                  @map("umbral_sin_voto") @db.SmallInt
+  creadoEn               DateTime              @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn          DateTime              @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio     Consorcio             @relation(fields: [consorcioId], references: [id])
+  puntos        PuntoAsamblea[]
+  poderes       Poder[]
+  padron        UnidadEnAsamblea[]
+  acta          ActaAsamblea?
+  observaciones ObservacionAsamblea[]
+
+  @@index([consorcioId, fechaHora])
+}
+
+model PuntoAsamblea {
+  id                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId         String            @map("consorcio_id") @db.Uuid
+  asambleaId          String            @map("asamblea_id") @db.Uuid
+  orden               Int               @db.SmallInt
+  titulo              String            @db.VarChar(200)
+  descripcion         String?           @db.Text
+  modalidad           ModalidadPunto
+  /// Obligatoria si `binaria`, nula si `opcion_multiple` (CHECK).
+  mayoria             MayoriaRequerida?
+  estado              EstadoPunto       @default(pendiente)
+  abiertoEn           DateTime?         @map("abierto_en") @db.Timestamptz(6)
+  cerradoEn           DateTime?         @map("cerrado_en") @db.Timestamptz(6)
+  resultado           ResultadoPunto?
+  opcionGanadoraId    String?           @map("opcion_ganadora_id") @db.Uuid
+  /// Conteos (coeficientes en texto) y bases, congelados al cerrar, para el acta.
+  conteo              Json?             @db.JsonB
+  provisorio          Boolean           @default(false)
+  vencePlazoOposicion DateTime?         @map("vence_plazo_oposicion") @db.Timestamptz(6)
+  resumen             String?           @db.Text
+  /// Apuntes de la reunion: la fuente del borrador; no van al acta.
+  notas               String?           @db.Text
+  /// Propuesta de la IA (RN-14): no cuenta hasta que una persona la guarda en `resumen`.
+  borradorResumen     String?           @map("borrador_resumen") @db.Text
+  creadoEn            DateTime          @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn       DateTime          @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio   Consorcio           @relation(fields: [consorcioId], references: [id])
+  asamblea    Asamblea            @relation(fields: [asambleaId], references: [id], onDelete: Cascade)
+  opciones    OpcionPunto[]
+  votos       VotoAsamblea[]
+  oposiciones OposicionDecision[]
+
+  @@unique([asambleaId, orden])
+  @@index([consorcioId])
+}
+
+model OpcionPunto {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId String   @map("consorcio_id") @db.Uuid
+  puntoId     String   @map("punto_id") @db.Uuid
+  orden       Int      @db.SmallInt
+  texto       String   @db.VarChar(200)
+  creadoEn    DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+
+  consorcio Consorcio      @relation(fields: [consorcioId], references: [id])
+  punto     PuntoAsamblea  @relation(fields: [puntoId], references: [id], onDelete: Cascade)
+  votos     VotoAsamblea[]
+
+  @@unique([puntoId, orden])
+  @@index([consorcioId])
+}
+
+/// Poder simple para una asamblea (art. 23). A lo sumo uno vigente por unidad
+/// (indice unico parcial en la migracion); el tope por apoderado lo cuida un
+/// candado de transaccion (research R-12).
+model Poder {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId     String         @map("consorcio_id") @db.Uuid
+  asambleaId      String         @map("asamblea_id") @db.Uuid
+  unidadId        String         @map("unidad_id") @db.Uuid
+  otorganteId     String         @map("otorgante_id") @db.Uuid
+  apoderadoId     String         @map("apoderado_id") @db.Uuid
+  origen          OrigenRegistro
+  registradoPorId String         @map("registrado_por_id") @db.Uuid
+  revocadoEn      DateTime?      @map("revocado_en") @db.Timestamptz(6)
+  creadoEn        DateTime       @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn   DateTime       @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio Consorcio @relation(fields: [consorcioId], references: [id])
+  asamblea  Asamblea  @relation(fields: [asambleaId], references: [id], onDelete: Cascade)
+  unidad    Unidad    @relation(fields: [unidadId], references: [id])
+
+  @@index([consorcioId])
+  @@index([asambleaId, apoderadoId])
+}
+
+/// Padron congelado al abrir y asistencia (research R-03): todo computo sale de aca.
+model UnidadEnAsamblea {
+  id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId         String          @map("consorcio_id") @db.Uuid
+  asambleaId          String          @map("asamblea_id") @db.Uuid
+  unidadId            String          @map("unidad_id") @db.Uuid
+  designacion         String          @db.VarChar(40)
+  coeficiente         Decimal         @db.Decimal(11, 8)
+  sinVoto             Boolean         @default(false) @map("sin_voto")
+  presente            Boolean         @default(false)
+  representanteId     String?         @map("representante_id") @db.Uuid
+  representanteNombre String?         @map("representante_nombre") @db.VarChar(200)
+  representacion      Representacion?
+  acreditadoEn        DateTime?       @map("acreditado_en") @db.Timestamptz(6)
+  acreditadoPorId     String?         @map("acreditado_por_id") @db.Uuid
+  creadoEn            DateTime        @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn       DateTime        @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio Consorcio @relation(fields: [consorcioId], references: [id])
+  asamblea  Asamblea  @relation(fields: [asambleaId], references: [id], onDelete: Cascade)
+  unidad    Unidad    @relation(fields: [unidadId], references: [id])
+
+  @@unique([asambleaId, unidadId])
+  @@index([consorcioId])
+}
+
+/// Un voto por unidad y por punto; se cambia solo con el punto abierto (FR-022, `fn_voto_inmutable`).
+model VotoAsamblea {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId  String       @map("consorcio_id") @db.Uuid
+  puntoId      String       @map("punto_id") @db.Uuid
+  unidadId     String       @map("unidad_id") @db.Uuid
+  sentido      SentidoVoto?
+  opcionId     String?      @map("opcion_id") @db.Uuid
+  emitidoPorId String       @map("emitido_por_id") @db.Uuid
+  origen       OrigenVoto
+  emitidoEn    DateTime     @default(now()) @map("emitido_en") @db.Timestamptz(6)
+
+  consorcio Consorcio     @relation(fields: [consorcioId], references: [id])
+  punto     PuntoAsamblea @relation(fields: [puntoId], references: [id], onDelete: Cascade)
+  unidad    Unidad        @relation(fields: [unidadId], references: [id])
+  opcion    OpcionPunto?  @relation(fields: [opcionId], references: [id], onDelete: Cascade)
+
+  @@unique([puntoId, unidadId])
+  @@index([consorcioId])
+}
+
+/// Oposicion de un ausente a una decision provisoria (CCyC art. 2060).
+model OposicionDecision {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId     String         @map("consorcio_id") @db.Uuid
+  puntoId         String         @map("punto_id") @db.Uuid
+  unidadId        String         @map("unidad_id") @db.Uuid
+  personaId       String         @map("persona_id") @db.Uuid
+  origen          OrigenRegistro
+  registradoPorId String         @map("registrado_por_id") @db.Uuid
+  registradaEn    DateTime       @default(now()) @map("registrada_en") @db.Timestamptz(6)
+
+  consorcio Consorcio     @relation(fields: [consorcioId], references: [id])
+  punto     PuntoAsamblea @relation(fields: [puntoId], references: [id], onDelete: Cascade)
+  unidad    Unidad        @relation(fields: [unidadId], references: [id])
+
+  @@unique([puntoId, unidadId])
+  @@index([consorcioId])
+}
+
+model ObservacionAsamblea {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId   String   @map("consorcio_id") @db.Uuid
+  asambleaId    String   @map("asamblea_id") @db.Uuid
+  usuarioId     String   @map("usuario_id") @db.Uuid
+  /// Unidades que representaba al escribir; vacio si dirige sin unidad.
+  unidades      String   @db.Text
+  texto         String   @db.VarChar(1000)
+  creadoEn      DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio Consorcio @relation(fields: [consorcioId], references: [id])
+  asamblea  Asamblea  @relation(fields: [asambleaId], references: [id], onDelete: Cascade)
+
+  @@unique([asambleaId, usuarioId])
+  @@index([consorcioId])
+}
+
+model ActaAsamblea {
+  id                    String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId           String     @map("consorcio_id") @db.Uuid
+  asambleaId            String     @unique @map("asamblea_id") @db.Uuid
+  estado                EstadoActa @default(en_redaccion)
+  claveContenido        String?    @map("clave_contenido") @db.VarChar(400)
+  hashContenido         String?    @map("hash_contenido") @db.Char(64)
+  enviadaAFirmarEn      DateTime?  @map("enviada_a_firmar_en") @db.Timestamptz(6)
+  recordatorioEnviadoEn DateTime?  @map("recordatorio_enviado_en") @db.Timestamptz(6)
+  documentoId           String?    @map("documento_id") @db.Uuid
+  /// Con valor mientras se redacta el borrador; el manejador lo vacia al terminar.
+  borradorPedidoEn      DateTime?  @map("borrador_pedido_en") @db.Timestamptz(6)
+  creadoEn              DateTime   @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn         DateTime   @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio Consorcio      @relation(fields: [consorcioId], references: [id])
+  asamblea  Asamblea       @relation(fields: [asambleaId], references: [id], onDelete: Cascade)
+  firmantes FirmanteActa[]
+
+  @@index([consorcioId, estado])
+}
+
+model FirmanteActa {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId   String      @map("consorcio_id") @db.Uuid
+  actaId        String      @map("acta_id") @db.Uuid
+  usuarioId     String      @map("usuario_id") @db.Uuid
+  rolEnActa     RolFirmante @map("rol_en_acta")
+  /// El firmante anterior, si se lo reemplazo antes de firmar.
+  reemplazaA    String?     @map("reemplaza_a") @db.Uuid
+  firmadoEn     DateTime?   @map("firmado_en") @db.Timestamptz(6)
+  hashFirmado   String?     @map("hash_firmado") @db.Char(64)
+  creadoEn      DateTime    @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime    @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio Consorcio    @relation(fields: [consorcioId], references: [id])
+  acta      ActaAsamblea @relation(fields: [actaId], references: [id], onDelete: Cascade)
+
+  @@unique([actaId, usuarioId])
+  @@index([consorcioId])
 }

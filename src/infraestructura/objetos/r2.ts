@@ -35,22 +35,40 @@ function entorno(nombre: string): string {
   return valor
 }
 
+/**
+ * Preview: Neon Object Storage inyecta variables estandar de AWS
+ * (`AWS_ENDPOINT_URL_S3`, `AWS_ACCESS_KEY_ID`, ...). Si estan, se usan; si no,
+ * se cae al R2 de siempre (`R2_*`). Neon exige direccionamiento por ruta.
+ */
+const usaNeon = () => Boolean(process.env.AWS_ENDPOINT_URL_S3)
+
 let clienteMemo: S3Client | null = null
 function cliente(): S3Client {
   if (!clienteMemo) {
-    clienteMemo = new S3Client({
-      region: 'auto',
-      endpoint: entorno('R2_ENDPOINT'),
-      credentials: {
-        accessKeyId: entorno('R2_ACCESS_KEY_ID'),
-        secretAccessKey: entorno('R2_SECRET_ACCESS_KEY'),
-      },
-    })
+    clienteMemo = usaNeon()
+      ? new S3Client({
+          region: entorno('AWS_REGION'),
+          endpoint: entorno('AWS_ENDPOINT_URL_S3'),
+          forcePathStyle: true,
+          requestChecksumCalculation: 'WHEN_REQUIRED',
+          credentials: {
+            accessKeyId: entorno('AWS_ACCESS_KEY_ID'),
+            secretAccessKey: entorno('AWS_SECRET_ACCESS_KEY'),
+          },
+        })
+      : new S3Client({
+          region: 'auto',
+          endpoint: entorno('R2_ENDPOINT'),
+          credentials: {
+            accessKeyId: entorno('R2_ACCESS_KEY_ID'),
+            secretAccessKey: entorno('R2_SECRET_ACCESS_KEY'),
+          },
+        })
   }
   return clienteMemo
 }
 
-const bucket = () => entorno('R2_BUCKET')
+const bucket = () => (usaNeon() ? (process.env.OBJETOS_BUCKET ?? 'assets') : entorno('R2_BUCKET'))
 
 function esAusente(error: unknown): boolean {
   if (typeof error !== 'object' || error === null) return false

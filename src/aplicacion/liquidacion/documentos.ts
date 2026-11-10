@@ -44,7 +44,7 @@ const periodoDe = (periodo: { anio: number; mes: number }) =>
  * el trabajo ya nacio dentro de una emision autorizada.
  */
 export function manejadorDocumentoExpensa(
-  generador: GeneradorDeDocumentos,
+  generador: Pick<GeneradorDeDocumentos, 'expensa'>,
   almacen: AlmacenObjetos,
 ): Manejador {
   return async (carga) => {

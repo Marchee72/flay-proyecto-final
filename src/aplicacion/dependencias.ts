@@ -1,8 +1,12 @@
 import type { Asistencia } from '@/dominio/contratos/asistencia'
+import type { AvisoEnVivo } from '@/dominio/contratos/aviso-en-vivo'
 import type { GeneradorDeDocumentos } from '@/dominio/contratos/documentos'
 import type { ProcesadorDePagos } from '@/dominio/contratos/procesador-pagos'
 import { asistenciaNula } from '@/infraestructura/asistencia/nula'
 import { argon2id } from '@/infraestructura/contrasenas/argon2'
+import { avisoAbly } from '@/infraestructura/en-vivo/ably'
+import { avisoNulo } from '@/infraestructura/en-vivo/nulo'
+import { almacenEnMemoria } from '@/infraestructura/objetos/memoria'
 import { almacenR2 } from '@/infraestructura/objetos/r2'
 import { relojDelSistema } from '@/infraestructura/reloj'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
@@ -19,7 +23,10 @@ import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habili
 export const HABILITACIONES = repositorioHabilitaciones
 export const RELOJ = relojDelSistema
 export const DERIVADOR = argon2id
-export const ALMACEN = almacenR2
+export const ALMACEN = process.env.FLAY_ALMACEN === 'memoria' ? almacenEnMemoria : almacenR2
+export const AVISO_EN_VIVO: AvisoEnVivo = process.env.ABLY_API_KEY
+  ? avisoAbly(process.env.ABLY_API_KEY)
+  : avisoNulo
 
 /**
  * Generador de PDF cargado bajo demanda: evita que `@react-pdf/renderer` y sus
@@ -29,6 +36,10 @@ export const GENERADOR_DOCUMENTOS: GeneradorDeDocumentos = {
   async expensa(datos) {
     const { generadorPdf } = await import('@/infraestructura/documentos/expensa')
     return generadorPdf.expensa(datos)
+  },
+  async acta(datos) {
+    const { generadorActa } = await import('@/infraestructura/documentos/acta')
+    return generadorActa.acta(datos)
   },
 }
 
@@ -85,6 +96,12 @@ export const ASISTENCIA: Asistencia = {
     async sugerir(contexto, historial, herramientas) {
       const impl = await resolverAsistencia()
       return impl.agente.sugerir(contexto, historial, herramientas)
+    },
+  },
+  redactor: {
+    async redactar(asamblea, puntos, observaciones) {
+      const impl = await resolverAsistencia()
+      return impl.redactor.redactar(asamblea, puntos, observaciones)
     },
   },
 }

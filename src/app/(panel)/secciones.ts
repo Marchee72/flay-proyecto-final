@@ -4,6 +4,7 @@ import {
   CalendarClock,
   DoorOpen,
   FileText,
+  Gavel,
   Gauge,
   Megaphone,
   BookOpen,
@@ -42,6 +43,7 @@ export const BLOQUES: Bloque[] = [
     secciones: [
       { ruta: 'reclamos', titulo: 'Reclamos', Icono: MessageSquareWarning },
       { ruta: 'reservas', titulo: 'Reservas', Icono: CalendarCheck },
+      { ruta: 'asambleas', titulo: 'Asambleas', Icono: Gavel },
       { ruta: 'espacios', titulo: 'Espacios', Icono: DoorOpen },
       { ruta: 'novedades', titulo: 'Novedades', Icono: Megaphone },
     ],

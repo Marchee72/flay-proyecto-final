@@ -69,6 +69,51 @@ export interface ExpensaParaDocumento {
   totalUnidad: string
 }
 
+/**
+ * Acta de asamblea (016, RF-32, `contracts/contratos.md` § Documento PDF). Como
+ * la expensa: todo llega **ya formateado como cadena** y el generador no
+ * calcula nada; el resultado y su conteo los fijó el dominio al cerrar cada
+ * punto. La hoja de firmas va solo en el PDF final, con la huella del
+ * contenido que firmaron.
+ */
+export interface ActaParaDocumento {
+  consorcio: { nombre: string; direccion: string; localidad: string }
+  titulo: string
+  /** `Ordinaria` / `Extraordinaria`. */
+  tipo: string
+  /** `25/11/2026 19:00`, hora de Argentina. */
+  fecha: string
+  lugar: string
+  /** `primera` o `segunda` convocatoria, en palabras. */
+  convocatoria: string
+  presidente: string
+  secretario: string
+  /** `90.00 %` de los coeficientes. */
+  quorum: string
+  asistencia: {
+    designacion: string
+    coeficiente: string
+    estado: string
+    representante: string
+  }[]
+  puntos: {
+    orden: number
+    titulo: string
+    descripcion: string | null
+    modalidad: string
+    resumen: string
+    votos: { designacion: string; eleccion: string }[]
+    conteo: { opcion: string; unidades: string; coeficiente: string }[]
+    resultado: string
+    estado: string
+  }[]
+  hojaDeFirmas?: {
+    huellaContenido: string
+    firmas: { nombre: string; rol: string; momento: string }[]
+  }
+}
+
 export interface GeneradorDeDocumentos {
   expensa(datos: ExpensaParaDocumento): Promise<Uint8Array>
+  acta(datos: ActaParaDocumento): Promise<Uint8Array>
 }

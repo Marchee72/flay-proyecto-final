@@ -39,4 +39,9 @@ export const asistenciaNula: Asistencia = {
       return noDisponible(MOTIVO)
     },
   },
+  redactor: {
+    async redactar() {
+      return noDisponible(`${MOTIVO} Redactá los resúmenes del acta a mano.`)
+    },
+  },
 }

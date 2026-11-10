@@ -1,5 +1,5 @@
 /**
- * Las cuatro interfaces de la asistencia automatica (§ 12.8.2, RNF-14, RNF-15,
+ * Las interfaces de la asistencia automatica (§ 12.8.2, RNF-14, RNF-15,
  * Principio IV). El dominio las declara; `src/infraestructura/asistencia/` las
  * implementa **exactamente tres veces** —proveedor, determinista, nula— y
  * `src/aplicacion/dependencias.ts` elige una por entorno (SC-012).
@@ -175,11 +175,45 @@ export interface AgenteConversacional {
   ): Promise<Resultado<Sugerencia[]>>
 }
 
-/** Las cinco juntas: lo que el punto de composicion elige y los casos de uso reciben. */
+/**
+ * La sexta interfaz (RF-32): propone el resumen de cada punto de un acta. La
+ * propuesta queda como borrador y solo cuenta cuando una persona la guarda
+ * (RN-14). Recibe datos agregados, notas y observaciones solo como texto: nunca
+ * el padron, el voto por unidad ni quien escribio cada observacion.
+ */
+export interface PuntoParaRedactar {
+  orden: number
+  titulo: string
+  descripcion: string | null
+  /** Ya legible: «aprobado», «rechazado», «aprobada la opcion X». */
+  resultado: string
+  conteo: { opcion: string; unidades: number; coeficiente: string }[]
+  /** Calculados por Flay: la IA copia las cifras, no hace cuentas para un acta. */
+  presentesConVoto: number
+  noVotaron: number
+  provisorio: boolean
+  notas: string | null
+}
+
+export interface ResumenPropuesto {
+  orden: number
+  resumen: string
+}
+
+export interface RedactorActa {
+  redactar(
+    asamblea: { titulo: string; tipo: 'ordinaria' | 'extraordinaria' },
+    puntos: PuntoParaRedactar[],
+    observaciones: string[],
+  ): Promise<Resultado<ResumenPropuesto[]>>
+}
+
+/** Las seis juntas: lo que el punto de composicion elige y los casos de uso reciben. */
 export interface Asistencia {
   extractor: ExtractorDocumental
   clasificador: ClasificadorTexto
   vectores: GeneradorVectores
   respuestas: GeneradorRespuesta
   agente: AgenteConversacional
+  redactor: RedactorActa
 }

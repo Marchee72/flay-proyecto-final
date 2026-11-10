@@ -373,6 +373,8 @@ export async function limpiarServicios(
       WHERE tipo = 'notificacion'
         AND carga->>'destinatarioId' = ANY(${usuarios})`
   }
+  // 016: la asamblea arrastra en cascada todo lo suyo (puntos, padrón, votos, acta).
+  await prisma.asamblea.deleteMany({ where: { consorcioId: escenario.consorcioId } })
   await prisma.conversacionAsistente.deleteMany({ where: { consorcioId: escenario.consorcioId } })
   await prisma.extraccionComprobante.deleteMany({ where: { consorcioId: escenario.consorcioId } })
   await prisma.consultaDocumental.deleteMany({ where: { consorcioId: escenario.consorcioId } })

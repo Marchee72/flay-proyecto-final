@@ -6,7 +6,8 @@ import { useEffect } from 'react'
 /**
  * Refresca la pagina cada pocos segundos mientras esta montado. Se monta solo
  * cuando hay algo en proceso, asi que deja de sondear al terminar; con la
- * pestaña oculta no pide nada.
+ * pestaña oculta no pide nada. Sin conexion tampoco: un refresco que no llega
+ * hace que Next caiga a una navegacion completa, y esa pierde la pantalla.
  *
  * No solo mira: cada refresco es un pedido al panel, y el armazon del panel
  * drena la cola en `after()`. Mientras la pestaña esta abierta, el sondeo es
@@ -16,7 +17,7 @@ export function EnVivo({ cadaMs = 3000 }: { cadaMs?: number }) {
   const router = useRouter()
   useEffect(() => {
     const tic = () => {
-      if (!document.hidden) router.refresh()
+      if (!document.hidden && navigator.onLine) router.refresh()
     }
     const temporizador = setInterval(tic, cadaMs)
     return () => clearInterval(temporizador)

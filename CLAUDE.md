@@ -114,7 +114,7 @@ que permite probar la liquidación sin base de datos.
 - **Presentación**: vistas y formularios. Sin reglas de negocio, sin acceso directo a la base.
 - **Aplicación**: orquesta casos de uso, verifica autorización por rol y por consorcio, abre
   transacciones, registra auditoría. Sin cálculos de negocio.
-- **Dominio**: RN-01 a RN-15 — prorrateo, intereses, imputación.
+- **Dominio**: RN-01 a RN-21 — prorrateo, intereses, imputación, asambleas.
 - **Infraestructura**: repositorios, ORM, almacenamiento de objetos, correo, servicios externos.
 
 ### Stack
@@ -149,7 +149,7 @@ Estas atraviesan todo el sistema; violarlas es un defecto, no una preferencia de
 4. **Ninguna salida de un servicio automático impacta un dato económico sin confirmación humana**
    (RN-14). `ExtraccionComprobante` es una entidad separada de `Gasto`; el gasto nace al confirmar.
 5. **Cada interfaz de IA del dominio** (`ExtractorDocumental`, `ClasificadorTexto`,
-   `GeneradorVectores`, `GeneradorRespuesta`) **tiene tres implementaciones**: la del proveedor, una
+   `GeneradorVectores`, `GeneradorRespuesta`, `AgenteConversacional`, `RedactorActa`) **tiene tres implementaciones**: la del proveedor, una
    determinística para pruebas y una nula para degradación (RNF-14, RNF-15).
 6. **Auditoría por disparadores de base de datos** (RN-15), sin permisos de update/delete para el
    usuario de la aplicación: ninguna ruta de código puede omitirla.
@@ -172,7 +172,7 @@ comprensibles (RNF-10), auditoría registrada si toca datos económicos, documen
 
 ## Lo que no se adivina leyendo el código
 
-Veintinueve decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
+Treinta y dos decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
 
 1. **El orden de las semillas y las pruebas.** `npm run test:integracion` **vacía** las tablas de
    negocio, semilla incluida: en una base compartida no hay forma de distinguir lo sembrado de lo
@@ -377,6 +377,38 @@ Veintinueve decisiones que costaron una vuelta y conviene no volver a tomar desd
     sigue el intento mantiene el sondeo y el manejador relanza con `esperando` o `rechazado`; un
     `vencido` sigue mirándose hasta `venceEn` + 72 h. Un checkout abandonado termina `agotado` en
     la cola a propósito, y por eso `conciliar_pago` no cuenta en el resumen de avisos de la bandeja.
+
+30. **La asamblea se protege en la base, y se borra solo por arriba (016).** Un voto se cambia solo con
+    el punto abierto y nunca se borra (`fn_voto_inmutable`); cada cambio queda en la bitácora y quien
+    dirige no pisa el voto propio de una unidad. El orden del día queda fijo desde la convocatoria y nada cambia desde
+    `finalizada`: lo hacen disparadores, no la aplicación. Ningún hijo (punto, padrón, voto, poder,
+    acta, firmante, observación) se deja borrar mientras su padre exista; caen en cascada al borrar la
+    `Asamblea`, y por eso `limpiar()` borra solo esa tabla. Todo cómputo (quórum, doble mayoría,
+    provisoria) sale del padrón **congelado al abrir** (`UnidadEnAsamblea`), nunca del vivo: un pago o
+    un cambio de coeficiente durante la reunión no mueve un resultado. La mora para «sin voto» la
+    da `saldoImpagoPorUnidad().vencidos`. La decisión provisoria (CCyC 2060) es **derivada** de la
+    fecha y las oposiciones, sin cron; el único cron nuevo es el recordatorio de firmas
+    (`/api/tareas/asambleas`).
+
+31. **La sala de asamblea escucha, no sondea (016).** El servidor publica en Ably un aviso **sin datos**
+    y cada pantalla relee con sus permisos, así que nada de la asamblea pasa por el canal. `conAviso`
+    (`src/aplicacion/asambleas/en-vivo.ts`) es el único punto que publica: después de la acción, en
+    `after()`, y un fallo se ignora. `ABLY_API_KEY` es solo de servidor; sin ella corre `avisoNulo` y
+    la sala vuelve a los 3 s. `SalaEnVivo` sondea de resguardo por el mismo refresco acotado, para no
+    apilar relecturas delante de un voto, y por eso sigue drenando la cola (nota 21). El token va en la URL del `EventSource`: la reconexión del navegador repetiría uno
+    vencido, y por eso `crearEscucha` cierra y pide otro.
+
+32. **El borrador del acta no es el resumen.** Al finalizar se encola `redactar_acta` y la IA escribe en
+    `PuntoAsamblea.borradorResumen`, con los resultados, las `notas` de la sala (solo se escriben con el
+    punto abierto, lo sostiene `fn_punto_reglas`) y las `ObservacionAsamblea` de los presentes. `enviarAFirmar` exige
+    `resumen`, que solo se llena cuando una persona guarda: por eso nada de la IA llega a las firmas sin
+    revisar (RN-14). Al redactor no le llegan personas, unidades ni votos por unidad: de las observaciones recibe solo el
+    texto, y las cifras que no hay que dejarle calcular (`noVotaron`) las saca el manejador del `conteo`
+    congelado. Las notas y el borrador solo viajan en `verAsamblea` a quien redacta, y la lista de
+    observaciones solo con acta y a quien redacta, preside o administra, porque esa vista llega al
+    navegador de todos los asistentes.
+    `borradorPedidoEn` marca que se está redactando, y pasados 2 minutos se deja de esperar: un trabajo
+    trabado no puede bloquear la edición.
 
 ## Notas
 

@@ -283,4 +283,23 @@ export const asistenciaDeterminista: Asistencia = {
       return disponible(hallada.filter((s) => !s.herramienta || ofrecidas.has(s.herramienta)))
     },
   },
+
+  redactor: {
+    // Solo repite lo recibido: nunca agrega un hecho (RN-14).
+    async redactar(_asamblea, puntos, observaciones) {
+      return disponible(
+        puntos.map((p, i) => {
+          const votos = p.conteo.map((c) => `${c.opcion}: ${c.unidades} unidades, ${c.coeficiente}`)
+          const partes = [
+            `Se trató «${p.titulo}»: ${p.resultado}.`,
+            `${votos.join('; ')}.`,
+            `No votaron ${p.noVotaron} de ${p.presentesConVoto}.`,
+            p.notas,
+            i === 0 && observaciones.length > 0 && `Observaciones: ${observaciones.join('; ')}.`,
+          ]
+          return { orden: p.orden, resumen: partes.filter(Boolean).join(' ') }
+        }),
+      )
+    },
+  },
 }

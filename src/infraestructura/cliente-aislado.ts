@@ -97,7 +97,12 @@ export function aplicarAislamiento(
   const consorcioId = exigirConsorcio(modelo, operacion)
 
   if (OPERACIONES_CON_DATOS.has(operacion)) return conDatos(args, consorcioId)
-  // findFirst, findMany, update, upsert, delete, count, aggregate: llevan `where`.
+  // Un upsert filtra como una lectura y además puede ser un alta.
+  if (operacion === 'upsert') {
+    const create = (args.create ?? {}) as object
+    return conFiltro({ ...args, create: { ...create, [CAMPO]: consorcioId } }, consorcioId)
+  }
+  // findFirst, findMany, update, delete, count, aggregate: llevan `where`.
   return conFiltro(args, consorcioId)
 }
 

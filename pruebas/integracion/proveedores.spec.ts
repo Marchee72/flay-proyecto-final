@@ -4,8 +4,11 @@ import {
   altaProveedor,
   CuitDeProveedorRepetido,
   CuitInvalido,
+  editarProveedor,
+  ProveedorIncompleto,
   listarProveedores,
 } from '@/aplicacion/proveedores/proveedores'
+import { RolInsuficiente } from '@/compartido/errores'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
 
 import { relojFijo } from '../dominio/reloj-fijo'
@@ -69,5 +72,56 @@ describe('alta de proveedor', () => {
     expect(resultados.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
     const rechazo = resultados.find((r) => r.status === 'rejected')
     expect(rechazo?.status === 'rejected' && rechazo.reason).toBeInstanceOf(CuitDeProveedorRepetido)
+  })
+})
+
+describe('edicion de proveedor', () => {
+  it('editar cambia la razon social y deja el CUIT', async () => {
+    const { proveedorId } = await alta('20-12345678-9')
+    await editarProveedor(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      proveedorId,
+      razonSocial: '  Ascensores del Litoral ',
+      telefono: '341 555 0101',
+      correo: 'ventas@litoral.example',
+    })
+
+    const [proveedor] = await listarProveedores(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+    })
+    expect(proveedor).toMatchObject({
+      razonSocial: 'Ascensores del Litoral',
+      cuit: '20-12345678-9',
+      telefono: '341 555 0101',
+      correo: 'ventas@litoral.example',
+    })
+  })
+
+  it('una razon social vacia se rechaza', async () => {
+    const { proveedorId } = await alta('20-12345678-9')
+    await expect(
+      editarProveedor(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        proveedorId,
+        razonSocial: '   ',
+      }),
+    ).rejects.toBeInstanceOf(ProveedorIncompleto)
+  })
+
+  it('un consorcista no puede editar', async () => {
+    const { proveedorId } = await alta('20-12345678-9')
+    const vecino = (await crearUsuario('Vera')).id
+    await habilitarEnConsorcio(vecino, consorcioId, 'consorcista')
+    await expect(
+      editarProveedor(repo, RELOJ, {
+        usuarioId: vecino,
+        consorcioId,
+        proveedorId,
+        razonSocial: 'Otro nombre',
+      }),
+    ).rejects.toBeInstanceOf(RolInsuficiente)
   })
 })

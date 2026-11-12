@@ -17,6 +17,7 @@ export const HECHO = {
   anulado: 'Liquidación anulada. Los pagos aplicados quedaron como saldo a favor.',
   'gasto-registrado': 'Gasto registrado. Si hay comprobante, adjuntarlo a continuación.',
   'gasto-actualizado': 'Gasto actualizado.',
+  'proveedor-actualizado': 'Proveedor actualizado.',
   'gasto-eliminado': 'Gasto eliminado.',
   'pago-registrado': 'Pago registrado e imputado a lo más viejo primero.',
   'pasarela-configurada': 'Credenciales de la pasarela de pagos guardadas.',

@@ -1,16 +1,19 @@
 'use server'
 
-import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { after } from 'next/server'
 
 import { MINIMO_DE_CONTRASENA } from '@/compartido/contrasenas'
 import { destinoSeguro } from '@/compartido/destinos'
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { conHecho } from '@/app/aviso-en-url'
+import { urlBase } from '@/app/url-base'
 import { DERIVADOR, RELOJ } from '@/aplicacion/dependencias'
 import { fijarContrasena } from '@/aplicacion/identidad/invitar-persona'
 import { pedirRestablecimiento } from '@/aplicacion/identidad/restablecer'
 import { errorDeCorreo } from '@/aplicacion/identidad/correo-reglas'
+import { drenar } from '@/aplicacion/pendientes/drenar'
+import { MANEJADORES } from '@/aplicacion/pendientes/manejadores'
 import { ingresar } from '@/aplicacion/identidad/sesion'
 
 /**
@@ -68,17 +71,21 @@ export async function accionPedirEnlace(_previo: Resultado, datos: FormData): Pr
   const error = errorDeCorreo(correo)
   if (error) return { mensaje: error }
 
-  const cabeceras = await headers()
-  const protocolo = cabeceras.get('x-forwarded-proto') ?? 'http'
+  const base = await urlBase()
 
-  try {
-    await pedirRestablecimiento(RELOJ, {
-      correo,
-      urlBase: `${protocolo}://${cabeceras.get('host') ?? 'localhost:3000'}`,
-    })
-  } catch {
-    // Ni un fallo interno debe distinguir una cuenta de otra.
-  }
+  // Se responde antes de trabajar: si la cuenta existe el trabajo cuesta mas
+  // viajes a la base, y esa diferencia de tiempo delataria cual correo tiene cuenta.
+  // El despacho va en el mismo `after()`: quien pide no tiene sesion y ningun
+  // panel abierto que drene la cola, y el enlace vence a las 2 horas.
+  after(async () => {
+    try {
+      await pedirRestablecimiento(RELOJ, { correo, urlBase: base })
+      await drenar(MANEJADORES)
+    } catch (fallo) {
+      // Ni un fallo interno debe distinguir una cuenta de otra: no se le muestra a nadie.
+      console.error('No se pudo procesar el pedido de enlace para cambiar la clave.', fallo)
+    }
+  })
 
   return { mensaje: '', enviado: true }
 }

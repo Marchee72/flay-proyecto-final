@@ -1,6 +1,5 @@
 'use server'
 
-import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
@@ -15,6 +14,7 @@ import { quitarAcceso } from '@/aplicacion/identidad/quitar-acceso'
 import { rolDesdeFormulario } from '@/aplicacion/identidad/roles'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { irAIngresar } from '@/app/ir-a-ingresar'
+import { urlBase } from '@/app/url-base'
 
 /** Un archivo «use server» solo exporta funciones: el estado inicial va en el formulario. */
 export type Resultado = { mensaje: string }
@@ -156,11 +156,4 @@ export async function accionReenviar(datos: FormData): Promise<void> {
   }
 
   redirect(conHecho(`/consorcios/${consorcioId}/usuarios`, 'invitacion-reenviada'))
-}
-
-/** Base del enlace de invitacion, tomada del pedido que la origina. */
-async function urlBase(): Promise<string> {
-  const cabeceras = await headers()
-  const protocolo = cabeceras.get('x-forwarded-proto') ?? 'http'
-  return `${protocolo}://${cabeceras.get('host') ?? 'localhost:3000'}`
 }

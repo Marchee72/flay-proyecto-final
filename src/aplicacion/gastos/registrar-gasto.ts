@@ -33,7 +33,7 @@ export class ImporteInvalido extends ErrorDeAplicacion {
   }
 }
 
-const IMPORTE_VALIDO = /^\d{1,12}(\.\d{1,2})?$/
+export const IMPORTE_VALIDO = /^\d{1,12}(\.\d{1,2})?$/
 
 export async function registrarGasto(
   repositorio: RepositorioHabilitaciones,

@@ -15,6 +15,7 @@ import {
   descartarExtraccion,
   iniciarCargaAsistida,
 } from '@/aplicacion/gastos/extraccion'
+import { editarGasto, eliminarGasto } from '@/aplicacion/gastos/editar-gasto'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { irAIngresar } from '@/app/ir-a-ingresar'
@@ -92,6 +93,55 @@ export async function accionRegistrarGasto(
   }
 
   redirect(conHecho(`/consorcios/${consorcioId}/gastos/${creado}`, 'gasto-registrado'))
+}
+
+/** Edicion de un gasto del periodo abierto (RF-04): el periodo no viaja ni se mueve. */
+export async function accionEditarGasto(_previo: Resultado, datos: FormData): Promise<Resultado> {
+  const usuarioId = await quienOpera()
+  const consorcioId = String(datos.get('consorcio') ?? '')
+  const gastoId = String(datos.get('gasto') ?? '')
+  const fecha = String(datos.get('fecha') ?? '')
+
+  try {
+    await editarGasto(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      gastoId,
+      rubroId: String(datos.get('rubro') ?? ''),
+      // El formulario siempre manda uno de los dos valores del enum.
+      clasificacion: clasificacionDe(String(datos.get('clasificacion') ?? '')) ?? 'ordinario',
+      proveedorId: String(datos.get('proveedor') ?? '') || null,
+      importe: importeDesdeEntrada(String(datos.get('importe') ?? '')),
+      fecha: fecha ? new Date(`${fecha}T00:00:00Z`) : RELOJ.hoy(),
+      descripcion: String(datos.get('descripcion') ?? ''),
+    })
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion)
+      return { mensaje: error.mensajeParaUsuario, valores: valoresDe(datos) }
+    throw error
+  }
+
+  redirect(conHecho(`/consorcios/${consorcioId}/gastos/${gastoId}`, 'gasto-actualizado'))
+}
+
+/** Baja de un gasto sin vinculos; vuelve a la lista de su periodo. */
+export async function accionEliminarGasto(_previo: Resultado, datos: FormData): Promise<Resultado> {
+  const usuarioId = await quienOpera()
+  const consorcioId = String(datos.get('consorcio') ?? '')
+  let periodoId = ''
+
+  try {
+    ;({ periodoId } = await eliminarGasto(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      gastoId: String(datos.get('gasto') ?? ''),
+    }))
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
+    throw error
+  }
+
+  redirect(conHecho(`/consorcios/${consorcioId}/gastos?periodo=${periodoId}`, 'gasto-eliminado'))
 }
 
 /**

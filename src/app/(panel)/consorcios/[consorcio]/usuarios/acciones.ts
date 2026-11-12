@@ -75,12 +75,15 @@ export async function accionAsignarUnidad(_previo: Resultado, datos: FormData): 
   const usuarioId = await quienOpera()
   const consorcioId = String(datos.get('consorcio') ?? '')
   const desde = String(datos.get('desde') ?? '')
+  const unidadId = String(datos.get('unidad') ?? '')
+
+  if (!unidadId) return { mensaje: 'Elegí la unidad que le corresponde.' }
 
   try {
     await registrarOcupacion(HABILITACIONES, RELOJ, {
       usuarioId,
       consorcioId,
-      unidadId: String(datos.get('unidad') ?? ''),
+      unidadId,
       personaId: String(datos.get('persona') ?? ''),
       tipo: datos.get('tipoOcupacion') === 'inquilino' ? 'inquilino' : 'propietario',
       desde: desde ? new Date(`${desde}T00:00:00Z`) : RELOJ.hoy(),

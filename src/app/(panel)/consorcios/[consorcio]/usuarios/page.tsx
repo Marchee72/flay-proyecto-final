@@ -123,13 +123,17 @@ function Tabla({
                 <Invitacion usuario={usuario} consorcioId={consorcioId} />
               </td>
               <td>
-                <ModalUnidad
-                  consorcioId={consorcioId}
-                  personaId={usuario.personaId}
-                  nombre={usuario.nombre}
-                  unidades={unidades}
-                  hoy={hoy}
-                />
+                {unidades.length === 0 ? (
+                  <span className="ayuda">Cargá el padrón primero.</span>
+                ) : (
+                  <ModalUnidad
+                    consorcioId={consorcioId}
+                    personaId={usuario.personaId}
+                    nombre={usuario.nombre}
+                    unidades={unidades}
+                    hoy={hoy}
+                  />
+                )}
                 {usuario.habilitaciones.map((habilitacion) => (
                   <ModalQuitar
                     key={habilitacion.id}

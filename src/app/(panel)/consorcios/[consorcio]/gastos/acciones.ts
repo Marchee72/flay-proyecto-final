@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { conError, conHecho } from '@/app/aviso-en-url'
+import { valoresDe, type ConValores } from '@/app/valores-de-formulario'
 import { importeDesdeEntrada } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { confirmarComprobante } from '@/aplicacion/gastos/comprobantes'
@@ -20,7 +21,7 @@ import { irAIngresar } from '@/app/ir-a-ingresar'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
 
 /** Un archivo «use server» solo exporta funciones asincronicas. */
-export type Resultado = { mensaje: string }
+export type Resultado = { mensaje: string } & ConValores
 
 async function quienOpera(): Promise<string> {
   const usuarioId = await usuarioDeLaSesion()
@@ -85,7 +86,8 @@ export async function accionRegistrarGasto(
       : await registrarGasto(HABILITACIONES, RELOJ, { ...gasto, periodoId })
     creado = gastoId
   } catch (error) {
-    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
+    if (error instanceof ErrorDeAplicacion)
+      return { mensaje: error.mensajeParaUsuario, valores: valoresDe(datos) }
     throw error
   }
 

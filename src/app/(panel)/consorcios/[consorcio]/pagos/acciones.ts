@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { destinoSeguro } from '@/compartido/destinos'
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { conHecho } from '@/app/aviso-en-url'
+import { valoresDe, type ConValores } from '@/app/valores-de-formulario'
 import { importeDesdeEntrada } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
@@ -13,7 +14,7 @@ import { irAIngresar } from '@/app/ir-a-ingresar'
 import { guardarCredencialesPago } from '@/aplicacion/administradoras/credenciales-pago'
 import { medioDesdeFormulario, registrarPago } from '@/aplicacion/pagos/registrar'
 
-export type Resultado = { mensaje: string }
+export type Resultado = { mensaje: string } & ConValores
 
 /**
  * Alta de un pago (`CU-04`). El importe viaja **como cadena** al caso de uso, y
@@ -36,7 +37,8 @@ export async function accionRegistrarPago(_previo: Resultado, datos: FormData): 
       referencia: String(datos.get('referencia') ?? '').trim() || null,
     })
   } catch (error) {
-    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
+    if (error instanceof ErrorDeAplicacion)
+      return { mensaje: error.mensajeParaUsuario, valores: valoresDe(datos) }
     throw error
   }
 

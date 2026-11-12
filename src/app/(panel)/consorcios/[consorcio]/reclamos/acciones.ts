@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { conHecho } from '@/app/aviso-en-url'
+import { valoresDe, type ConValores } from '@/app/valores-de-formulario'
 import { ESTADOS_RECLAMO, type EstadoReclamo } from '@/aplicacion/reclamos/estados'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
@@ -14,7 +15,7 @@ import { registrarReclamo, URGENCIAS } from '@/aplicacion/reclamos/registrar'
 import { aplicarSugerencia, descartarSugerencia } from '@/aplicacion/reclamos/sugerencia'
 import { transicionar } from '@/aplicacion/reclamos/transicionar'
 
-export type Resultado = { mensaje: string }
+export type Resultado = { mensaje: string } & ConValores
 
 const texto = (datos: FormData, campo: string) => String(datos.get(campo) ?? '').trim()
 
@@ -40,7 +41,8 @@ export async function accionRegistrarReclamo(
       urgencia,
     }))
   } catch (error) {
-    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
+    if (error instanceof ErrorDeAplicacion)
+      return { mensaje: error.mensajeParaUsuario, valores: valoresDe(datos) }
     throw error
   }
 

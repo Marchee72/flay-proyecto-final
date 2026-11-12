@@ -4,9 +4,9 @@ import { useActionState, useState } from 'react'
 
 import { errorDeCorreo } from '@/aplicacion/identidad/correo-reglas'
 
-import { accionInvitar } from './acciones'
+import { accionInvitar, type Resultado } from './acciones'
 
-const SIN_ERROR = { mensaje: '' }
+const SIN_ERROR: Resultado = { mensaje: '' }
 
 /**
  * Alta de invitacion. Cada campo con etiqueta visible y el error debajo del
@@ -37,6 +37,7 @@ export function FormularioInvitar({
         <input
           id="nombre"
           name="nombre"
+          defaultValue={estado.valores?.nombre}
           required
           autoComplete="given-name"
           aria-invalid={hayError || undefined}
@@ -49,6 +50,7 @@ export function FormularioInvitar({
         <input
           id="apellido"
           name="apellido"
+          defaultValue={estado.valores?.apellido}
           required
           autoComplete="family-name"
           aria-invalid={hayError || undefined}
@@ -62,6 +64,7 @@ export function FormularioInvitar({
           id="correo"
           name="correo"
           type="email"
+          defaultValue={estado.valores?.correo}
           required
           autoComplete="email"
           aria-invalid={hayError || errorCorreo !== null || undefined}
@@ -109,7 +112,7 @@ export function FormularioInvitar({
         <>
           <div className="campo">
             <label htmlFor="unidad">Unidad</label>
-            <select id="unidad" name="unidad" defaultValue="">
+            <select id="unidad" name="unidad" defaultValue={estado.valores?.unidad ?? ''}>
               <option value="">Sin unidad por ahora</option>
               {unidades.map((unidad) => (
                 <option key={unidad.id} value={unidad.id}>
@@ -121,7 +124,11 @@ export function FormularioInvitar({
 
           <div className="campo">
             <label htmlFor="tipoOcupacion">Es</label>
-            <select id="tipoOcupacion" name="tipoOcupacion" defaultValue="propietario">
+            <select
+              id="tipoOcupacion"
+              name="tipoOcupacion"
+              defaultValue={estado.valores?.tipoOcupacion ?? 'propietario'}
+            >
               <option value="propietario">Propietario</option>
               <option value="inquilino">Inquilino</option>
             </select>
@@ -135,7 +142,7 @@ export function FormularioInvitar({
           id="vigenciaDesde"
           name="vigenciaDesde"
           type="date"
-          defaultValue={hoy}
+          defaultValue={estado.valores?.vigenciaDesde ?? hoy}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-invitacion' : undefined}

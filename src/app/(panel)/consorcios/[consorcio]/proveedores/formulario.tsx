@@ -2,9 +2,9 @@
 
 import { useActionState } from 'react'
 
-import { accionAltaProveedor } from './acciones'
+import { accionAltaProveedor, type Resultado } from './acciones'
 
-const SIN_ERROR = { mensaje: '' }
+const SIN_ERROR: Resultado = { mensaje: '' }
 
 /**
  * Alta de proveedor. El rubro habitual es una **sugerencia** al cargar un
@@ -29,6 +29,7 @@ export function FormularioProveedor({
         <input
           id="razonSocial"
           name="razonSocial"
+          defaultValue={estado.valores?.razonSocial}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-proveedor' : undefined}
@@ -40,6 +41,7 @@ export function FormularioProveedor({
         <input
           id="cuit"
           name="cuit"
+          defaultValue={estado.valores?.cuit}
           inputMode="numeric"
           pattern="[0-9 \-]{11,13}"
           required
@@ -57,7 +59,7 @@ export function FormularioProveedor({
         <select
           id="rubro"
           name="rubro"
-          defaultValue=""
+          defaultValue={estado.valores?.rubro ?? ''}
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-proveedor' : undefined}
         >
@@ -72,13 +74,25 @@ export function FormularioProveedor({
 
       <div className="campo">
         <label htmlFor="telefono">Teléfono</label>
-        <input id="telefono" name="telefono" type="tel" autoComplete="off" />
+        <input
+          id="telefono"
+          name="telefono"
+          type="tel"
+          autoComplete="off"
+          defaultValue={estado.valores?.telefono}
+        />
         <p className="ayuda">Opcional. Aparece en los contactos útiles del resumen.</p>
       </div>
 
       <div className="campo">
         <label htmlFor="correo">Correo</label>
-        <input id="correo" name="correo" type="email" autoComplete="off" />
+        <input
+          id="correo"
+          name="correo"
+          type="email"
+          autoComplete="off"
+          defaultValue={estado.valores?.correo}
+        />
       </div>
 
       {hayError && (

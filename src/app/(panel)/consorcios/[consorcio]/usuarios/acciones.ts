@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import { conError, conHecho } from '@/app/aviso-en-url'
+import { valoresDe, type ConValores } from '@/app/valores-de-formulario'
 import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
@@ -17,7 +18,7 @@ import { irAIngresar } from '@/app/ir-a-ingresar'
 import { urlBase } from '@/app/url-base'
 
 /** Un archivo «use server» solo exporta funciones: el estado inicial va en el formulario. */
-export type Resultado = { mensaje: string }
+export type Resultado = { mensaje: string } & ConValores
 
 /** La identidad de quien opera sale de la sesion, nunca del formulario. */
 async function quienOpera(): Promise<string> {
@@ -36,7 +37,8 @@ export async function accionInvitar(_previo: Resultado, datos: FormData): Promis
     (candidato) => candidato.id === consorcioId,
   )
 
-  if (!consorcio) return { mensaje: new NoEncontrado().mensajeParaUsuario }
+  if (!consorcio)
+    return { mensaje: new NoEncontrado().mensajeParaUsuario, valores: valoresDe(datos) }
 
   const desde = String(datos.get('vigenciaDesde') ?? '')
   const rol = rolDesdeFormulario(datos.get('rol'))
@@ -59,7 +61,8 @@ export async function accionInvitar(_previo: Resultado, datos: FormData): Promis
       unidad: rol === 'consorcista' && unidadId ? { unidadId, tipo } : null,
     })
   } catch (error) {
-    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
+    if (error instanceof ErrorDeAplicacion)
+      return { mensaje: error.mensajeParaUsuario, valores: valoresDe(datos) }
     throw error
   }
 

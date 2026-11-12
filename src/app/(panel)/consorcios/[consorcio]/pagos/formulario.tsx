@@ -36,7 +36,7 @@ export function FormularioPago({
         <select
           id="unidad"
           name="unidad"
-          defaultValue={unidadInicial}
+          defaultValue={estado.valores?.unidad ?? unidadInicial}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-pago' : undefined}
@@ -57,6 +57,7 @@ export function FormularioPago({
           className="cifra"
           inputMode="decimal"
           placeholder="0.00"
+          defaultValue={estado.valores?.importe}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-pago ayuda-importe' : 'ayuda-importe'}
@@ -73,7 +74,7 @@ export function FormularioPago({
           id="fecha"
           name="fecha"
           type="date"
-          defaultValue={hoy}
+          defaultValue={estado.valores?.fecha ?? hoy}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-pago' : undefined}
@@ -85,7 +86,7 @@ export function FormularioPago({
         <select
           id="medio"
           name="medio"
-          defaultValue="transferencia"
+          defaultValue={estado.valores?.medio ?? 'transferencia'}
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-pago' : undefined}
         >
@@ -103,6 +104,7 @@ export function FormularioPago({
           id="referencia"
           name="referencia"
           placeholder="Número de operación"
+          defaultValue={estado.valores?.referencia}
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-pago' : undefined}
         />

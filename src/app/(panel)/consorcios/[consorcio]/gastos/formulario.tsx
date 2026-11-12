@@ -2,9 +2,9 @@
 
 import { useActionState, useState, type ReactNode } from 'react'
 
-import { accionRegistrarGasto } from './acciones'
+import { accionRegistrarGasto, type Resultado } from './acciones'
 
-const SIN_ERROR = { mensaje: '' }
+const SIN_ERROR: Resultado = { mensaje: '' }
 
 export interface Opcion {
   id: string
@@ -75,7 +75,7 @@ export function FormularioGasto({
           id="periodo"
           name="periodo"
           type="month"
-          defaultValue={precargado.periodo ?? mesActual}
+          defaultValue={estado.valores?.periodo ?? precargado.periodo ?? mesActual}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-gasto ayuda-periodo' : 'ayuda-periodo'}
@@ -137,7 +137,7 @@ export function FormularioGasto({
         <select
           id="proveedor"
           name="proveedor"
-          defaultValue={precargado.proveedor ?? ''}
+          defaultValue={estado.valores?.proveedor ?? precargado.proveedor ?? ''}
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-gasto' : undefined}
         >
@@ -159,7 +159,7 @@ export function FormularioGasto({
           className="cifra"
           inputMode="decimal"
           placeholder="0.00"
-          defaultValue={precargado.importe ?? ''}
+          defaultValue={estado.valores?.importe ?? precargado.importe ?? ''}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-gasto ayuda-importe' : 'ayuda-importe'}
@@ -176,7 +176,7 @@ export function FormularioGasto({
           id="fecha"
           name="fecha"
           type="date"
-          defaultValue={precargado.fecha ?? ''}
+          defaultValue={estado.valores?.fecha ?? precargado.fecha ?? ''}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-gasto' : undefined}
@@ -189,7 +189,7 @@ export function FormularioGasto({
         <input
           id="descripcion"
           name="descripcion"
-          defaultValue={precargado.descripcion ?? ''}
+          defaultValue={estado.valores?.descripcion ?? precargado.descripcion ?? ''}
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-gasto' : undefined}
         />

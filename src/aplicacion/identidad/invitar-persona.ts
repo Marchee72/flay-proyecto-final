@@ -1,5 +1,3 @@
-import { createHash, randomBytes } from 'node:crypto'
-
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import type { DerivadorDeContrasenas } from '@/dominio/contratos/derivador-contrasenas'
 import type { Reloj } from '@/dominio/contratos/reloj'
@@ -14,6 +12,8 @@ import {
 } from '@/infraestructura/repositorios/ocupaciones'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { encolar } from '@/aplicacion/pendientes/encolar'
+
+import { nuevaCredencial, resumen } from './credencial'
 
 /**
  * Invitacion por correo (FR-006). El invitado fija su propia contrasena: el
@@ -55,9 +55,6 @@ interface DatosDeInvitacion {
   /** Nulo o ausente: se invita sin ocuparle una unidad todavia. */
   unidad?: { unidadId: string; tipo: TipoDeOcupacion } | null
 }
-
-/** La credencial viaja en el enlace; en la base queda solo su resumen. */
-const resumen = (credencial: string) => createHash('sha256').update(credencial).digest('hex')
 
 export async function invitarPersona(
   repositorio: RepositorioHabilitaciones,
@@ -153,7 +150,7 @@ async function altaDelInvitado(
     return { usuarioId: existente.id, yaTeniaCuenta: true }
   }
 
-  const credencial = randomBytes(32).toString('base64url')
+  const { credencial, hash } = nuevaCredencial()
   const vence = new Date(reloj.ahora().getTime() + HORAS_DE_VIGENCIA_DE_LA_INVITACION * 3_600_000)
 
   const usuario = await prismaBase
@@ -170,7 +167,7 @@ async function altaDelInvitado(
           personaId: persona.id,
           correo,
           estado: 'invitado',
-          invitacionHash: resumen(credencial),
+          invitacionHash: hash,
           invitacionVence: vence,
         },
       })
@@ -227,6 +224,7 @@ export async function fijarContrasena(
     data: {
       claveDerivada: await derivador.derivar(datos.contrasena),
       estado: 'activo',
+      bloqueadoHasta: null,
       invitacionHash: null,
       invitacionVence: null,
     },

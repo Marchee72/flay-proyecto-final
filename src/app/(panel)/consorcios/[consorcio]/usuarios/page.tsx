@@ -7,7 +7,7 @@ import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
 import { listarUsuarios, type UsuarioDelConsorcio } from '@/aplicacion/identidad/listar-usuarios'
 import { ROLES_ASIGNABLES } from '@/aplicacion/identidad/roles'
 
-import { accionReenviar } from './acciones'
+import { accionEnviarEnlaceDeClave, accionReenviar } from './acciones'
 import { ModalInvitar } from './modal-invitar'
 import { ModalQuitar } from './modal-quitar'
 import { ModalUnidad } from './modal-unidad'
@@ -133,6 +133,15 @@ function Tabla({
                     unidades={unidades}
                     hoy={hoy}
                   />
+                )}
+                {usuario.estado === 'activo' && (
+                  <form action={accionEnviarEnlaceDeClave}>
+                    <input type="hidden" name="consorcio" value={consorcioId} />
+                    <input type="hidden" name="destinatario" value={usuario.usuarioId} />
+                    <button className="boton boton--fantasma" type="submit">
+                      Enviar enlace para cambiar la clave
+                    </button>
+                  </form>
                 )}
                 {usuario.habilitaciones.map((habilitacion) => (
                   <ModalQuitar

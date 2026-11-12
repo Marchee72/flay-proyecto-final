@@ -58,3 +58,40 @@ test.describe('ingresar vuelve adonde se iba (FR-002)', () => {
     await expect(page).toHaveURL(gastos)
   })
 })
+
+test.describe('recuperar la contraseña (RF-03)', () => {
+  let escenario: Escenario
+
+  test.beforeAll(async () => {
+    escenario = await sembrarEscenario('administrador', 'Mitre 456')
+  })
+
+  test.afterAll(async () => {
+    await limpiarEscenario(escenario)
+    await prisma.$disconnect()
+  })
+
+  test('desde el ingreso se llega a pedir el enlace y la respuesta no revela si el correo existe', async ({
+    page,
+  }) => {
+    const pedir = async (correo: string) => {
+      await page.goto('/ingresar')
+      await expect(
+        page.getByText('Después de cinco intentos fallidos el ingreso se pausa quince minutos.'),
+      ).toBeVisible()
+      await page.getByRole('link', { name: '¿Olvidaste tu contraseña?' }).click()
+      await expect(page).toHaveURL(/\/recuperar/)
+      await page.getByLabel('Correo electrónico').fill(correo)
+      await page.getByRole('button', { name: 'Mandarme el enlace' }).click()
+      const respuesta = page.getByRole('status').filter({ hasText: 'Si ese correo tiene cuenta' })
+      await expect(respuesta).toBeVisible()
+      return respuesta.textContent()
+    }
+
+    const conCuenta = await pedir(escenario.correo)
+    const sinCuenta = await pedir('nadie@ejemplo.test')
+
+    expect(conCuenta).toBe(sinCuenta)
+    expect(conCuenta).toContain('Revisá también el correo no deseado.')
+  })
+})

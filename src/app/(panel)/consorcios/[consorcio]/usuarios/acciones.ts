@@ -10,6 +10,7 @@ import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { invitarPersona } from '@/aplicacion/identidad/invitar-persona'
 import { reenviarInvitacion } from '@/aplicacion/identidad/reenviar-invitacion'
+import { enviarEnlaceDeClave } from '@/aplicacion/identidad/restablecer'
 import { quitarAcceso } from '@/aplicacion/identidad/quitar-acceso'
 import { rolDesdeFormulario } from '@/aplicacion/identidad/roles'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
@@ -113,6 +114,26 @@ export async function accionQuitarAcceso(_previo: Resultado, datos: FormData): P
   }
 
   redirect(conHecho(`/consorcios/${consorcioId}/usuarios`, 'acceso-quitado'))
+}
+
+/** «Enviar enlace para cambiar la clave»: levanta el bloqueo y manda el correo (RF-03, C5). */
+export async function accionEnviarEnlaceDeClave(datos: FormData): Promise<void> {
+  const usuarioId = await quienOpera()
+  const consorcioId = String(datos.get('consorcio') ?? '')
+
+  try {
+    await enviarEnlaceDeClave(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      destinatarioId: String(datos.get('destinatario') ?? ''),
+      urlBase: await urlBase(),
+    })
+  } catch (error) {
+    if (!(error instanceof ErrorDeAplicacion)) throw error
+    redirect(conError(`/consorcios/${consorcioId}/usuarios`, error.mensajeParaUsuario))
+  }
+
+  redirect(conHecho(`/consorcios/${consorcioId}/usuarios`, 'enlace-enviado'))
 }
 
 /**

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 
 import { destinoSeguro } from '@/compartido/destinos'
 
@@ -19,6 +20,13 @@ export default async function IngresarPage({
       <p className="apagado">Con el correo con el que te invitó la administración.</p>
 
       <FormularioIngreso destino={destinoSeguro(desde, '/')} />
+
+      <p className="ayuda">
+        Después de cinco intentos fallidos el ingreso se pausa quince minutos.
+      </p>
+      <p>
+        <Link href="/recuperar">¿Olvidaste tu contraseña?</Link>
+      </p>
 
       <p className="ayuda">
         ¿No tenés cuenta? La crea la administración de tu edificio y te llega una invitación por

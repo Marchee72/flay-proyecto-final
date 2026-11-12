@@ -1,5 +1,6 @@
 'use server'
 
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { MINIMO_DE_CONTRASENA } from '@/compartido/contrasenas'
@@ -8,6 +9,8 @@ import { ErrorDeAplicacion } from '@/compartido/errores'
 import { conHecho } from '@/app/aviso-en-url'
 import { DERIVADOR, RELOJ } from '@/aplicacion/dependencias'
 import { fijarContrasena } from '@/aplicacion/identidad/invitar-persona'
+import { pedirRestablecimiento } from '@/aplicacion/identidad/restablecer'
+import { errorDeCorreo } from '@/aplicacion/identidad/correo-reglas'
 import { ingresar } from '@/aplicacion/identidad/sesion'
 
 /**
@@ -15,7 +18,7 @@ import { ingresar } from '@/aplicacion/identidad/sesion'
  * archivo «use server» solo puede exportar funciones asincronicas, asi que el
  * estado inicial lo pone cada formulario.
  */
-export type Resultado = { mensaje: string }
+export type Resultado = { mensaje: string; enviado?: boolean }
 
 export async function accionIngresar(_previo: Resultado, datos: FormData): Promise<Resultado> {
   const mensaje = await ingresar({
@@ -53,4 +56,29 @@ export async function accionFijarContrasena(
   }
 
   redirect(conHecho('/ingresar', 'contrasena-guardada'))
+}
+
+/**
+ * Pedido propio del enlace para cambiar la clave. La respuesta es la misma
+ * exista o no la cuenta: lo unico que se dice distinto es un correo mal escrito,
+ * que no depende de ninguna cuenta.
+ */
+export async function accionPedirEnlace(_previo: Resultado, datos: FormData): Promise<Resultado> {
+  const correo = String(datos.get('correo') ?? '')
+  const error = errorDeCorreo(correo)
+  if (error) return { mensaje: error }
+
+  const cabeceras = await headers()
+  const protocolo = cabeceras.get('x-forwarded-proto') ?? 'http'
+
+  try {
+    await pedirRestablecimiento(RELOJ, {
+      correo,
+      urlBase: `${protocolo}://${cabeceras.get('host') ?? 'localhost:3000'}`,
+    })
+  } catch {
+    // Ni un fallo interno debe distinguir una cuenta de otra.
+  }
+
+  return { mensaje: '', enviado: true }
 }

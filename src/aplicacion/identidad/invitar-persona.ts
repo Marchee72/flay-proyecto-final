@@ -6,6 +6,7 @@ import type { Reloj } from '@/dominio/contratos/reloj'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import { errorDeCorreo } from '@/dominio/identidad/correo'
 import type { Rol } from '@/dominio/identidad/rol'
+import { comoInquilinoSuperpuesto } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 import {
   registrarOcupacion,
@@ -110,7 +111,7 @@ async function altaDelInvitado(
   // Quien ya tiene cuenta no recibe otra invitacion: se le suma el acceso.
   const existente = await prismaBase.usuario.findUnique({ where: { correo } })
   if (existente) {
-    const yaHabilitado = await prismaBase.habilitacion.findUnique({
+    const previa = await prismaBase.habilitacion.findUnique({
       where: {
         usuarioId_consorcioId_rol: {
           usuarioId: existente.id,
@@ -119,19 +120,35 @@ async function altaDelInvitado(
         },
       },
     })
-    if (yaHabilitado) throw new YaTieneAcceso()
+    // Misma regla de vigencia que `accesoVigente`.
+    const hoy = reloj.hoy()
+    if (previa && (previa.vigenciaHasta === null || previa.vigenciaHasta >= hoy)) {
+      throw new YaTieneAcceso()
+    }
 
-    await prismaBase.$transaction(async (tx) => {
-      await tx.habilitacion.create({
-        data: {
-          usuarioId: existente.id,
-          consorcioId: datos.consorcioId,
-          rol: datos.rol,
-          vigenciaDesde: datos.vigenciaDesde,
-        },
+    try {
+      await prismaBase.$transaction(async (tx) => {
+        // Un acceso revocado conserva su fila: se reabre en vez de crear otra.
+        if (previa) {
+          await tx.habilitacion.update({
+            where: { id: previa.id },
+            data: { vigenciaDesde: datos.vigenciaDesde, vigenciaHasta: null },
+          })
+        } else {
+          await tx.habilitacion.create({
+            data: {
+              usuarioId: existente.id,
+              consorcioId: datos.consorcioId,
+              rol: datos.rol,
+              vigenciaDesde: datos.vigenciaDesde,
+            },
+          })
+        }
+        await ocupar(existente.personaId, tx)
       })
-      await ocupar(existente.personaId, tx)
-    })
+    } catch (error) {
+      throw comoInquilinoSuperpuesto(error)
+    }
 
     return { usuarioId: existente.id, yaTeniaCuenta: true }
   }
@@ -139,37 +156,41 @@ async function altaDelInvitado(
   const credencial = randomBytes(32).toString('base64url')
   const vence = new Date(reloj.ahora().getTime() + HORAS_DE_VIGENCIA_DE_LA_INVITACION * 3_600_000)
 
-  const usuario = await prismaBase.$transaction(async (tx) => {
-    // Una persona cargada antes en el padron (sin usuario) se reutiliza.
-    const persona =
-      (await tx.persona.findFirst({ where: { correo } })) ??
-      (await tx.persona.create({
-        data: { nombre: datos.nombre, apellido: datos.apellido, correo },
-      }))
+  const usuario = await prismaBase
+    .$transaction(async (tx) => {
+      // Una persona cargada antes en el padron (sin usuario) se reutiliza.
+      const persona =
+        (await tx.persona.findFirst({ where: { correo } })) ??
+        (await tx.persona.create({
+          data: { nombre: datos.nombre, apellido: datos.apellido, correo },
+        }))
 
-    const creado = await tx.usuario.create({
-      data: {
-        personaId: persona.id,
-        correo,
-        estado: 'invitado',
-        invitacionHash: resumen(credencial),
-        invitacionVence: vence,
-      },
+      const creado = await tx.usuario.create({
+        data: {
+          personaId: persona.id,
+          correo,
+          estado: 'invitado',
+          invitacionHash: resumen(credencial),
+          invitacionVence: vence,
+        },
+      })
+
+      await tx.habilitacion.create({
+        data: {
+          usuarioId: creado.id,
+          consorcioId: datos.consorcioId,
+          rol: datos.rol,
+          vigenciaDesde: datos.vigenciaDesde,
+        },
+      })
+
+      await ocupar(persona.id, tx)
+
+      return creado
     })
-
-    await tx.habilitacion.create({
-      data: {
-        usuarioId: creado.id,
-        consorcioId: datos.consorcioId,
-        rol: datos.rol,
-        vigenciaDesde: datos.vigenciaDesde,
-      },
+    .catch((error) => {
+      throw comoInquilinoSuperpuesto(error)
     })
-
-    await ocupar(persona.id, tx)
-
-    return creado
-  })
 
   await encolar('invitacion', {
     destino: correo,

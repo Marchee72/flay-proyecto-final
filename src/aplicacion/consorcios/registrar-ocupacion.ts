@@ -1,4 +1,4 @@
-import { NoEncontrado } from '@/compartido/errores'
+import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
@@ -8,6 +8,18 @@ import {
   registrarOcupacion as insertarOcupacion,
   type TipoDeOcupacion,
 } from '@/infraestructura/repositorios/ocupaciones'
+
+export class InquilinoSuperpuesto extends ErrorDeAplicacion {
+  constructor() {
+    super('La unidad ya tiene un inquilino vigente en esas fechas.', 'RF-03')
+  }
+}
+
+/** La exclusion de la base (RN-09) vuelta mensaje; cualquier otro error pasa tal cual. */
+export const comoInquilinoSuperpuesto = (error: unknown): unknown =>
+  error instanceof Error && /Ocupacion_inquilino_sin_superposicion|23P01/.test(error.message)
+    ? new InquilinoSuperpuesto()
+    : error
 
 /**
  * Alta de ocupacion (FR-008, FR-008b, FR-008c).

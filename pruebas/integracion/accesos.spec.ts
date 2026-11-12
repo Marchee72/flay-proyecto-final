@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { NoEncontrado } from '@/compartido/errores'
+import { InquilinoSuperpuesto } from '@/aplicacion/consorcios/registrar-ocupacion'
+import { revocarHabilitacion } from '@/aplicacion/identidad/habilitaciones'
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
 import {
   CorreoInvalido,
@@ -127,5 +129,29 @@ describe('invitar con unidad', () => {
     await expect(
       invitar(correoNuevo(), { unidad: { unidadId: ajena.id, tipo: 'propietario' } }),
     ).rejects.toBeInstanceOf(NoEncontrado)
+  })
+
+  it('revocar y volver a invitar deja el acceso vigente', async () => {
+    const existente = await crearUsuario('Eva', 'Existente')
+    const habilitacion = await habilitarEnConsorcio(existente.id, consorcioId, 'consorcista')
+    await revocarHabilitacion(relojFijo('2026-09-01T12:00:00Z'), habilitacion.id)
+    expect(await repositorioHabilitaciones.accesoVigente(existente.id, consorcioId, HOY)).toBeNull()
+
+    const resultado = await invitar(existente.correo)
+
+    expect(resultado.yaTeniaCuenta).toBe(true)
+    expect(
+      await repositorioHabilitaciones.accesoVigente(existente.id, consorcioId, HOY),
+    ).not.toBeNull()
+  })
+
+  it('invitar un inquilino a una unidad con inquilino vigente se rechaza con mensaje', async () => {
+    await invitar(correoNuevo(), { unidad: { unidadId, tipo: 'inquilino' } })
+    const usuarios = await prismaBase.usuario.count()
+
+    await expect(
+      invitar(correoNuevo(), { unidad: { unidadId, tipo: 'inquilino' } }),
+    ).rejects.toBeInstanceOf(InquilinoSuperpuesto)
+    expect(await prismaBase.usuario.count()).toBe(usuarios)
   })
 })

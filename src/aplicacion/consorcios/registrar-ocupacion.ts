@@ -77,6 +77,8 @@ export async function registrarOcupacion(
         tipo: datos.tipo,
         desde: datos.desde,
         hasta: datos.hasta ?? null,
+      }).catch((error) => {
+        throw comoInquilinoSuperpuesto(error)
       })
 
       await habilitarComoConsorcista(datos.personaId, datos.consorcioId, datos.desde)

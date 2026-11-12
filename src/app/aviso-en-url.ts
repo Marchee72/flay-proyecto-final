@@ -36,6 +36,8 @@ export const HECHO = {
   invitado:
     'Invitación creada. El correo con el enlace sale en el próximo pedido; abajo se ve su estado.',
   'acceso-sumado': 'Ya tenía cuenta en Flay: le dimos acceso a este consorcio.',
+  'unidad-asignada': 'Unidad asignada.',
+  'acceso-quitado': 'Acceso quitado. Ya no puede entrar a este consorcio.',
   'invitacion-reenviada': 'Invitación reenviada. Si vuelve a fallar, el estado lo dice acá.',
   'proveedor-registrado': 'Proveedor dado de alta.',
   'extraccion-descartada': 'Extracción descartada. No se creó ningún gasto.',

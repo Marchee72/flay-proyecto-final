@@ -162,6 +162,25 @@ export async function ocupantesVigentesDe(
   return porUnidad
 }
 
+/**
+ * Quién ocupa cada unidad a esa fecha, plano y sin datos de contacto: lo que
+ * necesita la nómina para poner «1A · propietario». Los ids tienen que venir
+ * de una consulta ya aislada: esto no filtra por consorcio.
+ */
+export async function ocupacionesVigentesDe(
+  unidadIds: string[],
+  fecha: Date,
+): Promise<{ unidadId: string; personaId: string; tipo: TipoDeOcupacion }[]> {
+  if (unidadIds.length === 0) return []
+  const filas = await prismaBase.$queryRaw<
+    { unidad_id: string; persona_id: string; tipo: TipoDeOcupacion }[]
+  >`
+    SELECT "unidad_id", "persona_id", "tipo" FROM "Ocupacion"
+    WHERE "unidad_id" = ANY(${unidadIds}::uuid[])
+      AND "vigencia" @> ${fecha}::date`
+  return filas.map((f) => ({ unidadId: f.unidad_id, personaId: f.persona_id, tipo: f.tipo }))
+}
+
 export interface PropietarioVigente {
   unidadId: string
   personaId: string

@@ -5,6 +5,10 @@ import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios
 import type { Reloj } from '@/dominio/contratos/reloj'
 import type { Rol } from '@/dominio/identidad/rol'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
+import {
+  ocupacionesVigentesDe,
+  type TipoDeOcupacion,
+} from '@/infraestructura/repositorios/ocupaciones'
 
 /**
  * Quienes tienen acceso a un consorcio (FR-007). Es de administrador: la nomina
@@ -23,9 +27,14 @@ export type InvitacionPendiente = {
 
 export type UsuarioDelConsorcio = {
   usuarioId: string
+  personaId: string
   nombre: string
   correo: string
   roles: Rol[]
+  /** Una por rol: es lo que se puede quitar. */
+  habilitaciones: { id: string; rol: Rol }[]
+  /** Las unidades que ocupa hoy. */
+  unidades: { designacion: string; tipo: TipoDeOcupacion }[]
   estado: EstadoUsuario
   bloqueado: boolean
   invitacion: InvitacionPendiente | null
@@ -62,14 +71,18 @@ export async function listarUsuarios(
         if (ya) {
           // El consejo se suma a consorcista: una fila por persona, N roles.
           ya.roles.push(habilitacion.rol)
+          ya.habilitaciones.push({ id: habilitacion.id, rol: habilitacion.rol })
           continue
         }
 
         porUsuario.set(usuario.id, {
           usuarioId: usuario.id,
+          personaId: usuario.personaId,
           nombre: `${usuario.persona.apellido}, ${usuario.persona.nombre}`,
           correo: usuario.correo,
           roles: [habilitacion.rol],
+          habilitaciones: [{ id: habilitacion.id, rol: habilitacion.rol }],
+          unidades: [],
           estado: usuario.estado,
           bloqueado: !!usuario.bloqueadoHasta && usuario.bloqueadoHasta > ahora,
           invitacion: null,
@@ -77,6 +90,7 @@ export async function listarUsuarios(
       }
 
       const filas = [...porUsuario.values()]
+      await ponerLasUnidades(filas, reloj.hoy())
       await ponerElEstadoDeLaInvitacion(filas)
 
       return filas
@@ -116,5 +130,28 @@ async function ponerElEstadoDeLaInvitacion(filas: UsuarioDelConsorcio[]): Promis
       intentos: suyo.intentos,
       ultimoError: suyo.ultimoError,
     }
+  }
+}
+
+/** Las unidades vigentes del padrón (nota 23) y quién las ocupa hoy, cruzado en memoria. */
+async function ponerLasUnidades(filas: UsuarioDelConsorcio[], hoy: Date): Promise<void> {
+  const unidades = await prisma.unidad.findMany({
+    where: { bajaDesde: null },
+    select: { id: true, designacion: true },
+  })
+  const ocupaciones = await ocupacionesVigentesDe(
+    unidades.map((unidad) => unidad.id),
+    hoy,
+  )
+  const designacion = new Map(unidades.map((unidad) => [unidad.id, unidad.designacion]))
+
+  for (const fila of filas) {
+    fila.unidades = ocupaciones
+      .filter((ocupacion) => ocupacion.personaId === fila.personaId)
+      .map((ocupacion) => ({
+        designacion: designacion.get(ocupacion.unidadId) ?? '',
+        tipo: ocupacion.tipo,
+      }))
+      .sort((a, b) => a.designacion.localeCompare(b.designacion, 'es', { numeric: true }))
   }
 }

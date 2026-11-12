@@ -1,8 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { NoEncontrado } from '@/compartido/errores'
-import { InquilinoSuperpuesto } from '@/aplicacion/consorcios/registrar-ocupacion'
+import {
+  InquilinoSuperpuesto,
+  registrarOcupacion,
+} from '@/aplicacion/consorcios/registrar-ocupacion'
 import { revocarHabilitacion } from '@/aplicacion/identidad/habilitaciones'
+import { listarUsuarios } from '@/aplicacion/identidad/listar-usuarios'
+import { NoPodesQuitarteElAcceso, quitarAcceso } from '@/aplicacion/identidad/quitar-acceso'
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
 import {
   CorreoInvalido,
@@ -153,5 +158,93 @@ describe('invitar con unidad', () => {
       invitar(correoNuevo(), { unidad: { unidadId, tipo: 'inquilino' } }),
     ).rejects.toBeInstanceOf(InquilinoSuperpuesto)
     expect(await prismaBase.usuario.count()).toBe(usuarios)
+  })
+})
+
+describe('quitar acceso y unidades en la nómina', () => {
+  const quitar = (usuarioId: string, habilitacionId: string, consorcio = consorcioId) =>
+    quitarAcceso(repositorioHabilitaciones, RELOJ, {
+      usuarioId,
+      consorcioId: consorcio,
+      habilitacionId,
+    })
+
+  it('quitar el acceso de un consorcista lo deja afuera hoy mismo', async () => {
+    const eva = await crearUsuario('Eva', 'Existente')
+    const habilitacion = await habilitarEnConsorcio(eva.id, consorcioId, 'consorcista')
+    expect(await repositorioHabilitaciones.accesoVigente(eva.id, consorcioId, HOY)).not.toBeNull()
+
+    await quitar(admin, habilitacion.id)
+
+    expect(await repositorioHabilitaciones.accesoVigente(eva.id, consorcioId, HOY)).toBeNull()
+  })
+
+  it('una habilitación otorgada hoy se borra al quitarla', async () => {
+    const eva = await crearUsuario('Eva', 'Existente')
+    const habilitacion = await prismaBase.habilitacion.create({
+      data: { usuarioId: eva.id, consorcioId, rol: 'consorcista', vigenciaDesde: HOY },
+    })
+
+    await quitar(admin, habilitacion.id)
+
+    expect(await prismaBase.habilitacion.findUnique({ where: { id: habilitacion.id } })).toBeNull()
+  })
+
+  it('el administrador no puede quitarse su propio acceso', async () => {
+    const propia = await prismaBase.habilitacion.findFirstOrThrow({
+      where: { usuarioId: admin, consorcioId, rol: 'administrador' },
+    })
+
+    await expect(quitar(admin, propia.id)).rejects.toBeInstanceOf(NoPodesQuitarteElAcceso)
+    expect(await repositorioHabilitaciones.accesoVigente(admin, consorcioId, HOY)).not.toBeNull()
+  })
+
+  it('quitar una habilitación de otro consorcio es no encontrado', async () => {
+    const otro = (await crearConsorcio((await crearAdministradora()).id, 'Ajeno 1')).id
+    const eva = await crearUsuario('Eva', 'Existente')
+    const ajena = await habilitarEnConsorcio(eva.id, otro, 'consorcista')
+
+    await expect(quitar(admin, ajena.id)).rejects.toBeInstanceOf(NoEncontrado)
+    expect(await repositorioHabilitaciones.accesoVigente(eva.id, otro, HOY)).not.toBeNull()
+  })
+
+  it('listarUsuarios trae las unidades vigentes de cada persona', async () => {
+    const eva = await crearUsuario('Eva', 'Existente')
+    await habilitarEnConsorcio(eva.id, consorcioId, 'consorcista')
+    await registrarOcupacion(repositorioHabilitaciones, RELOJ, {
+      usuarioId: admin,
+      consorcioId,
+      unidadId,
+      personaId: eva.personaId,
+      tipo: 'propietario',
+      desde: HOY,
+    })
+
+    const filas = await listarUsuarios(repositorioHabilitaciones, RELOJ, {
+      usuarioId: admin,
+      consorcioId,
+    })
+
+    const fila = filas.find((f) => f.usuarioId === eva.id)
+    expect(fila?.unidades).toEqual([{ designacion: '1A', tipo: 'propietario' }])
+    expect(fila?.habilitaciones).toHaveLength(1)
+    expect(filas.find((f) => f.usuarioId === admin)?.unidades).toEqual([])
+  })
+
+  it('un segundo inquilino superpuesto se rechaza con mensaje', async () => {
+    const alta = async (nombre: string) => {
+      const u = await crearUsuario(nombre, 'Inquilino')
+      return registrarOcupacion(repositorioHabilitaciones, RELOJ, {
+        usuarioId: admin,
+        consorcioId,
+        unidadId,
+        personaId: u.personaId,
+        tipo: 'inquilino',
+        desde: HOY,
+      })
+    }
+    await alta('Uno')
+
+    await expect(alta('Dos')).rejects.toBeInstanceOf(InquilinoSuperpuesto)
   })
 })

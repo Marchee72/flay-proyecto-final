@@ -6,9 +6,11 @@ import { redirect } from 'next/navigation'
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import { conError, conHecho } from '@/app/aviso-en-url'
 import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
+import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { invitarPersona } from '@/aplicacion/identidad/invitar-persona'
 import { reenviarInvitacion } from '@/aplicacion/identidad/reenviar-invitacion'
+import { quitarAcceso } from '@/aplicacion/identidad/quitar-acceso'
 import { rolDesdeFormulario } from '@/aplicacion/identidad/roles'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { irAIngresar } from '@/app/ir-a-ingresar'
@@ -66,6 +68,48 @@ export async function accionInvitar(_previo: Resultado, datos: FormData): Promis
       resultado.yaTeniaCuenta ? 'acceso-sumado' : 'invitado',
     ),
   )
+}
+
+/** «Asignar unidad» sobre una persona que ya figura en la nómina (RF-03, C2). */
+export async function accionAsignarUnidad(_previo: Resultado, datos: FormData): Promise<Resultado> {
+  const usuarioId = await quienOpera()
+  const consorcioId = String(datos.get('consorcio') ?? '')
+  const desde = String(datos.get('desde') ?? '')
+
+  try {
+    await registrarOcupacion(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      unidadId: String(datos.get('unidad') ?? ''),
+      personaId: String(datos.get('persona') ?? ''),
+      tipo: datos.get('tipoOcupacion') === 'inquilino' ? 'inquilino' : 'propietario',
+      desde: desde ? new Date(`${desde}T00:00:00Z`) : RELOJ.hoy(),
+    })
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
+    throw error
+  }
+
+  redirect(conHecho(`/consorcios/${consorcioId}/usuarios`, 'unidad-asignada'))
+}
+
+/** «Quitar» un rol: el acceso se cierra hoy mismo (RF-03, A3). */
+export async function accionQuitarAcceso(_previo: Resultado, datos: FormData): Promise<Resultado> {
+  const usuarioId = await quienOpera()
+  const consorcioId = String(datos.get('consorcio') ?? '')
+
+  try {
+    await quitarAcceso(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      habilitacionId: String(datos.get('habilitacion') ?? ''),
+    })
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
+    throw error
+  }
+
+  redirect(conHecho(`/consorcios/${consorcioId}/usuarios`, 'acceso-quitado'))
 }
 
 /**

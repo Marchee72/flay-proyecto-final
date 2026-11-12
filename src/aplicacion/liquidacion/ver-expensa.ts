@@ -299,7 +299,13 @@ async function aVisible(
     })),
     estadoPago,
     direccion: detalle.claveDocumento
-      ? await almacen.resolverLecturaAutorizada(detalle.claveDocumento, SEGUNDOS_DE_LECTURA)
+      ? await almacen
+          .resolverLecturaAutorizada(detalle.claveDocumento, SEGUNDOS_DE_LECTURA)
+          // Un PDF que ya no está en el almacén deja la fila sin documento: no tira la lista.
+          .catch((error: unknown) => {
+            if (error instanceof NoEncontrado) return null
+            throw error
+          })
       : null,
   }
 }

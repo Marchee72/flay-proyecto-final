@@ -7,6 +7,7 @@ import { MINIMO_DE_CONTRASENA } from '@/compartido/contrasenas'
 import { destinoSeguro } from '@/compartido/destinos'
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { conHecho } from '@/app/aviso-en-url'
+import { valoresDe, type ConValores } from '@/app/valores-de-formulario'
 import { urlBase } from '@/app/url-base'
 import { DERIVADOR, RELOJ } from '@/aplicacion/dependencias'
 import { fijarContrasena } from '@/aplicacion/identidad/invitar-persona'
@@ -21,17 +22,27 @@ import { ingresar } from '@/aplicacion/identidad/sesion'
  * archivo «use server» solo puede exportar funciones asincronicas, asi que el
  * estado inicial lo pone cada formulario.
  */
-export type Resultado = { mensaje: string; enviado?: boolean }
+export type Resultado = { mensaje: string; enviado?: boolean } & ConValores
 
 export async function accionIngresar(_previo: Resultado, datos: FormData): Promise<Resultado> {
+  const correo = String(datos.get('correo') ?? '')
+  const contrasena = String(datos.get('contrasena') ?? '')
+  const valores = valoresDe(datos, ['contrasena'])
+
+  // Falta o formato se dicen antes de tocar la base: no dependen de ninguna cuenta.
+  // «No coincide» (FR-001c) sigue siendo un solo mensaje exista o no el correo.
+  const errorCorreo = errorDeCorreo(correo)
+  if (errorCorreo) return { mensaje: errorCorreo, valores }
+  if (contrasena === '') return { mensaje: 'Escribí tu contraseña.', valores }
+
   const mensaje = await ingresar({
-    correo: String(datos.get('correo') ?? ''),
-    contrasena: String(datos.get('contrasena') ?? ''),
+    correo,
+    contrasena,
     // Se vuelve a validar: el campo oculto lo puede escribir cualquiera.
     destino: destinoSeguro(datos.get('destino'), '/'),
   })
 
-  return { mensaje }
+  return { mensaje, valores }
 }
 
 export async function accionFijarContrasena(

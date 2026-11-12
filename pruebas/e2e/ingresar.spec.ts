@@ -26,6 +26,39 @@ test('credenciales que no existen dan el mensaje unico, no un detalle', async ({
   await expect(page).toHaveURL(/\/ingresar/)
 })
 
+test('con el correo vacío pide el correo', async ({ page }) => {
+  await page.goto('/ingresar')
+  await page.getByLabel('Contraseña').fill('lo-que-sea-pero-largo')
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page.locator('p.error')).toHaveText('Escribí el correo.')
+})
+
+test('con un correo mal formado lo dice', async ({ page }) => {
+  await page.goto('/ingresar')
+  await page.getByLabel('Correo electrónico').fill('sin-arroba')
+  await page.getByLabel('Contraseña').fill('lo-que-sea-pero-largo')
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page.locator('p.error')).toHaveText(
+    'Ese correo no tiene un formato válido: revisá que tenga @ y un dominio, como nombre@ejemplo.com.',
+  )
+})
+
+test('sin contraseña la pide', async ({ page }) => {
+  await page.goto('/ingresar')
+  await page.getByLabel('Correo electrónico').fill('nadie@ejemplo.test')
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page.locator('p.error')).toHaveText('Escribí tu contraseña.')
+})
+
+test('después de una clave incorrecta el correo sigue escrito', async ({ page }) => {
+  await page.goto('/ingresar')
+  await page.getByLabel('Correo electrónico').fill('nadie@ejemplo.test')
+  await page.getByLabel('Contraseña').fill('lo-que-sea-pero-largo')
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page.locator('p.error')).toHaveText('El correo o la contraseña no coinciden.')
+  await expect(page.getByLabel('Correo electrónico')).toHaveValue('nadie@ejemplo.test')
+})
+
 test('la pantalla de ingreso entra en un telefono de 390 px', async ({ page }) => {
   await page.goto('/ingresar')
 

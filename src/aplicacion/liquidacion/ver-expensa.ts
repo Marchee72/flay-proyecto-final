@@ -137,18 +137,21 @@ export async function unidadesAlcanzables(
   return unidadesPropias(usuarioId, hoy)
 }
 
-export async function misExpensas(
+type DatosExpensas = { usuarioId: string; consorcioId: string }
+
+function expensasDeUnidades(
   almacen: AlmacenObjetos,
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
-  datos: { usuarioId: string; consorcioId: string },
+  datos: DatosExpensas,
+  cuales: (roles: readonly string[]) => Promise<{ id: string; designacion: string }[]>,
 ): Promise<UnidadConExpensas[]> {
   return conAutorizacion(
     repositorio,
     reloj,
     { usuarioId: datos.usuarioId, consorcioId: datos.consorcioId, accion: 'ver expensas' },
-    async () => {
-      const unidades = await unidadesPropias(datos.usuarioId, reloj.hoy())
+    async (acceso) => {
+      const unidades = await cuales(acceso.roles)
 
       return Promise.all(
         unidades.map(async (unidad) => ({
@@ -158,6 +161,30 @@ export async function misExpensas(
         })),
       )
     },
+  )
+}
+
+/** Solo las unidades que el usuario ocupa, sea cual sea su rol. */
+export function misExpensas(
+  almacen: AlmacenObjetos,
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: DatosExpensas,
+): Promise<UnidadConExpensas[]> {
+  return expensasDeUnidades(almacen, repositorio, reloj, datos, () =>
+    unidadesPropias(datos.usuarioId, reloj.hoy()),
+  )
+}
+
+/** Todas las unidades que el rol alcanza (administrador y consejo: todas). */
+export function expensasAlcanzables(
+  almacen: AlmacenObjetos,
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: DatosExpensas,
+): Promise<UnidadConExpensas[]> {
+  return expensasDeUnidades(almacen, repositorio, reloj, datos, (roles) =>
+    unidadesAlcanzables(datos.usuarioId, roles, reloj.hoy()),
   )
 }
 

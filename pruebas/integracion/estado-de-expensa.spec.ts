@@ -7,7 +7,7 @@ import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { NoEncontrado } from '@/compartido/errores'
-import { misExpensas, verExpensa } from '@/aplicacion/liquidacion/ver-expensa'
+import { expensasAlcanzables, misExpensas, verExpensa } from '@/aplicacion/liquidacion/ver-expensa'
 import { registrarPago } from '@/aplicacion/pagos/registrar'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { prismaBase } from '@/infraestructura/prisma'
@@ -361,5 +361,16 @@ describe('estado de cobro de la expensa (CU-06)', () => {
       consorcioId,
     })
     expect(propias).toEqual([])
+  })
+
+  it('expensasAlcanzables del consejo sigue trayendo todas las unidades', async () => {
+    const consejo = await crearUsuario('Cora')
+    await habilitarEnConsorcio(consejo.id, consorcioId, 'consejo')
+
+    const todas = await expensasAlcanzables(almacenDoble, repo, RELOJ, {
+      usuarioId: consejo.id,
+      consorcioId,
+    })
+    expect(todas.map((u) => u.designacion)).toEqual(['1A', '1B'])
   })
 })

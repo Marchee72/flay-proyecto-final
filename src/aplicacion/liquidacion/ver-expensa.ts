@@ -91,22 +91,11 @@ export interface UnidadConExpensas {
   expensas: ExpensaVisible[]
 }
 
-/**
- * Las unidades que el usuario puede ver: todas si es administrador o consejo,
- * y solo las que ocupa si es consorcista.
- */
-export async function unidadesAlcanzables(
+/** Las unidades que el usuario ocupa hoy, sea cual sea su rol. */
+export async function unidadesPropias(
   usuarioId: string,
-  roles: readonly string[],
   hoy: Date,
 ): Promise<{ id: string; designacion: string }[]> {
-  if (roles.includes('administrador') || roles.includes('consejo')) {
-    const unidades = await prisma.unidad.findMany({
-      select: { id: true, designacion: true },
-    })
-    return ordenarUnidades(unidades)
-  }
-
   const usuario = await prismaBase.usuario.findUnique({
     where: { id: usuarioId },
     select: { personaId: true },
@@ -129,6 +118,25 @@ export async function unidadesAlcanzables(
   return ordenarUnidades(unidades)
 }
 
+/**
+ * Las unidades que el usuario puede ver: todas si es administrador o consejo,
+ * y solo las que ocupa si es consorcista.
+ */
+export async function unidadesAlcanzables(
+  usuarioId: string,
+  roles: readonly string[],
+  hoy: Date,
+): Promise<{ id: string; designacion: string }[]> {
+  if (roles.includes('administrador') || roles.includes('consejo')) {
+    const unidades = await prisma.unidad.findMany({
+      select: { id: true, designacion: true },
+    })
+    return ordenarUnidades(unidades)
+  }
+
+  return unidadesPropias(usuarioId, hoy)
+}
+
 export async function misExpensas(
   almacen: AlmacenObjetos,
   repositorio: RepositorioHabilitaciones,
@@ -139,8 +147,8 @@ export async function misExpensas(
     repositorio,
     reloj,
     { usuarioId: datos.usuarioId, consorcioId: datos.consorcioId, accion: 'ver expensas' },
-    async (acceso) => {
-      const unidades = await unidadesAlcanzables(datos.usuarioId, acceso.roles, reloj.hoy())
+    async () => {
+      const unidades = await unidadesPropias(datos.usuarioId, reloj.hoy())
 
       return Promise.all(
         unidades.map(async (unidad) => ({

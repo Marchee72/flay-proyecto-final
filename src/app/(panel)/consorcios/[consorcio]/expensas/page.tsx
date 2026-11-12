@@ -28,10 +28,10 @@ export const metadata: Metadata = { title: 'Expensas — Flay' }
  * El consorcista viene a ver **la suya**: una fila por expensa de las unidades
  * que ocupa, con como viene de cobro y el documento para descargar.
  *
- * La diferencia no es solo de lectura: `misExpensas` pide una URL firmada por
- * expensa, y sobre las 96 unidades del consorcio grande eso son cientos de
- * firmas por carga para una tabla que nadie lee entera. Para quien administra
- * no se lo llama.
+ * Quien administra y además ocupa una unidad ve también «Tus expensas», debajo
+ * del panorama: la suya es una expensa como la de cualquiera. `misExpensas`
+ * trae solo las unidades propias, así que para quien no ocupa nada es una lista
+ * vacía y no pide firmas.
  */
 export default async function ExpensasPage({
   params,
@@ -54,9 +54,7 @@ export default async function ExpensasPage({
 
     const [periodos, unidades] = await Promise.all([
       listarPeriodos(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
-      esDeLaAdministracion
-        ? Promise.resolve([])
-        : misExpensas(ALMACEN, HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
+      misExpensas(ALMACEN, HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
     ])
 
     // El mes que todavia no se emitio: el mas nuevo sin liquidacion vigente.
@@ -163,21 +161,16 @@ export default async function ExpensasPage({
               </table>
             </div>
           )}
+
+          {unidades.length > 0 && (
+            <>
+              <h2>Tus expensas</h2>
+              <MisUnidades unidades={unidades} consorcioId={activo.id} periodo={periodo} />
+            </>
+          )}
         </>
       )
     }
-
-    // Una sola tabla: doce tarjetas con una fila cada una es mucho
-    // desplazamiento para poco dato.
-    const todas = unidades.flatMap((unidad) =>
-      unidad.expensas.map((expensa) => ({ unidad, expensa })),
-    )
-    // El filtro se aplica sobre lo ya cargado: son las expensas que el usuario
-    // puede ver, y son pocas por unidad.
-    const periodosEmitidos = [
-      ...new Map(todas.map((f) => [f.expensa.periodoId, f.expensa.periodo])),
-    ]
-    const filas = periodo ? todas.filter((f) => f.expensa.periodoId === periodo) : todas
 
     return (
       <>
@@ -186,95 +179,7 @@ export default async function ExpensasPage({
 
         <PeriodoEnCurso periodo={enCurso} consorcioId={activo.id} administra={administra} />
 
-        {todas.length > 0 && (
-          <Filtros>
-            <form method="get" className="fila-de-filtros">
-              <div className="campo">
-                <label htmlFor="periodo">Período</label>
-                <select id="periodo" name="periodo" defaultValue={periodo ?? ''}>
-                  <option value="">Todos</option>
-                  {periodosEmitidos.map(([id, etiqueta]) => (
-                    <option key={id} value={id}>
-                      {etiqueta}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button className="boton boton--fantasma" type="submit">
-                Filtrar
-              </button>
-            </form>
-          </Filtros>
-        )}
-
-        {unidades.length === 0 ? (
-          <div className="vacio">
-            <Users aria-hidden="true" />
-            <p>No hay unidades a tu nombre en este consorcio.</p>
-          </div>
-        ) : filas.length === 0 ? (
-          <div className="vacio">
-            <FileText aria-hidden="true" />
-            <p>
-              {todas.length === 0
-                ? 'Todavía no hay liquidaciones emitidas.'
-                : 'No hay expensas de ese período.'}
-            </p>
-          </div>
-        ) : (
-          <TablaDesplazable>
-            <table>
-              <caption>
-                {plural(filas.length, 'liquidación', 'liquidaciones')} en{' '}
-                {plural(unidades.length, 'unidad', 'unidades')}
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Unidad</th>
-                  <th scope="col">Período</th>
-                  <th scope="col">Vence</th>
-                  <th scope="col" className="numero">
-                    Total
-                  </th>
-                  <th scope="col">Estado</th>
-                  <th scope="col">Documento</th>
-                  <th scope="col">Gastos</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filas.map(({ unidad, expensa }) => (
-                  <tr key={expensa.detalleId}>
-                    <td>{unidad.designacion}</td>
-                    <td>
-                      <Link href={`/consorcios/${activo.id}/expensas/${expensa.detalleId}`}>
-                        {expensa.periodo}
-                      </Link>
-                    </td>
-                    <td>{fechaParaMostrar(expensa.vencimiento)}</td>
-                    <td className="numero cifra">{importeParaMostrar(expensa.totalUnidad)}</td>
-                    <td>
-                      <EstadoDeCobro estado={expensa.estadoPago} saldo={expensa.saldo} />
-                    </td>
-                    <td>
-                      {expensa.direccion ? (
-                        <a href={expensa.direccion} download>
-                          Descargar
-                        </a>
-                      ) : (
-                        <span className="ayuda">En generación</span>
-                      )}
-                    </td>
-                    <td>
-                      <Link href={`/consorcios/${activo.id}/gastos?periodo=${expensa.periodoId}`}>
-                        Ver gastos
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TablaDesplazable>
-        )}
+        <MisUnidades unidades={unidades} consorcioId={activo.id} periodo={periodo} />
       </>
     )
   } catch (error) {
@@ -286,6 +191,126 @@ export default async function ExpensasPage({
       </p>
     )
   }
+}
+
+/**
+ * Las expensas de las unidades que el usuario ocupa: filtro por período, la
+ * tabla y el estado de cobro de cada una. La ve cualquier rol que ocupe una
+ * unidad; para el consorcista es la pantalla entera.
+ */
+function MisUnidades({
+  unidades,
+  consorcioId,
+  periodo,
+}: {
+  unidades: Awaited<ReturnType<typeof misExpensas>>
+  consorcioId: string
+  periodo: string | undefined
+}) {
+  const activo = { id: consorcioId }
+  // Una sola tabla: doce tarjetas con una fila cada una es mucho
+  // desplazamiento para poco dato.
+  const todas = unidades.flatMap((unidad) =>
+    unidad.expensas.map((expensa) => ({ unidad, expensa })),
+  )
+  // El filtro se aplica sobre lo ya cargado: son las expensas que el usuario
+  // puede ver, y son pocas por unidad.
+  const periodosEmitidos = [...new Map(todas.map((f) => [f.expensa.periodoId, f.expensa.periodo]))]
+  const filas = periodo ? todas.filter((f) => f.expensa.periodoId === periodo) : todas
+
+  return (
+    <>
+      {todas.length > 0 && (
+        <Filtros>
+          <form method="get" className="fila-de-filtros">
+            <div className="campo">
+              <label htmlFor="periodo">Período</label>
+              <select id="periodo" name="periodo" defaultValue={periodo ?? ''}>
+                <option value="">Todos</option>
+                {periodosEmitidos.map(([id, etiqueta]) => (
+                  <option key={id} value={id}>
+                    {etiqueta}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button className="boton boton--fantasma" type="submit">
+              Filtrar
+            </button>
+          </form>
+        </Filtros>
+      )}
+
+      {unidades.length === 0 ? (
+        <div className="vacio">
+          <Users aria-hidden="true" />
+          <p>No hay unidades a tu nombre en este consorcio.</p>
+        </div>
+      ) : filas.length === 0 ? (
+        <div className="vacio">
+          <FileText aria-hidden="true" />
+          <p>
+            {todas.length === 0
+              ? 'Todavía no hay liquidaciones emitidas.'
+              : 'No hay expensas de ese período.'}
+          </p>
+        </div>
+      ) : (
+        <TablaDesplazable>
+          <table>
+            <caption>
+              {plural(filas.length, 'liquidación', 'liquidaciones')} en{' '}
+              {plural(unidades.length, 'unidad', 'unidades')}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Unidad</th>
+                <th scope="col">Período</th>
+                <th scope="col">Vence</th>
+                <th scope="col" className="numero">
+                  Total
+                </th>
+                <th scope="col">Estado</th>
+                <th scope="col">Documento</th>
+                <th scope="col">Gastos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filas.map(({ unidad, expensa }) => (
+                <tr key={expensa.detalleId}>
+                  <td>{unidad.designacion}</td>
+                  <td>
+                    <Link href={`/consorcios/${activo.id}/expensas/${expensa.detalleId}`}>
+                      {expensa.periodo}
+                    </Link>
+                  </td>
+                  <td>{fechaParaMostrar(expensa.vencimiento)}</td>
+                  <td className="numero cifra">{importeParaMostrar(expensa.totalUnidad)}</td>
+                  <td>
+                    <EstadoDeCobro estado={expensa.estadoPago} saldo={expensa.saldo} />
+                  </td>
+                  <td>
+                    {expensa.direccion ? (
+                      <a href={expensa.direccion} download>
+                        Descargar
+                      </a>
+                    ) : (
+                      <span className="ayuda">En generación</span>
+                    )}
+                  </td>
+                  <td>
+                    <Link href={`/consorcios/${activo.id}/gastos?periodo=${expensa.periodoId}`}>
+                      Ver gastos
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TablaDesplazable>
+      )}
+    </>
+  )
 }
 
 /**

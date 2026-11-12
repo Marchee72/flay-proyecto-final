@@ -68,7 +68,7 @@ export interface Escenario {
  * con `consorcista` se recorre exactamente lo que ve un usuario final.
  */
 export async function sembrarEscenario(
-  rol: 'administrador' | 'consorcista',
+  rol: 'administrador' | 'consorcista' | 'consejo',
   nombre = 'Mitre 456',
 ): Promise<Escenario> {
   const administradora = await prisma.administradora.create({

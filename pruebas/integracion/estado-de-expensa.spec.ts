@@ -332,4 +332,34 @@ describe('estado de cobro de la expensa (CU-06)', () => {
     const una = await verExpensa(almacenSinUno, repo, RELOJ, { ...datos, detalleId: faltante.id })
     expect(una.direccion).toBeNull()
   })
+
+  it('misExpensas del consejo trae solo la unidad que ocupa', async () => {
+    const consejo = await crearUsuario('Cora')
+    await habilitarEnConsorcio(consejo.id, consorcioId, 'consejo')
+    const unidad = await prismaBase.unidad.findFirstOrThrow({
+      where: { consorcioId, designacion: '1B' },
+    })
+    await registrarOcupacion(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidadId: unidad.id,
+      personaId: consejo.personaId,
+      tipo: 'propietario',
+      desde: new Date('2026-01-01'),
+    })
+
+    const propias = await misExpensas(almacenDoble, repo, RELOJ, {
+      usuarioId: consejo.id,
+      consorcioId,
+    })
+    expect(propias.map((u) => u.designacion)).toEqual(['1B'])
+  })
+
+  it('misExpensas del administrador sin ocupación es vacío', async () => {
+    const propias = await misExpensas(almacenDoble, repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+    })
+    expect(propias).toEqual([])
+  })
 })

@@ -1,11 +1,16 @@
 import { createHash, randomBytes } from 'node:crypto'
 
-import { ErrorDeAplicacion } from '@/compartido/errores'
+import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import type { DerivadorDeContrasenas } from '@/dominio/contratos/derivador-contrasenas'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
+import { errorDeCorreo } from '@/dominio/identidad/correo'
 import type { Rol } from '@/dominio/identidad/rol'
-import { prismaBase } from '@/infraestructura/prisma'
+import { prisma, prismaBase } from '@/infraestructura/prisma'
+import {
+  registrarOcupacion,
+  type TipoDeOcupacion,
+} from '@/infraestructura/repositorios/ocupaciones'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { encolar } from '@/aplicacion/pendientes/encolar'
 
@@ -25,10 +30,29 @@ import { encolar } from '@/aplicacion/pendientes/encolar'
 
 export const HORAS_DE_VIGENCIA_DE_LA_INVITACION = 72
 
-export class CorreoYaRegistrado extends ErrorDeAplicacion {
-  constructor() {
-    super('Ese correo ya tiene un usuario en el sistema.', 'RF-03')
+export class CorreoInvalido extends ErrorDeAplicacion {
+  constructor(mensaje: string) {
+    super(mensaje, 'RF-03')
   }
+}
+
+export class YaTieneAcceso extends ErrorDeAplicacion {
+  constructor() {
+    super('Esa persona ya tiene acceso a este consorcio con ese rol.', 'RF-03')
+  }
+}
+
+interface DatosDeInvitacion {
+  nombre: string
+  apellido: string
+  correo: string
+  rol: Rol
+  consorcioId: string
+  consorcioNombre: string
+  vigenciaDesde: Date
+  urlBase: string
+  /** Nulo o ausente: se invita sin ocuparle una unidad todavia. */
+  unidad?: { unidadId: string; tipo: TipoDeOcupacion } | null
 }
 
 /** La credencial viaja en el enlace; en la base queda solo su resumen. */
@@ -37,18 +61,8 @@ const resumen = (credencial: string) => createHash('sha256').update(credencial).
 export async function invitarPersona(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
-  datos: {
-    invitadorId: string
-    nombre: string
-    apellido: string
-    correo: string
-    rol: Rol
-    consorcioId: string
-    consorcioNombre: string
-    vigenciaDesde: Date
-    urlBase: string
-  },
-): Promise<{ usuarioId: string }> {
+  datos: DatosDeInvitacion & { invitadorId: string },
+): Promise<{ usuarioId: string; yaTeniaCuenta: boolean }> {
   return conAutorizacion(
     repositorio,
     reloj,
@@ -65,30 +79,73 @@ export async function invitarPersona(
 /** El alta en si, ya autorizada. */
 async function altaDelInvitado(
   reloj: Reloj,
-  datos: {
-    nombre: string
-    apellido: string
-    correo: string
-    rol: Rol
-    consorcioId: string
-    consorcioNombre: string
-    vigenciaDesde: Date
-    urlBase: string
-  },
-): Promise<{ usuarioId: string }> {
+  datos: DatosDeInvitacion,
+): Promise<{ usuarioId: string; yaTeniaCuenta: boolean }> {
+  const mensaje = errorDeCorreo(datos.correo)
+  if (mensaje) throw new CorreoInvalido(mensaje)
   const correo = datos.correo.trim().toLowerCase()
 
-  if (await prismaBase.usuario.findUnique({ where: { correo } })) {
-    throw new CorreoYaRegistrado()
+  // El aislamiento decide si la unidad es de este consorcio (nota 10).
+  if (datos.unidad) {
+    const unidad = await prisma.unidad.findFirst({
+      where: { id: datos.unidad.unidadId, bajaDesde: null },
+    })
+    if (!unidad) throw new NoEncontrado()
+  }
+
+  const ocupar = (personaId: string, cliente: Parameters<typeof registrarOcupacion>[1]) =>
+    datos.unidad
+      ? registrarOcupacion(
+          {
+            unidadId: datos.unidad.unidadId,
+            personaId,
+            tipo: datos.unidad.tipo,
+            desde: datos.vigenciaDesde,
+            hasta: null,
+          },
+          cliente,
+        )
+      : Promise.resolve()
+
+  // Quien ya tiene cuenta no recibe otra invitacion: se le suma el acceso.
+  const existente = await prismaBase.usuario.findUnique({ where: { correo } })
+  if (existente) {
+    const yaHabilitado = await prismaBase.habilitacion.findUnique({
+      where: {
+        usuarioId_consorcioId_rol: {
+          usuarioId: existente.id,
+          consorcioId: datos.consorcioId,
+          rol: datos.rol,
+        },
+      },
+    })
+    if (yaHabilitado) throw new YaTieneAcceso()
+
+    await prismaBase.$transaction(async (tx) => {
+      await tx.habilitacion.create({
+        data: {
+          usuarioId: existente.id,
+          consorcioId: datos.consorcioId,
+          rol: datos.rol,
+          vigenciaDesde: datos.vigenciaDesde,
+        },
+      })
+      await ocupar(existente.personaId, tx)
+    })
+
+    return { usuarioId: existente.id, yaTeniaCuenta: true }
   }
 
   const credencial = randomBytes(32).toString('base64url')
   const vence = new Date(reloj.ahora().getTime() + HORAS_DE_VIGENCIA_DE_LA_INVITACION * 3_600_000)
 
   const usuario = await prismaBase.$transaction(async (tx) => {
-    const persona = await tx.persona.create({
-      data: { nombre: datos.nombre, apellido: datos.apellido, correo },
-    })
+    // Una persona cargada antes en el padron (sin usuario) se reutiliza.
+    const persona =
+      (await tx.persona.findFirst({ where: { correo } })) ??
+      (await tx.persona.create({
+        data: { nombre: datos.nombre, apellido: datos.apellido, correo },
+      }))
 
     const creado = await tx.usuario.create({
       data: {
@@ -109,6 +166,8 @@ async function altaDelInvitado(
       },
     })
 
+    await ocupar(persona.id, tx)
+
     return creado
   })
 
@@ -119,7 +178,7 @@ async function altaDelInvitado(
     enlaceDeAlta: `${datos.urlBase}/invitacion/${credencial}`,
   })
 
-  return { usuarioId: usuario.id }
+  return { usuarioId: usuario.id, yaTeniaCuenta: false }
 }
 
 export class InvitacionNoValida extends ErrorDeAplicacion {

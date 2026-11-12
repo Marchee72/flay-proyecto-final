@@ -35,6 +35,7 @@ export const HECHO = {
   'indicadores-actualizados': 'Indicadores actualizados.',
   invitado:
     'Invitación creada. El correo con el enlace sale en el próximo pedido; abajo se ve su estado.',
+  'acceso-sumado': 'Ya tenía cuenta en Flay: le dimos acceso a este consorcio.',
   'invitacion-reenviada': 'Invitación reenviada. Si vuelve a fallar, el estado lo dice acá.',
   'proveedor-registrado': 'Proveedor dado de alta.',
   'extraccion-descartada': 'Extracción descartada. No se creó ningún gasto.',

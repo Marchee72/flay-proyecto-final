@@ -1,3 +1,5 @@
+import type { Prisma, PrismaClient } from '@prisma/client'
+
 import { ordenarUnidades } from '@/dominio/unidades/division'
 import { prismaBase } from '@/infraestructura/prisma'
 
@@ -27,8 +29,9 @@ export interface OcupacionNueva {
  */
 export async function registrarOcupacion(
   ocupacion: OcupacionNueva,
+  cliente: Prisma.TransactionClient | PrismaClient = prismaBase,
 ): Promise<{ ocupacionId: string }> {
-  const [fila] = await prismaBase.$queryRaw<{ id: string }[]>`
+  const [fila] = await cliente.$queryRaw<{ id: string }[]>`
     INSERT INTO "Ocupacion" ("unidad_id", "persona_id", "tipo", "vigencia", "actualizado_en")
     VALUES (
       ${ocupacion.unidadId}::uuid,

@@ -1,6 +1,8 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
+
+import { errorDeCorreo } from '@/aplicacion/identidad/correo-reglas'
 
 import { accionInvitar } from './acciones'
 
@@ -14,11 +16,15 @@ export function FormularioInvitar({
   consorcioId,
   roles,
   hoy,
+  unidades,
 }: {
   consorcioId: string
   roles: readonly { valor: string; etiqueta: string }[]
   hoy: string
+  unidades: readonly { id: string; designacion: string }[]
 }) {
+  const [rol, setRol] = useState('consorcista')
+  const [errorCorreo, setErrorCorreo] = useState<string | null>(null)
   const [estado, accion, enviando] = useActionState(accionInvitar, SIN_ERROR)
   const hayError = estado.mensaje !== ''
 
@@ -58,9 +64,24 @@ export function FormularioInvitar({
           type="email"
           required
           autoComplete="email"
-          aria-invalid={hayError || undefined}
-          aria-describedby={hayError ? 'error-invitacion ayuda-correo' : 'ayuda-correo'}
+          aria-invalid={hayError || errorCorreo !== null || undefined}
+          aria-describedby={
+            errorCorreo
+              ? 'error-correo ayuda-correo'
+              : hayError
+                ? 'error-invitacion ayuda-correo'
+                : 'ayuda-correo'
+          }
+          onChange={(e) =>
+            setErrorCorreo(e.target.value === '' ? null : errorDeCorreo(e.target.value))
+          }
+          onBlur={(e) => setErrorCorreo(errorDeCorreo(e.target.value))}
         />
+        {errorCorreo && (
+          <p className="error" id="error-correo">
+            {errorCorreo}
+          </p>
+        )}
         <p className="ayuda" id="ayuda-correo">
           A esta dirección va el enlace para fijar la contraseña. Vence en 72 horas.
         </p>
@@ -71,7 +92,8 @@ export function FormularioInvitar({
         <select
           id="rol"
           name="rol"
-          defaultValue="consorcista"
+          value={rol}
+          onChange={(e) => setRol(e.target.value)}
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-invitacion' : undefined}
         >
@@ -82,6 +104,30 @@ export function FormularioInvitar({
           ))}
         </select>
       </div>
+
+      {rol === 'consorcista' && (
+        <>
+          <div className="campo">
+            <label htmlFor="unidad">Unidad</label>
+            <select id="unidad" name="unidad" defaultValue="">
+              <option value="">Sin unidad por ahora</option>
+              {unidades.map((unidad) => (
+                <option key={unidad.id} value={unidad.id}>
+                  {unidad.designacion}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="campo">
+            <label htmlFor="tipoOcupacion">Es</label>
+            <select id="tipoOcupacion" name="tipoOcupacion" defaultValue="propietario">
+              <option value="propietario">Propietario</option>
+              <option value="inquilino">Inquilino</option>
+            </select>
+          </div>
+        </>
+      )}
 
       <div className="campo">
         <label htmlFor="vigenciaDesde">Habilitado desde</label>

@@ -36,25 +36,36 @@ export async function accionInvitar(_previo: Resultado, datos: FormData): Promis
   if (!consorcio) return { mensaje: new NoEncontrado().mensajeParaUsuario }
 
   const desde = String(datos.get('vigenciaDesde') ?? '')
+  const rol = rolDesdeFormulario(datos.get('rol'))
+  const unidadId = String(datos.get('unidad') ?? '')
+  const tipo = datos.get('tipoOcupacion') === 'inquilino' ? 'inquilino' : 'propietario'
+  let resultado: { yaTeniaCuenta: boolean }
 
   try {
-    await invitarPersona(HABILITACIONES, RELOJ, {
+    resultado = await invitarPersona(HABILITACIONES, RELOJ, {
       invitadorId,
       nombre: String(datos.get('nombre') ?? '').trim(),
       apellido: String(datos.get('apellido') ?? '').trim(),
       correo: String(datos.get('correo') ?? ''),
-      rol: rolDesdeFormulario(datos.get('rol')),
+      rol,
       consorcioId: consorcio.id,
       consorcioNombre: consorcio.nombre,
       vigenciaDesde: desde ? new Date(`${desde}T00:00:00Z`) : RELOJ.hoy(),
       urlBase: await urlBase(),
+      // La unidad solo cuenta para un consorcista.
+      unidad: rol === 'consorcista' && unidadId ? { unidadId, tipo } : null,
     })
   } catch (error) {
     if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
     throw error
   }
 
-  redirect(conHecho(`/consorcios/${consorcio.id}/usuarios`, 'invitado'))
+  redirect(
+    conHecho(
+      `/consorcios/${consorcio.id}/usuarios`,
+      resultado.yaTeniaCuenta ? 'acceso-sumado' : 'invitado',
+    ),
+  )
 }
 
 /**

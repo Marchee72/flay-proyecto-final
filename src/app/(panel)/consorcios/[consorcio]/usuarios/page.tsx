@@ -3,6 +3,7 @@ import { Users } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
+import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
 import { listarUsuarios, type UsuarioDelConsorcio } from '@/aplicacion/identidad/listar-usuarios'
 import { ROLES_ASIGNABLES } from '@/aplicacion/identidad/roles'
 
@@ -19,6 +20,7 @@ export default async function UsuariosPage({ params }: { params: Promise<{ conso
   if ('salida' in pantalla) return pantalla.salida
   const { usuarioId, activo } = pantalla
   let usuarios: UsuarioDelConsorcio[] = []
+  let unidades: { id: string; designacion: string }[] = []
   let denegado = ''
 
   try {
@@ -26,6 +28,10 @@ export default async function UsuariosPage({ params }: { params: Promise<{ conso
       usuarioId,
       consorcioId: activo.id,
     })
+    // Ya viene ordenado y sin las dadas de baja.
+    unidades = (
+      await verConsorcio(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id })
+    ).unidades.map(({ id, designacion }) => ({ id, designacion }))
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
     denegado = error.mensajeParaUsuario
@@ -46,6 +52,7 @@ export default async function UsuariosPage({ params }: { params: Promise<{ conso
             <ModalInvitar
               consorcioId={activo.id}
               roles={ROLES_ASIGNABLES}
+              unidades={unidades}
               hoy={RELOJ.hoy().toISOString().slice(0, 10)}
             />
           </div>

@@ -83,6 +83,8 @@ export interface ExpensaVisible {
   estadoPago: EstadoPagoExpensa
   /** Nulo mientras el documento no se genero: la liquidacion ya existe igual. */
   direccion: string | null
+  /** Como pagar por fuera de la pasarela, escrito por el administrador (RF-09). */
+  instruccionesDePago: string | null
 }
 
 export interface UnidadConExpensas {
@@ -342,5 +344,6 @@ async function aVisible(
             throw error
           })
       : null,
+    instruccionesDePago: detalle.liquidacion.consorcio.instruccionesPago,
   }
 }

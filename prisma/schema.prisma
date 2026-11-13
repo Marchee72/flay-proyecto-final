@@ -61,6 +61,8 @@ model Consorcio {
   topeUnidadesPorApoderado     Int          @default(3) @map("tope_unidades_por_apoderado") @db.SmallInt
   /// Sin voto quien adeuda **mas de** este numero de expensas (art. 23).
   umbralExpensasSinVoto        Int          @default(2) @map("umbral_expensas_sin_voto") @db.SmallInt
+  /// Como pagar por fuera de la pasarela: alias, CBU, horario (RF-09). Maximo 1000 caracteres.
+  instruccionesPago            String?      @map("instrucciones_pago") @db.Text
   creadoEn                     DateTime     @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn                DateTime     @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 

@@ -17,6 +17,7 @@ export const HECHO = {
   liquidado: 'Liquidación emitida. Las expensas ya están en cada unidad.',
   anulado: 'Liquidación anulada. Los pagos aplicados quedaron como saldo a favor.',
   'gasto-registrado': 'Gasto registrado. Si hay comprobante, adjuntarlo a continuación.',
+  'instrucciones-guardadas': 'Instrucciones de pago guardadas.',
   'gasto-actualizado': 'Gasto actualizado.',
   'proveedor-actualizado': 'Proveedor actualizado.',
   'gasto-eliminado': 'Gasto eliminado.',

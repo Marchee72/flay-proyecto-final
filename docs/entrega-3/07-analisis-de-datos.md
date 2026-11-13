@@ -156,6 +156,7 @@ Un edificio o complejo sometido al régimen de propiedad horizontal.
 | dia_vencimiento | entero | NN | Día del mes de vencimiento de las expensas, entre 1 y 28 |
 | tasa_interes_mora | decimal(6,4) | NN | Tasa mensual de interés por mora fijada en asamblea |
 | activo | booleano | NN | Estado |
+| instrucciones_pago | texto(1000) | | Cómo pagar por fuera de la pasarela: alias, CBU, horario de la administración |
 
 ### Unidad
 

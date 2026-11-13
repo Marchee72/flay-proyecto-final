@@ -63,6 +63,27 @@ test('la expensa propia se abre por identificador directo', async ({ page }) => 
   expect(await desbordaALoAncho(page)).toBe(false)
 })
 
+test('el consorcista ve cómo pagar cuando no hay pasarela', async ({ page }) => {
+  await entrar(page, escenario.correo)
+  const direccion = `/consorcios/${escenario.consorcioId}/expensas/${expensa.detallePropioId}`
+
+  // Sin instrucciones y sin pasarela: que consulte a la administracion.
+  await page.goto(direccion)
+  await expect(
+    page.getByText('Consultá con la administración cómo pagar esta expensa.'),
+  ).toBeVisible()
+
+  await prisma.consorcio.update({
+    where: { id: escenario.consorcioId },
+    data: { instruccionesPago: 'Alias: alvear.100\nHorario: lunes a viernes de 9 a 13' },
+  })
+  await page.goto(direccion)
+  await expect(page.getByRole('heading', { name: 'Cómo pagar' })).toBeVisible()
+  await expect(page.getByText('Alias: alvear.100')).toBeVisible()
+  await expect(page.getByText('Consultá con la administración')).toHaveCount(0)
+  expect(await desbordaALoAncho(page)).toBe(false)
+})
+
 /** El paso 5 del guion de demostracion: la del vecino no existe para mi. */
 test('la expensa de otra unidad responde «no encontrado», nunca «prohibido»', async ({ page }) => {
   await entrar(page, escenario.correo)

@@ -343,6 +343,7 @@ function ExpensaTarjetaBanda({ base, expensa, consorcio, disponibilidadPago }: P
         )}
 
         {expensa.estadoPago !== 'pagada' &&
+          !expensa.bloqueada &&
           (expensa.instruccionesDePago ? (
             <div className="exp-como-pagar">
               <h2>Cómo pagar</h2>

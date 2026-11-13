@@ -47,6 +47,8 @@ test('sin quórum, quien dirige cancela desde la sala y quien esperaba lo ve sin
   await page.getByRole('button', { name: 'Confirmar cancelación' }).click()
   await expect(page).toHaveURL(/hecho=asamblea-cancelada/)
   await expect(page.getByText('Cancelada', { exact: true }).first()).toBeVisible()
-  await expect(deDino.getByText(/Asamblea cancelada/)).toBeVisible({ timeout: 10_000 })
+  await expect(deDino.locator('p.aviso', { hasText: 'Asamblea cancelada' })).toBeVisible({
+    timeout: 10_000,
+  })
   await contexto.close()
 })

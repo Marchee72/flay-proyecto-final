@@ -81,7 +81,8 @@ export async function accionAsignarUnidad(_previo: Resultado, datos: FormData): 
   const desde = String(datos.get('desde') ?? '')
   const unidadId = String(datos.get('unidad') ?? '')
 
-  if (!unidadId) return { mensaje: 'Elegí la unidad que le corresponde.' }
+  if (!unidadId)
+    return { mensaje: 'Elegí la unidad que le corresponde.', valores: valoresDe(datos) }
 
   try {
     await registrarOcupacion(HABILITACIONES, RELOJ, {
@@ -93,7 +94,8 @@ export async function accionAsignarUnidad(_previo: Resultado, datos: FormData): 
       desde: desde ? new Date(`${desde}T00:00:00Z`) : RELOJ.hoy(),
     })
   } catch (error) {
-    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
+    if (error instanceof ErrorDeAplicacion)
+      return { mensaje: error.mensajeParaUsuario, valores: valoresDe(datos) }
     throw error
   }
 

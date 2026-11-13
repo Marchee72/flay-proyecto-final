@@ -93,9 +93,10 @@ export function FormularioInvitar({
       <div className="campo">
         <label htmlFor="rol">Rol</label>
         <select
+          key={estado.valores?.rol ?? 'inicial'}
           id="rol"
           name="rol"
-          value={rol}
+          defaultValue={estado.valores?.rol ?? 'consorcista'}
           onChange={(e) => setRol(e.target.value)}
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-invitacion' : undefined}
@@ -112,7 +113,12 @@ export function FormularioInvitar({
         <>
           <div className="campo">
             <label htmlFor="unidad">Unidad</label>
-            <select id="unidad" name="unidad" defaultValue={estado.valores?.unidad ?? ''}>
+            <select
+              key={estado.valores?.unidad ?? 'inicial'}
+              id="unidad"
+              name="unidad"
+              defaultValue={estado.valores?.unidad ?? ''}
+            >
               <option value="">Sin unidad por ahora</option>
               {unidades.map((unidad) => (
                 <option key={unidad.id} value={unidad.id}>
@@ -125,6 +131,7 @@ export function FormularioInvitar({
           <div className="campo">
             <label htmlFor="tipoOcupacion">Es</label>
             <select
+              key={estado.valores?.tipoOcupacion ?? 'inicial'}
               id="tipoOcupacion"
               name="tipoOcupacion"
               defaultValue={estado.valores?.tipoOcupacion ?? 'propietario'}

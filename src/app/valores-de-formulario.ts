@@ -6,6 +6,13 @@
  * Se descartan las claves internas de Next (`$ACTION…`), las que la acción
  * pide no devolver (contraseñas) y los archivos: un `File` no viaja como valor
  * de un `<input>` y no se puede serializar de vuelta al formulario.
+ *
+ * Los `<select>` necesitan una cosa más. React no re-aplica su `defaultValue`
+ * al actualizarse, y el reinicio del formulario que hace React 19 después de
+ * la acción los devuelve a la opción marcada al montar (un `value` controlado
+ * tampoco sobrevive: el reinicio corre después y React no lo repone). Por eso
+ * cada desplegable lleva `key={estado.valores?.<campo> ?? 'inicial'}`: se
+ * remonta con lo que volvió, y eso es lo que el reinicio respeta.
  */
 export type ConValores = { valores?: Record<string, string> }
 

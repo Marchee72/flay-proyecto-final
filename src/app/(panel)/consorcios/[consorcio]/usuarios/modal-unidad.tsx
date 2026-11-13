@@ -64,8 +64,10 @@ function FormularioUnidad({
       <div className="campo">
         <label htmlFor={idDe('unidad')}>Unidad</label>
         <select
+          key={estado.valores?.unidad ?? 'inicial'}
           id={idDe('unidad')}
           name="unidad"
+          defaultValue={estado.valores?.unidad}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? idError : undefined}
@@ -80,7 +82,12 @@ function FormularioUnidad({
 
       <div className="campo">
         <label htmlFor={idDe('tipo')}>Es</label>
-        <select id={idDe('tipo')} name="tipoOcupacion" defaultValue="propietario">
+        <select
+          key={estado.valores?.tipoOcupacion ?? 'inicial'}
+          id={idDe('tipo')}
+          name="tipoOcupacion"
+          defaultValue={estado.valores?.tipoOcupacion ?? 'propietario'}
+        >
           <option value="propietario">Propietario</option>
           <option value="inquilino">Inquilino</option>
         </select>
@@ -88,7 +95,13 @@ function FormularioUnidad({
 
       <div className="campo">
         <label htmlFor={idDe('desde')}>Desde</label>
-        <input id={idDe('desde')} name="desde" type="date" defaultValue={hoy} required />
+        <input
+          id={idDe('desde')}
+          name="desde"
+          type="date"
+          defaultValue={estado.valores?.desde ?? hoy}
+          required
+        />
       </div>
 
       {hayError && (

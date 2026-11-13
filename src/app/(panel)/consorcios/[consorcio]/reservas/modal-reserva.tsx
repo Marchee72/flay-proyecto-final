@@ -51,6 +51,7 @@ function FormularioReserva({
       <div className="campo">
         <label htmlFor="espacio">Espacio</label>
         <select
+          key={estado.valores?.espacio ?? 'inicial'}
           id="espacio"
           name="espacio"
           defaultValue={estado.valores?.espacio ?? espacioInicial ?? espacios[0]?.id ?? ''}
@@ -66,7 +67,13 @@ function FormularioReserva({
       </div>
       <div className="campo">
         <label htmlFor="unidad">Unidad</label>
-        <select id="unidad" name="unidad" defaultValue={estado.valores?.unidad} required>
+        <select
+          key={estado.valores?.unidad ?? 'inicial'}
+          id="unidad"
+          name="unidad"
+          defaultValue={estado.valores?.unidad}
+          required
+        >
           {unidades.map((u) => (
             <option key={u.id} value={u.id}>
               {u.designacion}

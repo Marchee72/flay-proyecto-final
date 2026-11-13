@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState, type ReactNode } from 'react'
+import { useActionState, useRef, type ReactNode } from 'react'
 
 import { accionEditarGasto, accionRegistrarGasto, type Resultado } from './acciones'
 
@@ -80,11 +80,12 @@ export function FormularioGasto({
   // La clasificacion la propone el rubro y la puede corregir quien carga: al
   // cambiar de rubro vuelve a la suya, porque es lo que acierta casi siempre
   // (regla RN-04). Lo que se guarda queda congelado en el gasto.
-  const rubroInicial = base.rubro || (rubros[0]?.id ?? '')
-  const [rubroElegido, setRubroElegido] = useState(rubroInicial)
+  const rubroInicial = estado.valores?.rubro ?? (base.rubro || (rubros[0]?.id ?? ''))
   const deRubro = (id: string) =>
     rubros.find((rubro) => rubro.id === id)?.clasificacion ?? 'ordinario'
-  const [clasificacion, setClasificacion] = useState(base.clasificacion ?? deRubro(rubroInicial))
+  // No controlado, como todo desplegable que vuelve con `estado.valores`: el
+  // reinicio del formulario de React 19 pisaria un `value` (ver la `key`).
+  const clasificacionRef = useRef<HTMLSelectElement>(null)
 
   const marca = (campo: string) =>
     precargado[campo] ? (
@@ -119,12 +120,13 @@ export function FormularioGasto({
         <label htmlFor="rubro">Rubro</label>
         {marca('rubro')}
         <select
+          key={estado.valores?.rubro ?? 'inicial'}
           id="rubro"
           name="rubro"
-          value={rubroElegido}
+          defaultValue={rubroInicial}
           onChange={(evento) => {
-            setRubroElegido(evento.target.value)
-            setClasificacion(deRubro(evento.target.value))
+            if (clasificacionRef.current)
+              clasificacionRef.current.value = deRubro(evento.target.value)
           }}
           required
           aria-invalid={hayError || undefined}
@@ -142,11 +144,12 @@ export function FormularioGasto({
         <label htmlFor="clasificacion">Clasificación</label>
         {marca('clasificacion')}
         <select
+          key={estado.valores?.clasificacion ?? 'inicial'}
+          ref={clasificacionRef}
           id="clasificacion"
           name="clasificacion"
-          value={clasificacion}
-          onChange={(evento) =>
-            setClasificacion(evento.target.value as OpcionRubro['clasificacion'])
+          defaultValue={
+            estado.valores?.clasificacion ?? base.clasificacion ?? deRubro(rubroInicial)
           }
           required
           aria-invalid={hayError || undefined}
@@ -165,6 +168,7 @@ export function FormularioGasto({
         <label htmlFor="proveedor">Proveedor</label>
         {marca('proveedor')}
         <select
+          key={estado.valores?.proveedor ?? 'inicial'}
           id="proveedor"
           name="proveedor"
           defaultValue={estado.valores?.proveedor ?? base.proveedor ?? ''}

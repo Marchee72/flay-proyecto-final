@@ -44,6 +44,7 @@ export function FormularioPago({
       <div className="campo">
         <label htmlFor="unidad">Unidad</label>
         <select
+          key={estado.valores?.unidad ?? 'inicial'}
           id="unidad"
           name="unidad"
           defaultValue={estado.valores?.unidad ?? unidadInicial}
@@ -107,6 +108,7 @@ export function FormularioPago({
       <div className="campo">
         <label htmlFor="medio">Medio</label>
         <select
+          key={estado.valores?.medio ?? 'inicial'}
           id="medio"
           name="medio"
           defaultValue={estado.valores?.medio ?? 'transferencia'}

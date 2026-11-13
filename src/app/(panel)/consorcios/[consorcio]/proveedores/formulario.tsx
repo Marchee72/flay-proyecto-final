@@ -93,6 +93,7 @@ export function FormularioProveedor({
       <div className="campo">
         <label htmlFor={`${p}-rubro`}>Rubro habitual</label>
         <select
+          key={estado.valores?.rubro ?? 'inicial'}
           id={`${p}-rubro`}
           name="rubro"
           defaultValue={estado.valores?.rubro ?? proveedor?.rubroHabitualId ?? ''}

@@ -23,6 +23,7 @@ export function FormularioConsorcio({
       <div className="campo">
         <label htmlFor="administradora">Administradora</label>
         <select
+          key={estado.valores?.administradora ?? 'inicial'}
           id="administradora"
           name="administradora"
           defaultValue={estado.valores?.administradora}

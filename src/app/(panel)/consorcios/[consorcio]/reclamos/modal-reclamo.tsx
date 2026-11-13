@@ -70,7 +70,12 @@ export function FormularioReclamo({
 
       <div className="campo">
         <label htmlFor="unidad">Unidad</label>
-        <select id="unidad" name="unidad" defaultValue={estado.valores?.unidad ?? ''}>
+        <select
+          key={estado.valores?.unidad ?? 'inicial'}
+          id="unidad"
+          name="unidad"
+          defaultValue={estado.valores?.unidad ?? ''}
+        >
           <option value="">Área común (sin unidad)</option>
           {unidades.map((unidad) => (
             <option key={unidad.id} value={unidad.id}>
@@ -82,7 +87,12 @@ export function FormularioReclamo({
 
       <div className="campo">
         <label htmlFor="urgencia">Urgencia</label>
-        <select id="urgencia" name="urgencia" defaultValue={estado.valores?.urgencia ?? 'media'}>
+        <select
+          key={estado.valores?.urgencia ?? 'inicial'}
+          id="urgencia"
+          name="urgencia"
+          defaultValue={estado.valores?.urgencia ?? 'media'}
+        >
           {urgencias.map((urgencia) => (
             <option key={urgencia.valor} value={urgencia.valor}>
               {urgencia.etiqueta}

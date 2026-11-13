@@ -421,7 +421,7 @@ export async function cerrarPunto(
       await conReglas(() =>
         prisma.$transaction(async (tx) => {
           // Candado exclusivo: un voto que llega ahora espera, y si entra después ve el punto cerrado (B-1).
-          await tx.$queryRaw`SELECT id FROM "PuntoAsamblea" WHERE id = ${datos.puntoId}::uuid FOR UPDATE`
+          await tx.$queryRaw`SELECT id FROM "PuntoAsamblea" WHERE id = ${datos.puntoId}::uuid AND asamblea_id = ${asamblea.id}::uuid FOR UPDATE`
           const punto = await tx.puntoAsamblea.findFirst({
             where: { id: datos.puntoId, asambleaId: asamblea.id },
             include: { opciones: { orderBy: { orden: 'asc' } }, votos: true },

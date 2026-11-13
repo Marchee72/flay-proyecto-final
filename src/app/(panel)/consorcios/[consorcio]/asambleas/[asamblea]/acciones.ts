@@ -95,13 +95,14 @@ const eleccion = (datos: FormData): Eleccion => {
 // Convocatoria ---------------------------------------------------------------
 
 export async function accionConvocar(datos: FormData) {
-  let sinContacto = 0
+  let sinAviso = 0
   await ejecutar(
     datos,
     async (b) => {
-      sinContacto = (await convocar(HABILITACIONES, RELOJ, b)).sinContacto.length
+      const r = await convocar(HABILITACIONES, RELOJ, b)
+      sinAviso = r.sinContacto.length + r.sinPropietario.length
     },
-    () => (sinContacto > 0 ? 'asamblea-convocada-sin-contacto' : 'asamblea-convocada'),
+    () => (sinAviso > 0 ? 'asamblea-convocada-sin-contacto' : 'asamblea-convocada'),
   )
 }
 

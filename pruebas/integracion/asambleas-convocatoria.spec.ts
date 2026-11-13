@@ -221,6 +221,22 @@ describe('convocar', () => {
     })
   })
 
+  it('informa las unidades sin propietario vigente, que cuentan en la base y no reciben aviso', async () => {
+    await prismaBase.$executeRaw`
+      UPDATE "Ocupacion" SET vigencia = daterange(lower(vigencia), lower(vigencia) + 1)
+      WHERE unidad_id = ${e.unidades['2B']}::uuid AND tipo = 'propietario'`
+    const { asambleaId } = await crearAsamblea(repo, HOY, {
+      ...datos(),
+      usuarioId: e.consejo,
+      consorcioId: e.consorcioId,
+    })
+    const de = (usuarioId: string) => ({ usuarioId, consorcioId: e.consorcioId, asambleaId })
+    const r = await convocar(repo, HOY, de(e.consejo))
+    expect(r.sinPropietario).toEqual(['2B'])
+    expect((await verAsamblea(repo, HOY, de(e.consejo))).unidadesSinPropietario).toEqual(['2B'])
+    expect((await verAsamblea(repo, HOY, de(e.ana))).unidadesSinPropietario).toEqual([])
+  })
+
   it('la administración no invitada no recibe aviso, pero ve la asamblea', async () => {
     const asambleaId = await asambleaConvocada(e, { administracionInvitada: false })
     expect(

@@ -196,6 +196,8 @@ export interface VistaAsamblea {
     personaId: string
     nombre: string
   }[]
+  /** Designaciones de las unidades vigentes sin propietario: solo para quien dirige o administra. */
+  unidadesSinPropietario: string[]
 }
 
 const cuenta = (c: { unidades: number; coeficiente: Decimal }): CuentaVista => ({
@@ -583,6 +585,12 @@ export async function verAsamblea(
                   personaId: p.personaId,
                   nombre: p.nombre,
                 }))
+            : [],
+        unidadesSinPropietario:
+          puedeDirigir(acceso, asamblea) || acceso.roles.includes('administrador')
+            ? padron
+                .filter((u) => !propietarios.some((p) => p.unidadId === u.unidadId))
+                .map((u) => u.designacion)
             : [],
       }
     },

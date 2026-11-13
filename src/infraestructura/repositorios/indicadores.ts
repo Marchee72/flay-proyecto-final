@@ -22,14 +22,17 @@ const cadena = (valor: Prisma.Decimal | null, decimales: number): string | null 
   valor === null ? null : valor.toFixed(decimales)
 
 /** El consorcio activo, o la lista explicita del panel consolidado. Nunca «todos». */
-function alcance(consorcios?: string[]): Prisma.Sql {
+function alcance(
+  consorcios?: string[],
+  columna: Prisma.Sql = Prisma.raw('consorcio_id'),
+): Prisma.Sql {
   if (consorcios) {
     if (consorcios.length === 0) return Prisma.sql`FALSE`
-    return Prisma.sql`consorcio_id IN (${Prisma.join(consorcios.map((id) => Prisma.sql`${id}::uuid`))})`
+    return Prisma.sql`${columna} IN (${Prisma.join(consorcios.map((id) => Prisma.sql`${id}::uuid`))})`
   }
   const activo = consorcioActivo()
   if (!activo) throw new SinConsorcioActivo()
-  return Prisma.sql`consorcio_id = ${activo}::uuid`
+  return Prisma.sql`${columna} = ${activo}::uuid`
 }
 
 export interface MorosidadMensual {
@@ -140,7 +143,7 @@ export async function desempenoProveedores(consorcios?: string[]): Promise<Desem
     FROM v_desempeno_proveedor v
     JOIN "Proveedor" p ON p.id = v.proveedor_id
     LEFT JOIN "RubroGasto" r ON r.id = v.rubro_id
-    WHERE ${alcance(consorcios)} ORDER BY p.razon_social, r.nombre`
+    WHERE ${alcance(consorcios, Prisma.raw('v.consorcio_id'))} ORDER BY p.razon_social, r.nombre`
   return filas.map((f) => ({
     consorcioId: f.consorcio_id,
     proveedorId: f.proveedor_id,

@@ -116,3 +116,36 @@ test.describe('el administrador registra un pago desde la expensa (CU-04)', () =
     )
   })
 })
+
+test.describe('el consejo que es propietario ve su propia expensa (RF-08)', () => {
+  let consejo: Escenario
+  let suya: Expensa
+
+  test.beforeAll(async () => {
+    consejo = await sembrarEscenario('consejo')
+    suya = await sembrarExpensa(consejo)
+  })
+
+  test.afterAll(async () => {
+    await limpiarExpensa(consejo)
+    await limpiarEscenario(consejo)
+  })
+
+  test('el consejo que es propietario abre y ve su propia expensa', async ({ page }) => {
+    await entrar(page, consejo.correo)
+    await page.goto(`/consorcios/${consejo.consorcioId}/expensas`)
+
+    await expect(page.getByRole('heading', { name: 'Tus expensas' })).toBeVisible()
+    // Solo la suya: la del vecino (3C) no aparece en la tabla de unidades propias.
+    await expect(page.getByRole('cell', { name: '3C', exact: true })).toHaveCount(0)
+    await page
+      .getByRole('cell', { name: '3B', exact: true })
+      .locator('xpath=following-sibling::td[1]//a')
+      .click()
+
+    await expect(page).toHaveURL(new RegExp(`/expensas/${suya.detallePropioId}`))
+    await expect(
+      page.getByRole('heading', { name: /Expensa \d{2}\/\d{4} · unidad 3B/ }),
+    ).toBeVisible()
+  })
+})

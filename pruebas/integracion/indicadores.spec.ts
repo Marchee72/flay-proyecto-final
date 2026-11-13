@@ -7,6 +7,7 @@ import {
   verGastoPorRubro,
   verMorosidad,
   verPanel,
+  verProveedores,
   verResolucionReclamos,
 } from '@/aplicacion/indicadores/indicadores'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
@@ -214,6 +215,16 @@ describe('I-2 gasto por rubro (FR-019)', () => {
     expect(filas.every((f) => !f.desviado)).toBe(true)
     expect(alertas.filter((a) => a.tipo === 'desvio_rubro')).toEqual([])
     expect(filas[2].periodosAnteriores).toBe(2)
+  })
+})
+
+describe('I-3 desempeno de proveedores (RF-21)', () => {
+  it('I-3 devuelve el desempeño de proveedores del consorcio activo', async () => {
+    await refrescarVistas()
+
+    const filas = await verProveedores(repo, RELOJ, { usuarioId: administrador, consorcioId })
+    expect(Array.isArray(filas)).toBe(true)
+    expect(filas.every((f) => f.consorcioId === consorcioId)).toBe(true)
   })
 })
 

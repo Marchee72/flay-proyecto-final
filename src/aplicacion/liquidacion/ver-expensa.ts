@@ -91,22 +91,11 @@ export interface UnidadConExpensas {
   expensas: ExpensaVisible[]
 }
 
-/**
- * Las unidades que el usuario puede ver: todas si es administrador o consejo,
- * y solo las que ocupa si es consorcista.
- */
-export async function unidadesAlcanzables(
+/** Las unidades que el usuario ocupa hoy, sea cual sea su rol. */
+export async function unidadesPropias(
   usuarioId: string,
-  roles: readonly string[],
   hoy: Date,
 ): Promise<{ id: string; designacion: string }[]> {
-  if (roles.includes('administrador') || roles.includes('consejo')) {
-    const unidades = await prisma.unidad.findMany({
-      select: { id: true, designacion: true },
-    })
-    return ordenarUnidades(unidades)
-  }
-
   const usuario = await prismaBase.usuario.findUnique({
     where: { id: usuarioId },
     select: { personaId: true },
@@ -129,18 +118,40 @@ export async function unidadesAlcanzables(
   return ordenarUnidades(unidades)
 }
 
-export async function misExpensas(
+/**
+ * Las unidades que el usuario puede ver: todas si es administrador o consejo,
+ * y solo las que ocupa si es consorcista.
+ */
+export async function unidadesAlcanzables(
+  usuarioId: string,
+  roles: readonly string[],
+  hoy: Date,
+): Promise<{ id: string; designacion: string }[]> {
+  if (roles.includes('administrador') || roles.includes('consejo')) {
+    const unidades = await prisma.unidad.findMany({
+      select: { id: true, designacion: true },
+    })
+    return ordenarUnidades(unidades)
+  }
+
+  return unidadesPropias(usuarioId, hoy)
+}
+
+type DatosExpensas = { usuarioId: string; consorcioId: string }
+
+function expensasDeUnidades(
   almacen: AlmacenObjetos,
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
-  datos: { usuarioId: string; consorcioId: string },
+  datos: DatosExpensas,
+  cuales: (roles: readonly string[]) => Promise<{ id: string; designacion: string }[]>,
 ): Promise<UnidadConExpensas[]> {
   return conAutorizacion(
     repositorio,
     reloj,
     { usuarioId: datos.usuarioId, consorcioId: datos.consorcioId, accion: 'ver expensas' },
     async (acceso) => {
-      const unidades = await unidadesAlcanzables(datos.usuarioId, acceso.roles, reloj.hoy())
+      const unidades = await cuales(acceso.roles)
 
       return Promise.all(
         unidades.map(async (unidad) => ({
@@ -150,6 +161,30 @@ export async function misExpensas(
         })),
       )
     },
+  )
+}
+
+/** Solo las unidades que el usuario ocupa, sea cual sea su rol. */
+export function misExpensas(
+  almacen: AlmacenObjetos,
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: DatosExpensas,
+): Promise<UnidadConExpensas[]> {
+  return expensasDeUnidades(almacen, repositorio, reloj, datos, () =>
+    unidadesPropias(datos.usuarioId, reloj.hoy()),
+  )
+}
+
+/** Todas las unidades que el rol alcanza (administrador y consejo: todas). */
+export function expensasAlcanzables(
+  almacen: AlmacenObjetos,
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: DatosExpensas,
+): Promise<UnidadConExpensas[]> {
+  return expensasDeUnidades(almacen, repositorio, reloj, datos, (roles) =>
+    unidadesAlcanzables(datos.usuarioId, roles, reloj.hoy()),
   )
 }
 
@@ -299,7 +334,13 @@ async function aVisible(
     })),
     estadoPago,
     direccion: detalle.claveDocumento
-      ? await almacen.resolverLecturaAutorizada(detalle.claveDocumento, SEGUNDOS_DE_LECTURA)
+      ? await almacen
+          .resolverLecturaAutorizada(detalle.claveDocumento, SEGUNDOS_DE_LECTURA)
+          // Un PDF que ya no está en el almacén deja la fila sin documento: no tira la lista.
+          .catch((error: unknown) => {
+            if (error instanceof NoEncontrado) return null
+            throw error
+          })
       : null,
   }
 }

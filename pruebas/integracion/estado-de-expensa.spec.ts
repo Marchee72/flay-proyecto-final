@@ -6,7 +6,8 @@ import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
-import { misExpensas } from '@/aplicacion/liquidacion/ver-expensa'
+import { NoEncontrado } from '@/compartido/errores'
+import { expensasAlcanzables, misExpensas, verExpensa } from '@/aplicacion/liquidacion/ver-expensa'
 import { registrarPago } from '@/aplicacion/pagos/registrar'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { prismaBase } from '@/infraestructura/prisma'
@@ -288,5 +289,88 @@ describe('estado de cobro de la expensa (CU-06)', () => {
 
     expect(expensa.estadoPago).toBe('vencida')
     expect(expensa.saldo).toBe(mia.totalUnidad.toFixed(2))
+  })
+
+  it('una expensa sin su PDF en el almacén queda sin dirección y no tira la lista', async () => {
+    const agosto = await emitir(8)
+    const septiembre = await emitir(9)
+    const faltante = agosto.find((d) => d.unidad.designacion === '1A')!
+    const presente = septiembre.find((d) => d.unidad.designacion === '1A')!
+    await prismaBase.detalleLiquidacion.update({
+      where: { id: faltante.id },
+      data: { claveDocumento: 'falta.pdf' },
+    })
+    await prismaBase.detalleLiquidacion.update({
+      where: { id: presente.id },
+      data: { claveDocumento: 'esta.pdf' },
+    })
+
+    const vecina = await crearUsuario('Nadia')
+    await registrarOcupacion(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidadId: faltante.unidadId,
+      personaId: vecina.personaId,
+      tipo: 'propietario',
+      desde: new Date('2026-01-01'),
+    })
+
+    const almacenSinUno: AlmacenObjetos = {
+      ...almacenDoble,
+      async resolverLecturaAutorizada(clave) {
+        if (clave === 'falta.pdf') throw new NoEncontrado('FR-018')
+        return `https://objetos/${clave}`
+      },
+    }
+    const datos = { usuarioId: vecina.id, consorcioId }
+
+    const [unidad] = await misExpensas(almacenSinUno, repo, RELOJ, datos)
+    const porDetalle = new Map(unidad.expensas.map((e) => [e.detalleId, e]))
+    expect(porDetalle.get(faltante.id)?.direccion).toBeNull()
+    expect(porDetalle.get(presente.id)?.direccion).toBe('https://objetos/esta.pdf')
+
+    const una = await verExpensa(almacenSinUno, repo, RELOJ, { ...datos, detalleId: faltante.id })
+    expect(una.direccion).toBeNull()
+  })
+
+  it('misExpensas del consejo trae solo la unidad que ocupa', async () => {
+    const consejo = await crearUsuario('Cora')
+    await habilitarEnConsorcio(consejo.id, consorcioId, 'consejo')
+    const unidad = await prismaBase.unidad.findFirstOrThrow({
+      where: { consorcioId, designacion: '1B' },
+    })
+    await registrarOcupacion(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidadId: unidad.id,
+      personaId: consejo.personaId,
+      tipo: 'propietario',
+      desde: new Date('2026-01-01'),
+    })
+
+    const propias = await misExpensas(almacenDoble, repo, RELOJ, {
+      usuarioId: consejo.id,
+      consorcioId,
+    })
+    expect(propias.map((u) => u.designacion)).toEqual(['1B'])
+  })
+
+  it('misExpensas del administrador sin ocupación es vacío', async () => {
+    const propias = await misExpensas(almacenDoble, repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+    })
+    expect(propias).toEqual([])
+  })
+
+  it('expensasAlcanzables del consejo sigue trayendo todas las unidades', async () => {
+    const consejo = await crearUsuario('Cora')
+    await habilitarEnConsorcio(consejo.id, consorcioId, 'consejo')
+
+    const todas = await expensasAlcanzables(almacenDoble, repo, RELOJ, {
+      usuarioId: consejo.id,
+      consorcioId,
+    })
+    expect(todas.map((u) => u.designacion)).toEqual(['1A', '1B'])
   })
 })

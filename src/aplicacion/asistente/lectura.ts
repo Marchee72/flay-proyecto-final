@@ -22,7 +22,7 @@ import {
 } from '@/aplicacion/indicadores/indicadores'
 import { previsualizarLiquidacion } from '@/aplicacion/liquidacion/liquidar'
 import { verLiquidacion } from '@/aplicacion/liquidacion/ver-liquidacion'
-import { misExpensas, verExpensa } from '@/aplicacion/liquidacion/ver-expensa'
+import { expensasAlcanzables, verExpensa } from '@/aplicacion/liquidacion/ver-expensa'
 import { verEstadoDeCuenta, verMorosidad } from '@/aplicacion/pagos/estado-de-cuenta'
 import { verBandeja } from '@/aplicacion/pendientes/bandeja'
 import { listarPeriodos } from '@/aplicacion/periodos/periodos'
@@ -216,7 +216,7 @@ export const lectura: Herramienta[] = [
     'ver_expensas',
     'Expensas de las unidades que el usuario puede ver, con saldo y estado.',
     'todos',
-    (_a, c) => misExpensas(c.almacen, c.repositorio, c.reloj, quien(c)),
+    (_a, c) => expensasAlcanzables(c.almacen, c.repositorio, c.reloj, quien(c)),
   ),
   lec(
     'ver_expensa',

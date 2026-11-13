@@ -32,6 +32,8 @@ export async function altaAdministradora(
     reloj,
     { usuarioId: datos.usuarioId, accion: 'dar de alta una administradora' },
     async () => {
+      const razonSocial = datos.razonSocial.trim()
+      if (!razonSocial) throw new ErrorDeAplicacion('Escribí la razón social.', 'RF-01')
       const cuit = normalizarCuit(datos.cuit)
       if (!cuit) throw new CuitInvalido()
       if (await prismaBase.administradora.findUnique({ where: { cuit } })) {
@@ -39,7 +41,7 @@ export async function altaAdministradora(
       }
 
       const creada = await prismaBase.administradora.create({
-        data: { razonSocial: datos.razonSocial, cuit },
+        data: { razonSocial, cuit },
       })
 
       return { administradoraId: creada.id }

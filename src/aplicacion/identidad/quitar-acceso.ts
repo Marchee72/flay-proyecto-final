@@ -38,8 +38,14 @@ export async function quitarAcceso(
       accion: 'quitar el acceso de una persona',
     },
     async () => {
+      // Solo las vigentes, como `listarUsuarios`: una ya vencida enviada a mano
+      // adelantaría su `vigenciaHasta` y reescribiría la historia.
+      const hoy = reloj.hoy()
       const habilitacion = await prisma.habilitacion.findFirst({
-        where: { id: datos.habilitacionId },
+        where: {
+          id: datos.habilitacionId,
+          OR: [{ vigenciaHasta: null }, { vigenciaHasta: { gte: hoy } }],
+        },
       })
       if (!habilitacion) throw new NoEncontrado()
 
@@ -47,7 +53,6 @@ export async function quitarAcceso(
         throw new NoPodesQuitarteElAcceso()
       }
 
-      const hoy = reloj.hoy()
       if (habilitacion.vigenciaDesde >= hoy) {
         await prismaBase.habilitacion.delete({ where: { id: habilitacion.id } })
       } else {

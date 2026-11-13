@@ -89,6 +89,16 @@ describe('alta de administradora', () => {
     ).rejects.toBeInstanceOf(CuitInvalido)
   })
 
+  it('una razón social vacía se rechaza con su mensaje', async () => {
+    await expect(
+      altaAdministradora(repositorioHabilitaciones, RELOJ, {
+        usuarioId: superAdmin,
+        razonSocial: '   ',
+        cuit: cuitUnico(),
+      }),
+    ).rejects.toThrow('Escribí la razón social.')
+  })
+
   it('no la puede crear alguien con habilitacion de empresa', async () => {
     await habilitarEnAdministradora(comun, delta)
 

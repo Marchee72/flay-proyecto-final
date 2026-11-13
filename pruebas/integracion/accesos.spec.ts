@@ -179,6 +179,24 @@ describe('quitar acceso y unidades en la nómina', () => {
     expect(await repositorioHabilitaciones.accesoVigente(eva.id, consorcioId, HOY)).toBeNull()
   })
 
+  it('una habilitación ya vencida es «no encontrado» y su historia no cambia', async () => {
+    const eva = await crearUsuario('Eva', 'Existente')
+    const vencida = await prismaBase.habilitacion.create({
+      data: {
+        usuarioId: eva.id,
+        consorcioId,
+        rol: 'consorcista',
+        vigenciaDesde: new Date('2026-01-01'),
+        vigenciaHasta: new Date('2026-06-30'),
+      },
+    })
+
+    await expect(quitar(admin, vencida.id)).rejects.toBeInstanceOf(NoEncontrado)
+
+    const despues = await prismaBase.habilitacion.findUniqueOrThrow({ where: { id: vencida.id } })
+    expect(despues.vigenciaHasta).toEqual(new Date('2026-06-30'))
+  })
+
   it('una habilitación otorgada hoy se borra al quitarla', async () => {
     const eva = await crearUsuario('Eva', 'Existente')
     const habilitacion = await prismaBase.habilitacion.create({

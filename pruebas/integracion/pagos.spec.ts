@@ -9,7 +9,7 @@ import {
   verEstadoDeCuenta,
   verMorosidad,
 } from '@/aplicacion/pagos/estado-de-cuenta'
-import { registrarPago } from '@/aplicacion/pagos/registrar'
+import { PagoBloqueadoHastaLiquidar, registrarPago } from '@/aplicacion/pagos/registrar'
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
 import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
@@ -191,7 +191,7 @@ describe('fecha del pago (RF-09, A8)', () => {
     await emitirMes(1)
     await expect(pagarEl(reloj, '2026-11-13')).rejects.toThrow(/posterior a hoy/)
     // El 12/11 ya no es futuro: lo que sigue es el bloqueo por firme, no la fecha.
-    await expect(pagarEl(reloj, '2026-11-12')).rejects.not.toThrow(/posterior a hoy/)
+    await expect(pagarEl(reloj, '2026-11-12')).rejects.toBeInstanceOf(PagoBloqueadoHastaLiquidar)
   })
 })
 

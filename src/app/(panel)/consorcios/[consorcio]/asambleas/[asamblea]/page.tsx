@@ -64,7 +64,7 @@ export default async function AsambleaPage({
 
     return (
       <>
-        {vista.estado === 'en_curso' && (
+        {(vista.estado === 'convocada' || vista.estado === 'en_curso') && (
           <SalaEnVivo consorcioId={vista.consorcioId} asambleaId={vista.id} />
         )}
         <Volver href={base} />

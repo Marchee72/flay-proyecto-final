@@ -12,6 +12,7 @@ import {
   accionAbrirPunto,
   accionAcreditar,
   accionAutoridades,
+  accionCancelar,
   accionCargarVoto,
   accionCerrarPunto,
   accionConstituir,
@@ -379,6 +380,28 @@ export function Direccion({
                 Verificar quórum y constituir
               </button>
             </form>
+            <BotonModal
+              etiqueta="Cancelar por falta de quórum"
+              titulo="Cancelar la asamblea"
+              variante="boton--peligro"
+            >
+              <form action={accionCancelar}>
+                <Ocultos vista={vista} />
+                <div className="campo">
+                  <label htmlFor="cancelar-motivo">Motivo</label>
+                  <textarea
+                    id="cancelar-motivo"
+                    name="motivo"
+                    rows={3}
+                    required
+                    defaultValue="No se alcanzó el quórum."
+                  />
+                </div>
+                <div className="fila-acciones">
+                  <BotonEnviar texto="Confirmar cancelación" enviando="Cancelando…" />
+                </div>
+              </form>
+            </BotonModal>
           </>
         )}
       </section>

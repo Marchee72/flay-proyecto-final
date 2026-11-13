@@ -24,6 +24,7 @@ import {
   UnidadYaAcreditada,
   UnidadYaVoto,
 } from '@/aplicacion/asambleas/errores'
+import { cancelar } from '@/aplicacion/asambleas/convocar'
 import { verAsamblea } from '@/aplicacion/asambleas/ver'
 import { cargarVoto, votar } from '@/aplicacion/asambleas/votar'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
@@ -152,6 +153,16 @@ describe('abrir y acreditar', () => {
     await expect(
       designarAutoridades(repo, RELOJ, { ...de(e.consejo), presidenteId: e.ana, secretarioId: '' }),
     ).rejects.toBeInstanceOf(AutoridadSinUsuario)
+  })
+})
+
+describe('cancelar sin quórum (A-4)', () => {
+  it('abierta y sin constituir, quien puede dirigir la cancela aunque no haya nadie', async () => {
+    await abrir(repo, RELOJ, de(e.consejo))
+    await cancelar(repo, RELOJ, { ...de(e.consejo), motivo: 'Sin quórum' })
+    expect(
+      (await prismaBase.asamblea.findUniqueOrThrow({ where: { id: asambleaId } })).estado,
+    ).toBe('cancelada')
   })
 })
 

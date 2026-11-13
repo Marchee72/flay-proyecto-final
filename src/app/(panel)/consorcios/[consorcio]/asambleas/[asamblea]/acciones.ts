@@ -117,7 +117,10 @@ export async function accionBorrar(datos: FormData) {
 export async function accionCancelar(datos: FormData) {
   await ejecutar(
     datos,
-    (b) => cancelar(HABILITACIONES, RELOJ, { ...b, motivo: texto(datos, 'motivo') }),
+    (b) =>
+      conAviso(AVISO_EN_VIVO, after, b.asambleaId, () =>
+        cancelar(HABILITACIONES, RELOJ, { ...b, motivo: texto(datos, 'motivo') }),
+      ),
     'asamblea-cancelada',
   )
 }
@@ -200,7 +203,11 @@ async function ejecutarEnSala(
 }
 
 export async function accionAbrir(datos: FormData) {
-  await ejecutar(datos, (b) => abrir(HABILITACIONES, RELOJ, b), 'asamblea-abierta')
+  await ejecutar(
+    datos,
+    (b) => conAviso(AVISO_EN_VIVO, after, b.asambleaId, () => abrir(HABILITACIONES, RELOJ, b)),
+    'asamblea-abierta',
+  )
 }
 
 export async function accionAcreditarme(datos: FormData): Promise<ResultadoSala> {

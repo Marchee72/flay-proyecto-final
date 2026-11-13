@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { abrir } from '@/aplicacion/asambleas/conducir'
+import { cancelar } from '@/aplicacion/asambleas/convocar'
 import { conAviso, permisoDeEscucha } from '@/aplicacion/asambleas/en-vivo'
 import { NoEncontrado } from '@/compartido/errores'
 import type { AvisoEnVivo } from '@/dominio/contratos/aviso-en-vivo'
@@ -100,7 +101,12 @@ describe('permisoDeEscucha', () => {
     expect(aviso.permisoDeEscucha).not.toHaveBeenCalled()
   })
 
-  it('una asamblea que no está en curso no da permiso', async () => {
+  it('quien alcanza una asamblea convocada recibe permiso, para enterarse cuando se abra', async () => {
+    expect(await permisoDeEscucha(repo, RELOJ, aviso, de(e.ana))).toEqual(PERMISO)
+  })
+
+  it('una asamblea cancelada no da permiso', async () => {
+    await cancelar(repo, RELOJ, { ...de(e.consejo), motivo: 'Sin quórum' })
     await expect(permisoDeEscucha(repo, RELOJ, aviso, de(e.ana))).rejects.toBeInstanceOf(
       NoEncontrado,
     )

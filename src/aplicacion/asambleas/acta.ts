@@ -32,6 +32,7 @@ import {
   FirmanteInvalido,
   FirmanteYaFirmo,
   NoDirige,
+  NotasCambiaron,
   YaFirmo,
 } from './errores'
 import { verAsamblea, type ConteoVista, type VistaAsamblea } from './ver'
@@ -84,18 +85,30 @@ function exigirRedacta(
 export async function guardarNotas(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
-  datos: Datos & { puntoId: string; notas: string },
+  datos: Datos & { puntoId: string; notas: string; anterior: string },
 ): Promise<void> {
   await conAutorizacion(repositorio, reloj, { ...datos, accion: 'redactar el acta' }, async () => {
     const asamblea = await cargarAsamblea(datos.asambleaId)
     exigirRedacta(asamblea, datos.usuarioId)
     const { count } = await conReglas(() =>
       prisma.puntoAsamblea.updateMany({
-        where: { id: datos.puntoId, asambleaId: asamblea.id },
+        where: {
+          id: datos.puntoId,
+          asambleaId: asamblea.id,
+          OR:
+            datos.anterior === '' ? [{ notas: null }, { notas: '' }] : [{ notas: datos.anterior }],
+        },
         data: { notas: datos.notas.trim() || null },
       }),
     )
-    if (count === 0) throw new NoEncontrado('RF-32')
+    if (count === 0) {
+      const punto = await prisma.puntoAsamblea.findFirst({
+        where: { id: datos.puntoId, asambleaId: asamblea.id },
+        select: { notas: true },
+      })
+      if (!punto) throw new NoEncontrado('RF-32')
+      throw new NotasCambiaron(punto.notas ?? '')
+    }
   })
 }
 

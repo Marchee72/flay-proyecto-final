@@ -93,6 +93,7 @@ beforeEach(async () => {
         ...de(e.carla),
         puntoId: p.id,
         notas: 'Tres presupuestos de pintura',
+        anterior: '',
       })
     }
     await cerrarPunto(repo, RELOJ, { ...de(e.consejo), puntoId: p.id })
@@ -113,13 +114,18 @@ afterEach(async () => {
 describe('notas de la reunión', () => {
   it('solo las toman la secretaria y quien dirige', async () => {
     await expect(
-      guardarNotas(repo, RELOJ, { ...de(e.ana), puntoId: puntos[0].id, notas: 'x' }),
+      guardarNotas(repo, RELOJ, { ...de(e.ana), puntoId: puntos[0].id, notas: 'x', anterior: '' }),
     ).rejects.toBeInstanceOf(NoDirige)
   })
 
   it('terminada la reunión, ya no cambian', async () => {
     await expect(
-      guardarNotas(repo, DESPUES, { ...de(e.carla), puntoId: puntos[0].id, notas: 'otra' }),
+      guardarNotas(repo, DESPUES, {
+        ...de(e.carla),
+        puntoId: puntos[0].id,
+        notas: 'otra',
+        anterior: 'Tres presupuestos de pintura',
+      }),
     ).rejects.toThrow(/mientras el punto está abierto/)
     await expect(
       prismaBase.$executeRaw`UPDATE "PuntoAsamblea" SET notas = 'otra' WHERE id = ${puntos[0].id}::uuid`,

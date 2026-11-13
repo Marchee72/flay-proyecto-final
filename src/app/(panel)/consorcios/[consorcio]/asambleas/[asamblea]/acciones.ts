@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { after } from 'next/server'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { FirmanteInvalido } from '@/aplicacion/asambleas/errores'
+import { FirmanteInvalido, NotasCambiaron } from '@/aplicacion/asambleas/errores'
 import {
   ALMACEN,
   DERIVADOR,
@@ -162,7 +162,9 @@ export async function accionRevocarPoder(datos: FormData) {
 
 // Reunión --------------------------------------------------------------------
 
-export type ResultadoSala = { ok: true; mensaje: string } | { ok: false; error: string }
+export type ResultadoSala =
+  | { ok: true; mensaje: string }
+  | { ok: false; error: string; actuales?: string }
 
 const MENSAJE_SALA: Record<string, string> = {
   acreditado: 'Asistencia registrada.',
@@ -349,10 +351,15 @@ export async function accionNotas(datos: FormData): Promise<ResultadoSala> {
       asambleaId: texto(datos, 'asamblea'),
       puntoId: texto(datos, 'punto'),
       notas: String(datos.get('notas') ?? ''),
+      anterior: String(datos.get('anterior') ?? ''),
     })
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
-    return { ok: false, error: error.mensajeParaUsuario }
+    return {
+      ok: false,
+      error: error.mensajeParaUsuario,
+      ...(error instanceof NotasCambiaron && { actuales: error.actuales }),
+    }
   }
   return { ok: true, mensaje: '' }
 }

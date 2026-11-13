@@ -32,6 +32,7 @@ function CampoNota({
   const guardado = useRef(punto.notas ?? '')
   const ultimo = useRef(punto.notas ?? '')
   const montado = useRef(true)
+  const campo = useRef<HTMLTextAreaElement>(null)
 
   const guardar = useCallback(
     async (notas: string) => {
@@ -44,9 +45,19 @@ function CampoNota({
       datos.set('asamblea', asambleaId)
       datos.set('punto', puntoId)
       datos.set('notas', notas)
+      datos.set('anterior', anterior)
       try {
         const resultado = await accionNotas(datos)
         if (resultado.ok) return
+        if (resultado.actuales !== undefined) {
+          // Otra persona escribió antes: queda su versión y la propia va a «copialo».
+          guardado.current = resultado.actuales
+          ultimo.current = resultado.actuales
+          if (campo.current) campo.current.value = resultado.actuales
+          avisar(resultado.error, 'problema')
+          alPerder(puntoId, notas)
+          return
+        }
         avisar(resultado.error, 'problema')
       } catch (error) {
         unstable_rethrow(error)
@@ -71,6 +82,7 @@ function CampoNota({
       <label htmlFor={`notas-${puntoId}`}>Lo que se va debatiendo</label>
       <textarea
         id={`notas-${puntoId}`}
+        ref={campo}
         rows={4}
         defaultValue={punto.notas ?? ''}
         onChange={(e) => {

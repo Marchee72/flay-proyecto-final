@@ -42,6 +42,12 @@ export class MedioDePagoDesconocido extends ErrorDeAplicacion {
   }
 }
 
+export class FechaDePagoFutura extends ErrorDeAplicacion {
+  constructor() {
+    super('La fecha del pago no puede ser posterior a hoy.', 'RF-09')
+  }
+}
+
 export class PagoBloqueadoHastaLiquidar extends ErrorDeAplicacion {
   constructor() {
     super(
@@ -140,6 +146,8 @@ export async function registrarPago(
       if (!/^\d+(\.\d{1,2})?$/.test(datos.importe) || importe(datos.importe).lessThanOrEqualTo(0)) {
         throw new ImporteDePagoInvalido()
       }
+      // Dias a las 00:00 UTC: la accion arma asi la fecha y `reloj.hoy()` es el dia argentino.
+      if (datos.fechaPago.getTime() > reloj.hoy().getTime()) throw new FechaDePagoFutura()
 
       // El aislamiento decide si la unidad es de este consorcio.
       const unidad = await prisma.unidad.findFirst({ where: { id: datos.unidadId } })

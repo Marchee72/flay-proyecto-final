@@ -1,6 +1,9 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
+
+import { Decimal } from '@/compartido/dinero'
+import { importeParaMostrar } from '@/compartido/formato'
 
 import { accionRegistrarPago, type Resultado } from './acciones'
 
@@ -11,6 +14,7 @@ export function FormularioPago({
   unidades,
   medios,
   hoy,
+  saldos,
   unidadInicial,
   vuelta,
 }: {
@@ -18,6 +22,8 @@ export function FormularioPago({
   unidades: readonly { id: string; designacion: string }[]
   medios: readonly { valor: string; etiqueta: string }[]
   hoy: string
+  /** Lo que debe cada unidad (`unidadId` → importe como cadena); sin el mapa no hay ayuda. */
+  saldos?: Record<string, string>
   /** Desde la expensa, la unidad ya elegida. */
   unidadInicial?: string
   /** Adonde volver con exito; la accion lo valida dentro del consorcio. */
@@ -25,6 +31,10 @@ export function FormularioPago({
 }) {
   const [estado, accion, enviando] = useActionState(accionRegistrarPago, SIN_ERROR)
   const hayError = estado.mensaje !== ''
+  const [unidadElegida, setUnidadElegida] = useState(
+    estado.valores?.unidad ?? unidadInicial ?? unidades[0]?.id ?? '',
+  )
+  const saldo = saldos?.[unidadElegida]
 
   return (
     <form action={accion} noValidate>
@@ -37,9 +47,10 @@ export function FormularioPago({
           id="unidad"
           name="unidad"
           defaultValue={estado.valores?.unidad ?? unidadInicial}
+          onChange={(evento) => setUnidadElegida(evento.target.value)}
           required
           aria-invalid={hayError || undefined}
-          aria-describedby={hayError ? 'error-pago' : undefined}
+          aria-describedby={hayError ? 'error-pago ayuda-deuda' : 'ayuda-deuda'}
         >
           {unidades.map((unidad) => (
             <option key={unidad.id} value={unidad.id}>
@@ -47,6 +58,13 @@ export function FormularioPago({
             </option>
           ))}
         </select>
+        {saldo !== undefined && (
+          <p className="ayuda cifra" id="ayuda-deuda">
+            {new Decimal(saldo).greaterThan(0)
+              ? `Debe hoy: ${importeParaMostrar(saldo)}`
+              : 'Sin deuda'}
+          </p>
+        )}
       </div>
 
       <div className="campo">

@@ -14,6 +14,7 @@ export function ModalPago({
   unidades,
   medios,
   hoy,
+  saldos,
   etiqueta = 'Registrar un pago',
   abrir = false,
   unidadInicial,
@@ -23,6 +24,7 @@ export function ModalPago({
   unidades: readonly { id: string; designacion: string }[]
   medios: readonly { valor: string; etiqueta: string }[]
   hoy: string
+  saldos?: Record<string, string>
   etiqueta?: string
   abrir?: boolean
   unidadInicial?: string
@@ -35,6 +37,7 @@ export function ModalPago({
         unidades={unidades}
         medios={medios}
         hoy={hoy}
+        saldos={saldos}
         unidadInicial={unidadInicial}
         vuelta={vuelta}
       />

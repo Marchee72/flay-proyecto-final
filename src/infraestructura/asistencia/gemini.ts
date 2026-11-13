@@ -12,7 +12,7 @@ import {
   type Resultado,
   type Sugerencia,
 } from '@/dominio/contratos/asistencia'
-import { SISTEMA_ACTA } from './prompts-acta'
+import { SISTEMA_ACTA } from '../prompts-acta'
 
 /**
  * La implementacion del proveedor elegido en § 14.3 (research R-01): Gemini

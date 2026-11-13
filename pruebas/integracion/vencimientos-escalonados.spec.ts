@@ -10,7 +10,13 @@ import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
-import { registrarPago, PagoBloqueadoHastaLiquidar } from '@/aplicacion/pagos/registrar'
+import { resumenDeCuentas } from '@/aplicacion/pagos/estado-de-cuenta'
+import {
+  deudaDeUnidad,
+  registrarPago,
+  PagoBloqueadoHastaLiquidar,
+} from '@/aplicacion/pagos/registrar'
+import { exigible } from '@/dominio/liquidacion/vencimientos'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
 
@@ -247,6 +253,22 @@ describe('cobro con recargo escalonado (RF-08, US2)', () => {
     ])
     // El ultimo tramo fija el vencimiento en firme de la liquidacion.
     expect(liquidacion.vencimiento.toISOString().slice(0, 10)).toBe('2026-02-28')
+  })
+
+  it('el resumen de cuentas trae el exigible de la cuenta unica, con recargo en el 2º tramo', async () => {
+    const reloj = relojFijo('2026-02-15T12:00:00Z')
+    const [cuenta] = await resumenDeCuentas(repo, reloj, { usuarioId: administrador, consorcioId })
+    const deuda = await deudaDeUnidad(unidadA, reloj.hoy())
+    expect(cuenta!.saldo).toBe('1000.00') // la base, sin recargo
+    expect(cuenta!.exigible).toBe(exigible(deuda.impagos))
+    expect(cuenta!.exigible).toBe('1010.00')
+    expect(cuenta!.bloqueado).toBe(false)
+  })
+
+  it('el resumen de cuentas marca bloqueada la unidad vencida en firme', async () => {
+    const reloj = relojFijo('2026-03-01T12:00:00Z')
+    const [cuenta] = await resumenDeCuentas(repo, reloj, { usuarioId: administrador, consorcioId })
+    expect(cuenta!.bloqueado).toBe(true)
   })
 
   it('pagar dentro del 2º tramo salda la expensa y cobra el recargo aparte', async () => {

@@ -147,7 +147,12 @@ export default async function PagosPage({
               }))}
               medios={MEDIOS_DE_PAGO}
               hoy={RELOJ.hoy().toISOString().slice(0, 10)}
-              saldos={Object.fromEntries(cuentas.map((cuenta) => [cuenta.unidadId, cuenta.saldo]))}
+              saldos={Object.fromEntries(
+                cuentas.map((cuenta) => [
+                  cuenta.unidadId,
+                  { exigible: cuenta.exigible, bloqueado: cuenta.bloqueado },
+                ]),
+              )}
               abrir={parametros.abrir === '1'}
             />
           )}

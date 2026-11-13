@@ -23,7 +23,7 @@ export function FormularioPago({
   medios: readonly { valor: string; etiqueta: string }[]
   hoy: string
   /** Lo que debe cada unidad (`unidadId` → importe como cadena); sin el mapa no hay ayuda. */
-  saldos?: Record<string, string>
+  saldos?: Record<string, { exigible: string; bloqueado: boolean }>
   /** Desde la expensa, la unidad ya elegida. */
   unidadInicial?: string
   /** Adonde volver con exito; la accion lo valida dentro del consorcio. */
@@ -34,7 +34,7 @@ export function FormularioPago({
   const [unidadElegida, setUnidadElegida] = useState(
     estado.valores?.unidad ?? unidadInicial ?? unidades[0]?.id ?? '',
   )
-  const saldo = saldos?.[unidadElegida]
+  const cuenta = saldos?.[unidadElegida]
 
   return (
     <form action={accion} noValidate>
@@ -50,7 +50,10 @@ export function FormularioPago({
           onChange={(evento) => setUnidadElegida(evento.target.value)}
           required
           aria-invalid={hayError || undefined}
-          aria-describedby={hayError ? 'error-pago ayuda-deuda' : 'ayuda-deuda'}
+          aria-describedby={
+            [hayError && 'error-pago', cuenta && 'ayuda-deuda'].filter(Boolean).join(' ') ||
+            undefined
+          }
         >
           {unidades.map((unidad) => (
             <option key={unidad.id} value={unidad.id}>
@@ -58,11 +61,13 @@ export function FormularioPago({
             </option>
           ))}
         </select>
-        {saldo !== undefined && (
+        {cuenta && (
           <p className="ayuda cifra" id="ayuda-deuda">
-            {new Decimal(saldo).greaterThan(0)
-              ? `Debe hoy: ${importeParaMostrar(saldo)}`
-              : 'Sin deuda'}
+            {cuenta.bloqueado
+              ? 'Pago bloqueado: se paga con la próxima liquidación.'
+              : new Decimal(cuenta.exigible).greaterThan(0)
+                ? `Debe hoy: ${importeParaMostrar(cuenta.exigible)}`
+                : 'Sin deuda'}
           </p>
         )}
       </div>

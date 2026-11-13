@@ -1,4 +1,4 @@
-import type { MedioDePago } from '@prisma/client'
+import type { MedioDePago, Prisma } from '@prisma/client'
 
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import { Decimal, importe } from '@/compartido/dinero'
@@ -199,7 +199,16 @@ export async function deudaDeUnidad(
   unidadId: string,
   hoy: Date,
   cliente: Pick<TransaccionPrisma, 'detalleLiquidacion'> = prisma,
-): Promise<{
+): Promise<DeudaDeUnidad> {
+  const detalles = await cliente.detalleLiquidacion.findMany({
+    where: { unidadId, liquidacion: { estado: 'vigente' } },
+    select: SELECCION_DEUDA,
+  })
+  return deudaDesdeDetalles(detalles, hoy)
+}
+
+/** Lo que `deudaDeUnidad` devuelve. */
+export interface DeudaDeUnidad {
   impagos: DetalleImpago[]
   bloqueado: boolean
   saldoTotal: string
@@ -207,24 +216,32 @@ export async function deudaDeUnidad(
   ultimaId: string | null
   /** El ultimo dia en que el monto de hoy sigue valiendo (cambio de tramo), o nulo. */
   vigenteHasta: Date | null
-}> {
-  const detalles = await cliente.detalleLiquidacion.findMany({
-    where: { unidadId, liquidacion: { estado: 'vigente' } },
-    select: {
-      id: true,
-      totalUnidad: true,
-      deudaAnterior: true,
-      interesMora: true,
-      liquidacion: {
-        select: {
-          vencimiento: true,
-          vencimientos: { select: { orden: true, fecha: true, recargoPorcentaje: true } },
-        },
-      },
-      imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
-    },
-  })
+}
 
+const SELECCION_DEUDA = {
+  id: true,
+  totalUnidad: true,
+  deudaAnterior: true,
+  interesMora: true,
+  liquidacion: {
+    select: {
+      vencimiento: true,
+      vencimientos: { select: { orden: true, fecha: true, recargoPorcentaje: true } },
+    },
+  },
+  imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
+} as const
+
+/** Los detalles de una unidad con lo que `SELECCION_DEUDA` trae. */
+export type DetalleParaDeuda = Prisma.DetalleLiquidacionGetPayload<{
+  select: typeof SELECCION_DEUDA
+}>
+
+/**
+ * La cuenta unica de la deuda, sobre detalles ya leidos: la usan `deudaDeUnidad`
+ * (una unidad) y `resumenDeCuentas` (todas, sin una consulta por unidad).
+ */
+export function deudaDesdeDetalles(detalles: DetalleParaDeuda[], hoy: Date): DeudaDeUnidad {
   const formateados = detalles.map((d) => ({
     detalleId: d.id,
     totalUnidad: d.totalUnidad.toFixed(DECIMALES_IMPORTE),

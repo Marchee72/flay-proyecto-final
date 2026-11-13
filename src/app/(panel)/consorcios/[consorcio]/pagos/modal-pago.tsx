@@ -24,7 +24,7 @@ export function ModalPago({
   unidades: readonly { id: string; designacion: string }[]
   medios: readonly { valor: string; etiqueta: string }[]
   hoy: string
-  saldos?: Record<string, string>
+  saldos?: Record<string, { exigible: string; bloqueado: boolean }>
   etiqueta?: string
   abrir?: boolean
   unidadInicial?: string

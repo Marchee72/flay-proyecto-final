@@ -14,6 +14,7 @@ import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { encolar } from '@/aplicacion/pendientes/encolar'
 
 import { nuevaCredencial, resumen } from './credencial'
+import { reiniciarIntentos } from './iniciar-sesion'
 
 /**
  * Invitacion por correo (FR-006). El invitado fija su propia contrasena: el
@@ -224,11 +225,11 @@ export async function fijarContrasena(
     data: {
       claveDerivada: await derivador.derivar(datos.contrasena),
       estado: 'activo',
-      bloqueadoHasta: null,
       invitacionHash: null,
       invitacionVence: null,
     },
   })
+  await reiniciarIntentos(usuario.id, 'cambio de clave')
 
   return { usuarioId: usuario.id }
 }

@@ -6,6 +6,7 @@ import { encolar } from '@/aplicacion/pendientes/encolar'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 
 import { nuevaCredencial } from './credencial'
+import { reiniciarIntentos } from './iniciar-sesion'
 
 /**
  * Cambio de contraseña por enlace (RF-03). Reusa la credencial de la invitación:
@@ -68,10 +69,7 @@ export async function enviarEnlaceDeClave(
       if (!habilitacion) throw new NoEncontrado()
       const { usuario } = habilitacion
 
-      await prismaBase.usuario.update({
-        where: { id: usuario.id },
-        data: { bloqueadoHasta: null },
-      })
+      await reiniciarIntentos(usuario.id, 'enlace del administrador')
 
       if (usuario.estado === 'invitado') throw new TodaviaInvitado()
       if (usuario.estado !== 'activo') return

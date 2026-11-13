@@ -188,7 +188,9 @@ model Usuario {
 }
 
 /// Cada intento, exitoso o no, con su origen. Cinco fallos seguidos bloquean
-/// quince minutos (FR-001b). Se guarda aunque la cuenta no exista.
+/// quince minutos (FR-001b). Se guarda aunque la cuenta no exista. Desbloquear
+/// o cambiar la clave agrega una fila exitosa con el motivo en `origen`: corta
+/// la racha igual que un ingreso (`reiniciarIntentos`, C5).
 model IntentoInicioSesion {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   correoProbado String   @map("correo_probado") @db.Text

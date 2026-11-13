@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { NoEncontrado } from '@/compartido/errores'
-import { iniciarSesion } from '@/aplicacion/identidad/iniciar-sesion'
+import { desbloquearUsuario, iniciarSesion } from '@/aplicacion/identidad/iniciar-sesion'
 import { fijarContrasena, InvitacionNoValida } from '@/aplicacion/identidad/invitar-persona'
 import {
   enviarEnlaceDeClave,
@@ -167,5 +167,63 @@ describe('restablecer la clave', () => {
         urlBase: URL_BASE,
       }),
     ).rejects.toBeInstanceOf(TodaviaInvitado)
+  })
+})
+
+/**
+ * C5: levantar el bloqueo reinicia la cuenta de intentos. Antes los cinco fallos
+ * viejos seguían siendo «los últimos cinco» y un solo error volvía a bloquear.
+ */
+describe('después de recuperar el acceso, la racha de fallos empieza de cero', () => {
+  const fallar = () =>
+    iniciarSesion(argon2id, RELOJ, {
+      correo: destinatario.correo,
+      contrasena: 'incorrecta',
+      origen: '203.0.113.7',
+    }).catch(() => undefined)
+
+  const bloqueado = async () =>
+    (await prismaBase.usuario.findUniqueOrThrow({ where: { id: destinatario.id } }))
+      .bloqueadoHasta !== null
+
+  const bloquear = async () => {
+    for (let i = 0; i < 5; i++) await fallar()
+    expect(await bloqueado()).toBe(true)
+  }
+
+  it('tras fijar la clave con el enlace propio, un fallo no bloquea', async () => {
+    await bloquear()
+    await pedirRestablecimiento(RELOJ, { correo: destinatario.correo, urlBase: URL_BASE })
+    const [trabajo] = await correos(destinatario.correo)
+    await fijarContrasena(argon2id, RELOJ, {
+      credencial: credencialDe((trabajo.carga as { cuerpo: string }).cuerpo),
+      contrasena: NUEVA,
+    })
+
+    await fallar()
+    expect(await bloqueado()).toBe(false)
+  })
+
+  it('tras el enlace del administrador, un fallo no bloquea', async () => {
+    await bloquear()
+    await enviarEnlaceDeClave(repositorioHabilitaciones, RELOJ, {
+      usuarioId: admin,
+      consorcioId,
+      destinatarioId: destinatario.id,
+      urlBase: URL_BASE,
+    })
+
+    await fallar()
+    expect(await bloqueado()).toBe(false)
+  })
+
+  it('tras el desbloqueo del administrador, un fallo no bloquea y cinco sí', async () => {
+    await bloquear()
+    await desbloquearUsuario(destinatario.id)
+
+    await fallar()
+    expect(await bloqueado()).toBe(false)
+    for (let i = 0; i < 4; i++) await fallar()
+    expect(await bloqueado()).toBe(true)
   })
 })

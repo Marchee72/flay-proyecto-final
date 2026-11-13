@@ -464,9 +464,87 @@ async function avisarFirma(
 }
 
 /**
+ * Cierra el acta si están las cuatro firmas: PDF final con la hoja de firmas,
+ * documento del consorcio, indexación y avisos (FR-033). Lo llama la última
+ * firma y `completarActa`; el candado sobre el acta y la relectura del estado
+ * garantizan que dos llamadas simultáneas publiquen una sola vez (A-1).
+ */
+async function cerrarSiCompleta(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  dependencias: DependenciasActa,
+  datos: Datos,
+): Promise<{ completa: boolean }> {
+  const asamblea = await cargarAsamblea(datos.asambleaId)
+  const acta = await actaDe(asamblea.id)
+  if (acta.estado !== 'a_firmar') return { completa: acta.estado === 'firmada' }
+  if (acta.firmantes.some((f) => !f.firmadoEn)) return { completa: false }
+
+  const vista = await verAsamblea(repositorio, reloj, datos)
+  const nombres = new Map(vista.acta!.firmantes.map((f) => [f.id, f.nombre]))
+  const documento = await paraDocumento(vista, datos.consorcioId)
+  documento.hojaDeFirmas = {
+    huellaContenido: acta.hashContenido!,
+    firmas: acta.firmantes.map((f) => ({
+      nombre: nombres.get(f.id) ?? '',
+      rol: ETIQUETA_ROL[f.rolEnActa],
+      momento: horaParaMostrar(f.firmadoEn!),
+    })),
+  }
+  const bytes = await dependencias.generador.acta(documento)
+  const clave = claveActa(datos.consorcioId, asamblea.id, 'firmada')
+  await dependencias.almacen.guardar(clave, bytes, 'application/pdf')
+
+  const destinatarios = await propietariosPorCanal(await unidadesVigentes(), reloj.hoy())
+  return conReglas(() =>
+    prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "ActaAsamblea" WHERE id = ${acta.id}::uuid FOR UPDATE`
+      const actual = await tx.actaAsamblea.findFirst({
+        where: { id: acta.id },
+        select: { estado: true },
+      })
+      if (actual?.estado !== 'a_firmar') return { completa: actual?.estado === 'firmada' }
+      const doc = await tx.documentoConsorcio.create({
+        data: sinConsorcio({
+          tipo: 'acta',
+          titulo: `Acta — ${asamblea.titulo}`.slice(0, 200),
+          claveAlmacenamiento: clave,
+          tipoContenido: 'application/pdf',
+          hashSha256: huella(bytes),
+          fechaDocumento: asamblea.fechaHora,
+          visibleConsorcistas: true,
+          cargadoPor: datos.usuarioId,
+        }),
+        select: { id: true },
+      })
+      await tx.$executeRaw`
+          INSERT INTO "TrabajoPendiente" (tipo, carga)
+          VALUES ('indexar_documento'::"TipoTrabajo", jsonb_build_object('documentoId', ${doc.id}::text))`
+      await tx.actaAsamblea.update({
+        where: { id: acta.id },
+        data: { estado: 'firmada', documentoId: doc.id },
+      })
+      await tx.asamblea.update({ where: { id: asamblea.id }, data: { estado: 'acta_firmada' } })
+      const administracion = await administradoresDelConsorcio(tx)
+      await notificar(
+        tx,
+        [...new Set([...destinatarios.conUsuario, ...administracion])].map((usuarioId) => ({
+          usuarioId,
+          tipo: 'acta_firmada' as const,
+          titulo: `Acta firmada: ${asamblea.titulo}`,
+          cuerpo: 'El acta de la asamblea quedó firmada y está en la documentación del consorcio.',
+          entidadTipo: 'asamblea',
+          entidadId: asamblea.id,
+        })),
+      )
+      return { completa: true }
+    }),
+  )
+}
+
+/**
  * Firma electrónica (FR-032): el firmante designado confirma su contraseña.
- * Con la última firma se arma el PDF final con la hoja de firmas y se publica
- * como documento del consorcio, en la misma transacción (FR-033).
+ * La firma se escribe con candado sobre el acta; la última dispara el cierre.
  */
 export async function firmar(
   repositorio: RepositorioHabilitaciones,
@@ -491,77 +569,44 @@ export async function firmar(
     if (!valida) throw new ContrasenaIncorrecta()
 
     const ahora = reloj.ahora()
-    const faltan = acta.firmantes.filter((f) => !f.firmadoEn && f.id !== mio.id)
-    if (faltan.length > 0) {
-      await conReglas(() =>
-        prisma.firmanteActa.update({
-          where: { id: mio.id },
-          data: { firmadoEn: ahora, hashFirmado: acta.hashContenido },
-        }),
-      )
-      return { completa: false }
-    }
-
-    // Última firma: PDF final con la hoja de firmas.
-    const vista = await verAsamblea(repositorio, reloj, datos)
-    const nombres = new Map(vista.acta!.firmantes.map((f) => [f.id, f.nombre]))
-    const documento = await paraDocumento(vista, datos.consorcioId)
-    documento.hojaDeFirmas = {
-      huellaContenido: acta.hashContenido!,
-      firmas: acta.firmantes.map((f) => ({
-        nombre: nombres.get(f.id) ?? '',
-        rol: ETIQUETA_ROL[f.rolEnActa],
-        momento: horaParaMostrar(f.id === mio.id ? ahora : f.firmadoEn!),
-      })),
-    }
-    const bytes = await dependencias.generador.acta(documento)
-    const clave = claveActa(datos.consorcioId, asamblea.id, 'firmada')
-    await dependencias.almacen.guardar(clave, bytes, 'application/pdf')
-
-    const destinatarios = await propietariosPorCanal(await unidadesVigentes(), reloj.hoy())
     await conReglas(() =>
       prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "ActaAsamblea" WHERE id = ${acta.id}::uuid FOR UPDATE`
+        const actual = await tx.firmanteActa.findFirst({
+          where: { id: mio.id },
+          select: { firmadoEn: true },
+        })
+        if (actual?.firmadoEn) throw new YaFirmo()
         await tx.firmanteActa.update({
           where: { id: mio.id },
           data: { firmadoEn: ahora, hashFirmado: acta.hashContenido },
         })
-        const doc = await tx.documentoConsorcio.create({
-          data: sinConsorcio({
-            tipo: 'acta',
-            titulo: `Acta — ${asamblea.titulo}`.slice(0, 200),
-            claveAlmacenamiento: clave,
-            tipoContenido: 'application/pdf',
-            hashSha256: huella(bytes),
-            fechaDocumento: asamblea.fechaHora,
-            visibleConsorcistas: true,
-            cargadoPor: datos.usuarioId,
-          }),
-          select: { id: true },
-        })
-        await tx.$executeRaw`
-          INSERT INTO "TrabajoPendiente" (tipo, carga)
-          VALUES ('indexar_documento'::"TipoTrabajo", jsonb_build_object('documentoId', ${doc.id}::text))`
-        await tx.actaAsamblea.update({
-          where: { id: acta.id },
-          data: { estado: 'firmada', documentoId: doc.id },
-        })
-        await tx.asamblea.update({ where: { id: asamblea.id }, data: { estado: 'acta_firmada' } })
-        const administracion = await administradoresDelConsorcio(tx)
-        await notificar(
-          tx,
-          [...new Set([...destinatarios.conUsuario, ...administracion])].map((usuarioId) => ({
-            usuarioId,
-            tipo: 'acta_firmada' as const,
-            titulo: `Acta firmada: ${asamblea.titulo}`,
-            cuerpo:
-              'El acta de la asamblea quedó firmada y está en la documentación del consorcio.',
-            entidadTipo: 'asamblea',
-            entidadId: asamblea.id,
-          })),
-        )
       }),
     )
-    return { completa: true }
+    return cerrarSiCompleta(repositorio, reloj, dependencias, datos)
+  })
+}
+
+/**
+ * Publica el acta cuando ya están todas las firmas y el cierre quedó sin
+ * hacer. Idempotente; lo piden quien dirigió o cualquiera de los firmantes.
+ */
+export async function completarActa(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  dependencias: DependenciasActa,
+  datos: Datos,
+): Promise<{ completa: boolean }> {
+  return conAutorizacion(repositorio, reloj, { ...datos, accion: 'firmar el acta' }, async () => {
+    const asamblea = await cargarAsamblea(datos.asambleaId)
+    const acta = await actaDe(asamblea.id)
+    if (
+      asamblea.dirigeId !== datos.usuarioId &&
+      !acta.firmantes.some((f) => f.usuarioId === datos.usuarioId)
+    ) {
+      throw new NoEncontrado('RF-32')
+    }
+    return cerrarSiCompleta(repositorio, reloj, dependencias, datos)
   })
 }
 

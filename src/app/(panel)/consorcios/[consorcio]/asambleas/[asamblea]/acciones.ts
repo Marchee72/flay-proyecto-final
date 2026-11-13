@@ -16,6 +16,7 @@ import {
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import {
   designarFirmantes,
+  completarActa,
   enviarAFirmar,
   firmar,
   guardarNotas,
@@ -414,6 +415,15 @@ export async function accionFirmar(datos: FormData) {
         },
       ),
     'acta-firmada',
+    'acta',
+  )
+}
+
+export async function accionCompletarActa(datos: FormData) {
+  await ejecutar(
+    datos,
+    (b) => completarActa(HABILITACIONES, RELOJ, ACTA, b),
+    'acta-completada',
     'acta',
   )
 }

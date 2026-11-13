@@ -70,6 +70,7 @@ export const HECHO = {
   'firmantes-designados': 'Firmantes designados.',
   'acta-enviada': 'Acta enviada a firmar. Su texto ya no cambia.',
   'acta-firmada': 'Firma registrada.',
+  'acta-completada': 'Acta publicada en la documentación del consorcio.',
   'firmante-reemplazado': 'Firmante reemplazado. Se le avisó para que firme.',
   'reglas-guardadas': 'Reglas guardadas. Rigen para las próximas convocatorias.',
 } as const satisfies Record<string, string>

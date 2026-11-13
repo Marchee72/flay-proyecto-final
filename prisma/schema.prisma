@@ -1342,6 +1342,7 @@ model PuntoAsamblea {
   conteo              Json?             @db.JsonB
   provisorio          Boolean           @default(false)
   vencePlazoOposicion DateTime?         @map("vence_plazo_oposicion") @db.Timestamptz(6)
+  ausentesConVoto     String[]          @default([]) @map("ausentes_con_voto") @db.Uuid
   resumen             String?           @db.Text
   /// Apuntes de la reunion: la fuente del borrador; no van al acta.
   notas               String?           @db.Text

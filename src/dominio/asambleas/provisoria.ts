@@ -25,6 +25,8 @@ export function estadoDecision(args: {
   ahora: Date
   padron: UnidadPadron[]
   votos: Voto[]
+  /** Unidades ausentes con voto al cerrar el punto (no cambia si llegan después). */
+  ausentes: string[]
   /** Unidades que se opusieron dentro del plazo. */
   oposiciones: string[]
   mayoria: Mayoria
@@ -35,9 +37,11 @@ export function estadoDecision(args: {
   const c = conteo(args.padron, args.votos, ['positivo'])
   const opuestas = new Set(args.oposiciones)
   let favor: Cuenta = c.porOpcion.positivo
-  for (const u of args.padron) {
-    if (u.presente || u.sinVoto || opuestas.has(u.unidadId)) continue
-    favor = { unidades: favor.unidades + 1, coeficiente: favor.coeficiente.plus(u.coeficiente) }
+  const coeficientes = new Map(args.padron.map((u) => [u.unidadId, u.coeficiente]))
+  for (const id of args.ausentes) {
+    const coef = coeficientes.get(id)
+    if (!coef || opuestas.has(id)) continue
+    favor = { unidades: favor.unidades + 1, coeficiente: favor.coeficiente.plus(coef) }
   }
   return alcanzaUmbral(favor, c.baseTotal, args.mayoria) ? 'firme' : 'caida'
 }

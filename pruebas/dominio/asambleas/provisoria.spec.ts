@@ -29,7 +29,14 @@ const vence = new Date('2026-12-05T22:00:00Z')
 const antes = new Date('2026-12-01T12:00:00Z')
 const despues = new Date('2026-12-06T00:00:00Z')
 
-const base = { provisorio: true, vence, padron, votos, mayoria: 'absoluta' as const }
+const base = {
+  provisorio: true,
+  vence,
+  padron,
+  votos,
+  ausentes: ['D', 'E'],
+  mayoria: 'absoluta' as const,
+}
 
 describe('estadoDecision', () => {
   it('una decisión no provisoria es firme', () => {
@@ -76,11 +83,25 @@ describe('estadoDecision', () => {
     ]
     // Se opone E: unidades A, C y D = 3 de 5 (alcanza); coeficientes 55 de 100 (alcanza)…
     expect(
-      estadoDecision({ ...base, padron: p, votos: vs, ahora: despues, oposiciones: ['E'] }),
+      estadoDecision({
+        ...base,
+        padron: p,
+        votos: vs,
+        ausentes: ['C', 'D', 'E'],
+        ahora: despues,
+        oposiciones: ['E'],
+      }),
     ).toBe('firme')
     // …se oponen E y C: unidades 2 de 5 → cae.
     expect(
-      estadoDecision({ ...base, padron: p, votos: vs, ahora: despues, oposiciones: ['E', 'C'] }),
+      estadoDecision({
+        ...base,
+        padron: p,
+        votos: vs,
+        ausentes: ['C', 'D', 'E'],
+        ahora: despues,
+        oposiciones: ['E', 'C'],
+      }),
     ).toBe('caida')
     // A 40 y B 10 presentes; C 5, D 5 y E 40 ausentes. Se opone solo E: las unidades
     // alcanzan (A, C y D = 3 de 5) pero los coeficientes no (40 + 5 + 5 = 50, no supera 50).
@@ -92,10 +113,24 @@ describe('estadoDecision', () => {
       u('E', '40', false),
     ]
     expect(
-      estadoDecision({ ...base, padron: p2, votos: vs, ahora: despues, oposiciones: ['E'] }),
+      estadoDecision({
+        ...base,
+        padron: p2,
+        votos: vs,
+        ausentes: ['C', 'D', 'E'],
+        ahora: despues,
+        oposiciones: ['E'],
+      }),
     ).toBe('caida')
     expect(
-      estadoDecision({ ...base, padron: p2, votos: vs, ahora: despues, oposiciones: [] }),
+      estadoDecision({
+        ...base,
+        padron: p2,
+        votos: vs,
+        ausentes: ['C', 'D', 'E'],
+        ahora: despues,
+        oposiciones: [],
+      }),
     ).toBe('firme')
   })
 
@@ -106,6 +141,18 @@ describe('estadoDecision', () => {
     ).toBe('firme')
     expect(
       estadoDecision({ ...base, mayoria: 'unanimidad', ahora: despues, oposiciones: [] }),
+    ).toBe('caida')
+  })
+
+  it('quien llegó después de la votación sigue contando como ausente de ese punto', () => {
+    const llegoTarde = padron.map((x) => (x.unidadId === 'E' ? { ...x, presente: true } : x))
+    // Sin oposiciones: D y E suman por silencio aunque E figure presente hoy.
+    expect(estadoDecision({ ...base, padron: llegoTarde, ahora: despues, oposiciones: [] })).toBe(
+      'firme',
+    )
+    // Se opone E: 3 de 5 y 65 de 100, sigue firme; se oponen D y E, cae.
+    expect(
+      estadoDecision({ ...base, padron: llegoTarde, ahora: despues, oposiciones: ['D', 'E'] }),
     ).toBe('caida')
   })
 })

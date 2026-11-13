@@ -99,6 +99,26 @@ describe('regla «totalidad»', () => {
     expect((await verAsamblea(repo, RELOJ, de(e.ana))).puntos[0].estadoDecision).toBe('provisoria')
   })
 
+  it('la ausente que llega después del punto conserva la oposición', async () => {
+    await votarYCerrar('totalidad')
+    await acreditarme(repo, RELOJ, de(e.ana)) // llega tarde
+    const punto = await prismaBase.puntoAsamblea.findUniqueOrThrow({ where: { id: puntoId } })
+    expect(punto.ausentesConVoto.sort()).toEqual([e.unidades['1A'], e.unidades['2B']].sort())
+    const vista = await verAsamblea(repo, RELOJ, de(e.ana))
+    expect(vista.yo.puedoOponerme).toEqual([
+      expect.objectContaining({ puntoId, unidadId: e.unidades['1A'] }),
+    ])
+    await oponerme(repo, RELOJ, { ...de(e.ana), puntoId, unidadId: e.unidades['1A'] })
+    expect(await prismaBase.oposicionDecision.count({ where: { puntoId } })).toBe(1)
+  })
+
+  it('la lista de ausentes no se puede cambiar después de cerrar', async () => {
+    await votarYCerrar('totalidad')
+    await expect(
+      prismaBase.$executeRaw`UPDATE "PuntoAsamblea" SET ausentes_con_voto = '{}' WHERE id = ${puntoId}::uuid`,
+    ).rejects.toThrow(/se fija al cerrarlo/)
+  })
+
   it('solo se opone el propietario de una unidad ausente, dentro del plazo', async () => {
     await votarYCerrar('totalidad')
     await expect(

@@ -369,6 +369,7 @@ export async function verAsamblea(
                   ahora,
                   padron: padronDom,
                   votos: votosDom,
+                  ausentes: p.ausentesConVoto,
                   oposiciones: p.oposiciones.map((o) => o.unidadId),
                   mayoria: p.mayoria,
                 })
@@ -454,12 +455,18 @@ export async function verAsamblea(
           .map((v) => v.unidadId)
       }
 
+      const ausentesDe = new Map(asamblea.puntos.map((p) => [p.id, p.ausentesConVoto]))
       const puedoOponerme = puntos.flatMap((p) =>
         p.estadoDecision === 'provisoria'
           ? propias
               .filter((m) => {
                 const u = representadas.get(m.unidadId)
-                return u && !u.presente && !u.sinVoto && !p.oposiciones.includes(m.unidadId)
+                return (
+                  u &&
+                  !u.sinVoto &&
+                  ausentesDe.get(p.id)?.includes(m.unidadId) &&
+                  !p.oposiciones.includes(m.unidadId)
+                )
               })
               .map((m) => ({
                 puntoId: p.id,

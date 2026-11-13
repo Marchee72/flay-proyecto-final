@@ -26,16 +26,17 @@ async function validar(datos: Datos, ahora: Date): Promise<void> {
   const asamblea = await cargarAsamblea(datos.asambleaId)
   const punto = await prisma.puntoAsamblea.findFirst({
     where: { id: datos.puntoId, asambleaId: asamblea.id },
-    select: { provisorio: true, vencePlazoOposicion: true },
+    select: { provisorio: true, vencePlazoOposicion: true, ausentesConVoto: true },
   })
   if (!punto?.provisorio || !punto.vencePlazoOposicion || ahora > punto.vencePlazoOposicion) {
     throw new FueraDePlazo()
   }
   const unidad = await prisma.unidadEnAsamblea.findFirst({
     where: { asambleaId: asamblea.id, unidadId: datos.unidadId },
-    select: { presente: true, sinVoto: true },
+    select: { sinVoto: true },
   })
-  if (!unidad || unidad.presente || unidad.sinVoto) throw new NoEraAusente()
+  if (!unidad || unidad.sinVoto || !punto.ausentesConVoto.includes(datos.unidadId))
+    throw new NoEraAusente()
 }
 
 async function registrar(

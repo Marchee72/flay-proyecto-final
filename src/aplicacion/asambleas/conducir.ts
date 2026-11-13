@@ -456,11 +456,12 @@ export async function cerrarPunto(
         }
       }
 
-      // Los ausentes con voto se enteran de la decisión provisoria (FR-027).
+      // Quiénes estaban ausentes con voto se congela ahora (una llegada tardía no lo cambia)
+      // y los provisorios se enteran de la decisión (FR-027).
+      const ausentesAlCerrar = padron.filter((u) => !u.presente && !u.sinVoto)
+      datosCierre.ausentesConVoto = ausentesAlCerrar.map((u) => u.unidadId)
       const ausentes = provisorio
-        ? padron
-            .filter((u) => !u.presente && !u.sinVoto)
-            .map((u) => ({ id: u.unidadId, designacion: u.designacion }))
+        ? ausentesAlCerrar.map((u) => ({ id: u.unidadId, designacion: u.designacion }))
         : []
       const destinatarios = provisorio
         ? repartirPropietarios(

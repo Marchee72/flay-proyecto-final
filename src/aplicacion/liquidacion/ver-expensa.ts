@@ -74,6 +74,11 @@ export interface ExpensaVisible {
   /** Verdadero si ya paso el ultimo vencimiento: la expensa vence en firme. */
   venceEnFirme: boolean
   /**
+   * Es la ultima vigente de la unidad: la que se paga, con lo arrastrado. Una
+   * anterior impaga se paga con esta, asi que no lleva instrucciones (RF-09, A7).
+   */
+  esUltima: boolean
+  /**
    * Es la ultima vigente, vencio en firme y debe: no se acepta ningun pago hasta
    * la liquidacion siguiente, que le suma el recargo y la mora (RF-08).
    */
@@ -327,6 +332,7 @@ async function aVisible(
     recargoArrastre: recargoMaximo(tramos),
     tasaMora: detalle.liquidacion.consorcio.tasaMoraMensual.toFixed(4),
     venceEnFirme: vigente.venceEnFirme,
+    esUltima,
     bloqueada: esUltima && deuda.bloqueado,
     vencimientos: tramos.map((t) => ({
       orden: t.orden,

@@ -333,6 +333,24 @@ describe('estado de cobro de la expensa (CU-06)', () => {
     expect(una.direccion).toBeNull()
   })
 
+  it('solo la última expensa de la unidad se marca como la vigente (RF-09, A7)', async () => {
+    // Agosto impago y septiembre que lo arrastra: agosto «se paga con la última
+    // expensa», así que la pantalla no le muestra cómo pagarla.
+    const agosto = (await emitir(8)).find((d) => d.unidad.designacion === '1A')!
+    const septiembre = (await emitir(9)).find((d) => d.unidad.designacion === '1A')!
+    const datos = { usuarioId: administrador, consorcioId }
+
+    const vieja = await verExpensa(almacenDoble, repo, RELOJ, { ...datos, detalleId: agosto.id })
+    const ultima = await verExpensa(almacenDoble, repo, RELOJ, {
+      ...datos,
+      detalleId: septiembre.id,
+    })
+
+    expect(vieja.estadoPago).not.toBe('pagada')
+    expect(vieja.esUltima).toBe(false)
+    expect(ultima.esUltima).toBe(true)
+  })
+
   it('misExpensas del consejo trae solo la unidad que ocupa', async () => {
     const consejo = await crearUsuario('Cora')
     await habilitarEnConsorcio(consejo.id, consorcioId, 'consejo')

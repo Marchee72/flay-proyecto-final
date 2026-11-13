@@ -53,9 +53,9 @@ function CampoNota({
           // Otra persona escribió antes: queda su versión y la propia va a «copialo».
           guardado.current = resultado.actuales
           ultimo.current = resultado.actuales
+          alPerder(puntoId, campo.current?.value ?? notas)
           if (campo.current) campo.current.value = resultado.actuales
           avisar(resultado.error, 'problema')
-          alPerder(puntoId, notas)
           return
         }
         avisar(resultado.error, 'problema')

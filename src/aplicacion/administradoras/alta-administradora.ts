@@ -1,7 +1,9 @@
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
+import { normalizarCuit } from '@/dominio/proveedores/cuit'
 import { conAutorizacionDePlataforma } from '@/aplicacion/autorizacion'
+import { CuitInvalido } from '@/aplicacion/proveedores/proveedores'
 import { prismaBase } from '@/infraestructura/prisma'
 
 /**
@@ -30,12 +32,14 @@ export async function altaAdministradora(
     reloj,
     { usuarioId: datos.usuarioId, accion: 'dar de alta una administradora' },
     async () => {
-      if (await prismaBase.administradora.findUnique({ where: { cuit: datos.cuit } })) {
+      const cuit = normalizarCuit(datos.cuit)
+      if (!cuit) throw new CuitInvalido()
+      if (await prismaBase.administradora.findUnique({ where: { cuit } })) {
         throw new CuitDeAdministradoraRepetido()
       }
 
       const creada = await prismaBase.administradora.create({
-        data: { razonSocial: datos.razonSocial, cuit: datos.cuit },
+        data: { razonSocial: datos.razonSocial, cuit },
       })
 
       return { administradoraId: creada.id }

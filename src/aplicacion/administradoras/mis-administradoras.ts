@@ -11,9 +11,9 @@ export async function misAdministradoras(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
   usuarioId: string,
-): Promise<{ id: string; razonSocial: string }[]> {
+): Promise<{ id: string; razonSocial: string; cuit: string }[]> {
   const hoy = reloj.hoy()
-  const seleccion = { id: true, razonSocial: true }
+  const seleccion = { id: true, razonSocial: true, cuit: true }
   const orden = { razonSocial: 'asc' } as const
 
   if (await repositorio.esSuperAdministrador(usuarioId, hoy)) {

@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
+  Briefcase,
   Building2,
   CalendarCheck,
   ChevronDown,
@@ -21,7 +22,13 @@ function activa(ruta: string, base: string, seccion: string): boolean {
 }
 
 /** Lo que no depende de un consorcio: la lista y, a quien administra, la bandeja. */
-export function NavegacionGlobal({ conBandeja }: { conBandeja: boolean }) {
+export function NavegacionGlobal({
+  conBandeja,
+  conAdministradoras,
+}: {
+  conBandeja: boolean
+  conAdministradoras: boolean
+}) {
   const ruta = usePathname()
   return (
     <nav className="panel__global" aria-label="Panel">
@@ -33,6 +40,15 @@ export function NavegacionGlobal({ conBandeja }: { conBandeja: boolean }) {
         <Link href="/bandeja" aria-current={ruta === '/bandeja' ? 'page' : undefined}>
           <Inbox className="icono" aria-hidden="true" />
           Bandeja
+        </Link>
+      )}
+      {conAdministradoras && (
+        <Link
+          href="/administradoras"
+          aria-current={ruta === '/administradoras' ? 'page' : undefined}
+        >
+          <Briefcase className="icono" aria-hidden="true" />
+          Administradoras
         </Link>
       )}
     </nav>

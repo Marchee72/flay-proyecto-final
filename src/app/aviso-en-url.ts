@@ -10,6 +10,7 @@
  */
 export const HECHO = {
   'enlace-enviado': 'Le mandamos un correo con un enlace para elegir una contraseña nueva.',
+  'administradora-creada': 'Administradora creada. Ya podés darle de alta consorcios.',
   'contrasena-guardada': 'La contraseña quedó guardada. Ya se puede entrar.',
   despachado: 'Se despachó lo que había pendiente.',
   'periodo-cerrado': 'Período cerrado. Ya no admite más gastos.',

@@ -60,13 +60,33 @@ describe('alta de administradora', () => {
     const { administradoraId } = await altaAdministradora(repositorioHabilitaciones, RELOJ, {
       usuarioId: superAdmin,
       razonSocial: 'Nueva Administradora',
-      cuit: `30-${crypto.randomUUID().slice(0, 8)}-1`,
+      cuit: cuitUnico(),
     })
 
     const creada = await prismaBase.administradora.findUniqueOrThrow({
       where: { id: administradoraId },
     })
     expect(creada.razonSocial).toBe('Nueva Administradora')
+  })
+
+  it('el CUIT de la administradora se normaliza y uno inválido se rechaza', async () => {
+    const { administradoraId } = await altaAdministradora(repositorioHabilitaciones, RELOJ, {
+      usuarioId: superAdmin,
+      razonSocial: 'Con Guiones SRL',
+      cuit: '30712345671',
+    })
+    const creada = await prismaBase.administradora.findUniqueOrThrow({
+      where: { id: administradoraId },
+    })
+    expect(creada.cuit).toBe('30-71234567-1')
+
+    await expect(
+      altaAdministradora(repositorioHabilitaciones, RELOJ, {
+        usuarioId: superAdmin,
+        razonSocial: 'Mala SRL',
+        cuit: '30',
+      }),
+    ).rejects.toBeInstanceOf(CuitInvalido)
   })
 
   it('no la puede crear alguien con habilitacion de empresa', async () => {

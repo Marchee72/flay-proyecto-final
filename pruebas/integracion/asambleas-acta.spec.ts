@@ -265,6 +265,8 @@ describe('firma', () => {
     const acta = await prismaBase.actaAsamblea.findFirstOrThrow({ where: { asambleaId } })
     expect(acta.estado).toBe('firmada')
     expect(await prismaBase.documentoConsorcio.count({ where: { tipo: 'acta' } })).toBe(1)
+    const doc = await prismaBase.documentoConsorcio.findFirstOrThrow({ where: { tipo: 'acta' } })
+    expect(huella(guardados.get(doc.claveAlmacenamiento)!)).toBe(doc.hashSha256)
     expect(
       (await prismaBase.asamblea.findUniqueOrThrow({ where: { id: asambleaId } })).estado,
     ).toBe('acta_firmada')

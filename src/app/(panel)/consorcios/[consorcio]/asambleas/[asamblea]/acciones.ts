@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { after } from 'next/server'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { FirmanteInvalido } from '@/aplicacion/asambleas/errores'
 import {
   ALMACEN,
   DERIVADOR,
@@ -422,7 +423,10 @@ export async function accionFirmar(datos: FormData) {
 export async function accionCompletarActa(datos: FormData) {
   await ejecutar(
     datos,
-    (b) => completarActa(HABILITACIONES, RELOJ, ACTA, b),
+    async (b) => {
+      const { completa } = await completarActa(HABILITACIONES, RELOJ, ACTA, b)
+      if (!completa) throw new FirmanteInvalido('Todavía faltan firmas para completar el acta.')
+    },
     'acta-completada',
     'acta',
   )

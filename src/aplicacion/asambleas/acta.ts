@@ -383,7 +383,7 @@ export async function pedirBorrador(
   })
 }
 
-const claveActa = (consorcioId: string, asambleaId: string, cual: 'contenido' | 'firmada') =>
+const claveActa = (consorcioId: string, asambleaId: string, cual: string) =>
   `documentos/${consorcioId}/actas/${asambleaId}-${cual}.pdf`
 
 export async function enviarAFirmar(
@@ -492,7 +492,8 @@ async function cerrarSiCompleta(
     })),
   }
   const bytes = await dependencias.generador.acta(documento)
-  const clave = claveActa(datos.consorcioId, asamblea.id, 'firmada')
+  // La clave lleva la huella de lo guardado: un cierre concurrente no pisa los bytes del que gana.
+  const clave = claveActa(datos.consorcioId, asamblea.id, `firmada-${huella(bytes).slice(0, 16)}`)
   await dependencias.almacen.guardar(clave, bytes, 'application/pdf')
 
   const destinatarios = await propietariosPorCanal(await unidadesVigentes(), reloj.hoy())
@@ -709,9 +710,13 @@ export async function enlaceDelActa(
   return conAutorizacion(repositorio, reloj, { ...datos, accion: 'ver el acta' }, async () => {
     const asamblea = await cargarAsamblea(datos.asambleaId)
     const acta = await actaDe(asamblea.id)
-    const clave = acta.documentoId
-      ? claveActa(datos.consorcioId, asamblea.id, 'firmada')
-      : acta.claveContenido
+    const doc = acta.documentoId
+      ? await prisma.documentoConsorcio.findFirst({
+          where: { id: acta.documentoId },
+          select: { claveAlmacenamiento: true },
+        })
+      : null
+    const clave = doc?.claveAlmacenamiento ?? acta.claveContenido
     return clave ? almacen.resolverLecturaAutorizada(clave, 600) : null
   })
 }

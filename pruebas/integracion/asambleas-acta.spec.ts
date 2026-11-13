@@ -294,6 +294,26 @@ describe('firma', () => {
     expect(await completarActa(repo, DESPUES, deps, de(e.consejo))).toEqual({ completa: false })
   })
 
+  it('un apoderado no reemplaza a un firmante', async () => {
+    // Iván es apoderado de 2B y preside: se lo libera de la firma reemplazándolo por Elsa.
+    const deIvan = await prismaBase.firmanteActa.findFirstOrThrow({ where: { usuarioId: e.ivan } })
+    await reemplazarFirmante(repo, DESPUES, {
+      ...de(e.consejo),
+      firmanteId: deIvan.id,
+      nuevoUsuarioId: e.elsa!,
+    })
+    const deBruno = await prismaBase.firmanteActa.findFirstOrThrow({
+      where: { usuarioId: e.bruno },
+    })
+    await expect(
+      reemplazarFirmante(repo, DESPUES, {
+        ...de(e.consejo),
+        firmanteId: deBruno.id,
+        nuevoUsuarioId: e.ivan,
+      }),
+    ).rejects.toBeInstanceOf(FirmanteInvalido)
+  })
+
   it('un firmante pendiente se reemplaza; uno que ya firmó, no', async () => {
     const ausente = (await crearUsuario('Otro', 'Ausente')).id
     await habilitarEnConsorcio(ausente, e.consorcioId, 'consorcista')

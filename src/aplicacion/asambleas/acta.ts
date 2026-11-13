@@ -631,7 +631,7 @@ export async function reemplazarFirmante(
       if (firmante.firmadoEn) throw new FirmanteYaFirmo()
 
       const presentes = await prisma.unidadEnAsamblea.findMany({
-        where: { asambleaId: asamblea.id, presente: true },
+        where: { asambleaId: asamblea.id, presente: true, representacion: 'propietario' },
         select: { representanteId: true },
       })
       const validos = new Set(presentes.map((p) => p.representanteId).filter(Boolean))

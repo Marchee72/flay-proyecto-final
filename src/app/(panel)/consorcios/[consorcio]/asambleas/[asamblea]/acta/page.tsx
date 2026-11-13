@@ -97,7 +97,7 @@ export default async function ActaPage({
     const presentesConUsuario = [
       ...new Map(
         vista.padron
-          .filter((u) => u.presente && u.representanteId)
+          .filter((u) => u.presente && u.representacion === 'propietario' && u.representanteId)
           .map((u) => [u.representanteId!, u]),
       ).values(),
     ].filter((u) => !acta.firmantes.some((f) => f.usuarioId === u.representanteId))

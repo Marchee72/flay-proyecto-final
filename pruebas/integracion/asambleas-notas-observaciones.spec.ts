@@ -122,6 +122,16 @@ describe('notas por punto', () => {
     expect((await leerPuntos())[0].notas).toBe('Secretaría: tres presupuestos')
   })
 
+  it('guardar dos veces seguidas con espacios al borde no es un conflicto', async () => {
+    await abrirPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntos[0].id })
+    const base = { ...de(e.carla), puntoId: puntos[0].id }
+    await guardarNotas(repo, RELOJ, { ...base, notas: 'x ', anterior: '' })
+    await guardarNotas(repo, RELOJ, { ...base, notas: 'y', anterior: 'x ' })
+    await guardarNotas(repo, RELOJ, { ...base, notas: '   ', anterior: 'y' })
+    await guardarNotas(repo, RELOJ, { ...base, notas: 'z', anterior: '   ' })
+    expect((await leerPuntos())[0].notas).toBe('z')
+  })
+
   it('con el punto abierto se escriben, y al cerrarlo quedan fijas', async () => {
     await abrirPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntos[0].id })
     await guardarNotas(repo, RELOJ, {

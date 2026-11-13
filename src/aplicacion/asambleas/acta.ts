@@ -90,13 +90,14 @@ export async function guardarNotas(
   await conAutorizacion(repositorio, reloj, { ...datos, accion: 'redactar el acta' }, async () => {
     const asamblea = await cargarAsamblea(datos.asambleaId)
     exigirRedacta(asamblea, datos.usuarioId)
+    // Lo guardado va sin espacios al borde: se compara contra eso, no contra el texto crudo.
+    const previa = datos.anterior.trim()
     const { count } = await conReglas(() =>
       prisma.puntoAsamblea.updateMany({
         where: {
           id: datos.puntoId,
           asambleaId: asamblea.id,
-          OR:
-            datos.anterior === '' ? [{ notas: null }, { notas: '' }] : [{ notas: datos.anterior }],
+          OR: previa === '' ? [{ notas: null }, { notas: '' }] : [{ notas: previa }],
         },
         data: { notas: datos.notas.trim() || null },
       }),

@@ -184,6 +184,7 @@ async function ejecutarEnSala(
   datos: FormData,
   trabajo: (base: Base) => Promise<unknown>,
   hecho: keyof typeof MENSAJE_SALA,
+  publicar = true,
 ): Promise<ResultadoSala> {
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) redirect('/ingresar')
@@ -193,7 +194,8 @@ async function ejecutarEnSala(
     asambleaId: texto(datos, 'asamblea'),
   }
   try {
-    await conAviso(AVISO_EN_VIVO, after, base.asambleaId, () => trabajo(base))
+    if (publicar) await conAviso(AVISO_EN_VIVO, after, base.asambleaId, () => trabajo(base))
+    else await trabajo(base)
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
     return { ok: false, error: error.mensajeParaUsuario }
@@ -335,7 +337,7 @@ export async function accionOposicionEnPapel(datos: FormData) {
 
 // Acta -----------------------------------------------------------------------
 
-/** Se guarda sola mientras se escribe: no refresca la sala de nadie, ni avisa si salió bien. */
+/** Se guarda con el botón; no refresca la sala de nadie. */
 export async function accionObservacion(datos: FormData): Promise<ResultadoSala> {
   return ejecutarEnSala(
     datos,
@@ -345,6 +347,7 @@ export async function accionObservacion(datos: FormData): Promise<ResultadoSala>
         texto: String(datos.get('texto') ?? ''),
       }),
     'observacion-guardada',
+    false,
   )
 }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 
 import type { VistaAsamblea } from '@/aplicacion/asambleas/ver'
 
@@ -15,6 +15,9 @@ import { notificarResultado } from './direccion'
  */
 export function Observacion({ vista }: { vista: VistaAsamblea }) {
   const [guardando, iniciar] = useTransition()
+  const [guardado, setGuardado] = useState(vista.yo.miObservacion ?? '')
+  const [texto, setTexto] = useState(guardado)
+  const sinGuardar = texto !== guardado
 
   return (
     <section className="tarjeta" aria-labelledby="observacion-titulo">
@@ -28,7 +31,8 @@ export function Observacion({ vista }: { vista: VistaAsamblea }) {
           evento.preventDefault()
           const datos = new FormData(evento.currentTarget)
           iniciar(async () => {
-            await notificarResultado(accionObservacion(datos))
+            if (await notificarResultado(accionObservacion(datos)))
+              setGuardado(String(datos.get('texto') ?? ''))
           })
         }}
       >
@@ -40,8 +44,19 @@ export function Observacion({ vista }: { vista: VistaAsamblea }) {
             rows={4}
             maxLength={1000}
             defaultValue={vista.yo.miObservacion}
+            onChange={(e) => setTexto(e.target.value)}
           />
         </div>
+        {sinGuardar && (
+          <>
+            <p className="aviso aviso--atencion" role="status">
+              Sin guardar
+            </p>
+            <p className="ayuda">
+              Guardala antes de que quien dirige finalice: lo que no se guardó se pierde.
+            </p>
+          </>
+        )}
         <button className="boton boton--primario" type="submit" disabled={guardando}>
           Guardar observación
         </button>

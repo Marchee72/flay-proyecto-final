@@ -588,10 +588,12 @@ export async function firmar(
       prisma.$transaction(async (tx) => {
         await tx.$queryRaw`SELECT id FROM "ActaAsamblea" WHERE id = ${acta.id}::uuid FOR UPDATE`
         const actual = await tx.firmanteActa.findFirst({
-          where: { id: mio.id },
+          where: { id: mio.id, usuarioId: datos.usuarioId },
           select: { firmadoEn: true },
         })
-        if (actual?.firmadoEn) throw new YaFirmo()
+        // Si lo reemplazaron mientras se verificaba la contraseña, esta firma ya no es suya.
+        if (!actual) throw new NoEncontrado('RF-32')
+        if (actual.firmadoEn) throw new YaFirmo()
         await tx.firmanteActa.update({
           where: { id: mio.id },
           data: { firmadoEn: ahora, hashFirmado: acta.hashContenido },
@@ -661,6 +663,7 @@ export async function reemplazarFirmante(
       await conReglas(
         () =>
           prisma.$transaction(async (tx) => {
+            await tx.$queryRaw`SELECT id FROM "ActaAsamblea" WHERE id = ${acta.id}::uuid FOR UPDATE`
             await tx.firmanteActa.update({
               where: { id: firmante.id },
               data: { usuarioId: datos.nuevoUsuarioId, reemplazaA: firmante.usuarioId },

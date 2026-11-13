@@ -290,6 +290,36 @@ describe('firma', () => {
     )
   })
 
+  it('si lo reemplazan mientras verifica la contraseña, su firma no se escribe', async () => {
+    const deAna = await prismaBase.firmanteActa.findFirstOrThrow({ where: { usuarioId: e.ana } })
+    const reemplazando: DerivadorDeContrasenas = {
+      ...derivador,
+      verificar: async (...args) => {
+        const ok = await derivador.verificar(...args)
+        await reemplazarFirmante(repo, DESPUES, {
+          ...de(e.consejo),
+          firmanteId: deAna.id,
+          nuevoUsuarioId: e.elsa!,
+        })
+        return ok
+      },
+    }
+    await expect(
+      firmar(
+        repo,
+        DESPUES,
+        { ...deps, derivador: reemplazando },
+        {
+          ...de(e.ana),
+          contrasena: secretoDeFirma,
+        },
+      ),
+    ).rejects.toBeInstanceOf(NoEncontrado)
+    const fila = await prismaBase.firmanteActa.findUniqueOrThrow({ where: { id: deAna.id } })
+    expect(fila.usuarioId).toBe(e.elsa)
+    expect(fila.firmadoEn).toBeNull()
+  })
+
   it('con firmas pendientes, completar no hace nada', async () => {
     expect(await completarActa(repo, DESPUES, deps, de(e.consejo))).toEqual({ completa: false })
   })

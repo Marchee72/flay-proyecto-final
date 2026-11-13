@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { SISTEMA_ACTA } from '@/infraestructura/asistencia/prompts-acta'
+import { SISTEMA_ACTA } from '@/infraestructura/prompts-acta'
 
 describe('prompt del redactor del acta', () => {
   it('pide ortografía, omite el cero y despersonaliza', () => {

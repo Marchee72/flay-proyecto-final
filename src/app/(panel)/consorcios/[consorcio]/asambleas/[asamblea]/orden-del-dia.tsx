@@ -25,10 +25,9 @@ export function OrdenDelDia({
   const oponibles = new Map(vista.yo.puedoOponerme.map((o) => [o.puntoId, o]))
   const ausentesSinCuenta = (puntoId: string) => {
     const punto = vista.puntos.find((p) => p.id === puntoId)!
-    return vista.propietariosSinCuenta.filter((p) => {
-      const u = vista.padron.find((x) => x.unidadId === p.unidadId)
-      return u && !u.presente && !u.sinVoto && !punto.oposiciones.includes(p.unidadId)
-    })
+    return vista.propietariosSinCuenta.filter(
+      (p) => punto.ausentesConVoto.includes(p.unidadId) && !punto.oposiciones.includes(p.unidadId),
+    )
   }
 
   return (

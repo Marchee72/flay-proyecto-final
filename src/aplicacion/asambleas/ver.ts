@@ -78,6 +78,8 @@ export interface PuntoVista {
     cargaManual: boolean
   }[]
   oposiciones: string[]
+  /** Unidades ausentes con voto al cerrar (congeladas): quienes pueden oponerse en papel. */
+  ausentesConVoto: string[]
   resumen: string | null
   /** Solo para quien redacta: la vista viaja al navegador de todos los asistentes. */
   notas: string | null
@@ -395,6 +397,7 @@ export async function verAsamblea(
             cargaManual: v.origen === 'carga_manual',
           })),
           oposiciones: p.oposiciones.map((o) => o.unidadId),
+          ausentesConVoto: p.ausentesConVoto,
           resumen: p.resumen,
           notas: redacta ? p.notas : null,
           borradorResumen: redacta ? p.borradorResumen : null,

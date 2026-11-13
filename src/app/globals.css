@@ -3700,8 +3700,8 @@ table.calendario th {
   /* La grilla de siete columnas no es una lista: se le devuelve su display de
      tabla a la que el bloque de tablas de arriba convirtió, y el
      `.tabla-desplazable` que la envuelve desplaza a lo ancho (RNF-01). Los
-     selectores llevan el envoltorio para ganarle en especificidad a las reglas
-     genericas de celdas. */
+     selectores de celda duplican el envoltorio y nombran la clase de la celda
+     para ganarle en especificidad a los `:not()` de las reglas genericas. */
   .tabla-desplazable:has(table.calendario) {
     overflow-x: auto;
   }
@@ -3731,14 +3731,18 @@ table.calendario th {
   .tabla-desplazable table.calendario th {
     display: table-cell;
   }
-  .tabla-desplazable table.calendario td {
+  .tabla-desplazable.tabla-desplazable
+    table.calendario
+    td:is(.calendario__dia, .calendario__vacio) {
     display: table-cell;
     padding: var(--e1);
     font-size: inherit;
     font-weight: 400;
     color: inherit;
   }
-  .tabla-desplazable table.calendario td::before {
+  .tabla-desplazable.tabla-desplazable
+    table.calendario
+    td:is(.calendario__dia, .calendario__vacio)::before {
     content: none;
   }
 }

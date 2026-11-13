@@ -99,6 +99,16 @@ test('el historial de reservas muestra la grilla de siete columnas sin desbordar
     expect(segundaSemana).toHaveLength(7)
     const ys = await Promise.all(segundaSemana.map(async (c) => (await c.boundingBox())?.y))
     expect(new Set(ys).size).toBe(1)
+    // Ninguna celda hereda el formato de lista: ni el «· » ni el texto apagado.
+    const estilo = (c: (typeof segundaSemana)[number]) =>
+      c.evaluate((el) => {
+        const e = getComputedStyle(el)
+        return [e.fontSize, e.color, getComputedStyle(el, '::before').content]
+      })
+    const primera = await estilo(segundaSemana[0])
+    const quinta = await estilo(segundaSemana[4])
+    expect(quinta).toEqual(primera)
+    expect(['none', 'normal']).toContain(quinta[2])
   } finally {
     await limpiarEscenario(admin)
   }

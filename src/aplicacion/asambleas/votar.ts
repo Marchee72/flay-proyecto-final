@@ -5,7 +5,6 @@ import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { sinConsorcio } from '@/infraestructura/cliente-aislado'
 import { prisma } from '@/infraestructura/prisma'
-import { propietariosVigentesDe } from '@/infraestructura/repositorios/ocupaciones'
 
 import { cargarAsamblea, exigirDirige, ROLES_ORGANIZADORES } from './comun'
 import { AsambleaInvalida, conReglas, NoRepresenta, UnidadYaVoto } from './errores'
@@ -79,16 +78,9 @@ export async function votar(
     const asamblea = await cargarAsamblea(datos.asambleaId)
     const unidad = await prisma.unidadEnAsamblea.findFirst({
       where: { asambleaId: asamblea.id, unidadId: datos.unidadId },
-      select: { representanteId: true, presente: true, representacion: true },
+      select: { representanteId: true, presente: true },
     })
-    let representanteId = unidad?.representanteId ?? null
-    if (unidad?.presente && !representanteId && unidad.representacion === 'propietario') {
-      const titulares = await propietariosVigentesDe([datos.unidadId], reloj.hoy())
-      if (titulares.some((t) => t.usuarioId === datos.usuarioId)) {
-        representanteId = datos.usuarioId
-      }
-    }
-    if (!unidad?.presente || representanteId !== datos.usuarioId) throw new NoRepresenta()
+    if (!unidad?.presente || unidad.representanteId !== datos.usuarioId) throw new NoRepresenta()
     await insertarVoto(datos, 'propio', reloj.ahora())
   })
 }

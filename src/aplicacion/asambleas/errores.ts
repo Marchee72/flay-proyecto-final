@@ -109,6 +109,12 @@ export class NoRepresenta extends ErrorDeAsamblea {
   }
 }
 
+export class SinPoderRegistrado extends ErrorDeAsamblea {
+  constructor(designacion: string) {
+    super(`La unidad ${designacion} no tiene un poder registrado para esta asamblea.`)
+  }
+}
+
 export class NoEsPropietario extends ErrorDeAsamblea {
   constructor() {
     super('Solo el propietario vigente de la unidad puede otorgar un poder sobre ella.', 'RF-30')

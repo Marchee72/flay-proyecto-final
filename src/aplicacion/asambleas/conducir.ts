@@ -1,6 +1,7 @@
 import type { Asamblea, Prisma } from '@prisma/client'
 
 import { Decimal } from '@/compartido/dinero'
+import { mismoNombre } from '@/compartido/nombres'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { transicionAsamblea, transicionPunto } from '@/dominio/asambleas/estado'
@@ -34,6 +35,7 @@ import {
   NoRepresenta,
   OtroPuntoAbierto,
   PuntosSinCerrar,
+  SinPoderRegistrado,
   SinQuorum,
   UnidadYaAcreditada,
 } from './errores'
@@ -222,12 +224,21 @@ export async function acreditar(
         nombre = await nombreDe(datos.representanteId)
       } else if (datos.representanteId === undefined && representacion === 'propietario') {
         const titulares = await propietariosVigentesDe([datos.unidadId], reloj.hoy())
-        const coincidente =
-          titulares.find((t) => t.usuarioId && t.nombre.toLowerCase() === nombre.toLowerCase()) ??
-          titulares.find((t) => t.usuarioId)
-        if (coincidente?.usuarioId) {
-          representanteId = coincidente.usuarioId
+        const coincidente = titulares.find((t) => t.usuarioId && mismoNombre(t.nombre, nombre))
+        if (coincidente?.usuarioId) representanteId = coincidente.usuarioId
+      } else if (datos.representanteId === undefined && representacion === 'apoderado') {
+        const poder = await prisma.poder.findFirst({
+          where: { asambleaId: asamblea.id, unidadId: datos.unidadId, revocadoEn: null },
+        })
+        if (!poder) {
+          const u = await prisma.unidadEnAsamblea.findFirst({
+            where: { asambleaId: asamblea.id, unidadId: datos.unidadId },
+            select: { designacion: true },
+          })
+          throw new SinPoderRegistrado(u?.designacion ?? datos.unidadId)
         }
+        representanteId = poder.apoderadoId
+        nombre = await nombreDe(poder.apoderadoId)
       }
       if (!nombre) throw new AsambleaInvalida('Indicá quién está presente por la unidad.')
 
@@ -276,15 +287,9 @@ export async function designarAutoridades(
           representanteNombre: true,
         },
       })
-      const sinVincularIds = presentes
-        .filter((p) => !p.representanteId && p.representacion === 'propietario')
-        .map((p) => p.unidadId)
-      const propietariosPresentes =
-        sinVincularIds.length > 0 ? await propietariosVigentesDe(sinVincularIds, reloj.hoy()) : []
-      const conUsuario = new Set<string>([
-        ...presentes.map((p) => p.representanteId).filter((id): id is string => Boolean(id)),
-        ...propietariosPresentes.map((p) => p.usuarioId).filter((id): id is string => Boolean(id)),
-      ])
+      const conUsuario = new Set<string>(
+        presentes.map((p) => p.representanteId).filter((id): id is string => Boolean(id)),
+      )
       for (const id of [datos.presidenteId, datos.secretarioId]) {
         if (!conUsuario.has(id)) {
           throw presentes.length > 0 ? new NoPresente() : new AutoridadSinUsuario()

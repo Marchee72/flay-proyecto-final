@@ -18,6 +18,8 @@ import {
   NoRepresenta,
   PuntosSinCerrar,
   ReglaDeAsamblea,
+  NoPresente,
+  SinPoderRegistrado,
   SinQuorum,
   UnidadYaAcreditada,
   UnidadYaVoto,
@@ -31,6 +33,7 @@ import { registrarPago } from '@/aplicacion/pagos/registrar'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { NoEncontrado } from '@/compartido/errores'
 import { prismaBase } from '@/infraestructura/prisma'
+import { registrarPoderEnPapel } from '@/aplicacion/asambleas/poderes'
 
 import {
   armarEscenario,
@@ -149,6 +152,86 @@ describe('abrir y acreditar', () => {
     await expect(
       designarAutoridades(repo, RELOJ, { ...de(e.consejo), presidenteId: e.ana, secretarioId: '' }),
     ).rejects.toBeInstanceOf(AutoridadSinUsuario)
+  })
+})
+
+describe('acreditación a mano', () => {
+  it('acreditar a otra persona por una unidad con titular con cuenta no le da el voto al titular', async () => {
+    await abrir(repo, RELOJ, de(e.consejo))
+    await acreditar(repo, RELOJ, {
+      ...de(e.consejo),
+      unidadId: e.unidades['1A'],
+      nombre: 'Pedro Hermano',
+      representacion: 'propietario',
+    })
+    const fila = await prismaBase.unidadEnAsamblea.findFirstOrThrow({
+      where: { asambleaId, unidadId: e.unidades['1A'] },
+    })
+    expect(fila).toMatchObject({ representanteNombre: 'Pedro Hermano', representanteId: null })
+    await acreditarme(repo, RELOJ, de(e.bruno))
+    await acreditarme(repo, RELOJ, de(e.carla))
+    await expect(
+      designarAutoridades(repo, RELOJ, {
+        ...de(e.consejo),
+        presidenteId: e.ana,
+        secretarioId: e.carla,
+      }),
+    ).rejects.toBeInstanceOf(NoPresente)
+    const vista = await verAsamblea(repo, RELOJ, de(e.ana))
+    expect(vista.yo.misUnidades.find((m) => m.unidadId === e.unidades['1A'])).toMatchObject({
+      acreditada: true,
+      laRepresentoYo: false,
+    })
+  })
+
+  it('el nombre del titular vincula aunque cambien tildes y mayúsculas', async () => {
+    await abrir(repo, RELOJ, de(e.consejo))
+    await acreditar(repo, RELOJ, {
+      ...de(e.consejo),
+      unidadId: e.unidades['1A'],
+      nombre: 'ana  ÁLVAREZ',
+      representacion: 'propietario',
+    })
+    const fila = await prismaBase.unidadEnAsamblea.findFirstOrThrow({
+      where: { asambleaId, unidadId: e.unidades['1A'] },
+    })
+    expect(fila.representanteId).toBe(e.ana)
+  })
+
+  it('acreditar como apoderado exige un poder registrado', async () => {
+    await abrir(repo, RELOJ, de(e.consejo))
+    await expect(
+      acreditar(repo, RELOJ, {
+        ...de(e.consejo),
+        unidadId: e.unidades['2B'],
+        nombre: 'Cualquiera',
+        representacion: 'apoderado',
+      }),
+    ).rejects.toBeInstanceOf(SinPoderRegistrado)
+  })
+
+  it('con poder en papel, acreditar como apoderado vincula al apoderado', async () => {
+    await registrarPoderEnPapel(repo, HOY, {
+      ...de(e.consejo),
+      unidadId: e.unidades['2B'],
+      otorganteId: e.personaDora,
+      apoderadoId: e.ivan,
+    })
+    await abrir(repo, RELOJ, de(e.consejo))
+    await acreditar(repo, RELOJ, {
+      ...de(e.consejo),
+      unidadId: e.unidades['2B'],
+      nombre: 'Cualquiera',
+      representacion: 'apoderado',
+    })
+    const fila = await prismaBase.unidadEnAsamblea.findFirstOrThrow({
+      where: { asambleaId, unidadId: e.unidades['2B'] },
+    })
+    expect(fila).toMatchObject({
+      representanteId: e.ivan,
+      representacion: 'apoderado',
+      representanteNombre: 'Ivan Inquilino',
+    })
   })
 })
 

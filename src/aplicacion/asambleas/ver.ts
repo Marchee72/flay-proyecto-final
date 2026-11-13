@@ -313,7 +313,6 @@ export async function verAsamblea(
       const propietarios = await propietariosVigentesDe(unidadIds, hoy)
       const propietariosPorUnidad = new Map<string, Set<string>>()
       const nombresPropietariosPorUnidad = new Map<string, string[]>()
-      const usuarioPropietarioPorUnidad = new Map<string, string>()
       for (const p of propietarios) {
         const s = propietariosPorUnidad.get(p.unidadId) ?? new Set<string>()
         s.add(p.personaId)
@@ -321,9 +320,6 @@ export async function verAsamblea(
         const lista = nombresPropietariosPorUnidad.get(p.unidadId) ?? []
         if (!lista.includes(p.nombre)) lista.push(p.nombre)
         nombresPropietariosPorUnidad.set(p.unidadId, lista)
-        if (p.usuarioId && !usuarioPropietarioPorUnidad.has(p.unidadId)) {
-          usuarioPropietarioPorUnidad.set(p.unidadId, p.usuarioId)
-        }
       }
 
       const usuarios = await nombresDeUsuarios([
@@ -419,11 +415,7 @@ export async function verAsamblea(
       const misUnidades: MiUnidad[] = []
       for (const unidadId of propiaIds) {
         const u = representadas.get(unidadId)
-        const repId =
-          u?.representanteId ??
-          (u?.presente && u?.representacion === 'propietario'
-            ? (usuarioPropietarioPorUnidad.get(unidadId) ?? null)
-            : null)
+        const repId = u?.representanteId ?? null
         misUnidades.push({
           unidadId,
           designacion: designacion.get(unidadId) ?? '',
@@ -526,11 +518,7 @@ export async function verAsamblea(
           presente: u.presente,
           representante: u.representanteNombre,
           representacion: u.representacion,
-          representanteId:
-            u.representanteId ??
-            (u.presente && u.representacion === 'propietario'
-              ? (usuarioPropietarioPorUnidad.get(u.unidadId) ?? null)
-              : null),
+          representanteId: u.representanteId,
           propietarios: nombresPropietariosPorUnidad.get(u.unidadId) ?? [],
         })),
         quorum: {

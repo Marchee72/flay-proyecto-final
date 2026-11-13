@@ -2,6 +2,7 @@
 
 import { useEffect, useOptimistic, useState, useTransition } from 'react'
 import {
+  Hand,
   CircleCheck,
   ListChecks,
   PanelRightClose,
@@ -293,6 +294,7 @@ export function Sala({ vista: vistaServidor }: { vista: VistaAsamblea }) {
               <BotonEnviar
                 texto={`Estoy presente (${sinAcreditar.map((u) => u.designacion).join(', ')})`}
                 enviando="Registrando…"
+                icono={<Hand className="icono" aria-hidden="true" />}
               />
             </form>
           )}

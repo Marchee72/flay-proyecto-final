@@ -47,16 +47,16 @@ export function Observacion({ vista }: { vista: VistaAsamblea }) {
             onChange={(e) => setTexto(e.target.value)}
           />
         </div>
-        {sinGuardar && (
-          <>
-            <p className="aviso aviso--atencion" role="status">
-              Sin guardar
-            </p>
-            <p className="ayuda">
-              Guardala antes de que quien dirige finalice: lo que no se guardó se pierde.
-            </p>
-          </>
-        )}
+        <div role="status">
+          {sinGuardar && (
+            <>
+              <p className="aviso aviso--atencion">Sin guardar</p>
+              <p className="ayuda">
+                Guardala antes de que quien dirige finalice: lo que no se guardó se pierde.
+              </p>
+            </>
+          )}
+        </div>
         <button className="boton boton--primario" type="submit" disabled={guardando}>
           Guardar observación
         </button>

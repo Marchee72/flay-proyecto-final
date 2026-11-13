@@ -118,6 +118,7 @@ export async function confirmarUnaVez(
   etiqueta: string,
   enviando: string,
   destino: RegExp,
+  alFinal?: () => Promise<void>,
 ) {
   let soltar = () => {}
   const retenido = new Promise<void>((resolver) => (soltar = resolver))
@@ -134,6 +135,7 @@ export async function confirmarUnaVez(
   await expect(page.getByRole('button', { name: enviando })).toBeDisabled()
   soltar()
   await expect(page).toHaveURL(destino)
+  await alFinal?.()
   expect(envios).toHaveLength(1)
   await page.unroute(patron)
 }

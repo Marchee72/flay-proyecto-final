@@ -90,10 +90,12 @@ test('constituir con doble clic envía una sola vez', async ({ browser }, info) 
       'Verificar quórum y constituir',
       'Constituyendo…',
       /asambleas\//,
+      // La acción no navega: el fin es el aviso de éxito.
+      () =>
+        expect(
+          deBruno.getByText('Asamblea constituida: ya se pueden tratar los puntos.').first(),
+        ).toBeVisible(),
     )
-    await expect(
-      deBruno.getByText('Asamblea constituida: ya se pueden tratar los puntos.').first(),
-    ).toBeVisible()
     await expect(deBruno.getByText('La asamblea ya está constituida.')).toHaveCount(0)
   } finally {
     await propio.limpiar()

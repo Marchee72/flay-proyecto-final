@@ -418,6 +418,84 @@ describe('votación', () => {
   })
 })
 
+describe('concurrencia del cierre y la carga (RF-31, B-1, B-2)', () => {
+  it('un voto concurrente con el cierre queda contado o rechazado, nunca guardado sin contar', async () => {
+    for (let i = 0; i < 5; i++) {
+      if (i > 0) {
+        await limpiar()
+        e = await armarEscenario()
+        asambleaId = await asambleaConvocada(e)
+        const puntos = await prismaBase.puntoAsamblea.findMany({
+          where: { asambleaId },
+          orderBy: { orden: 'asc' },
+        })
+        puntoBinario = puntos[0].id
+      }
+      await constituida()
+      await abrirPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntoBinario })
+      const [voto] = await Promise.allSettled([
+        votar(repo, RELOJ, {
+          ...de(e.ana),
+          puntoId: puntoBinario,
+          unidadId: e.unidades['1A'],
+          eleccion: { sentido: 'positivo' },
+        }),
+        cerrarPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntoBinario }),
+      ])
+      const punto = await prismaBase.puntoAsamblea.findUniqueOrThrow({
+        where: { id: puntoBinario },
+        include: { votos: true },
+      })
+      const porOpcion = (punto.conteo as { porOpcion: Record<string, { unidades: number }> })
+        .porOpcion
+      const contados = Object.values(porOpcion).reduce((s, c) => s + c.unidades, 0)
+      expect(contados).toBe(punto.votos.length)
+      if (voto.status === 'rejected') expect(String(voto.reason)).toMatch(/no está en votación/)
+    }
+  })
+
+  it('la carga manual no pisa un voto propio aunque llegue a la vez', async () => {
+    await constituida()
+    await abrirPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntoBinario })
+    const unidadId = e.unidades['1A']
+    const [propio, manual] = await Promise.allSettled([
+      votar(repo, RELOJ, {
+        ...de(e.ana),
+        puntoId: puntoBinario,
+        unidadId,
+        eleccion: { sentido: 'positivo' },
+      }),
+      cargarVoto(repo, RELOJ, {
+        ...de(e.consejo),
+        puntoId: puntoBinario,
+        unidadId,
+        eleccion: { sentido: 'negativo' },
+      }),
+    ])
+    const voto = await prismaBase.votoAsamblea.findFirstOrThrow({
+      where: { puntoId: puntoBinario, unidadId },
+    })
+    if (propio.status === 'fulfilled')
+      expect(voto).toMatchObject({ origen: 'propio', sentido: 'positivo' })
+    if (manual.status === 'rejected') expect(manual.reason).toBeInstanceOf(UnidadYaVoto)
+  })
+
+  it('la base rechaza que una carga manual pise un voto propio, aunque la aplicación no lo mire', async () => {
+    await constituida()
+    await abrirPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntoBinario })
+    const unidadId = e.unidades['1A']
+    await votar(repo, RELOJ, {
+      ...de(e.ana),
+      puntoId: puntoBinario,
+      unidadId,
+      eleccion: { sentido: 'positivo' },
+    })
+    await expect(
+      prismaBase.$executeRaw`UPDATE "VotoAsamblea" SET origen = 'carga_manual', sentido = 'negativo' WHERE punto_id = ${puntoBinario}::uuid`,
+    ).rejects.toThrow(/ya votó este punto/)
+  })
+})
+
 describe('finalizar', () => {
   it('con puntos sin cerrar falla; finalizada, nada cambia', async () => {
     await constituida()

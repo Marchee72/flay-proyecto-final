@@ -413,68 +413,70 @@ export async function cerrarPunto(
       exigirDirige(acceso, asamblea)
       exigirEnCurso(asamblea)
 
-      const punto = await prisma.puntoAsamblea.findFirst({
-        where: { id: datos.puntoId, asambleaId: asamblea.id },
-        include: { opciones: { orderBy: { orden: 'asc' } }, votos: true },
-      })
-      if (!punto) throw new AsambleaInvalida('Ese punto no es de esta asamblea.')
-      transicionPunto(punto.estado, 'cerrar')
-
-      const padron = await prisma.unidadEnAsamblea.findMany({ where: { asambleaId: asamblea.id } })
-      const padronDom = padronDeDominio(padron)
-      const votos = votosDeDominio(punto.votos)
-      const ahora = reloj.ahora()
-
-      let datosCierre: Prisma.PuntoAsambleaUpdateInput
-      let provisorio = false
-      if (punto.modalidad === 'binaria') {
-        const r = resultadoBinario(
-          padronDom,
-          votos,
-          punto.mayoria!,
-          asamblea.reglaMayoria ?? 'presentes',
-        )
-        provisorio = r.provisorio
-        datosCierre = {
-          resultado: r.resultado,
-          provisorio: r.provisorio,
-          vencePlazoOposicion: r.provisorio
-            ? new Date(ahora.getTime() + DIAS_OPOSICION * DIA_MS)
-            : null,
-          conteo: conteoVista(r.conteo) as unknown as Prisma.InputJsonValue,
-        }
-      } else {
-        const r = resultadoOpcionMultiple(
-          padronDom,
-          votos,
-          punto.opciones.map((o) => o.id),
-        )
-        datosCierre = {
-          resultado: r.resultado,
-          opcionGanadoraId: r.opcionGanadoraId ?? null,
-          conteo: conteoVista(r.conteo) as unknown as Prisma.InputJsonValue,
-        }
-      }
-
-      // Quiénes estaban ausentes con voto se congela ahora (una llegada tardía no lo cambia)
-      // y los provisorios se enteran de la decisión (FR-027).
-      const ausentesAlCerrar = padron.filter((u) => !u.presente && !u.sinVoto)
-      datosCierre.ausentesConVoto = ausentesAlCerrar.map((u) => u.unidadId)
-      const ausentes = provisorio
-        ? ausentesAlCerrar.map((u) => ({ id: u.unidadId, designacion: u.designacion }))
-        : []
-      const destinatarios = provisorio
-        ? repartirPropietarios(
-            await propietariosVigentesDe(
-              ausentes.map((u) => u.id),
-              reloj.hoy(),
-            ),
-            new Map(ausentes.map((u) => [u.id, u.designacion])),
-          )
-        : null
-
       await conReglas(() =>
         prisma.$transaction(async (tx) => {
+          // Candado exclusivo: un voto que llega ahora espera, y si entra después ve el punto cerrado (B-1).
+          await tx.$queryRaw`SELECT id FROM "PuntoAsamblea" WHERE id = ${datos.puntoId}::uuid FOR UPDATE`
+          const punto = await tx.puntoAsamblea.findFirst({
+            where: { id: datos.puntoId, asambleaId: asamblea.id },
+            include: { opciones: { orderBy: { orden: 'asc' } }, votos: true },
+          })
+          if (!punto) throw new AsambleaInvalida('Ese punto no es de esta asamblea.')
+          transicionPunto(punto.estado, 'cerrar')
+
+          const padron = await tx.unidadEnAsamblea.findMany({ where: { asambleaId: asamblea.id } })
+          const padronDom = padronDeDominio(padron)
+          const votos = votosDeDominio(punto.votos)
+          const ahora = reloj.ahora()
+
+          let datosCierre: Prisma.PuntoAsambleaUpdateInput
+          let provisorio = false
+          if (punto.modalidad === 'binaria') {
+            const r = resultadoBinario(
+              padronDom,
+              votos,
+              punto.mayoria!,
+              asamblea.reglaMayoria ?? 'presentes',
+            )
+            provisorio = r.provisorio
+            datosCierre = {
+              resultado: r.resultado,
+              provisorio: r.provisorio,
+              vencePlazoOposicion: r.provisorio
+                ? new Date(ahora.getTime() + DIAS_OPOSICION * DIA_MS)
+                : null,
+              conteo: conteoVista(r.conteo) as unknown as Prisma.InputJsonValue,
+            }
+          } else {
+            const r = resultadoOpcionMultiple(
+              padronDom,
+              votos,
+              punto.opciones.map((o) => o.id),
+            )
+            datosCierre = {
+              resultado: r.resultado,
+              opcionGanadoraId: r.opcionGanadoraId ?? null,
+              conteo: conteoVista(r.conteo) as unknown as Prisma.InputJsonValue,
+            }
+          }
+
+          // Quiénes estaban ausentes con voto se congela ahora (una llegada tardía no lo cambia)
+          // y los provisorios se enteran de la decisión (FR-027).
+          const ausentesAlCerrar = padron.filter((u) => !u.presente && !u.sinVoto)
+          datosCierre.ausentesConVoto = ausentesAlCerrar.map((u) => u.unidadId)
+          const ausentes = provisorio
+            ? ausentesAlCerrar.map((u) => ({ id: u.unidadId, designacion: u.designacion }))
+            : []
+          const destinatarios = provisorio
+            ? repartirPropietarios(
+                await propietariosVigentesDe(
+                  ausentes.map((u) => u.id),
+                  reloj.hoy(),
+                ),
+                new Map(ausentes.map((u) => [u.id, u.designacion])),
+              )
+            : null
+
           await tx.puntoAsamblea.update({
             where: { id: punto.id },
             data: { ...datosCierre, estado: 'cerrado', cerradoEn: ahora },

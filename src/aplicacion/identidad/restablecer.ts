@@ -15,6 +15,12 @@ import { reiniciarIntentos } from './iniciar-sesion'
 
 export const HORAS_DE_VIGENCIA_DEL_RESTABLECIMIENTO = 2
 
+/**
+ * Freno del pedido propio (C5): sin él, cualquiera que conozca un correo podía
+ * inundarlo y pisar cada enlace antes de que se usara.
+ */
+export const MINUTOS_ENTRE_PEDIDOS_DE_ENLACE = 5
+
 export class TodaviaInvitado extends ErrorDeAplicacion {
   constructor() {
     super('Todavía no aceptó la invitación: usá «Reenviar».', 'RF-03')
@@ -34,13 +40,23 @@ export async function pedirRestablecimiento(
   const usuario = await prismaBase.usuario.findUnique({ where: { correo } })
   if (usuario?.estado !== 'activo') return
 
+  // Un enlace emitido hace menos de N minutos vence después de `ahora + 2 h − N`.
+  // Se calla igual que con un correo inexistente: la respuesta no cambia.
+  const limite =
+    reloj.ahora().getTime() +
+    HORAS_DE_VIGENCIA_DEL_RESTABLECIMIENTO * 3_600_000 -
+    MINUTOS_ENTRE_PEDIDOS_DE_ENLACE * 60_000
+  if (usuario.invitacionVence && usuario.invitacionVence.getTime() > limite) return
+
   await mandarEnlace(reloj, usuario.id, correo, datos.urlBase)
 }
 
 /**
  * Lo manda un administrador a alguien de su consorcio: le levanta el bloqueo y
  * le manda el enlace. Es la salida para quien quedó bloqueado o no recuerda la
- * clave y no tiene a mano el formulario.
+ * clave y no tiene a mano el formulario. No respeta el freno del pedido propio:
+ * quien lo manda es de confianza y lo hace a pedido de la persona, que puede
+ * estar esperándolo justo después de haberlo pedido ella misma.
  */
 export async function enviarEnlaceDeClave(
   repositorio: RepositorioHabilitaciones,

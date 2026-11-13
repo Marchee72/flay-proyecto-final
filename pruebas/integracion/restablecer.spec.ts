@@ -5,6 +5,7 @@ import { desbloquearUsuario, iniciarSesion } from '@/aplicacion/identidad/inicia
 import { fijarContrasena, InvitacionNoValida } from '@/aplicacion/identidad/invitar-persona'
 import {
   enviarEnlaceDeClave,
+  MINUTOS_ENTRE_PEDIDOS_DE_ENLACE,
   pedirRestablecimiento,
   TodaviaInvitado,
 } from '@/aplicacion/identidad/restablecer'
@@ -135,6 +136,51 @@ describe('restablecer la clave', () => {
         contrasena: NUEVA,
       }),
     ).resolves.toEqual({ usuarioId: destinatario.id })
+  })
+
+  it('un segundo pedido antes de cinco minutos no manda nada ni pisa el primer enlace', async () => {
+    await pedirRestablecimiento(RELOJ, { correo: destinatario.correo, urlBase: URL_BASE })
+    await pedirRestablecimiento(relojFijo('2026-09-09T12:04:59Z'), {
+      correo: destinatario.correo,
+      urlBase: URL_BASE,
+    })
+
+    const enviados = await correos(destinatario.correo)
+    expect(enviados).toHaveLength(1)
+    await expect(
+      fijarContrasena(argon2id, RELOJ, {
+        credencial: credencialDe((enviados[0].carga as { cuerpo: string }).cuerpo),
+        contrasena: NUEVA,
+      }),
+    ).resolves.toEqual({ usuarioId: destinatario.id })
+  })
+
+  it('pasados cinco minutos, un pedido manda un enlace nuevo', async () => {
+    expect(MINUTOS_ENTRE_PEDIDOS_DE_ENLACE).toBe(5)
+    await pedirRestablecimiento(RELOJ, { correo: destinatario.correo, urlBase: URL_BASE })
+    await pedirRestablecimiento(relojFijo('2026-09-09T12:05:00Z'), {
+      correo: destinatario.correo,
+      urlBase: URL_BASE,
+    })
+
+    const enviados = await correos(destinatario.correo)
+    expect(enviados).toHaveLength(2)
+    const [primero, segundo] = enviados.map((t) =>
+      credencialDe((t.carga as { cuerpo: string }).cuerpo),
+    )
+    expect(segundo).not.toBe(primero)
+  })
+
+  it('el administrador manda el enlace aunque haya uno recién pedido', async () => {
+    await pedirRestablecimiento(RELOJ, { correo: destinatario.correo, urlBase: URL_BASE })
+    await enviarEnlaceDeClave(repositorioHabilitaciones, RELOJ, {
+      usuarioId: admin,
+      consorcioId,
+      destinatarioId: destinatario.id,
+      urlBase: URL_BASE,
+    })
+
+    expect(await correos(destinatario.correo)).toHaveLength(2)
   })
 
   it('el administrador de otro consorcio no puede mandar el enlace', async () => {

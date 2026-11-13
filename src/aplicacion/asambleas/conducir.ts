@@ -230,7 +230,12 @@ export async function acreditar(
         const poder = await prisma.poder.findFirst({
           where: { asambleaId: asamblea.id, unidadId: datos.unidadId, revocadoEn: null },
         })
-        if (!poder) {
+        const vale =
+          !!poder &&
+          (await representables(asamblea.id, poder.apoderadoId, reloj.hoy())).some(
+            (u) => u.unidadId === datos.unidadId,
+          )
+        if (!poder || !vale) {
           const u = await prisma.unidadEnAsamblea.findFirst({
             where: { asambleaId: asamblea.id, unidadId: datos.unidadId },
             select: { designacion: true },

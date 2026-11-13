@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
   abrir,
+  acreditar,
   acreditarme,
   constituir,
   designarAutoridades,
@@ -12,6 +13,7 @@ import {
   AsambleaYaAbierta,
   NoEsPropietario,
   NoRepresenta,
+  SinPoderRegistrado,
   UnidadYaTienePoder,
 } from '@/aplicacion/asambleas/errores'
 import { otorgarPoder, registrarPoderEnPapel, revocarPoder } from '@/aplicacion/asambleas/poderes'
@@ -173,6 +175,23 @@ describe('revocar y validez', () => {
     await expect(acreditarme(repo, RELOJ, de(e.ivan))).rejects.toBeInstanceOf(NoRepresenta)
     const vista = await verAsamblea(repo, RELOJ, de(e.consejo))
     expect(vista.poderes[0].sinEfecto).toBe(true)
+  })
+
+  it('acreditar por apoderado rechaza el poder de quien dejó de ser propietario', async () => {
+    await otorgarPoder(repo, HOY, { ...de(e.ana), unidadId: e.unidades['1A'], apoderadoId: e.ivan })
+    await prismaBase.$executeRaw`
+      UPDATE "Ocupacion" o SET vigencia = daterange(lower(o.vigencia), '2026-11-20', '[)')
+      FROM "Usuario" u
+      WHERE u.persona_id = o.persona_id AND u.id = ${e.ana}::uuid AND o.unidad_id = ${e.unidades['1A']}::uuid`
+    await abrir(repo, RELOJ, de(e.consejo))
+    await expect(
+      acreditar(repo, RELOJ, {
+        ...de(e.consejo),
+        unidadId: e.unidades['1A'],
+        nombre: 'Iván',
+        representacion: 'apoderado',
+      }),
+    ).rejects.toBeInstanceOf(SinPoderRegistrado)
   })
 
   it('un inquilino sin poder ve la asamblea pero no vota', async () => {

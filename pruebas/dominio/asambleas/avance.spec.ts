@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { textoAvance } from '@/compartido/avance-asamblea'
+import { marcaDePunto, textoAvance } from '@/compartido/avance-asamblea'
 
 const ESTADOS = { c: 'cerrado', a: 'abierto', p: 'pendiente' } as const
 
@@ -18,5 +18,29 @@ describe('textoAvance (RF-31)', () => {
     ['cc', '2 de 2 tratados'],
   ])('%s → %s', (estados, texto) => {
     expect(textoAvance(puntos(estados))).toBe(texto)
+  })
+})
+
+describe('marcaDePunto (RF-33)', () => {
+  it('marca lo provisorio en la sala', () => {
+    const p = {
+      estado: 'cerrado',
+      resultado: 'aprobado',
+      provisorio: true,
+      modalidad: 'binaria',
+      opcionGanadora: null,
+    } as const
+    expect(marcaDePunto(p)).toBe('Aprobado, provisoria')
+    expect(marcaDePunto({ ...p, provisorio: false })).toBe('Aprobado')
+    expect(marcaDePunto({ ...p, estado: 'abierto' })).toBe('Ahora')
+    expect(marcaDePunto({ ...p, estado: 'pendiente', resultado: null })).toBe('Falta')
+    expect(
+      marcaDePunto({
+        ...p,
+        modalidad: 'opcion_multiple',
+        provisorio: false,
+        opcionGanadora: 'Empresa X',
+      }),
+    ).toBe('Aprobada: Empresa X')
   })
 })

@@ -134,7 +134,7 @@ export function FormularioAsamblea({
     if (!lugar.trim()) return 'lugar'
     const i = errores.findIndex((e) => e.titulo || e.opciones)
     if (i < 0) return undefined
-    return errores[i].titulo ? `punto-titulo-${i}` : `punto-${i}-opciones-coma`
+    return errores[i].titulo ? `punto-titulo-${i}` : `punto-${i}-opciones`
   }
 
   const serializados = JSON.stringify(
@@ -320,8 +320,8 @@ export function FormularioAsamblea({
                   </div>
                 ) : (
                   <div className="campo opciones-coma">
-                    <label htmlFor={`punto-${i}-opciones-coma`}>
-                      Opciones (separadas por coma — gana la más votada)
+                    <label htmlFor={`punto-${i}-opciones`}>
+                      Opciones (Enter para agregar otra — gana la más votada)
                     </label>
                     <div className="opciones-coma__barra">
                       {p.opciones.slice(0, -1).map((o, idx) => (
@@ -344,35 +344,17 @@ export function FormularioAsamblea({
                         </span>
                       ))}
                       <input
-                        id={`punto-${i}-opciones-coma`}
+                        id={`punto-${i}-opciones`}
                         aria-invalid={intento && errores[i].opciones ? 'true' : undefined}
                         aria-describedby={
                           intento && errores[i].opciones ? `error-punto-opciones-${i}` : undefined
                         }
                         value={p.opciones[p.opciones.length - 1] ?? ''}
-                        placeholder={
-                          p.opciones.length <= 1
-                            ? 'Ej.: Presupuesto A, Presupuesto B, Postergar'
-                            : 'Otra opción…'
-                        }
+                        placeholder={p.opciones.length <= 1 ? 'Ej.: Presupuesto A' : 'Otra opción…'}
                         onChange={(ev) => {
                           const valor = ev.target.value
                           const confirmadas = p.opciones.slice(0, -1)
-                          if (valor.includes(',')) {
-                            const partes = valor.split(',')
-                            const nuevas = partes
-                              .slice(0, -1)
-                              .map((s) => s.trim())
-                              .filter(Boolean)
-                            const resto = (partes[partes.length - 1] ?? '').trimStart()
-                            cambiar(i, {
-                              opciones: [...confirmadas, ...nuevas, resto],
-                            })
-                          } else {
-                            cambiar(i, {
-                              opciones: [...confirmadas, valor],
-                            })
-                          }
+                          cambiar(i, { opciones: [...confirmadas, valor] })
                         }}
                         onKeyDown={(ev) => {
                           const confirmadas = p.opciones.slice(0, -1)

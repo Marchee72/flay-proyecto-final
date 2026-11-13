@@ -134,3 +134,41 @@ test('tomar la dirección pide confirmación', async ({ browser }, info) => {
     await propio.limpiar()
   }
 })
+
+test('una opción con coma no se parte', async ({ browser }, info) => {
+  test.skip(info.project.name !== 'telefono', 'el recorrido es del teléfono; una sola vez')
+  const propio = await sembrarAsambleaE2E()
+  try {
+    const contexto = await browser.newContext({ viewport: { width: 390, height: 844 } })
+    const pagina = await contexto.newPage()
+    await entrar(pagina, propio.bruno.correo)
+    await pagina.goto(`/consorcios/${propio.ada.consorcioId}/asambleas/nueva`)
+    await pagina.getByLabel('Título', { exact: true }).first().fill('Asamblea con opciones')
+    await pagina.getByLabel('Primera convocatoria').fill('2099-03-10T19:00')
+    await pagina.getByLabel('Lugar').fill('Salón')
+    await pagina.locator('#punto-titulo-0').fill('Entre opciones')
+    await pagina.locator('#punto-modalidad-0').selectOption('opcion_multiple')
+    const campo = pagina.locator('#punto-0-opciones')
+    await campo.fill('Limpiar, Inc.')
+    await campo.press('Enter')
+    await campo.fill('Brillo S.A.')
+    await campo.press('Enter')
+    const chips = pagina.locator('.opciones-coma__chip')
+    await expect(chips).toHaveCount(2)
+    await expect(chips.nth(0)).toContainText('1. Limpiar, Inc.')
+    await expect(chips.nth(1)).toContainText('2. Brillo S.A.')
+    await pagina.getByRole('button', { name: 'Guardar borrador' }).click()
+    await expect(pagina).toHaveURL(/hecho=/)
+    const opciones = await prisma.opcionPunto.findMany({
+      where: {
+        punto: {
+          asamblea: { consorcioId: propio.ada.consorcioId, titulo: 'Asamblea con opciones' },
+        },
+      },
+      orderBy: { orden: 'asc' },
+    })
+    expect(opciones.map((o) => o.texto)).toEqual(['Limpiar, Inc.', 'Brillo S.A.'])
+  } finally {
+    await propio.limpiar()
+  }
+})

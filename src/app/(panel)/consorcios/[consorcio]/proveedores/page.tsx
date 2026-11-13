@@ -29,18 +29,18 @@ export default async function ProveedoresPage({
       rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id),
     ])
 
+    const administra = roles.includes('administrador')
+    const opcionesRubro = rubros.map((rubro) => ({ id: rubro.id, etiqueta: rubro.nombre }))
+
     return (
       <>
         <h1>Proveedores</h1>
         <p className="apagado">Quiénes le facturan al consorcio y en qué rubro suelen hacerlo.</p>
 
-        {roles.includes('administrador') && (
+        {administra && (
           <div className="fila-acciones">
             <BotonModal etiqueta="Nuevo proveedor" titulo="Nuevo proveedor">
-              <FormularioProveedor
-                consorcioId={activo.id}
-                rubros={rubros.map((rubro) => ({ id: rubro.id, etiqueta: rubro.nombre }))}
-              />
+              <FormularioProveedor consorcioId={activo.id} rubros={opcionesRubro} />
             </BotonModal>
           </div>
         )}
@@ -59,6 +59,11 @@ export default async function ProveedoresPage({
                   <th scope="col">Razón social</th>
                   <th scope="col">CUIT</th>
                   <th scope="col">Rubro habitual</th>
+                  {administra && (
+                    <th scope="col">
+                      <span className="oculto">Acciones</span>
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -67,6 +72,26 @@ export default async function ProveedoresPage({
                     <td>{proveedor.razonSocial}</td>
                     <td>{proveedor.cuit}</td>
                     <td>{proveedor.rubroHabitual ?? '—'}</td>
+                    {administra && (
+                      <td>
+                        <BotonModal
+                          etiqueta={
+                            <>
+                              Editar
+                              <span className="oculto"> {proveedor.razonSocial}</span>
+                            </>
+                          }
+                          titulo="Editar proveedor"
+                          variante="boton--fantasma"
+                        >
+                          <FormularioProveedor
+                            consorcioId={activo.id}
+                            rubros={opcionesRubro}
+                            proveedor={proveedor}
+                          />
+                        </BotonModal>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

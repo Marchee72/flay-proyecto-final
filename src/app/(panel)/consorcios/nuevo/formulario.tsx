@@ -2,9 +2,9 @@
 
 import { useActionState } from 'react'
 
-import { accionAltaConsorcio } from '../acciones'
+import { accionAltaConsorcio, type Resultado } from '../acciones'
 
-const SIN_ERROR = { mensaje: '' }
+const SIN_ERROR: Resultado = { mensaje: '' }
 
 /**
  * Alta de la cabecera. El padron se carga despues, en su propia pantalla: un
@@ -23,8 +23,10 @@ export function FormularioConsorcio({
       <div className="campo">
         <label htmlFor="administradora">Administradora</label>
         <select
+          key={estado.valores?.administradora ?? 'inicial'}
           id="administradora"
           name="administradora"
+          defaultValue={estado.valores?.administradora}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-consorcio' : undefined}
@@ -42,6 +44,7 @@ export function FormularioConsorcio({
         <input
           id="nombre"
           name="nombre"
+          defaultValue={estado.valores?.nombre}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-consorcio' : undefined}
@@ -53,6 +56,7 @@ export function FormularioConsorcio({
         <input
           id="direccion"
           name="direccion"
+          defaultValue={estado.valores?.direccion}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-consorcio' : undefined}
@@ -64,6 +68,7 @@ export function FormularioConsorcio({
         <input
           id="localidad"
           name="localidad"
+          defaultValue={estado.valores?.localidad}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-consorcio' : undefined}
@@ -75,6 +80,7 @@ export function FormularioConsorcio({
         <input
           id="cuit"
           name="cuit"
+          defaultValue={estado.valores?.cuit}
           required
           inputMode="numeric"
           aria-invalid={hayError || undefined}

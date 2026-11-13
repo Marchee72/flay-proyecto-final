@@ -1,3 +1,5 @@
+import type { Clasificacion } from '@prisma/client'
+
 import { importeSerializado } from '@/compartido/formato'
 import { NoEncontrado } from '@/compartido/errores'
 import { TIPOS_SOLO_DESCARGA, type AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
@@ -30,13 +32,16 @@ export interface ComprobanteDelGasto {
 export interface GastoConDetalle {
   id: string
   importe: string
-  clasificacion: string
+  clasificacion: Clasificacion
   fecha: string
   descripcion: string
   rubro: string
   proveedor: string | null
+  rubroId: string
+  proveedorId: string | null
   periodo: string
   periodoAbierto: boolean
+  periodoEstado: string
   comprobantes: ComprobanteDelGasto[]
 }
 
@@ -71,8 +76,11 @@ export async function verGasto(
         descripcion: gasto.descripcion,
         rubro: gasto.rubro.nombre,
         proveedor: gasto.proveedor?.razonSocial ?? null,
+        rubroId: gasto.rubroId,
+        proveedorId: gasto.proveedorId,
         periodo: `${String(gasto.periodo.mes).padStart(2, '0')}/${gasto.periodo.anio}`,
         periodoAbierto: gasto.periodo.estado === 'abierto',
+        periodoEstado: gasto.periodo.estado,
         comprobantes: await Promise.all(
           comprobantes.map(async (comprobante) => ({
             id: comprobante.id,

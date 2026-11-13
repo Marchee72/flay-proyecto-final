@@ -4,9 +4,9 @@ import { useActionState } from 'react'
 
 import { MINIMO_DE_CONTRASENA } from '@/compartido/contrasenas'
 
-import { accionFijarContrasena, accionIngresar } from './acciones'
+import { accionFijarContrasena, accionIngresar, type Resultado } from './acciones'
 
-const SIN_ERROR = { mensaje: '' }
+const SIN_ERROR: Resultado = { mensaje: '' }
 
 /**
  * Formularios de acceso. Cada campo lleva etiqueta visible, ayuda cuando hace
@@ -37,6 +37,7 @@ export function FormularioIngreso({ destino }: { destino: string }) {
           type="email"
           autoComplete="username"
           required
+          defaultValue={estado.valores?.correo}
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-ingreso' : undefined}
         />

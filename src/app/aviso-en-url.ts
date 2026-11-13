@@ -9,12 +9,18 @@
  * pila de avisos del cliente (decision 19).
  */
 export const HECHO = {
+  'enlace-enviado': 'Le mandamos un correo con un enlace para elegir una contraseña nueva.',
+  'administradora-creada': 'Administradora creada. Ya podés darle de alta consorcios.',
   'contrasena-guardada': 'La contraseña quedó guardada. Ya se puede entrar.',
   despachado: 'Se despachó lo que había pendiente.',
   'periodo-cerrado': 'Período cerrado. Ya no admite más gastos.',
   liquidado: 'Liquidación emitida. Las expensas ya están en cada unidad.',
   anulado: 'Liquidación anulada. Los pagos aplicados quedaron como saldo a favor.',
   'gasto-registrado': 'Gasto registrado. Si hay comprobante, adjuntarlo a continuación.',
+  'instrucciones-guardadas': 'Instrucciones de pago guardadas.',
+  'gasto-actualizado': 'Gasto actualizado.',
+  'proveedor-actualizado': 'Proveedor actualizado.',
+  'gasto-eliminado': 'Gasto eliminado.',
   'pago-registrado': 'Pago registrado e imputado a lo más viejo primero.',
   'pasarela-configurada': 'Credenciales de la pasarela de pagos guardadas.',
   'padron-guardado': 'Padrón guardado. Los cambios de coeficiente rigen desde hoy.',
@@ -35,6 +41,9 @@ export const HECHO = {
   'indicadores-actualizados': 'Indicadores actualizados.',
   invitado:
     'Invitación creada. El correo con el enlace sale en el próximo pedido; abajo se ve su estado.',
+  'acceso-sumado': 'Ya tenía cuenta en Flay: le dimos acceso a este consorcio.',
+  'unidad-asignada': 'Unidad asignada.',
+  'acceso-quitado': 'Acceso quitado. Ya no puede entrar a este consorcio.',
   'invitacion-reenviada': 'Invitación reenviada. Si vuelve a fallar, el estado lo dice acá.',
   'proveedor-registrado': 'Proveedor dado de alta.',
   'extraccion-descartada': 'Extracción descartada. No se creó ningún gasto.',

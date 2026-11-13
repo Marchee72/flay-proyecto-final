@@ -1,10 +1,12 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 
-import { accionInvitar } from './acciones'
+import { errorDeCorreo } from '@/aplicacion/identidad/correo-reglas'
 
-const SIN_ERROR = { mensaje: '' }
+import { accionInvitar, type Resultado } from './acciones'
+
+const SIN_ERROR: Resultado = { mensaje: '' }
 
 /**
  * Alta de invitacion. Cada campo con etiqueta visible y el error debajo del
@@ -14,11 +16,15 @@ export function FormularioInvitar({
   consorcioId,
   roles,
   hoy,
+  unidades,
 }: {
   consorcioId: string
   roles: readonly { valor: string; etiqueta: string }[]
   hoy: string
+  unidades: readonly { id: string; designacion: string }[]
 }) {
+  const [rol, setRol] = useState('consorcista')
+  const [errorCorreo, setErrorCorreo] = useState<string | null>(null)
   const [estado, accion, enviando] = useActionState(accionInvitar, SIN_ERROR)
   const hayError = estado.mensaje !== ''
 
@@ -31,6 +37,7 @@ export function FormularioInvitar({
         <input
           id="nombre"
           name="nombre"
+          defaultValue={estado.valores?.nombre}
           required
           autoComplete="given-name"
           aria-invalid={hayError || undefined}
@@ -43,6 +50,7 @@ export function FormularioInvitar({
         <input
           id="apellido"
           name="apellido"
+          defaultValue={estado.valores?.apellido}
           required
           autoComplete="family-name"
           aria-invalid={hayError || undefined}
@@ -56,11 +64,27 @@ export function FormularioInvitar({
           id="correo"
           name="correo"
           type="email"
+          defaultValue={estado.valores?.correo}
           required
           autoComplete="email"
-          aria-invalid={hayError || undefined}
-          aria-describedby={hayError ? 'error-invitacion ayuda-correo' : 'ayuda-correo'}
+          aria-invalid={hayError || errorCorreo !== null || undefined}
+          aria-describedby={
+            errorCorreo
+              ? 'error-correo ayuda-correo'
+              : hayError
+                ? 'error-invitacion ayuda-correo'
+                : 'ayuda-correo'
+          }
+          onChange={(e) =>
+            setErrorCorreo(e.target.value === '' ? null : errorDeCorreo(e.target.value))
+          }
+          onBlur={(e) => setErrorCorreo(errorDeCorreo(e.target.value))}
         />
+        {errorCorreo && (
+          <p className="error" id="error-correo">
+            {errorCorreo}
+          </p>
+        )}
         <p className="ayuda" id="ayuda-correo">
           A esta dirección va el enlace para fijar la contraseña. Vence en 72 horas.
         </p>
@@ -69,9 +93,11 @@ export function FormularioInvitar({
       <div className="campo">
         <label htmlFor="rol">Rol</label>
         <select
+          key={estado.valores?.rol ?? 'inicial'}
           id="rol"
           name="rol"
-          defaultValue="consorcista"
+          defaultValue={estado.valores?.rol ?? 'consorcista'}
+          onChange={(e) => setRol(e.target.value)}
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-invitacion' : undefined}
         >
@@ -83,13 +109,47 @@ export function FormularioInvitar({
         </select>
       </div>
 
+      {rol === 'consorcista' && (
+        <>
+          <div className="campo">
+            <label htmlFor="unidad">Unidad</label>
+            <select
+              key={estado.valores?.unidad ?? 'inicial'}
+              id="unidad"
+              name="unidad"
+              defaultValue={estado.valores?.unidad ?? ''}
+            >
+              <option value="">Sin unidad por ahora</option>
+              {unidades.map((unidad) => (
+                <option key={unidad.id} value={unidad.id}>
+                  {unidad.designacion}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="campo">
+            <label htmlFor="tipoOcupacion">Es</label>
+            <select
+              key={estado.valores?.tipoOcupacion ?? 'inicial'}
+              id="tipoOcupacion"
+              name="tipoOcupacion"
+              defaultValue={estado.valores?.tipoOcupacion ?? 'propietario'}
+            >
+              <option value="propietario">Propietario</option>
+              <option value="inquilino">Inquilino</option>
+            </select>
+          </div>
+        </>
+      )}
+
       <div className="campo">
         <label htmlFor="vigenciaDesde">Habilitado desde</label>
         <input
           id="vigenciaDesde"
           name="vigenciaDesde"
           type="date"
-          defaultValue={hoy}
+          defaultValue={estado.valores?.vigenciaDesde ?? hoy}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-invitacion' : undefined}

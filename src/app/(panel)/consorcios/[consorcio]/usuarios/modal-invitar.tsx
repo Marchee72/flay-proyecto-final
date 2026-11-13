@@ -14,10 +14,12 @@ export function ModalInvitar({
   consorcioId,
   roles,
   hoy,
+  unidades,
 }: {
   consorcioId: string
   roles: readonly { valor: string; etiqueta: string }[]
   hoy: string
+  unidades: readonly { id: string; designacion: string }[]
 }) {
   return (
     <BotonModal
@@ -29,7 +31,7 @@ export function ModalInvitar({
       }
       titulo="Invitar persona"
     >
-      <FormularioInvitar consorcioId={consorcioId} roles={roles} hoy={hoy} />
+      <FormularioInvitar consorcioId={consorcioId} roles={roles} hoy={hoy} unidades={unidades} />
     </BotonModal>
   )
 }

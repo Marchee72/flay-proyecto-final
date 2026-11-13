@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { conHecho } from '@/app/aviso-en-url'
+import { valoresDe, type ConValores } from '@/app/valores-de-formulario'
 import { altaConsorcio } from '@/aplicacion/consorcios/alta-consorcio'
 import { tipoDeUnidadDesdeFormulario } from '@/aplicacion/consorcios/tipos-de-unidad'
 import { cargarPadron, editarPadron } from '@/aplicacion/consorcios/unidades'
@@ -13,7 +14,7 @@ import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { irAIngresar } from '@/app/ir-a-ingresar'
 
 /** Un archivo «use server» solo exporta funciones asincronicas. */
-export type Resultado = { mensaje: string }
+export type Resultado = { mensaje: string } & ConValores
 
 async function quienOpera(): Promise<string> {
   const usuarioId = await usuarioDeLaSesion()
@@ -36,7 +37,8 @@ export async function accionAltaConsorcio(_previo: Resultado, datos: FormData): 
     })
     creado = consorcioId
   } catch (error) {
-    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
+    if (error instanceof ErrorDeAplicacion)
+      return { mensaje: error.mensajeParaUsuario, valores: valoresDe(datos) }
     throw error
   }
 

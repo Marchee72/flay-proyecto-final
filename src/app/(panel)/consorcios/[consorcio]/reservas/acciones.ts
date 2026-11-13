@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { conError, conHecho } from '@/app/aviso-en-url'
+import { valoresDe, type ConValores } from '@/app/valores-de-formulario'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { irAIngresar } from '@/app/ir-a-ingresar'
@@ -16,7 +17,7 @@ import {
 } from '@/aplicacion/reservas/espacios'
 import { cancelarReserva, reservar } from '@/aplicacion/reservas/reservar'
 
-export type Resultado = { mensaje: string }
+export type Resultado = { mensaje: string } & ConValores
 
 const texto = (datos: FormData, campo: string) => String(datos.get(campo) ?? '').trim()
 const entero = (datos: FormData, campo: string): number | undefined => {
@@ -34,7 +35,8 @@ export async function accionReservar(_previo: Resultado, datos: FormData): Promi
   const consorcioId = texto(datos, 'consorcio')
   const desde = texto(datos, 'desde')
   const hasta = texto(datos, 'hasta')
-  if (!desde || !hasta) return { mensaje: 'Elegí desde y hasta cuándo querés reservar.' }
+  if (!desde || !hasta)
+    return { mensaje: 'Elegí desde y hasta cuándo querés reservar.', valores: valoresDe(datos) }
 
   try {
     await reservar(HABILITACIONES, RELOJ, {
@@ -48,7 +50,8 @@ export async function accionReservar(_previo: Resultado, datos: FormData): Promi
       observaciones: texto(datos, 'observaciones') || null,
     })
   } catch (error) {
-    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
+    if (error instanceof ErrorDeAplicacion)
+      return { mensaje: error.mensajeParaUsuario, valores: valoresDe(datos) }
     throw error
   }
 

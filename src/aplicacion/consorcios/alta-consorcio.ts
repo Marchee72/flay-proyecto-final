@@ -3,8 +3,10 @@ import { ErrorDeAplicacion } from '@/compartido/errores'
 import { exigirSumaExacta } from '@/dominio/coeficientes/suma'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
+import { normalizarCuit } from '@/dominio/proveedores/cuit'
 import { TIPO_UNIDAD_POR_OMISION, type TipoUnidad } from '@/dominio/unidades/tipo'
 import { conAutorizacionDeAdministradora } from '@/aplicacion/autorizacion'
+import { CuitInvalido } from '@/aplicacion/proveedores/proveedores'
 import { prismaBase } from '@/infraestructura/prisma'
 
 /** Coeficiente como cadena de ocho decimales: nunca el tipo numerico (FR-013). */
@@ -42,6 +44,12 @@ export class CuitYaRegistrado extends ErrorDeAplicacion {
   }
 }
 
+export class ConsorcioYaExiste extends ErrorDeAplicacion {
+  constructor(direccion: string, localidad: string) {
+    super(`Esta administradora ya tiene un consorcio en ${direccion}, ${localidad}.`, 'RF-01')
+  }
+}
+
 export async function altaConsorcio(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
@@ -64,8 +72,25 @@ export async function altaConsorcio(
       accion: 'dar de alta un consorcio',
     },
     async () => {
-      if (await prismaBase.consorcio.findUnique({ where: { cuit: datos.cuit } })) {
+      // Normalizado, «30712345671» y «30-71234567-1» son el mismo consorcio.
+      const cuit = normalizarCuit(datos.cuit)
+      if (!cuit) throw new CuitInvalido()
+      if (await prismaBase.consorcio.findUnique({ where: { cuit } })) {
         throw new CuitYaRegistrado()
+      }
+
+      const direccion = datos.direccion.trim()
+      const localidad = datos.localidad.trim()
+      if (
+        await prismaBase.consorcio.findFirst({
+          where: {
+            administradoraId: datos.administradoraId,
+            direccion: { equals: direccion, mode: 'insensitive' },
+            localidad: { equals: localidad, mode: 'insensitive' },
+          },
+        })
+      ) {
+        throw new ConsorcioYaExiste(direccion, localidad)
       }
 
       const unidades = datos.unidades ?? []
@@ -97,9 +122,9 @@ export async function altaConsorcio(
           data: {
             administradoraId: datos.administradoraId,
             nombre: datos.nombre,
-            direccion: datos.direccion,
-            localidad: datos.localidad,
-            cuit: datos.cuit,
+            direccion,
+            localidad,
+            cuit,
           },
         })
 

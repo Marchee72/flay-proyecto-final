@@ -3697,6 +3697,54 @@ table.calendario th {
     height: 84px;
     padding: var(--e1);
   }
+  /* La grilla de siete columnas no es una lista: se le devuelve su display de
+     tabla a la que el bloque de tablas de arriba convirtió, y el
+     `.tabla-desplazable` que la envuelve desplaza a lo ancho (RNF-01). Los
+     selectores de celda duplican el envoltorio y nombran la clase de la celda
+     para ganarle en especificidad a los `:not()` de las reglas genericas. */
+  .tabla-desplazable:has(table.calendario) {
+    overflow-x: auto;
+  }
+  .tabla-desplazable table.calendario {
+    display: table;
+  }
+  .tabla-desplazable table.calendario thead {
+    display: table-header-group;
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+  .tabla-desplazable table.calendario tbody {
+    display: table-row-group;
+  }
+  .tabla-desplazable table.calendario tr {
+    display: table-row;
+    padding: 0;
+    min-height: 0;
+    border-bottom: 0;
+  }
+  .tabla-desplazable table.calendario tr::after {
+    content: none;
+  }
+  .tabla-desplazable table.calendario th {
+    display: table-cell;
+  }
+  .tabla-desplazable.tabla-desplazable
+    table.calendario
+    td:is(.calendario__dia, .calendario__vacio) {
+    display: table-cell;
+    padding: var(--e1);
+    font-size: inherit;
+    font-weight: 400;
+    color: inherit;
+  }
+  .tabla-desplazable.tabla-desplazable
+    table.calendario
+    td:is(.calendario__dia, .calendario__vacio)::before {
+    content: none;
+  }
 }
 
 /* Asistente conversacional (RF-27): lanzador flotante y panel de chat. */

@@ -5,13 +5,14 @@ import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { conHecho } from '@/app/aviso-en-url'
+import { valoresDe, type ConValores } from '@/app/valores-de-formulario'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { irAIngresar } from '@/app/ir-a-ingresar'
-import { altaProveedor } from '@/aplicacion/proveedores/proveedores'
+import { altaProveedor, editarProveedor } from '@/aplicacion/proveedores/proveedores'
 
 /** Un archivo «use server» solo exporta funciones asincronicas. */
-export type Resultado = { mensaje: string }
+export type Resultado = { mensaje: string } & ConValores
 
 export async function accionAltaProveedor(_previo: Resultado, datos: FormData): Promise<Resultado> {
   const usuarioId = await usuarioDeLaSesion()
@@ -29,10 +30,39 @@ export async function accionAltaProveedor(_previo: Resultado, datos: FormData): 
       correo: String(datos.get('correo') ?? ''),
     })
   } catch (error) {
-    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
+    if (error instanceof ErrorDeAplicacion)
+      return { mensaje: error.mensajeParaUsuario, valores: valoresDe(datos) }
     throw error
   }
 
   revalidatePath('/consorcios/[consorcio]/proveedores', 'page')
   redirect(conHecho(`/consorcios/${consorcioId}/proveedores`, 'proveedor-registrado'))
+}
+
+export async function accionEditarProveedor(
+  _previo: Resultado,
+  datos: FormData,
+): Promise<Resultado> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) return irAIngresar()
+  const consorcioId = String(datos.get('consorcio') ?? '')
+
+  try {
+    await editarProveedor(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      proveedorId: String(datos.get('proveedor') ?? ''),
+      razonSocial: String(datos.get('razonSocial') ?? ''),
+      rubroHabitualId: String(datos.get('rubro') ?? '') || null,
+      telefono: String(datos.get('telefono') ?? ''),
+      correo: String(datos.get('correo') ?? ''),
+    })
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion)
+      return { mensaje: error.mensajeParaUsuario, valores: valoresDe(datos) }
+    throw error
+  }
+
+  revalidatePath('/consorcios/[consorcio]/proveedores', 'page')
+  redirect(conHecho(`/consorcios/${consorcioId}/proveedores`, 'proveedor-actualizado'))
 }

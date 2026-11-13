@@ -23,6 +23,8 @@ export interface ProveedorDelConsorcio {
   cuit: string
   rubroHabitualId: string | null
   rubroHabitual: string | null
+  telefono: string | null
+  correo: string | null
 }
 
 export class CuitDeProveedorRepetido extends ErrorDeAplicacion {
@@ -122,6 +124,8 @@ export async function editarProveedor(
       accion: 'editar proveedores',
     },
     async () => {
+      const razonSocial = datos.razonSocial.trim()
+      if (!razonSocial) throw new ProveedorIncompleto()
       const existente = await prisma.proveedor.findFirst({ where: { id: datos.proveedorId } })
       if (!existente) throw new NoEncontrado()
 
@@ -130,7 +134,7 @@ export async function editarProveedor(
       await prisma.proveedor.update({
         where: { id: datos.proveedorId },
         data: {
-          razonSocial: datos.razonSocial.trim(),
+          razonSocial,
           rubroHabitualId: datos.rubroHabitualId || null,
           telefono: datos.telefono?.trim() || null,
           correo: datos.correo?.trim() || null,
@@ -161,6 +165,8 @@ export async function listarProveedores(
         cuit: proveedor.cuit,
         rubroHabitualId: proveedor.rubroHabitualId,
         rubroHabitual: proveedor.rubroHabitual?.nombre ?? null,
+        telefono: proveedor.telefono,
+        correo: proveedor.correo,
       }))
     },
   )

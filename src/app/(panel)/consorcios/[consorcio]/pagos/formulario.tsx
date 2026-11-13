@@ -1,6 +1,9 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
+
+import { Decimal } from '@/compartido/dinero'
+import { importeParaMostrar } from '@/compartido/formato'
 
 import { accionRegistrarPago, type Resultado } from './acciones'
 
@@ -11,6 +14,7 @@ export function FormularioPago({
   unidades,
   medios,
   hoy,
+  saldos,
   unidadInicial,
   vuelta,
 }: {
@@ -18,6 +22,8 @@ export function FormularioPago({
   unidades: readonly { id: string; designacion: string }[]
   medios: readonly { valor: string; etiqueta: string }[]
   hoy: string
+  /** Lo que debe cada unidad (`unidadId` → importe como cadena); sin el mapa no hay ayuda. */
+  saldos?: Record<string, { exigible: string; bloqueado: boolean }>
   /** Desde la expensa, la unidad ya elegida. */
   unidadInicial?: string
   /** Adonde volver con exito; la accion lo valida dentro del consorcio. */
@@ -25,6 +31,10 @@ export function FormularioPago({
 }) {
   const [estado, accion, enviando] = useActionState(accionRegistrarPago, SIN_ERROR)
   const hayError = estado.mensaje !== ''
+  const [unidadElegida, setUnidadElegida] = useState(
+    estado.valores?.unidad ?? unidadInicial ?? unidades[0]?.id ?? '',
+  )
+  const cuenta = saldos?.[unidadElegida]
 
   return (
     <form action={accion} noValidate>
@@ -34,12 +44,17 @@ export function FormularioPago({
       <div className="campo">
         <label htmlFor="unidad">Unidad</label>
         <select
+          key={estado.valores?.unidad ?? 'inicial'}
           id="unidad"
           name="unidad"
-          defaultValue={unidadInicial}
+          defaultValue={estado.valores?.unidad ?? unidadInicial}
+          onChange={(evento) => setUnidadElegida(evento.target.value)}
           required
           aria-invalid={hayError || undefined}
-          aria-describedby={hayError ? 'error-pago' : undefined}
+          aria-describedby={
+            [hayError && 'error-pago', cuenta && 'ayuda-deuda'].filter(Boolean).join(' ') ||
+            undefined
+          }
         >
           {unidades.map((unidad) => (
             <option key={unidad.id} value={unidad.id}>
@@ -47,6 +62,15 @@ export function FormularioPago({
             </option>
           ))}
         </select>
+        {cuenta && (
+          <p className="ayuda cifra" id="ayuda-deuda">
+            {cuenta.bloqueado
+              ? 'Pago bloqueado: se paga con la próxima liquidación.'
+              : new Decimal(cuenta.exigible).greaterThan(0)
+                ? `Debe hoy: ${importeParaMostrar(cuenta.exigible)}`
+                : 'Sin deuda'}
+          </p>
+        )}
       </div>
 
       <div className="campo">
@@ -57,6 +81,7 @@ export function FormularioPago({
           className="cifra"
           inputMode="decimal"
           placeholder="0.00"
+          defaultValue={estado.valores?.importe}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-pago ayuda-importe' : 'ayuda-importe'}
@@ -73,7 +98,7 @@ export function FormularioPago({
           id="fecha"
           name="fecha"
           type="date"
-          defaultValue={hoy}
+          defaultValue={estado.valores?.fecha ?? hoy}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-pago' : undefined}
@@ -83,9 +108,10 @@ export function FormularioPago({
       <div className="campo">
         <label htmlFor="medio">Medio</label>
         <select
+          key={estado.valores?.medio ?? 'inicial'}
           id="medio"
           name="medio"
-          defaultValue="transferencia"
+          defaultValue={estado.valores?.medio ?? 'transferencia'}
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-pago' : undefined}
         >
@@ -103,6 +129,7 @@ export function FormularioPago({
           id="referencia"
           name="referencia"
           placeholder="Número de operación"
+          defaultValue={estado.valores?.referencia}
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-pago' : undefined}
         />

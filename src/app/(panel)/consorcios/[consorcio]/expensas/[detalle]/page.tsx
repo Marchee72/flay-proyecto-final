@@ -342,6 +342,20 @@ function ExpensaTarjetaBanda({ base, expensa, consorcio, disponibilidadPago }: P
           </div>
         )}
 
+        {expensa.estadoPago !== 'pagada' &&
+          expensa.esUltima &&
+          !expensa.bloqueada &&
+          (expensa.instruccionesDePago ? (
+            <div className="exp-como-pagar">
+              <h2>Cómo pagar</h2>
+              <p style={{ whiteSpace: 'pre-wrap' }}>{expensa.instruccionesDePago}</p>
+            </div>
+          ) : (
+            !disponibilidadPago.pagable && (
+              <p className="apagado">Consultá con la administración cómo pagar esta expensa.</p>
+            )
+          ))}
+
         <div className="expensa-banda__acciones">
           <DescargaExpensa direccion={expensa.direccion} claseAviso="" />
           <PagoExpensa base={base} expensa={expensa} consorcio={consorcio} />

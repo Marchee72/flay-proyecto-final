@@ -1,10 +1,10 @@
 'use client'
 
-import { useActionState, useState, type ReactNode } from 'react'
+import { useActionState, useRef, type ReactNode } from 'react'
 
-import { accionRegistrarGasto } from './acciones'
+import { accionEditarGasto, accionRegistrarGasto, type Resultado } from './acciones'
 
-const SIN_ERROR = { mensaje: '' }
+const SIN_ERROR: Resultado = { mensaje: '' }
 
 export interface Opcion {
   id: string
@@ -14,6 +14,17 @@ export interface Opcion {
 /** El rubro lleva su clasificacion para poder proponerla (regla RN-04). */
 export interface OpcionRubro extends Opcion {
   clasificacion: 'ordinario' | 'extraordinario'
+}
+
+/** El gasto que se edita: el periodo no se toca (RF-04). */
+export interface GastoAEditar {
+  id: string
+  rubroId: string
+  clasificacion: 'ordinario' | 'extraordinario'
+  proveedorId: string | null
+  importe: string
+  fecha: string
+  descripcion: string
 }
 
 /**
@@ -33,6 +44,7 @@ export function FormularioGasto({
   precargado,
   extraccionId,
   accionesExtra,
+  gasto,
 }: {
   consorcioId: string
   /** `YYYY-MM` de hoy: el mes al que se imputa si nadie elige otro. */
@@ -44,20 +56,36 @@ export function FormularioGasto({
   extraccionId?: string
   /** Otras acciones del mismo pie (descartar la extraccion): al lado de registrar, nunca abajo. */
   accionesExtra?: ReactNode
+  /** Con `gasto` el formulario edita: sin periodo, y guarda por la accion de edicion. */
+  gasto?: GastoAEditar
 }) {
-  const [estado, accion, enviando] = useActionState(accionRegistrarGasto, SIN_ERROR)
+  const [estado, accion, enviando] = useActionState(
+    gasto ? accionEditarGasto : accionRegistrarGasto,
+    SIN_ERROR,
+  )
   const hayError = estado.mensaje !== ''
+  // Lo que se muestra de entrada: el gasto que se edita o lo precargado. Lo que
+  // la persona tipeo y el servidor rechazo (`estado.valores`) gana sobre ambos.
+  const base: Readonly<Record<string, string>> = gasto
+    ? {
+        rubro: gasto.rubroId,
+        clasificacion: gasto.clasificacion,
+        proveedor: gasto.proveedorId ?? '',
+        importe: gasto.importe,
+        fecha: gasto.fecha,
+        descripcion: gasto.descripcion,
+      }
+    : precargado
 
   // La clasificacion la propone el rubro y la puede corregir quien carga: al
   // cambiar de rubro vuelve a la suya, porque es lo que acierta casi siempre
   // (regla RN-04). Lo que se guarda queda congelado en el gasto.
-  const rubroInicial = precargado.rubro || (rubros[0]?.id ?? '')
-  const [rubroElegido, setRubroElegido] = useState(rubroInicial)
+  const rubroInicial = estado.valores?.rubro ?? (base.rubro || (rubros[0]?.id ?? ''))
   const deRubro = (id: string) =>
     rubros.find((rubro) => rubro.id === id)?.clasificacion ?? 'ordinario'
-  const [clasificacion, setClasificacion] = useState(
-    precargado.clasificacion ?? deRubro(rubroInicial),
-  )
+  // No controlado, como todo desplegable que vuelve con `estado.valores`: el
+  // reinicio del formulario de React 19 pisaria un `value` (ver la `key`).
+  const clasificacionRef = useRef<HTMLSelectElement>(null)
 
   const marca = (campo: string) =>
     precargado[campo] ? (
@@ -68,33 +96,37 @@ export function FormularioGasto({
     <form action={accion} noValidate>
       <input type="hidden" name="consorcio" value={consorcioId} />
       {extraccionId && <input type="hidden" name="extraccion" value={extraccionId} />}
+      {gasto && <input type="hidden" name="gasto" value={gasto.id} />}
 
-      <div className="campo">
-        <label htmlFor="periodo">Período</label>
-        <input
-          id="periodo"
-          name="periodo"
-          type="month"
-          defaultValue={precargado.periodo ?? mesActual}
-          required
-          aria-invalid={hayError || undefined}
-          aria-describedby={hayError ? 'error-gasto ayuda-periodo' : 'ayuda-periodo'}
-        />
-        <p className="ayuda" id="ayuda-periodo">
-          El mes de expensas al que se imputa. Si todavía no existe, se crea con este gasto.
-        </p>
-      </div>
+      {!gasto && (
+        <div className="campo">
+          <label htmlFor="periodo">Período</label>
+          <input
+            id="periodo"
+            name="periodo"
+            type="month"
+            defaultValue={estado.valores?.periodo ?? precargado.periodo ?? mesActual}
+            required
+            aria-invalid={hayError || undefined}
+            aria-describedby={hayError ? 'error-gasto ayuda-periodo' : 'ayuda-periodo'}
+          />
+          <p className="ayuda" id="ayuda-periodo">
+            El mes de expensas al que se imputa. Si todavía no existe, se crea con este gasto.
+          </p>
+        </div>
+      )}
 
       <div className="campo">
         <label htmlFor="rubro">Rubro</label>
         {marca('rubro')}
         <select
+          key={estado.valores?.rubro ?? 'inicial'}
           id="rubro"
           name="rubro"
-          value={rubroElegido}
+          defaultValue={rubroInicial}
           onChange={(evento) => {
-            setRubroElegido(evento.target.value)
-            setClasificacion(deRubro(evento.target.value))
+            if (clasificacionRef.current)
+              clasificacionRef.current.value = deRubro(evento.target.value)
           }}
           required
           aria-invalid={hayError || undefined}
@@ -112,11 +144,12 @@ export function FormularioGasto({
         <label htmlFor="clasificacion">Clasificación</label>
         {marca('clasificacion')}
         <select
+          key={estado.valores?.clasificacion ?? 'inicial'}
+          ref={clasificacionRef}
           id="clasificacion"
           name="clasificacion"
-          value={clasificacion}
-          onChange={(evento) =>
-            setClasificacion(evento.target.value as OpcionRubro['clasificacion'])
+          defaultValue={
+            estado.valores?.clasificacion ?? base.clasificacion ?? deRubro(rubroInicial)
           }
           required
           aria-invalid={hayError || undefined}
@@ -135,9 +168,10 @@ export function FormularioGasto({
         <label htmlFor="proveedor">Proveedor</label>
         {marca('proveedor')}
         <select
+          key={estado.valores?.proveedor ?? 'inicial'}
           id="proveedor"
           name="proveedor"
-          defaultValue={precargado.proveedor ?? ''}
+          defaultValue={estado.valores?.proveedor ?? base.proveedor ?? ''}
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-gasto' : undefined}
         >
@@ -159,7 +193,7 @@ export function FormularioGasto({
           className="cifra"
           inputMode="decimal"
           placeholder="0.00"
-          defaultValue={precargado.importe ?? ''}
+          defaultValue={estado.valores?.importe ?? base.importe ?? ''}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-gasto ayuda-importe' : 'ayuda-importe'}
@@ -176,7 +210,7 @@ export function FormularioGasto({
           id="fecha"
           name="fecha"
           type="date"
-          defaultValue={precargado.fecha ?? ''}
+          defaultValue={estado.valores?.fecha ?? base.fecha ?? ''}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-gasto' : undefined}
@@ -189,7 +223,7 @@ export function FormularioGasto({
         <input
           id="descripcion"
           name="descripcion"
-          defaultValue={precargado.descripcion ?? ''}
+          defaultValue={estado.valores?.descripcion ?? base.descripcion ?? ''}
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-gasto' : undefined}
         />
@@ -203,7 +237,13 @@ export function FormularioGasto({
 
       <div className="fila-acciones">
         <button className="boton boton--primario" type="submit" disabled={enviando}>
-          {enviando ? 'Registrando…' : 'Registrar'}
+          {gasto
+            ? enviando
+              ? 'Guardando…'
+              : 'Guardar cambios'
+            : enviando
+              ? 'Registrando…'
+              : 'Registrar'}
         </button>
         {accionesExtra}
       </div>

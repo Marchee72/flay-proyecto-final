@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import Link from 'next/link'
-import { Building2, Inbox, LogOut } from 'lucide-react'
+import { Briefcase, Building2, Inbox, LogOut } from 'lucide-react'
 
 import { administraAlguno } from '@/aplicacion/consorcios/administra-alguno'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
@@ -44,10 +44,12 @@ export async function Marco({
 
   // El asistente esta en todo el panel. Dentro de un consorcio se ancla a ese; afuera,
   // al ultimo usado (galleta, validada contra el alcance) o al primero.
-  const [alAlcance, conBandeja] = await Promise.all([
+  const [alAlcance, conBandeja, conAdministradoras] = await Promise.all([
     consorciosAlAlcance(usuarioId),
     // La Bandeja junta lo de los consorcios administrados: sin ninguno, no se ofrece.
     administraAlguno(HABILITACIONES, RELOJ, usuarioId),
+    // El alta de administradoras es de la plataforma: solo se ofrece a quien la opera.
+    HABILITACIONES.esSuperAdministrador(usuarioId, RELOJ.hoy()),
   ])
   const recordado = (await cookies()).get(NOMBRE_GALLETA_CONSORCIO)?.value
   const anclaId =
@@ -71,6 +73,11 @@ export async function Marco({
                 <Inbox className="icono" aria-hidden="true" />
               </Link>
             )}
+            {conAdministradoras && (
+              <Link className="panel__icono" href="/administradoras" aria-label="Administradoras">
+                <Briefcase className="icono" aria-hidden="true" />
+              </Link>
+            )}
             <Campana />
             <form action={salir} className="solo-telefono-flex">
               <button className="panel__icono" type="submit" aria-label="Salir">
@@ -86,7 +93,9 @@ export async function Marco({
 
         {/* Adentro de un consorcio la lista y la bandeja son los iconos de arriba;
             afuera no hay secciones y van con su nombre. */}
-        {!consorcio && <NavegacionGlobal conBandeja={conBandeja} />}
+        {!consorcio && (
+          <NavegacionGlobal conBandeja={conBandeja} conAdministradoras={conAdministradoras} />
+        )}
 
         {consorcio && <Navegacion base={consorcio.base} roles={consorcio.roles} />}
 

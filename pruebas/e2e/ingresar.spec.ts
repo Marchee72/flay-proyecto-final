@@ -26,6 +26,39 @@ test('credenciales que no existen dan el mensaje unico, no un detalle', async ({
   await expect(page).toHaveURL(/\/ingresar/)
 })
 
+test('con el correo vacío pide el correo', async ({ page }) => {
+  await page.goto('/ingresar')
+  await page.getByLabel('Contraseña').fill('lo-que-sea-pero-largo')
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page.locator('p.error')).toHaveText('Escribí el correo.')
+})
+
+test('con un correo mal formado lo dice', async ({ page }) => {
+  await page.goto('/ingresar')
+  await page.getByLabel('Correo electrónico').fill('sin-arroba')
+  await page.getByLabel('Contraseña').fill('lo-que-sea-pero-largo')
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page.locator('p.error')).toHaveText(
+    'Ese correo no tiene un formato válido: revisá que tenga @ y un dominio, como nombre@ejemplo.com.',
+  )
+})
+
+test('sin contraseña la pide', async ({ page }) => {
+  await page.goto('/ingresar')
+  await page.getByLabel('Correo electrónico').fill('nadie@ejemplo.test')
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page.locator('p.error')).toHaveText('Escribí tu contraseña.')
+})
+
+test('después de una clave incorrecta el correo sigue escrito', async ({ page }) => {
+  await page.goto('/ingresar')
+  await page.getByLabel('Correo electrónico').fill('nadie@ejemplo.test')
+  await page.getByLabel('Contraseña').fill('lo-que-sea-pero-largo')
+  await page.getByRole('button', { name: 'Entrar' }).click()
+  await expect(page.locator('p.error')).toHaveText('El correo o la contraseña no coinciden.')
+  await expect(page.getByLabel('Correo electrónico')).toHaveValue('nadie@ejemplo.test')
+})
+
 test('la pantalla de ingreso entra en un telefono de 390 px', async ({ page }) => {
   await page.goto('/ingresar')
 
@@ -56,5 +89,42 @@ test.describe('ingresar vuelve adonde se iba (FR-002)', () => {
     await page.getByLabel('Contraseña').fill(CONTRASENA)
     await page.getByRole('button', { name: 'Entrar' }).click()
     await expect(page).toHaveURL(gastos)
+  })
+})
+
+test.describe('recuperar la contraseña (RF-03)', () => {
+  let escenario: Escenario
+
+  test.beforeAll(async () => {
+    escenario = await sembrarEscenario('administrador', 'Mitre 456')
+  })
+
+  test.afterAll(async () => {
+    await limpiarEscenario(escenario)
+    await prisma.$disconnect()
+  })
+
+  test('desde el ingreso se llega a pedir el enlace y la respuesta no revela si el correo existe', async ({
+    page,
+  }) => {
+    const pedir = async (correo: string) => {
+      await page.goto('/ingresar')
+      await expect(
+        page.getByText('Después de cinco intentos fallidos el ingreso se pausa quince minutos.'),
+      ).toBeVisible()
+      await page.getByRole('link', { name: '¿Olvidaste tu contraseña?' }).click()
+      await expect(page).toHaveURL(/\/recuperar/)
+      await page.getByLabel('Correo electrónico').fill(correo)
+      await page.getByRole('button', { name: 'Mandarme el enlace' }).click()
+      const respuesta = page.getByRole('status').filter({ hasText: 'Si ese correo tiene cuenta' })
+      await expect(respuesta).toBeVisible()
+      return respuesta.textContent()
+    }
+
+    const conCuenta = await pedir(escenario.correo)
+    const sinCuenta = await pedir('nadie@ejemplo.test')
+
+    expect(conCuenta).toBe(sinCuenta)
+    expect(conCuenta).toContain('Revisá también el correo no deseado.')
   })
 })

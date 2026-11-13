@@ -800,7 +800,7 @@ describe('vencimiento del intento de pago (RF-28)', () => {
 
     // Tampoco a mano (decision 2026-11-10).
     await expect(
-      registrarPago(repo, RELOJ, {
+      registrarPago(repo, relojFijo('2026-02-11T12:00:00Z'), {
         usuarioId: administrador,
         consorcioId,
         unidadId: unidadA,

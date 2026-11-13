@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { altaAdministradora } from '@/aplicacion/administradoras/alta-administradora'
-import { altaConsorcio } from '@/aplicacion/consorcios/alta-consorcio'
+import { altaConsorcio, ConsorcioYaExiste } from '@/aplicacion/consorcios/alta-consorcio'
 import { RolInsuficiente } from '@/compartido/errores'
+import { CuitInvalido } from '@/aplicacion/proveedores/proveedores'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
 
@@ -39,13 +40,19 @@ beforeEach(async () => {
 
 afterEach(limpiar)
 
+// Once digitos: el alta normaliza el CUIT y descarta lo que no sea numero.
+const cuitUnico = () =>
+  `30${Math.floor(Math.random() * 1e8)
+    .toString()
+    .padStart(8, '0')}0`
+
 const datosConsorcio = (usuarioId: string, administradoraId: string) => ({
   usuarioId,
   administradoraId,
   nombre: 'Mitre 456',
   direccion: 'Mitre 456',
   localidad: 'Rosario',
-  cuit: `30-${crypto.randomUUID().slice(0, 8)}-0`,
+  cuit: cuitUnico(),
 })
 
 describe('alta de administradora', () => {
@@ -53,13 +60,43 @@ describe('alta de administradora', () => {
     const { administradoraId } = await altaAdministradora(repositorioHabilitaciones, RELOJ, {
       usuarioId: superAdmin,
       razonSocial: 'Nueva Administradora',
-      cuit: `30-${crypto.randomUUID().slice(0, 8)}-1`,
+      cuit: cuitUnico(),
     })
 
     const creada = await prismaBase.administradora.findUniqueOrThrow({
       where: { id: administradoraId },
     })
     expect(creada.razonSocial).toBe('Nueva Administradora')
+  })
+
+  it('el CUIT de la administradora se normaliza y uno inválido se rechaza', async () => {
+    const { administradoraId } = await altaAdministradora(repositorioHabilitaciones, RELOJ, {
+      usuarioId: superAdmin,
+      razonSocial: 'Con Guiones SRL',
+      cuit: '30712345671',
+    })
+    const creada = await prismaBase.administradora.findUniqueOrThrow({
+      where: { id: administradoraId },
+    })
+    expect(creada.cuit).toBe('30-71234567-1')
+
+    await expect(
+      altaAdministradora(repositorioHabilitaciones, RELOJ, {
+        usuarioId: superAdmin,
+        razonSocial: 'Mala SRL',
+        cuit: '30',
+      }),
+    ).rejects.toBeInstanceOf(CuitInvalido)
+  })
+
+  it('una razón social vacía se rechaza con su mensaje', async () => {
+    await expect(
+      altaAdministradora(repositorioHabilitaciones, RELOJ, {
+        usuarioId: superAdmin,
+        razonSocial: '   ',
+        cuit: cuitUnico(),
+      }),
+    ).rejects.toThrow('Escribí la razón social.')
   })
 
   it('no la puede crear alguien con habilitacion de empresa', async () => {
@@ -163,5 +200,44 @@ describe('alta de consorcio', () => {
     await expect(altaConsorcio(repositorioHabilitaciones, RELOJ, datos)).rejects.toThrow(
       'Ya hay un consorcio con ese CUIT.',
     )
+  })
+
+  it('un CUIT de 2 dígitos se rechaza', async () => {
+    await expect(
+      altaConsorcio(repositorioHabilitaciones, RELOJ, {
+        ...datosConsorcio(superAdmin, delta),
+        cuit: '30',
+      }),
+    ).rejects.toBeInstanceOf(CuitInvalido)
+  })
+
+  it('el CUIT se guarda normalizado', async () => {
+    const { consorcioId } = await altaConsorcio(repositorioHabilitaciones, RELOJ, {
+      ...datosConsorcio(superAdmin, delta),
+      cuit: '30712345671',
+    })
+    const consorcio = await prismaBase.consorcio.findUniqueOrThrow({ where: { id: consorcioId } })
+    expect(consorcio.cuit).toBe('30-71234567-1')
+  })
+
+  it('la misma dirección y localidad en la misma administradora se rechaza, sin importar mayúsculas', async () => {
+    await altaConsorcio(repositorioHabilitaciones, RELOJ, datosConsorcio(superAdmin, delta))
+
+    await expect(
+      altaConsorcio(repositorioHabilitaciones, RELOJ, {
+        ...datosConsorcio(superAdmin, delta),
+        direccion: ' MITRE 456 ',
+        localidad: 'rosario',
+      }),
+    ).rejects.toBeInstanceOf(ConsorcioYaExiste)
+  })
+
+  it('la misma dirección en otra administradora se acepta', async () => {
+    await altaConsorcio(repositorioHabilitaciones, RELOJ, datosConsorcio(superAdmin, delta))
+    const ajena = (await crearAdministradora('Otra SRL')).id
+
+    await expect(
+      altaConsorcio(repositorioHabilitaciones, RELOJ, datosConsorcio(superAdmin, ajena)),
+    ).resolves.toHaveProperty('consorcioId')
   })
 })

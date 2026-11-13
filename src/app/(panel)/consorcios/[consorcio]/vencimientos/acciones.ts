@@ -1,8 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { guardarInstruccionesDePago } from '@/aplicacion/consorcios/instrucciones-de-pago'
 import {
   guardarReglaVencimientos,
   tramosDesdeEscalonado,
@@ -10,7 +12,9 @@ import {
 } from '@/aplicacion/consorcios/regla-vencimientos'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { conHecho } from '@/app/aviso-en-url'
 import { irAIngresar } from '@/app/ir-a-ingresar'
+import { valoresDe, type ConValores } from '@/app/valores-de-formulario'
 
 export type Resultado = { mensaje: string; ok: boolean }
 
@@ -68,4 +72,32 @@ export async function accionGuardarVencimientos(
 
   revalidatePath('/consorcios/[consorcio]/vencimientos', 'page')
   return { mensaje: 'Vencimientos guardados.', ok: true }
+}
+
+export type ResultadoInstrucciones = { mensaje: string } & ConValores
+
+/** Guarda como se paga por fuera de la pasarela (RF-09); vacio las borra. */
+export async function accionGuardarInstrucciones(
+  _previo: ResultadoInstrucciones,
+  datos: FormData,
+): Promise<ResultadoInstrucciones> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) return irAIngresar()
+
+  const consorcioId = texto(datos, 'consorcio')
+
+  try {
+    await guardarInstruccionesDePago(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      texto: String(datos.get('instrucciones') ?? ''),
+    })
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion)
+      return { mensaje: error.mensajeParaUsuario, valores: valoresDe(datos) }
+    throw error
+  }
+
+  revalidatePath('/consorcios/[consorcio]/vencimientos', 'page')
+  redirect(conHecho(`/consorcios/${consorcioId}/vencimientos`, 'instrucciones-guardadas'))
 }

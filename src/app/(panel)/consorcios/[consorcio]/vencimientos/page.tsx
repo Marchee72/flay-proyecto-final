@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { CalendarClock } from 'lucide-react'
 
+import { verInstruccionesDePago } from '@/aplicacion/consorcios/instrucciones-de-pago'
 import {
   escalonadoDesdeTramos,
   verReglaVencimientos,
@@ -9,6 +10,7 @@ import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
 import { FormularioVencimientos } from './formulario'
+import { FormularioInstrucciones } from './formulario-instrucciones'
 
 export const metadata: Metadata = { title: 'Vencimientos — Flay' }
 
@@ -29,6 +31,10 @@ export default async function VencimientosPage({
 
   try {
     const regla = await verReglaVencimientos(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId: activo.id,
+    })
+    const instrucciones = await verInstruccionesDePago(HABILITACIONES, RELOJ, {
       usuarioId,
       consorcioId: activo.id,
     })
@@ -59,6 +65,15 @@ export default async function VencimientosPage({
             diaFirme={diaFirme}
             tasaMoraMensual={regla.tasaMoraMensual}
           />
+        </div>
+
+        <h2>Cómo se paga</h2>
+        <p className="apagado">
+          Lo que el consorcista ve en su expensa para pagar por fuera de la pasarela: alias, CBU,
+          horario de la administración.
+        </p>
+        <div className="tarjeta">
+          <FormularioInstrucciones consorcioId={activo.id} inicial={instrucciones ?? ''} />
         </div>
       </>
     )

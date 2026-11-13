@@ -1,11 +1,13 @@
 import { NoEncontrado } from '@/compartido/errores'
 import { Decimal, importe } from '@/compartido/dinero'
 import { saldosDeUnidad } from '@/dominio/liquidacion/saldo'
+import { exigible } from '@/dominio/liquidacion/vencimientos'
 import { ordenarUnidades } from '@/dominio/unidades/division'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
+import { deudaDesdeDetalles, type DetalleParaDeuda } from '@/aplicacion/pagos/registrar'
 import { unidadesAlcanzables } from '@/aplicacion/liquidacion/ver-expensa'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 import {
@@ -154,6 +156,10 @@ export interface ResumenDeCuenta {
   unidadId: string
   designacion: string
   saldo: string
+  /** Lo que se cobra hoy —base mas recargo del tramo—, de `exigible` sobre la cuenta unica. */
+  exigible: string
+  /** Vencida en firme: no se acepta pago hasta la liquidacion siguiente (RF-08). */
+  bloqueado: boolean
   saldoAFavor: string
   /** El movimiento mas reciente —expensa o pago—, o nulo si no hubo ninguno. */
   ultimoMovimiento: { fecha: string; concepto: string } | null
@@ -192,6 +198,7 @@ export async function resumenDeCuentas(
           select: {
             emitidaEn: true,
             vencimiento: true,
+            vencimientos: { select: { orden: true, fecha: true, recargoPorcentaje: true } },
             periodo: { select: { anio: true, mes: true } },
             detalles: {
               select: {
@@ -224,11 +231,15 @@ export async function resumenDeCuentas(
         // igual que la morosidad: `totalUnidad` arrastra la deuda anterior y
         // restarle lo imputado la contaria de mas (RN-08, nota #4).
         detalles: Parameters<typeof saldosDeUnidad>[0][number][]
+        crudos: DetalleParaDeuda[]
         saldoAFavor: Decimal
         ultimo: { momento: Date; fecha: string; concepto: string } | null
       }
       const porUnidad = new Map<string, Acumulado>(
-        ids.map((id) => [id, { detalles: [], saldoAFavor: new Decimal(0), ultimo: null }]),
+        ids.map((id) => [
+          id,
+          { detalles: [], crudos: [], saldoAFavor: new Decimal(0), ultimo: null },
+        ]),
       )
 
       const anotar = (acc: Acumulado, momento: Date, fecha: string, concepto: string) => {
@@ -258,6 +269,17 @@ export async function resumenDeCuentas(
               .toFixed(2),
             vencimiento: liquidacion.vencimiento,
           })
+          acc.crudos.push({
+            id: detalle.id,
+            totalUnidad: detalle.totalUnidad,
+            deudaAnterior: detalle.deudaAnterior,
+            interesMora: detalle.interesMora,
+            liquidacion: {
+              vencimiento: liquidacion.vencimiento,
+              vencimientos: liquidacion.vencimientos,
+            },
+            imputaciones: detalle.imputaciones,
+          })
           anotar(acc, liquidacion.emitidaEn, fecha, concepto)
         }
       }
@@ -275,10 +297,13 @@ export async function resumenDeCuentas(
 
       return unidades.map((unidad) => {
         const acc = porUnidad.get(unidad.id)!
+        const deuda = deudaDesdeDetalles(acc.crudos, reloj.hoy())
         return {
           unidadId: unidad.id,
           designacion: unidad.designacion,
           saldo: saldosDeUnidad(acc.detalles).saldoTotal,
+          exigible: exigible(deuda.impagos),
+          bloqueado: deuda.bloqueado,
           saldoAFavor: acc.saldoAFavor.toFixed(DECIMALES_IMPORTE),
           ultimoMovimiento: acc.ultimo
             ? { fecha: acc.ultimo.fecha, concepto: acc.ultimo.concepto }

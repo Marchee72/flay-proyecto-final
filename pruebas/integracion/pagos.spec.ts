@@ -9,13 +9,15 @@ import {
   verEstadoDeCuenta,
   verMorosidad,
 } from '@/aplicacion/pagos/estado-de-cuenta'
-import { registrarPago } from '@/aplicacion/pagos/registrar'
+import { PagoBloqueadoHastaLiquidar, registrarPago } from '@/aplicacion/pagos/registrar'
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
 import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
+
+import { diaArgentino } from '@/infraestructura/reloj'
 
 import { relojFijo } from '../dominio/reloj-fijo'
 import {
@@ -161,6 +163,35 @@ describe('imputacion por antiguedad (SC-009)', () => {
   it('un importe invalido se rechaza con un mensaje legible', async () => {
     await expect(pagar('0.00')).rejects.toThrow(/mayor que cero/)
     await expect(pagar('12.345')).rejects.toThrow(/mayor que cero/)
+  })
+})
+
+describe('fecha del pago (RF-09, A8)', () => {
+  const pagarEl = (reloj: ReturnType<typeof relojFijo>, fechaPago: string) =>
+    registrarPago(repo, reloj, {
+      usuarioId: administrador,
+      consorcioId,
+      unidadId: unidadA,
+      importe: '100.00',
+      fechaPago: new Date(fechaPago),
+      medio: 'transferencia',
+    })
+
+  it('un pago con fecha posterior a hoy se rechaza con su mensaje', async () => {
+    await emitirMes(1)
+    // Antes que el bloqueo por firme: el error es el de la fecha.
+    await expect(pagarEl(RELOJ, '2026-09-16')).rejects.toThrow(
+      'La fecha del pago no puede ser posterior a hoy.',
+    )
+  })
+
+  it('cerca de la medianoche argentina se acepta el dia de hoy y no el siguiente', async () => {
+    const instante = new Date('2026-11-13T02:30:00Z') // 23:30 del 12/11 en Argentina
+    const reloj = { ahora: () => instante, hoy: () => diaArgentino(instante) }
+    await emitirMes(1)
+    await expect(pagarEl(reloj, '2026-11-13')).rejects.toThrow(/posterior a hoy/)
+    // El 12/11 ya no es futuro: lo que sigue es el bloqueo por firme, no la fecha.
+    await expect(pagarEl(reloj, '2026-11-12')).rejects.toBeInstanceOf(PagoBloqueadoHastaLiquidar)
   })
 })
 

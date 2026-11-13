@@ -3,11 +3,14 @@ import { Users } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
+import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
 import { listarUsuarios, type UsuarioDelConsorcio } from '@/aplicacion/identidad/listar-usuarios'
 import { ROLES_ASIGNABLES } from '@/aplicacion/identidad/roles'
 
-import { accionReenviar } from './acciones'
+import { accionEnviarEnlaceDeClave, accionReenviar } from './acciones'
 import { ModalInvitar } from './modal-invitar'
+import { ModalQuitar } from './modal-quitar'
+import { ModalUnidad } from './modal-unidad'
 import { conConsorcio } from '../../../con-consorcio'
 import { TablaDesplazable } from '../../../tabla-desplazable'
 
@@ -19,6 +22,7 @@ export default async function UsuariosPage({ params }: { params: Promise<{ conso
   if ('salida' in pantalla) return pantalla.salida
   const { usuarioId, activo } = pantalla
   let usuarios: UsuarioDelConsorcio[] = []
+  let unidades: { id: string; designacion: string }[] = []
   let denegado = ''
 
   try {
@@ -26,6 +30,10 @@ export default async function UsuariosPage({ params }: { params: Promise<{ conso
       usuarioId,
       consorcioId: activo.id,
     })
+    // Ya viene ordenado y sin las dadas de baja.
+    unidades = (
+      await verConsorcio(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id })
+    ).unidades.map(({ id, designacion }) => ({ id, designacion }))
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
     denegado = error.mensajeParaUsuario
@@ -46,11 +54,17 @@ export default async function UsuariosPage({ params }: { params: Promise<{ conso
             <ModalInvitar
               consorcioId={activo.id}
               roles={ROLES_ASIGNABLES}
+              unidades={unidades}
               hoy={RELOJ.hoy().toISOString().slice(0, 10)}
             />
           </div>
 
-          <Tabla usuarios={usuarios} consorcioId={activo.id} />
+          <Tabla
+            usuarios={usuarios}
+            consorcioId={activo.id}
+            unidades={unidades}
+            hoy={RELOJ.hoy().toISOString().slice(0, 10)}
+          />
         </>
       )}
     </>
@@ -60,9 +74,13 @@ export default async function UsuariosPage({ params }: { params: Promise<{ conso
 function Tabla({
   usuarios,
   consorcioId,
+  unidades,
+  hoy,
 }: {
   usuarios: UsuarioDelConsorcio[]
   consorcioId: string
+  unidades: { id: string; designacion: string }[]
+  hoy: string
 }) {
   if (usuarios.length === 0) {
     return (
@@ -81,8 +99,10 @@ function Tabla({
             <th scope="col">Persona</th>
             <th scope="col">Correo</th>
             <th scope="col">Rol</th>
+            <th scope="col">Unidades</th>
             <th scope="col">Estado</th>
             <th scope="col">Invitación</th>
+            <th scope="col">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -92,10 +112,46 @@ function Tabla({
               <td>{usuario.correo}</td>
               <td>{usuario.roles.map((rol) => ETIQUETA_ROL[rol] ?? rol).join(', ')}</td>
               <td>
+                {usuario.unidades.length === 0
+                  ? '—'
+                  : usuario.unidades.map((u) => `${u.designacion} · ${u.tipo}`).join(', ')}
+              </td>
+              <td>
                 <EstadoDelUsuario estado={usuario.estado} bloqueado={usuario.bloqueado} />
               </td>
               <td>
                 <Invitacion usuario={usuario} consorcioId={consorcioId} />
+              </td>
+              <td>
+                {unidades.length === 0 ? (
+                  <span className="ayuda">Cargá el padrón primero.</span>
+                ) : (
+                  <ModalUnidad
+                    consorcioId={consorcioId}
+                    personaId={usuario.personaId}
+                    nombre={usuario.nombre}
+                    unidades={unidades}
+                    hoy={hoy}
+                  />
+                )}
+                {usuario.estado === 'activo' && (
+                  <form action={accionEnviarEnlaceDeClave}>
+                    <input type="hidden" name="consorcio" value={consorcioId} />
+                    <input type="hidden" name="destinatario" value={usuario.usuarioId} />
+                    <button className="boton boton--fantasma" type="submit">
+                      Enviar enlace para cambiar la clave
+                    </button>
+                  </form>
+                )}
+                {usuario.habilitaciones.map((habilitacion) => (
+                  <ModalQuitar
+                    key={habilitacion.id}
+                    consorcioId={consorcioId}
+                    habilitacionId={habilitacion.id}
+                    nombre={usuario.nombre}
+                    rol={ETIQUETA_ROL[habilitacion.rol] ?? habilitacion.rol}
+                  />
+                ))}
               </td>
             </tr>
           ))}

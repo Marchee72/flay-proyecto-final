@@ -90,5 +90,31 @@ async function bloquearSiCorresponde(usuarioId: string, correo: string, reloj: R
  * conozca un correo le alcanza para dejar afuera a su dueno.
  */
 export async function desbloquearUsuario(usuarioId: string): Promise<void> {
-  await prismaBase.usuario.update({ where: { id: usuarioId }, data: { bloqueadoHasta: null } })
+  await reiniciarIntentos(usuarioId, 'desbloqueo')
+}
+
+/**
+ * Levanta el bloqueo **y** corta la racha de fallos (RF-03, C5). Sin lo
+ * segundo, los cinco fallos viejos seguian siendo «los ultimos cinco» y el
+ * primer error despues de recuperar el acceso volvia a bloquear. Es el unico
+ * lugar que lo hace: el desbloqueo, el enlace del administrador y el cambio de
+ * clave pasan por aca.
+ *
+ * La racha se cuenta en `IntentoInicioSesion`, asi que la corta una fila ahi,
+ * `exitoso` y con el motivo en `origen`, como la cortaria un ingreso: sin
+ * columna nueva, y con la misma marca de tiempo que los intentos —comparar
+ * contra el reloj del proceso mezclaria dos relojes (nota 9)—.
+ */
+export async function reiniciarIntentos(
+  usuarioId: string,
+  motivo: 'desbloqueo' | 'enlace del administrador' | 'cambio de clave',
+): Promise<void> {
+  const { correo } = await prismaBase.usuario.update({
+    where: { id: usuarioId },
+    data: { bloqueadoHasta: null },
+    select: { correo: true },
+  })
+  await prismaBase.intentoInicioSesion.create({
+    data: { correoProbado: correo, origen: motivo, exitoso: true },
+  })
 }

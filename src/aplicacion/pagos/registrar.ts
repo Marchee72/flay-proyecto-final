@@ -1,4 +1,4 @@
-import type { MedioDePago } from '@prisma/client'
+import type { MedioDePago, Prisma } from '@prisma/client'
 
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import { Decimal, importe } from '@/compartido/dinero'
@@ -39,6 +39,12 @@ export class ImporteDePagoInvalido extends ErrorDeAplicacion {
 export class MedioDePagoDesconocido extends ErrorDeAplicacion {
   constructor() {
     super('Elegí un medio de pago de la lista.', 'RF-09')
+  }
+}
+
+export class FechaDePagoFutura extends ErrorDeAplicacion {
+  constructor() {
+    super('La fecha del pago no puede ser posterior a hoy.', 'RF-09')
   }
 }
 
@@ -140,6 +146,8 @@ export async function registrarPago(
       if (!/^\d+(\.\d{1,2})?$/.test(datos.importe) || importe(datos.importe).lessThanOrEqualTo(0)) {
         throw new ImporteDePagoInvalido()
       }
+      // Dias a las 00:00 UTC: la accion arma asi la fecha y `reloj.hoy()` es el dia argentino.
+      if (datos.fechaPago.getTime() > reloj.hoy().getTime()) throw new FechaDePagoFutura()
 
       // El aislamiento decide si la unidad es de este consorcio.
       const unidad = await prisma.unidad.findFirst({ where: { id: datos.unidadId } })
@@ -191,7 +199,16 @@ export async function deudaDeUnidad(
   unidadId: string,
   hoy: Date,
   cliente: Pick<TransaccionPrisma, 'detalleLiquidacion'> = prisma,
-): Promise<{
+): Promise<DeudaDeUnidad> {
+  const detalles = await cliente.detalleLiquidacion.findMany({
+    where: { unidadId, liquidacion: { estado: 'vigente' } },
+    select: SELECCION_DEUDA,
+  })
+  return deudaDesdeDetalles(detalles, hoy)
+}
+
+/** Lo que `deudaDeUnidad` devuelve. */
+export interface DeudaDeUnidad {
   impagos: DetalleImpago[]
   bloqueado: boolean
   saldoTotal: string
@@ -199,24 +216,32 @@ export async function deudaDeUnidad(
   ultimaId: string | null
   /** El ultimo dia en que el monto de hoy sigue valiendo (cambio de tramo), o nulo. */
   vigenteHasta: Date | null
-}> {
-  const detalles = await cliente.detalleLiquidacion.findMany({
-    where: { unidadId, liquidacion: { estado: 'vigente' } },
-    select: {
-      id: true,
-      totalUnidad: true,
-      deudaAnterior: true,
-      interesMora: true,
-      liquidacion: {
-        select: {
-          vencimiento: true,
-          vencimientos: { select: { orden: true, fecha: true, recargoPorcentaje: true } },
-        },
-      },
-      imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
-    },
-  })
+}
 
+const SELECCION_DEUDA = {
+  id: true,
+  totalUnidad: true,
+  deudaAnterior: true,
+  interesMora: true,
+  liquidacion: {
+    select: {
+      vencimiento: true,
+      vencimientos: { select: { orden: true, fecha: true, recargoPorcentaje: true } },
+    },
+  },
+  imputaciones: { where: { revertidaEn: null }, select: { importeImputado: true } },
+} as const
+
+/** Los detalles de una unidad con lo que `SELECCION_DEUDA` trae. */
+export type DetalleParaDeuda = Prisma.DetalleLiquidacionGetPayload<{
+  select: typeof SELECCION_DEUDA
+}>
+
+/**
+ * La cuenta unica de la deuda, sobre detalles ya leidos: la usan `deudaDeUnidad`
+ * (una unidad) y `resumenDeCuentas` (todas, sin una consulta por unidad).
+ */
+export function deudaDesdeDetalles(detalles: DetalleParaDeuda[], hoy: Date): DeudaDeUnidad {
   const formateados = detalles.map((d) => ({
     detalleId: d.id,
     totalUnidad: d.totalUnidad.toFixed(DECIMALES_IMPORTE),

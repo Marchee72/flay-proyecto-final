@@ -1,20 +1,24 @@
 'use server'
 
-import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import { conError, conHecho } from '@/app/aviso-en-url'
+import { valoresDe, type ConValores } from '@/app/valores-de-formulario'
 import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
+import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { invitarPersona } from '@/aplicacion/identidad/invitar-persona'
 import { reenviarInvitacion } from '@/aplicacion/identidad/reenviar-invitacion'
+import { enviarEnlaceDeClave } from '@/aplicacion/identidad/restablecer'
+import { quitarAcceso } from '@/aplicacion/identidad/quitar-acceso'
 import { rolDesdeFormulario } from '@/aplicacion/identidad/roles'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { irAIngresar } from '@/app/ir-a-ingresar'
+import { urlBase } from '@/app/url-base'
 
 /** Un archivo «use server» solo exporta funciones: el estado inicial va en el formulario. */
-export type Resultado = { mensaje: string }
+export type Resultado = { mensaje: string } & ConValores
 
 /** La identidad de quien opera sale de la sesion, nunca del formulario. */
 async function quienOpera(): Promise<string> {
@@ -33,28 +37,108 @@ export async function accionInvitar(_previo: Resultado, datos: FormData): Promis
     (candidato) => candidato.id === consorcioId,
   )
 
-  if (!consorcio) return { mensaje: new NoEncontrado().mensajeParaUsuario }
+  if (!consorcio)
+    return { mensaje: new NoEncontrado().mensajeParaUsuario, valores: valoresDe(datos) }
 
   const desde = String(datos.get('vigenciaDesde') ?? '')
+  const rol = rolDesdeFormulario(datos.get('rol'))
+  const unidadId = String(datos.get('unidad') ?? '')
+  const tipo = datos.get('tipoOcupacion') === 'inquilino' ? 'inquilino' : 'propietario'
+  let resultado: { yaTeniaCuenta: boolean }
 
   try {
-    await invitarPersona(HABILITACIONES, RELOJ, {
+    resultado = await invitarPersona(HABILITACIONES, RELOJ, {
       invitadorId,
       nombre: String(datos.get('nombre') ?? '').trim(),
       apellido: String(datos.get('apellido') ?? '').trim(),
       correo: String(datos.get('correo') ?? ''),
-      rol: rolDesdeFormulario(datos.get('rol')),
+      rol,
       consorcioId: consorcio.id,
       consorcioNombre: consorcio.nombre,
       vigenciaDesde: desde ? new Date(`${desde}T00:00:00Z`) : RELOJ.hoy(),
       urlBase: await urlBase(),
+      // La unidad solo cuenta para un consorcista.
+      unidad: rol === 'consorcista' && unidadId ? { unidadId, tipo } : null,
+    })
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion)
+      return { mensaje: error.mensajeParaUsuario, valores: valoresDe(datos) }
+    throw error
+  }
+
+  redirect(
+    conHecho(
+      `/consorcios/${consorcio.id}/usuarios`,
+      resultado.yaTeniaCuenta ? 'acceso-sumado' : 'invitado',
+    ),
+  )
+}
+
+/** «Asignar unidad» sobre una persona que ya figura en la nómina (RF-03, C2). */
+export async function accionAsignarUnidad(_previo: Resultado, datos: FormData): Promise<Resultado> {
+  const usuarioId = await quienOpera()
+  const consorcioId = String(datos.get('consorcio') ?? '')
+  const desde = String(datos.get('desde') ?? '')
+  const unidadId = String(datos.get('unidad') ?? '')
+
+  if (!unidadId)
+    return { mensaje: 'Elegí la unidad que le corresponde.', valores: valoresDe(datos) }
+
+  try {
+    await registrarOcupacion(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      unidadId,
+      personaId: String(datos.get('persona') ?? ''),
+      tipo: datos.get('tipoOcupacion') === 'inquilino' ? 'inquilino' : 'propietario',
+      desde: desde ? new Date(`${desde}T00:00:00Z`) : RELOJ.hoy(),
+    })
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion)
+      return { mensaje: error.mensajeParaUsuario, valores: valoresDe(datos) }
+    throw error
+  }
+
+  redirect(conHecho(`/consorcios/${consorcioId}/usuarios`, 'unidad-asignada'))
+}
+
+/** «Quitar» un rol: el acceso se cierra hoy mismo (RF-03, A3). */
+export async function accionQuitarAcceso(_previo: Resultado, datos: FormData): Promise<Resultado> {
+  const usuarioId = await quienOpera()
+  const consorcioId = String(datos.get('consorcio') ?? '')
+
+  try {
+    await quitarAcceso(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      habilitacionId: String(datos.get('habilitacion') ?? ''),
     })
   } catch (error) {
     if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
     throw error
   }
 
-  redirect(conHecho(`/consorcios/${consorcio.id}/usuarios`, 'invitado'))
+  redirect(conHecho(`/consorcios/${consorcioId}/usuarios`, 'acceso-quitado'))
+}
+
+/** «Enviar enlace para cambiar la clave»: levanta el bloqueo y manda el correo (RF-03, C5). */
+export async function accionEnviarEnlaceDeClave(datos: FormData): Promise<void> {
+  const usuarioId = await quienOpera()
+  const consorcioId = String(datos.get('consorcio') ?? '')
+
+  try {
+    await enviarEnlaceDeClave(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      destinatarioId: String(datos.get('destinatario') ?? ''),
+      urlBase: await urlBase(),
+    })
+  } catch (error) {
+    if (!(error instanceof ErrorDeAplicacion)) throw error
+    redirect(conError(`/consorcios/${consorcioId}/usuarios`, error.mensajeParaUsuario))
+  }
+
+  redirect(conHecho(`/consorcios/${consorcioId}/usuarios`, 'enlace-enviado'))
 }
 
 /**
@@ -77,11 +161,4 @@ export async function accionReenviar(datos: FormData): Promise<void> {
   }
 
   redirect(conHecho(`/consorcios/${consorcioId}/usuarios`, 'invitacion-reenviada'))
-}
-
-/** Base del enlace de invitacion, tomada del pedido que la origina. */
-async function urlBase(): Promise<string> {
-  const cabeceras = await headers()
-  const protocolo = cabeceras.get('x-forwarded-proto') ?? 'http'
-  return `${protocolo}://${cabeceras.get('host') ?? 'localhost:3000'}`
 }

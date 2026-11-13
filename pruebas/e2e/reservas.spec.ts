@@ -83,3 +83,33 @@ test('reservar, chocar con otra reserva con un mensaje legible, y cancelar', asy
   await expect(page.getByRole('status').filter({ hasText: 'Reserva cancelada.' })).toBeVisible()
   await expect(page.getByRole('table')).toContainText('Cancelada')
 })
+
+test('el historial de reservas muestra la grilla de siete columnas sin desbordar la página', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'telefono', 'el desborde es del teléfono; una sola vez')
+  const admin = await sembrarEscenario('administrador', 'Belgrano 789')
+  try {
+    await entrar(page, admin.correo)
+    await page.goto(`/consorcios/${admin.consorcioId}/reservas/historial`)
+    const calendario = page.getByRole('region', { name: 'Calendario de uso' })
+    await expect(calendario.getByRole('columnheader', { name: 'Lun' })).toBeVisible()
+    expect(await desbordaALoAncho(page)).toBe(false)
+    const segundaSemana = await calendario.locator('tbody tr').nth(1).locator('td').all()
+    expect(segundaSemana).toHaveLength(7)
+    const ys = await Promise.all(segundaSemana.map(async (c) => (await c.boundingBox())?.y))
+    expect(new Set(ys).size).toBe(1)
+    // Ninguna celda hereda el formato de lista: ni el «· » ni el texto apagado.
+    const estilo = (c: (typeof segundaSemana)[number]) =>
+      c.evaluate((el) => {
+        const e = getComputedStyle(el)
+        return [e.fontSize, e.color, getComputedStyle(el, '::before').content]
+      })
+    const primera = await estilo(segundaSemana[0])
+    const quinta = await estilo(segundaSemana[4])
+    expect(quinta).toEqual(primera)
+    expect(['none', 'normal']).toContain(quinta[2])
+  } finally {
+    await limpiarEscenario(admin)
+  }
+})

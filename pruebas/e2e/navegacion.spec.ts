@@ -7,6 +7,7 @@ import {
   limpiarEscenario,
   prisma,
   sembrarEscenario,
+  sembrarUsuarioEn,
   type Escenario,
 } from './sesion'
 
@@ -180,5 +181,42 @@ test('resumen, lista y bandeja sin infracciones A/AA y sin desborde', async ({ p
     const resumen = violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html).join(' | ')}`)
     expect(resumen, `${ruta}\n${resumen.join('\n')}`).toEqual([])
     expect(await desbordaALoAncho(page), ruta).toBe(false)
+  }
+})
+
+test('el superadministrador ve Administradoras en el lateral y un administrador no', async ({
+  page,
+}) => {
+  // En el teléfono el lateral global no se dibuja: los mismos destinos son los íconos de la cabecera.
+  const lateral =
+    test.info().project.name === 'telefono'
+      ? page.locator('.panel__acciones')
+      : page.getByRole('navigation', { name: 'Panel' })
+
+  await entrar(page, unico.correo)
+  await page.goto('/consorcios')
+  await expect(lateral.getByRole('link', { name: 'Consorcios' })).toBeVisible()
+  await expect(lateral.getByRole('link', { name: 'Administradoras' })).toHaveCount(0)
+  await page.goto('/administradoras')
+  await expect(page.locator('.aviso--problema')).toHaveText(
+    'Tu rol no permite ver las administradoras.',
+  )
+
+  const superAdmin = await sembrarUsuarioEn(unico, 'administrador')
+  await prisma.habilitacionPlataforma.create({
+    data: { usuarioId: superAdmin.usuarioId, vigenciaDesde: new Date('2026-01-01') },
+  })
+  try {
+    await page.context().clearCookies()
+    await entrar(page, superAdmin.correo)
+    await page.goto('/consorcios')
+    await lateral.getByRole('link', { name: 'Administradoras' }).click()
+    await expect(page).toHaveURL('/administradoras')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Administradoras')
+  } finally {
+    await prisma.habilitacionPlataforma.deleteMany({ where: { usuarioId: superAdmin.usuarioId } })
+    await prisma.habilitacion.deleteMany({ where: { usuarioId: superAdmin.usuarioId } })
+    await prisma.usuario.deleteMany({ where: { id: superAdmin.usuarioId } })
+    await prisma.persona.deleteMany({ where: { id: superAdmin.personaId } })
   }
 })

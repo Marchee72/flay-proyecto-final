@@ -6,10 +6,14 @@ import { conMayuscula, fechaParaMostrar, importeParaMostrar } from '@/compartido
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verGasto, type ComprobanteDelGasto } from '@/aplicacion/gastos/ver-gasto'
+import { listarProveedores, listarRubros } from '@/aplicacion/proveedores/proveedores'
 
 import { AdjuntarComprobante } from './adjuntar'
 import { conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
+import { BotonModal } from '../../../../modal'
+import { FormularioGasto } from '../formulario'
+import { ModalEliminar } from './modal-eliminar'
 
 export const metadata: Metadata = { title: 'Gasto — Flay' }
 
@@ -47,6 +51,15 @@ export default async function GastoPage({
     'administrador',
   )
 
+  // Editar y eliminar solo con el periodo abierto (RF-04); el resto, a ajuste.
+  const editable = administra && gasto.periodoAbierto
+  const [rubros, proveedores] = editable
+    ? await Promise.all([
+        listarRubros(),
+        listarProveedores(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
+      ])
+    : [[], []]
+
   return (
     <>
       <Volver href={`/consorcios/${activo.id}/gastos`} />
@@ -63,6 +76,46 @@ export default async function GastoPage({
           Fecha {fechaParaMostrar(gasto.fecha)}
           {gasto.descripcion ? ` · ${gasto.descripcion}` : ''}
         </p>
+        {editable && (
+          <div className="fila-acciones">
+            <BotonModal etiqueta="Editar" titulo="Editar gasto" variante="boton--fantasma">
+              <FormularioGasto
+                consorcioId={activo.id}
+                mesActual=""
+                rubros={rubros.map((rubro) => ({
+                  id: rubro.id,
+                  etiqueta: rubro.nombre,
+                  clasificacion: rubro.clasificacion,
+                }))}
+                proveedores={proveedores.map((proveedor) => ({
+                  id: proveedor.id,
+                  etiqueta: proveedor.razonSocial,
+                }))}
+                precargado={{}}
+                gasto={{
+                  id: gasto.id,
+                  rubroId: gasto.rubroId,
+                  clasificacion: gasto.clasificacion,
+                  proveedorId: gasto.proveedorId,
+                  importe: gasto.importe,
+                  fecha: gasto.fecha,
+                  descripcion: gasto.descripcion,
+                }}
+              />
+            </BotonModal>
+            <ModalEliminar
+              consorcioId={activo.id}
+              gastoId={gasto.id}
+              importe={importeParaMostrar(gasto.importe)}
+            />
+          </div>
+        )}
+        {administra && !gasto.periodoAbierto && (
+          <p className="apagado">
+            El período está {gasto.periodoEstado}: lo que haya que corregir va como ajuste en el
+            período siguiente.
+          </p>
+        )}
       </div>
 
       <h2>Comprobantes</h2>

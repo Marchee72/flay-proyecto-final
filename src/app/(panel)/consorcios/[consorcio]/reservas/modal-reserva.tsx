@@ -51,9 +51,10 @@ function FormularioReserva({
       <div className="campo">
         <label htmlFor="espacio">Espacio</label>
         <select
+          key={estado.valores?.espacio ?? 'inicial'}
           id="espacio"
           name="espacio"
-          defaultValue={espacioInicial ?? espacios[0]?.id ?? ''}
+          defaultValue={estado.valores?.espacio ?? espacioInicial ?? espacios[0]?.id ?? ''}
           required
         >
           {espacios.map((e) => (
@@ -66,7 +67,13 @@ function FormularioReserva({
       </div>
       <div className="campo">
         <label htmlFor="unidad">Unidad</label>
-        <select id="unidad" name="unidad" required>
+        <select
+          key={estado.valores?.unidad ?? 'inicial'}
+          id="unidad"
+          name="unidad"
+          defaultValue={estado.valores?.unidad}
+          required
+        >
           {unidades.map((u) => (
             <option key={u.id} value={u.id}>
               {u.designacion}
@@ -80,6 +87,7 @@ function FormularioReserva({
           id="desde"
           name="desde"
           type="datetime-local"
+          defaultValue={estado.valores?.desde}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-reserva' : undefined}
@@ -91,6 +99,7 @@ function FormularioReserva({
           id="hasta"
           name="hasta"
           type="datetime-local"
+          defaultValue={estado.valores?.hasta}
           required
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-reserva' : undefined}
@@ -98,11 +107,23 @@ function FormularioReserva({
       </div>
       <div className="campo">
         <label htmlFor="personas">Cantidad de personas</label>
-        <input id="personas" name="personas" type="number" min={1} inputMode="numeric" />
+        <input
+          id="personas"
+          name="personas"
+          type="number"
+          min={1}
+          inputMode="numeric"
+          defaultValue={estado.valores?.personas}
+        />
       </div>
       <div className="campo">
         <label htmlFor="observaciones">Observaciones</label>
-        <input id="observaciones" name="observaciones" placeholder="Cumpleaños, reunión…" />
+        <input
+          id="observaciones"
+          name="observaciones"
+          placeholder="Cumpleaños, reunión…"
+          defaultValue={estado.valores?.observaciones}
+        />
       </div>
       {hayError && (
         <p className="error" id="error-reserva" role="alert">

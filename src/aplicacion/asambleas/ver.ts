@@ -313,7 +313,6 @@ export async function verAsamblea(
       const propietarios = await propietariosVigentesDe(unidadIds, hoy)
       const propietariosPorUnidad = new Map<string, Set<string>>()
       const nombresPropietariosPorUnidad = new Map<string, string[]>()
-      const usuarioPropietarioPorUnidad = new Map<string, string>()
       for (const p of propietarios) {
         const s = propietariosPorUnidad.get(p.unidadId) ?? new Set<string>()
         s.add(p.personaId)
@@ -321,9 +320,6 @@ export async function verAsamblea(
         const lista = nombresPropietariosPorUnidad.get(p.unidadId) ?? []
         if (!lista.includes(p.nombre)) lista.push(p.nombre)
         nombresPropietariosPorUnidad.set(p.unidadId, lista)
-        if (p.usuarioId && !usuarioPropietarioPorUnidad.has(p.unidadId)) {
-          usuarioPropietarioPorUnidad.set(p.unidadId, p.usuarioId)
-        }
       }
 
       const usuarios = await nombresDeUsuarios([
@@ -373,6 +369,7 @@ export async function verAsamblea(
                   ahora,
                   padron: padronDom,
                   votos: votosDom,
+                  ausentes: p.ausentesConVoto,
                   oposiciones: p.oposiciones.map((o) => o.unidadId),
                   mayoria: p.mayoria,
                 })
@@ -419,11 +416,7 @@ export async function verAsamblea(
       const misUnidades: MiUnidad[] = []
       for (const unidadId of propiaIds) {
         const u = representadas.get(unidadId)
-        const repId =
-          u?.representanteId ??
-          (u?.presente && u?.representacion === 'propietario'
-            ? (usuarioPropietarioPorUnidad.get(unidadId) ?? null)
-            : null)
+        const repId = u?.representanteId ?? null
         misUnidades.push({
           unidadId,
           designacion: designacion.get(unidadId) ?? '',
@@ -462,12 +455,18 @@ export async function verAsamblea(
           .map((v) => v.unidadId)
       }
 
+      const ausentesDe = new Map(asamblea.puntos.map((p) => [p.id, p.ausentesConVoto]))
       const puedoOponerme = puntos.flatMap((p) =>
         p.estadoDecision === 'provisoria'
           ? propias
               .filter((m) => {
                 const u = representadas.get(m.unidadId)
-                return u && !u.presente && !u.sinVoto && !p.oposiciones.includes(m.unidadId)
+                return (
+                  u &&
+                  !u.sinVoto &&
+                  ausentesDe.get(p.id)?.includes(m.unidadId) &&
+                  !p.oposiciones.includes(m.unidadId)
+                )
               })
               .map((m) => ({
                 puntoId: p.id,
@@ -526,11 +525,7 @@ export async function verAsamblea(
           presente: u.presente,
           representante: u.representanteNombre,
           representacion: u.representacion,
-          representanteId:
-            u.representanteId ??
-            (u.presente && u.representacion === 'propietario'
-              ? (usuarioPropietarioPorUnidad.get(u.unidadId) ?? null)
-              : null),
+          representanteId: u.representanteId,
           propietarios: nombresPropietariosPorUnidad.get(u.unidadId) ?? [],
         })),
         quorum: {

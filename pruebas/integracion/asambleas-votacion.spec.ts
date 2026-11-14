@@ -18,6 +18,8 @@ import {
   NoRepresenta,
   PuntosSinCerrar,
   ReglaDeAsamblea,
+  NoPresente,
+  SinPoderRegistrado,
   SinQuorum,
   UnidadYaAcreditada,
   UnidadYaVoto,
@@ -31,6 +33,7 @@ import { registrarPago } from '@/aplicacion/pagos/registrar'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { NoEncontrado } from '@/compartido/errores'
 import { prismaBase } from '@/infraestructura/prisma'
+import { registrarPoderEnPapel } from '@/aplicacion/asambleas/poderes'
 
 import {
   armarEscenario,
@@ -149,6 +152,86 @@ describe('abrir y acreditar', () => {
     await expect(
       designarAutoridades(repo, RELOJ, { ...de(e.consejo), presidenteId: e.ana, secretarioId: '' }),
     ).rejects.toBeInstanceOf(AutoridadSinUsuario)
+  })
+})
+
+describe('acreditación a mano', () => {
+  it('acreditar a otra persona por una unidad con titular con cuenta no le da el voto al titular', async () => {
+    await abrir(repo, RELOJ, de(e.consejo))
+    await acreditar(repo, RELOJ, {
+      ...de(e.consejo),
+      unidadId: e.unidades['1A'],
+      nombre: 'Pedro Hermano',
+      representacion: 'propietario',
+    })
+    const fila = await prismaBase.unidadEnAsamblea.findFirstOrThrow({
+      where: { asambleaId, unidadId: e.unidades['1A'] },
+    })
+    expect(fila).toMatchObject({ representanteNombre: 'Pedro Hermano', representanteId: null })
+    await acreditarme(repo, RELOJ, de(e.bruno))
+    await acreditarme(repo, RELOJ, de(e.carla))
+    await expect(
+      designarAutoridades(repo, RELOJ, {
+        ...de(e.consejo),
+        presidenteId: e.ana,
+        secretarioId: e.carla,
+      }),
+    ).rejects.toBeInstanceOf(NoPresente)
+    const vista = await verAsamblea(repo, RELOJ, de(e.ana))
+    expect(vista.yo.misUnidades.find((m) => m.unidadId === e.unidades['1A'])).toMatchObject({
+      acreditada: true,
+      laRepresentoYo: false,
+    })
+  })
+
+  it('el nombre del titular vincula aunque cambien tildes y mayúsculas', async () => {
+    await abrir(repo, RELOJ, de(e.consejo))
+    await acreditar(repo, RELOJ, {
+      ...de(e.consejo),
+      unidadId: e.unidades['1A'],
+      nombre: 'ana  ÁLVAREZ',
+      representacion: 'propietario',
+    })
+    const fila = await prismaBase.unidadEnAsamblea.findFirstOrThrow({
+      where: { asambleaId, unidadId: e.unidades['1A'] },
+    })
+    expect(fila.representanteId).toBe(e.ana)
+  })
+
+  it('acreditar como apoderado exige un poder registrado', async () => {
+    await abrir(repo, RELOJ, de(e.consejo))
+    await expect(
+      acreditar(repo, RELOJ, {
+        ...de(e.consejo),
+        unidadId: e.unidades['2B'],
+        nombre: 'Cualquiera',
+        representacion: 'apoderado',
+      }),
+    ).rejects.toBeInstanceOf(SinPoderRegistrado)
+  })
+
+  it('con poder en papel, acreditar como apoderado vincula al apoderado', async () => {
+    await registrarPoderEnPapel(repo, HOY, {
+      ...de(e.consejo),
+      unidadId: e.unidades['2B'],
+      otorganteId: e.personaDora,
+      apoderadoId: e.ivan,
+    })
+    await abrir(repo, RELOJ, de(e.consejo))
+    await acreditar(repo, RELOJ, {
+      ...de(e.consejo),
+      unidadId: e.unidades['2B'],
+      nombre: 'Cualquiera',
+      representacion: 'apoderado',
+    })
+    const fila = await prismaBase.unidadEnAsamblea.findFirstOrThrow({
+      where: { asambleaId, unidadId: e.unidades['2B'] },
+    })
+    expect(fila).toMatchObject({
+      representanteId: e.ivan,
+      representacion: 'apoderado',
+      representanteNombre: 'Ivan Inquilino',
+    })
   })
 })
 
@@ -332,6 +415,84 @@ describe('votación', () => {
     await cerrarPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntoOpciones })
     const punto = await prismaBase.puntoAsamblea.findUniqueOrThrow({ where: { id: puntoOpciones } })
     expect(punto).toMatchObject({ resultado: 'aprobado', opcionGanadoraId: opciones[1].id })
+  })
+})
+
+describe('concurrencia del cierre y la carga (RF-31, B-1, B-2)', () => {
+  it('un voto concurrente con el cierre queda contado o rechazado, nunca guardado sin contar', async () => {
+    for (let i = 0; i < 5; i++) {
+      if (i > 0) {
+        await limpiar()
+        e = await armarEscenario()
+        asambleaId = await asambleaConvocada(e)
+        const puntos = await prismaBase.puntoAsamblea.findMany({
+          where: { asambleaId },
+          orderBy: { orden: 'asc' },
+        })
+        puntoBinario = puntos[0].id
+      }
+      await constituida()
+      await abrirPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntoBinario })
+      const [voto] = await Promise.allSettled([
+        votar(repo, RELOJ, {
+          ...de(e.ana),
+          puntoId: puntoBinario,
+          unidadId: e.unidades['1A'],
+          eleccion: { sentido: 'positivo' },
+        }),
+        cerrarPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntoBinario }),
+      ])
+      const punto = await prismaBase.puntoAsamblea.findUniqueOrThrow({
+        where: { id: puntoBinario },
+        include: { votos: true },
+      })
+      const porOpcion = (punto.conteo as { porOpcion: Record<string, { unidades: number }> })
+        .porOpcion
+      const contados = Object.values(porOpcion).reduce((s, c) => s + c.unidades, 0)
+      expect(contados).toBe(punto.votos.length)
+      if (voto.status === 'rejected') expect(String(voto.reason)).toMatch(/no está en votación/)
+    }
+  })
+
+  it('la carga manual no pisa un voto propio aunque llegue a la vez', async () => {
+    await constituida()
+    await abrirPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntoBinario })
+    const unidadId = e.unidades['1A']
+    const [propio, manual] = await Promise.allSettled([
+      votar(repo, RELOJ, {
+        ...de(e.ana),
+        puntoId: puntoBinario,
+        unidadId,
+        eleccion: { sentido: 'positivo' },
+      }),
+      cargarVoto(repo, RELOJ, {
+        ...de(e.consejo),
+        puntoId: puntoBinario,
+        unidadId,
+        eleccion: { sentido: 'negativo' },
+      }),
+    ])
+    const voto = await prismaBase.votoAsamblea.findFirstOrThrow({
+      where: { puntoId: puntoBinario, unidadId },
+    })
+    if (propio.status === 'fulfilled')
+      expect(voto).toMatchObject({ origen: 'propio', sentido: 'positivo' })
+    if (manual.status === 'rejected') expect(manual.reason).toBeInstanceOf(UnidadYaVoto)
+  })
+
+  it('la base rechaza que una carga manual pise un voto propio, aunque la aplicación no lo mire', async () => {
+    await constituida()
+    await abrirPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntoBinario })
+    const unidadId = e.unidades['1A']
+    await votar(repo, RELOJ, {
+      ...de(e.ana),
+      puntoId: puntoBinario,
+      unidadId,
+      eleccion: { sentido: 'positivo' },
+    })
+    await expect(
+      prismaBase.$executeRaw`UPDATE "VotoAsamblea" SET origen = 'carga_manual', sentido = 'negativo' WHERE punto_id = ${puntoBinario}::uuid`,
+    ).rejects.toThrow(/ya votó este punto/)
   })
 })
 

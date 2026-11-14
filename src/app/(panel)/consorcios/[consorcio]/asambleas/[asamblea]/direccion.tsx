@@ -198,6 +198,9 @@ function FormularioAcreditar({
           onChange={(e) => setNombre(e.target.value)}
           placeholder="Nombre y apellido"
         />
+        <p className="ayuda">
+          Si no es el titular con cuenta, vota por carga manual de quien dirige.
+        </p>
       </div>
       <div className="campo direccion__campo-como">
         <label htmlFor="acreditar-como">Como</label>

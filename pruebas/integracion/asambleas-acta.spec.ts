@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
+  completarActa,
   designarFirmantes,
   enviarAFirmar,
   firmar,
@@ -250,6 +251,67 @@ describe('firma', () => {
         where: { tipo: 'acta_firmada', entidadId: asambleaId },
       }),
     ).toBeGreaterThan(0)
+  })
+
+  it('las dos últimas firmas a la vez cierran el acta una sola vez', async () => {
+    for (const u of [e.carla, e.ivan])
+      await firmar(repo, DESPUES, deps, { ...de(u), contrasena: secretoDeFirma })
+    const r = await Promise.all(
+      [e.ana, e.bruno].map((u) =>
+        firmar(repo, DESPUES, deps, { ...de(u), contrasena: secretoDeFirma }),
+      ),
+    )
+    expect(r.some((x) => x.completa)).toBe(true)
+    const acta = await prismaBase.actaAsamblea.findFirstOrThrow({ where: { asambleaId } })
+    expect(acta.estado).toBe('firmada')
+    expect(await prismaBase.documentoConsorcio.count({ where: { tipo: 'acta' } })).toBe(1)
+    const doc = await prismaBase.documentoConsorcio.findFirstOrThrow({ where: { tipo: 'acta' } })
+    expect(huella(guardados.get(doc.claveAlmacenamiento)!)).toBe(doc.hashSha256)
+    expect(
+      (await prismaBase.asamblea.findUniqueOrThrow({ where: { id: asambleaId } })).estado,
+    ).toBe('acta_firmada')
+  })
+
+  it('un acta con las cuatro firmas y sin cerrar se completa a pedido, una sola vez', async () => {
+    const acta = await prismaBase.actaAsamblea.findFirstOrThrow({ where: { asambleaId } })
+    // Simula el acta trabada del informe: firmas escritas sin pasar por el cierre.
+    await prismaBase.firmanteActa.updateMany({
+      where: { actaId: acta.id },
+      data: { firmadoEn: DESPUES.ahora(), hashFirmado: acta.hashContenido },
+    })
+    const r = await Promise.all([
+      completarActa(repo, DESPUES, deps, de(e.consejo)),
+      completarActa(repo, DESPUES, deps, de(e.ana)),
+    ])
+    expect(r).toEqual([{ completa: true }, { completa: true }])
+    expect(await prismaBase.documentoConsorcio.count({ where: { tipo: 'acta' } })).toBe(1)
+    await expect(completarActa(repo, DESPUES, deps, de(e.elsa!))).rejects.toBeInstanceOf(
+      NoEncontrado,
+    )
+  })
+
+  it('con firmas pendientes, completar no hace nada', async () => {
+    expect(await completarActa(repo, DESPUES, deps, de(e.consejo))).toEqual({ completa: false })
+  })
+
+  it('un apoderado no reemplaza a un firmante', async () => {
+    // Iván es apoderado de 2B y preside: se lo libera de la firma reemplazándolo por Elsa.
+    const deIvan = await prismaBase.firmanteActa.findFirstOrThrow({ where: { usuarioId: e.ivan } })
+    await reemplazarFirmante(repo, DESPUES, {
+      ...de(e.consejo),
+      firmanteId: deIvan.id,
+      nuevoUsuarioId: e.elsa!,
+    })
+    const deBruno = await prismaBase.firmanteActa.findFirstOrThrow({
+      where: { usuarioId: e.bruno },
+    })
+    await expect(
+      reemplazarFirmante(repo, DESPUES, {
+        ...de(e.consejo),
+        firmanteId: deBruno.id,
+        nuevoUsuarioId: e.ivan,
+      }),
+    ).rejects.toBeInstanceOf(FirmanteInvalido)
   })
 
   it('un firmante pendiente se reemplaza; uno que ya firmó, no', async () => {

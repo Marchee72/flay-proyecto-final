@@ -11,6 +11,7 @@ import { Volver } from '../../../../../encabezado-consorcio'
 import { EnVivo } from '../../../../../en-vivo'
 import { BotonModal } from '../../../../../modal'
 import {
+  accionCompletarActa,
   accionEnviarAFirmar,
   accionFirmantes,
   accionFirmar,
@@ -96,7 +97,7 @@ export default async function ActaPage({
     const presentesConUsuario = [
       ...new Map(
         vista.padron
-          .filter((u) => u.presente && u.representanteId)
+          .filter((u) => u.presente && u.representacion === 'propietario' && u.representanteId)
           .map((u) => [u.representanteId!, u]),
       ).values(),
     ].filter((u) => !acta.firmantes.some((f) => f.usuarioId === u.representanteId))
@@ -380,6 +381,18 @@ export default async function ActaPage({
                 </button>
               </form>
             )}
+
+            {acta.estado === 'a_firmar' &&
+              acta.firmantes.every((f) => f.firmadoEn) &&
+              (dirigio || acta.firmantes.some((f) => f.usuarioId === vista.yo.usuarioId)) && (
+                <form action={accionCompletarActa}>
+                  <Ocultos vista={vista} />
+                  <p className="ayuda">Todas las firmas están: falta publicar el acta.</p>
+                  <div className="fila-acciones">
+                    <BotonEnviar texto="Completar el acta" enviando="Completando…" />
+                  </div>
+                </form>
+              )}
 
             {acta.hashContenido && (
               <p className="huella">

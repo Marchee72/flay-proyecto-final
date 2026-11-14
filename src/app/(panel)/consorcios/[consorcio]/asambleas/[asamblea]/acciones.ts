@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { after } from 'next/server'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { FirmanteInvalido, NotasCambiaron } from '@/aplicacion/asambleas/errores'
 import {
   ALMACEN,
   DERIVADOR,
@@ -16,6 +17,7 @@ import {
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import {
   designarFirmantes,
+  completarActa,
   enviarAFirmar,
   firmar,
   guardarNotas,
@@ -160,7 +162,9 @@ export async function accionRevocarPoder(datos: FormData) {
 
 // Reunión --------------------------------------------------------------------
 
-export type ResultadoSala = { ok: true; mensaje: string } | { ok: false; error: string }
+export type ResultadoSala =
+  | { ok: true; mensaje: string }
+  | { ok: false; error: string; actuales?: string }
 
 const MENSAJE_SALA: Record<string, string> = {
   acreditado: 'Asistencia registrada.',
@@ -347,10 +351,15 @@ export async function accionNotas(datos: FormData): Promise<ResultadoSala> {
       asambleaId: texto(datos, 'asamblea'),
       puntoId: texto(datos, 'punto'),
       notas: String(datos.get('notas') ?? ''),
+      anterior: String(datos.get('anterior') ?? ''),
     })
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
-    return { ok: false, error: error.mensajeParaUsuario }
+    return {
+      ok: false,
+      error: error.mensajeParaUsuario,
+      ...(error instanceof NotasCambiaron && { actuales: error.actuales }),
+    }
   }
   return { ok: true, mensaje: '' }
 }
@@ -414,6 +423,18 @@ export async function accionFirmar(datos: FormData) {
         },
       ),
     'acta-firmada',
+    'acta',
+  )
+}
+
+export async function accionCompletarActa(datos: FormData) {
+  await ejecutar(
+    datos,
+    async (b) => {
+      const { completa } = await completarActa(HABILITACIONES, RELOJ, ACTA, b)
+      if (!completa) throw new FirmanteInvalido('Todavía faltan firmas para completar el acta.')
+    },
+    'acta-completada',
     'acta',
   )
 }

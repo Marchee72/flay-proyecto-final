@@ -64,7 +64,7 @@ export default async function AsambleaPage({
 
     return (
       <>
-        {vista.estado === 'en_curso' && (
+        {(vista.estado === 'convocada' || vista.estado === 'en_curso') && (
           <SalaEnVivo consorcioId={vista.consorcioId} asambleaId={vista.id} />
         )}
         <Volver href={base} />
@@ -181,13 +181,25 @@ export default async function AsambleaPage({
 
         {vista.estado === 'convocada' && vista.yo.puedeDirigir && (
           <section aria-label="El día de la reunión">
-            {vista.propietariosSinCuenta.length > 0 && (
+            {(vista.propietariosSinCuenta.length > 0 ||
+              vista.unidadesSinPropietario.length > 0) && (
               <p className="aviso aviso--atencion" role="status">
-                {vista.propietariosSinCuenta.length === 1
-                  ? 'Un propietario no tiene cuenta en Flay'
-                  : `${vista.propietariosSinCuenta.length} propietarios no tienen cuenta en Flay`}
-                : les llega la convocatoria por correo si lo tienen cargado. A los que no, hay que
-                convocarlos por otro medio.
+                {vista.propietariosSinCuenta.length > 0 &&
+                  `${
+                    vista.propietariosSinCuenta.length === 1
+                      ? 'Un propietario no tiene cuenta en Flay'
+                      : `${vista.propietariosSinCuenta.length} propietarios no tienen cuenta en Flay`
+                  }: ${
+                    vista.propietariosSinCuenta.length === 1 ? 'le llega' : 'les llega'
+                  } la convocatoria por correo si lo tienen cargado. A los que no, hay que convocarlos por otro medio. `}
+                {vista.unidadesSinPropietario.length > 0 &&
+                  `${
+                    vista.unidadesSinPropietario.length === 1 ? 'La unidad' : 'Las unidades'
+                  } ${vista.unidadesSinPropietario.join(', ')} ${
+                    vista.unidadesSinPropietario.length === 1
+                      ? 'no tiene propietario cargado'
+                      : 'no tienen propietario cargado'
+                  }: cuentan en la base del cómputo pero nadie recibe el aviso.`}
               </p>
             )}
             <div className="borrador-barra">

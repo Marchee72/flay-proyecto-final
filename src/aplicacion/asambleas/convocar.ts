@@ -227,6 +227,8 @@ const ETIQUETA_TIPO: Record<TipoAsamblea, string> = {
 export interface ResultadoConvocatoria {
   /** Propietarios a los que Flay no puede avisar: sin cuenta ni correo (FR-009). */
   sinContacto: { unidad: string; nombre: string }[]
+  /** Designaciones de las unidades sin propietario vigente. */
+  sinPropietario: string[]
 }
 
 export async function convocar(
@@ -308,7 +310,10 @@ export async function convocar(
         }),
       )
 
-      return { sinContacto: destinatarios.sinContacto }
+      return {
+        sinContacto: destinatarios.sinContacto,
+        sinPropietario: destinatarios.sinPropietario,
+      }
     },
   )
 }

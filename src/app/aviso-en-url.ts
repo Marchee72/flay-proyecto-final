@@ -50,7 +50,7 @@ export const HECHO = {
   'asamblea-guardada': 'Asamblea guardada en borrador. Revisala y, cuando esté lista, convocá.',
   'asamblea-convocada': 'Convocatoria enviada a los propietarios, en Flay y por correo.',
   'asamblea-convocada-sin-contacto':
-    'Convocatoria enviada. Hay propietarios sin cuenta ni correo: convocalos por otro medio (abajo está la lista).',
+    'Convocatoria enviada. Hay propietarios sin cuenta ni correo, o unidades sin propietario: convocalos por otro medio (abajo está el detalle).',
   'asamblea-borrada': 'Borrador eliminado.',
   'asamblea-cancelada': 'Asamblea cancelada. Se avisó a los convocados.',
   'poder-otorgado': 'Poder otorgado. El apoderado ya puede acreditarse por la unidad.',
@@ -70,6 +70,7 @@ export const HECHO = {
   'firmantes-designados': 'Firmantes designados.',
   'acta-enviada': 'Acta enviada a firmar. Su texto ya no cambia.',
   'acta-firmada': 'Firma registrada.',
+  'acta-completada': 'Acta publicada en la documentación del consorcio.',
   'firmante-reemplazado': 'Firmante reemplazado. Se le avisó para que firme.',
   'reglas-guardadas': 'Reglas guardadas. Rigen para las próximas convocatorias.',
 } as const satisfies Record<string, string>

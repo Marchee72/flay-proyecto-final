@@ -78,6 +78,8 @@ export interface PuntoVista {
     cargaManual: boolean
   }[]
   oposiciones: string[]
+  /** Unidades ausentes con voto al cerrar (congeladas): quienes pueden oponerse en papel. */
+  ausentesConVoto: string[]
   resumen: string | null
   /** Solo para quien redacta: la vista viaja al navegador de todos los asistentes. */
   notas: string | null
@@ -196,6 +198,8 @@ export interface VistaAsamblea {
     personaId: string
     nombre: string
   }[]
+  /** Designaciones de las unidades vigentes sin propietario: solo para quien dirige o administra. */
+  unidadesSinPropietario: string[]
 }
 
 const cuenta = (c: { unidades: number; coeficiente: Decimal }): CuentaVista => ({
@@ -393,6 +397,7 @@ export async function verAsamblea(
             cargaManual: v.origen === 'carga_manual',
           })),
           oposiciones: p.oposiciones.map((o) => o.unidadId),
+          ausentesConVoto: p.ausentesConVoto,
           resumen: p.resumen,
           notas: redacta ? p.notas : null,
           borradorResumen: redacta ? p.borradorResumen : null,
@@ -583,6 +588,12 @@ export async function verAsamblea(
                   personaId: p.personaId,
                   nombre: p.nombre,
                 }))
+            : [],
+        unidadesSinPropietario:
+          puedeDirigir(acceso, asamblea) || acceso.roles.includes('administrador')
+            ? padron
+                .filter((u) => !propietarios.some((p) => p.unidadId === u.unidadId))
+                .map((u) => u.designacion)
             : [],
       }
     },

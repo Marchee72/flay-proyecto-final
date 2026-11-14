@@ -29,6 +29,14 @@ export class AnticipacionInsuficiente extends ErrorDeAsamblea {
   }
 }
 
+export class NotasCambiaron extends ErrorDeAsamblea {
+  constructor(public readonly actuales: string) {
+    super(
+      'Otra persona cambió las notas de este punto: quedó su versión y la tuya está abajo para copiar.',
+    )
+  }
+}
+
 export class NoPuedeDirigir extends ErrorDeAsamblea {
   constructor() {
     super(

@@ -27,7 +27,7 @@ export async function conAviso<T>(
   return resultado
 }
 
-/** Solo escucha quien alcanza la asamblea, y solo mientras está en curso. */
+/** Solo escucha quien alcanza la asamblea, y solo mientras está convocada (para enterarse de la apertura) o en curso. */
 export async function permisoDeEscucha(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
@@ -39,7 +39,8 @@ export async function permisoDeEscucha(
       where: { id: datos.asambleaId },
       select: { estado: true },
     })
-    if (asamblea?.estado !== 'en_curso') throw new NoEncontrado('RF-29')
+    if (asamblea?.estado !== 'convocada' && asamblea?.estado !== 'en_curso')
+      throw new NoEncontrado('RF-29')
     return aviso.permisoDeEscucha(datos.asambleaId)
   })
 }

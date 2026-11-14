@@ -94,16 +94,60 @@ afterEach(async () => {
 describe('notas por punto', () => {
   it('con el punto pendiente no se escriben', async () => {
     await expect(
-      guardarNotas(repo, RELOJ, { ...de(e.carla), puntoId: puntos[0].id, notas: 'x' }),
+      guardarNotas(repo, RELOJ, {
+        ...de(e.carla),
+        puntoId: puntos[0].id,
+        notas: 'x',
+        anterior: '',
+      }),
     ).rejects.toThrow(/mientras el punto está abierto/)
+  })
+
+  it('una nota escrita sobre una versión vieja no pisa la de otra persona', async () => {
+    await abrirPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntos[0].id })
+    await guardarNotas(repo, RELOJ, {
+      ...de(e.carla),
+      puntoId: puntos[0].id,
+      notas: 'Secretaría: tres presupuestos',
+      anterior: '',
+    })
+    await expect(
+      guardarNotas(repo, RELOJ, {
+        ...de(e.consejo),
+        puntoId: puntos[0].id,
+        notas: 'Dirección: pintura lavable',
+        anterior: '',
+      }),
+    ).rejects.toMatchObject({ actuales: 'Secretaría: tres presupuestos' })
+    expect((await leerPuntos())[0].notas).toBe('Secretaría: tres presupuestos')
+  })
+
+  it('guardar dos veces seguidas con espacios al borde no es un conflicto', async () => {
+    await abrirPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntos[0].id })
+    const base = { ...de(e.carla), puntoId: puntos[0].id }
+    await guardarNotas(repo, RELOJ, { ...base, notas: 'x ', anterior: '' })
+    await guardarNotas(repo, RELOJ, { ...base, notas: 'y', anterior: 'x ' })
+    await guardarNotas(repo, RELOJ, { ...base, notas: '   ', anterior: 'y' })
+    await guardarNotas(repo, RELOJ, { ...base, notas: 'z', anterior: '   ' })
+    expect((await leerPuntos())[0].notas).toBe('z')
   })
 
   it('con el punto abierto se escriben, y al cerrarlo quedan fijas', async () => {
     await abrirPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntos[0].id })
-    await guardarNotas(repo, RELOJ, { ...de(e.carla), puntoId: puntos[0].id, notas: 'Debate' })
+    await guardarNotas(repo, RELOJ, {
+      ...de(e.carla),
+      puntoId: puntos[0].id,
+      notas: 'Debate',
+      anterior: '',
+    })
     await cerrarPunto(repo, RELOJ, { ...de(e.consejo), puntoId: puntos[0].id })
     await expect(
-      guardarNotas(repo, RELOJ, { ...de(e.carla), puntoId: puntos[0].id, notas: 'Otra' }),
+      guardarNotas(repo, RELOJ, {
+        ...de(e.carla),
+        puntoId: puntos[0].id,
+        notas: 'Otra',
+        anterior: 'Debate',
+      }),
     ).rejects.toThrow(/mientras el punto está abierto/)
     expect((await leerPuntos())[0].notas).toBe('Debate')
   })

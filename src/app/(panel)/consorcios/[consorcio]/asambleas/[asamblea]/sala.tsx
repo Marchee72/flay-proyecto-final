@@ -2,8 +2,8 @@
 
 import { useEffect, useOptimistic, useState, useTransition } from 'react'
 import {
-  CircleCheck,
   Hand,
+  CircleCheck,
   ListChecks,
   PanelRightClose,
   PanelRightOpen,
@@ -22,6 +22,7 @@ import type {
 
 import { accionAcreditarme, accionVotar } from './acciones'
 import { AvanceOrden } from './avance-orden'
+import { BotonEnviar } from './boton-enviar'
 import { opcionesDe, Ocultos, TablaConteo } from './comunes'
 import { Direccion, notificarResultado, type CambioOptimistaSala } from './direccion'
 import { NotasActa } from './notas-acta'
@@ -284,18 +285,17 @@ export function Sala({ vista: vistaServidor }: { vista: VistaAsamblea }) {
         <div className="sala__quorum-controles">
           {sinAcreditar.length > 0 && (
             <form
-              action={(datos) => {
-                iniciarTransicion(async () => {
-                  aplicarOptimista({ tipo: 'acreditarme' })
-                  await notificarResultado(accionAcreditarme(datos))
-                })
+              action={async (datos) => {
+                aplicarOptimista({ tipo: 'acreditarme' })
+                await notificarResultado(accionAcreditarme(datos))
               }}
             >
               <Ocultos vista={vista} />
-              <button className="boton boton--primario" type="submit">
-                <Hand className="icono" aria-hidden="true" />
-                Estoy presente ({sinAcreditar.map((u) => u.designacion).join(', ')})
-              </button>
+              <BotonEnviar
+                texto={`Estoy presente (${sinAcreditar.map((u) => u.designacion).join(', ')})`}
+                enviando="Registrando…"
+                icono={<Hand className="icono" aria-hidden="true" />}
+              />
             </form>
           )}
 

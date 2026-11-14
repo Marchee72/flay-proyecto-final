@@ -1,7 +1,7 @@
 'use client'
 
 import { unstable_rethrow } from 'next/navigation'
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useState } from 'react'
 import { Search } from 'lucide-react'
 
 import { momentoParaMostrar } from '@/compartido/formato'
@@ -12,6 +12,7 @@ import {
   accionAbrirPunto,
   accionAcreditar,
   accionAutoridades,
+  accionCancelar,
   accionCargarVoto,
   accionCerrarPunto,
   accionConstituir,
@@ -83,7 +84,6 @@ function FormularioAcreditar({
   ausentes: UnidadVista[]
   alCambiarOptimista?: (cambio: CambioOptimistaSala) => void
 }) {
-  const [, iniciarTransicion] = useTransition()
   const [busqueda, setBusqueda] = useState('')
   const [unidadSeleccionadaId, setUnidadSeleccionadaId] = useState(ausentes[0]?.unidadId ?? '')
   const [representacion, setRepresentacion] = useState<'propietario' | 'apoderado'>('propietario')
@@ -113,7 +113,7 @@ function FormularioAcreditar({
 
   return (
     <form
-      action={(datos) => {
+      action={async (datos) => {
         const unidadId = String(datos.get('unidad') ?? '')
         const nombreValor = String(datos.get('nombre') ?? '').trim()
         const repr =
@@ -121,15 +121,13 @@ function FormularioAcreditar({
         const resto = filtradas.filter((u) => u.unidadId !== unidadId)
         const siguiente = resto[0] ?? ausentes.find((u) => u.unidadId !== unidadId) ?? null
         if (siguiente) setUnidadSeleccionadaId(siguiente.unidadId)
-        iniciarTransicion(async () => {
-          alCambiarOptimista?.({
-            tipo: 'acreditar',
-            unidadId,
-            nombre: nombreValor,
-            representacion: repr,
-          })
-          await notificarResultado(accionAcreditar(datos))
+        alCambiarOptimista?.({
+          tipo: 'acreditar',
+          unidadId,
+          nombre: nombreValor,
+          representacion: repr,
         })
+        await notificarResultado(accionAcreditar(datos))
       }}
       className="fila-de-filtros direccion__form-acreditar"
     >
@@ -218,9 +216,12 @@ function FormularioAcreditar({
           <option value="apoderado">Apoderado</option>
         </select>
       </div>
-      <button className="boton boton--fantasma" type="submit" disabled={!unidadActiva}>
-        Acreditar
-      </button>
+      <BotonEnviar
+        texto="Acreditar"
+        enviando="Acreditando…"
+        clase="boton boton--fantasma"
+        deshabilitado={!unidadActiva}
+      />
     </form>
   )
 }
@@ -239,8 +240,6 @@ export function Direccion({
   paso?: 'acreditacion' | 'votacion'
   alCambiarOptimista?: (cambio: CambioOptimistaSala) => void
 }) {
-  const [, iniciarTransicion] = useTransition()
-
   if (!vista.yo.puedeDirigir) return null
   if (!vista.yo.dirige) {
     return (
@@ -250,18 +249,29 @@ export function Direccion({
           Dirige {vista.dirige?.nombre ?? 'nadie todavía'}. Si se desconectó, podés tomar la
           dirección: los votos ya emitidos no se pierden.
         </p>
-        <form
-          action={(datos) => {
-            iniciarTransicion(async () => {
-              await notificarResultado(accionTomarDireccion(datos))
-            })
-          }}
+        <BotonModal
+          etiqueta="Tomar la dirección"
+          titulo="Tomar la dirección"
+          variante="boton--fantasma"
         >
-          <Ocultos vista={vista} />
-          <button className="boton boton--fantasma" type="submit">
-            Tomar la dirección
-          </button>
-        </form>
+          {(cerrar) => (
+            <form
+              action={async (datos) => {
+                cerrar()
+                await notificarResultado(accionTomarDireccion(datos))
+              }}
+            >
+              <Ocultos vista={vista} />
+              <p>
+                {vista.dirige?.nombre ?? 'Quien dirige'} deja de dirigir: los modales que tenga
+                abiertos dejan de funcionar.
+              </p>
+              <div className="fila-acciones">
+                <BotonEnviar texto="Confirmar" enviando="Tomando…" />
+              </div>
+            </form>
+          )}
+        </BotonModal>
       </section>
     )
   }
@@ -269,13 +279,21 @@ export function Direccion({
   const pasoActivo = paso ?? (vista.constituida ? 'votacion' : 'acreditacion')
   const ausentes = vista.padron.filter((u) => !u.presente)
   // Una persona que representa varias unidades se elige una sola vez.
-  const conUsuario = [
-    ...new Map(
-      vista.padron
-        .filter((u) => u.presente && u.representanteId)
-        .map((u) => [u.representanteId!, u]),
-    ).values(),
-  ]
+  const porPersona = new Map<
+    string,
+    { id: string; designaciones: string[]; representante: string }
+  >()
+  for (const u of vista.padron) {
+    if (!u.presente || !u.representanteId) continue
+    const p = porPersona.get(u.representanteId) ?? {
+      id: u.representanteId,
+      designaciones: [],
+      representante: u.representante ?? '',
+    }
+    p.designaciones.push(u.designacion)
+    porPersona.set(u.representanteId, p)
+  }
+  const conUsuario = [...porPersona.values()]
   const abierto = vista.puntos.find((p) => p.estado === 'abierto')
   const siguiente = vista.puntos.find((p) => p.estado === 'pendiente')
   const presentesConVoto = vista.padron.filter((u) => u.presente && !u.sinVoto)
@@ -308,10 +326,8 @@ export function Direccion({
         {!vista.constituida && (
           <>
             <form
-              action={(datos) => {
-                iniciarTransicion(async () => {
-                  await notificarResultado(accionAutoridades(datos))
-                })
+              action={async (datos) => {
+                await notificarResultado(accionAutoridades(datos))
               }}
               className="fila-de-filtros"
             >
@@ -332,28 +348,20 @@ export function Direccion({
                         ? 'Acreditá unidades primero'
                         : 'Elegí entre los presentes'}
                     </option>
-                    {conUsuario.map((u) => {
-                      const titular = u.propietarios?.[0]
-                      const etiqueta =
-                        titular && titular !== u.representante
-                          ? `${u.designacion} — ${u.representante} (${titular})`
-                          : `${u.designacion} — ${u.representante}`
-                      return (
-                        <option key={`${cargo}-${u.representanteId}`} value={u.representanteId!}>
-                          {etiqueta}
-                        </option>
-                      )
-                    })}
+                    {conUsuario.map(({ id, designaciones, representante }) => (
+                      <option key={`${cargo}-${id}`} value={id}>
+                        {`${designaciones.join(', ')} — ${representante}`}
+                      </option>
+                    ))}
                   </select>
                 </div>
               ))}
-              <button
-                className="boton boton--fantasma"
-                type="submit"
-                disabled={conUsuario.length < 2}
-              >
-                Designar
-              </button>
+              <BotonEnviar
+                texto="Designar"
+                enviando="Designando…"
+                clase="boton boton--fantasma"
+                deshabilitado={conUsuario.length < 2}
+              />
             </form>
             {conUsuario.length < 2 && (
               <p className="ayuda">
@@ -362,10 +370,8 @@ export function Direccion({
               </p>
             )}
             <form
-              action={(datos) => {
-                iniciarTransicion(async () => {
-                  await notificarResultado(accionConstituir(datos))
-                })
+              action={async (datos) => {
+                await notificarResultado(accionConstituir(datos))
               }}
             >
               <Ocultos vista={vista} />
@@ -375,10 +381,34 @@ export function Direccion({
                 {momentoParaMostrar(vista.segundaConvocatoria).slice(-5)} se constituye en segunda,
                 con los presentes.
               </p>
-              <button className="boton boton--primario" type="submit" disabled={sinAutoridades}>
-                Verificar quórum y constituir
-              </button>
+              <BotonEnviar
+                texto="Verificar quórum y constituir"
+                enviando="Constituyendo…"
+                deshabilitado={sinAutoridades}
+              />
             </form>
+            <BotonModal
+              etiqueta="Cancelar por falta de quórum"
+              titulo="Cancelar la asamblea"
+              variante="boton--peligro"
+            >
+              <form action={accionCancelar}>
+                <Ocultos vista={vista} />
+                <div className="campo">
+                  <label htmlFor="cancelar-motivo">Motivo</label>
+                  <textarea
+                    id="cancelar-motivo"
+                    name="motivo"
+                    rows={3}
+                    required
+                    defaultValue="No se alcanzó el quórum."
+                  />
+                </div>
+                <div className="fila-acciones">
+                  <BotonEnviar texto="Confirmar cancelación" enviando="Cancelando…" />
+                </div>
+              </form>
+            </BotonModal>
           </>
         )}
       </section>
@@ -393,22 +423,20 @@ export function Direccion({
         <>
           {cargables.length > 0 && (
             <form
-              action={(datos) => {
+              action={async (datos) => {
                 const unidadId = String(datos.get('unidad') ?? '')
                 const campoEleccion = abierto.modalidad === 'binaria' ? 'sentido' : 'opcion'
                 const clave = String(datos.get(campoEleccion) ?? '')
                 const texto = opcionesDe(abierto).find((o) => o.clave === clave)?.texto ?? clave
-                iniciarTransicion(async () => {
-                  alCambiarOptimista?.({
-                    tipo: 'votar',
-                    puntoId: abierto.id,
-                    unidadId,
-                    clave,
-                    eleccion: texto,
-                    cargaManual: true,
-                  })
-                  await notificarResultado(accionCargarVoto(datos))
+                alCambiarOptimista?.({
+                  tipo: 'votar',
+                  puntoId: abierto.id,
+                  unidadId,
+                  clave,
+                  eleccion: texto,
+                  cargaManual: true,
                 })
+                await notificarResultado(accionCargarVoto(datos))
               }}
               className="fila-de-filtros"
             >
@@ -442,9 +470,7 @@ export function Direccion({
                   ))}
                 </select>
               </div>
-              <button className="boton boton--fantasma" type="submit">
-                Cargar voto
-              </button>
+              <BotonEnviar texto="Cargar voto" enviando="Cargando…" clase="boton boton--fantasma" />
             </form>
           )}
           <BotonModal
@@ -453,11 +479,9 @@ export function Direccion({
           >
             {(cerrar) => (
               <form
-                action={(datos) => {
+                action={async (datos) => {
                   cerrar()
-                  iniciarTransicion(async () => {
-                    await notificarResultado(accionCerrarPunto(datos))
-                  })
+                  await notificarResultado(accionCerrarPunto(datos))
                 }}
               >
                 <Ocultos vista={vista} />
@@ -476,9 +500,7 @@ export function Direccion({
                 )}
                 <p className="ayuda">El resultado queda fijo: un punto cerrado no se reabre.</p>
                 <div className="fila-acciones">
-                  <button className="boton boton--primario" type="submit">
-                    Confirmar cierre
-                  </button>
+                  <BotonEnviar texto="Confirmar cierre" enviando="Cerrando…" />
                 </div>
               </form>
             )}
@@ -488,18 +510,18 @@ export function Direccion({
 
       {vista.constituida && !abierto && siguiente && (
         <form
-          action={(datos) => {
-            iniciarTransicion(async () => {
-              alCambiarOptimista?.({ tipo: 'abrir_punto', puntoId: siguiente.id })
-              await notificarResultado(accionAbrirPunto(datos))
-            })
+          action={async (datos) => {
+            alCambiarOptimista?.({ tipo: 'abrir_punto', puntoId: siguiente.id })
+            await notificarResultado(accionAbrirPunto(datos))
           }}
         >
           <Ocultos vista={vista} />
           <input type="hidden" name="punto" value={siguiente.id} />
-          <button className="boton boton--primario direccion__abrir" type="submit">
-            Abrir el punto {siguiente.orden}: {siguiente.titulo}
-          </button>
+          <BotonEnviar
+            texto={`Abrir el punto ${siguiente.orden}: ${siguiente.titulo}`}
+            enviando="Abriendo…"
+            clase="boton boton--primario direccion__abrir"
+          />
         </form>
       )}
 

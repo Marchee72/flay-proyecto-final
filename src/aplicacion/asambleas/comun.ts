@@ -120,6 +120,8 @@ export interface Destinatarios {
   porCorreo: { destino: string; nombre: string }[]
   /** Sin cuenta ni correo: se informan para convocarlos por otro medio (FR-009). */
   sinContacto: { unidad: string; nombre: string }[]
+  /** Unidades sin propietario vigente: cuentan en la base y nadie recibe el aviso. */
+  sinPropietario: string[]
 }
 
 export function repartirPropietarios(
@@ -134,7 +136,12 @@ export function repartirPropietarios(
     else if (p.correo) porCorreo.set(p.correo, { destino: p.correo, nombre: p.nombre })
     else sinContacto.push({ unidad: designaciones.get(p.unidadId) ?? '', nombre: p.nombre })
   }
-  return { conUsuario: [...conUsuario], porCorreo: [...porCorreo.values()], sinContacto }
+  return {
+    conUsuario: [...conUsuario],
+    porCorreo: [...porCorreo.values()],
+    sinContacto,
+    sinPropietario: [],
+  }
 }
 
 /** Los propietarios vigentes de unas unidades, repartidos por canal. */
@@ -146,7 +153,11 @@ export async function propietariosPorCanal(
     unidades.map((u) => u.id),
     fecha,
   )
-  return repartirPropietarios(propietarios, new Map(unidades.map((u) => [u.id, u.designacion])))
+  const con = new Set(propietarios.map((p) => p.unidadId))
+  return {
+    ...repartirPropietarios(propietarios, new Map(unidades.map((u) => [u.id, u.designacion]))),
+    sinPropietario: unidades.filter((u) => !con.has(u.id)).map((u) => u.designacion),
+  }
 }
 
 /** Los administradores habilitados sobre el consorcio activo. */

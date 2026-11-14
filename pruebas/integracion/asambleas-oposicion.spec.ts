@@ -105,6 +105,7 @@ describe('regla «totalidad»', () => {
     const punto = await prismaBase.puntoAsamblea.findUniqueOrThrow({ where: { id: puntoId } })
     expect(punto.ausentesConVoto.sort()).toEqual([e.unidades['1A'], e.unidades['2B']].sort())
     const vista = await verAsamblea(repo, RELOJ, de(e.ana))
+    expect(vista.puntos[0].ausentesConVoto.sort()).toEqual(punto.ausentesConVoto.sort())
     expect(vista.yo.puedoOponerme).toEqual([
       expect.objectContaining({ puntoId, unidadId: e.unidades['1A'] }),
     ])

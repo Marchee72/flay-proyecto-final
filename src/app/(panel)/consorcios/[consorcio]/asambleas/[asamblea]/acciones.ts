@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { after } from 'next/server'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
+import { FirmanteInvalido, NotasCambiaron } from '@/aplicacion/asambleas/errores'
 import {
   ALMACEN,
   DERIVADOR,
@@ -16,6 +17,7 @@ import {
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import {
   designarFirmantes,
+  completarActa,
   enviarAFirmar,
   firmar,
   guardarNotas,
@@ -93,13 +95,14 @@ const eleccion = (datos: FormData): Eleccion => {
 // Convocatoria ---------------------------------------------------------------
 
 export async function accionConvocar(datos: FormData) {
-  let sinContacto = 0
+  let sinAviso = 0
   await ejecutar(
     datos,
     async (b) => {
-      sinContacto = (await convocar(HABILITACIONES, RELOJ, b)).sinContacto.length
+      const r = await convocar(HABILITACIONES, RELOJ, b)
+      sinAviso = r.sinContacto.length + r.sinPropietario.length
     },
-    () => (sinContacto > 0 ? 'asamblea-convocada-sin-contacto' : 'asamblea-convocada'),
+    () => (sinAviso > 0 ? 'asamblea-convocada-sin-contacto' : 'asamblea-convocada'),
   )
 }
 
@@ -115,7 +118,10 @@ export async function accionBorrar(datos: FormData) {
 export async function accionCancelar(datos: FormData) {
   await ejecutar(
     datos,
-    (b) => cancelar(HABILITACIONES, RELOJ, { ...b, motivo: texto(datos, 'motivo') }),
+    (b) =>
+      conAviso(AVISO_EN_VIVO, after, b.asambleaId, () =>
+        cancelar(HABILITACIONES, RELOJ, { ...b, motivo: texto(datos, 'motivo') }),
+      ),
     'asamblea-cancelada',
   )
 }
@@ -160,7 +166,9 @@ export async function accionRevocarPoder(datos: FormData) {
 
 // Reunión --------------------------------------------------------------------
 
-export type ResultadoSala = { ok: true; mensaje: string } | { ok: false; error: string }
+export type ResultadoSala =
+  | { ok: true; mensaje: string }
+  | { ok: false; error: string; actuales?: string }
 
 const MENSAJE_SALA: Record<string, string> = {
   acreditado: 'Asistencia registrada.',
@@ -177,6 +185,7 @@ async function ejecutarEnSala(
   datos: FormData,
   trabajo: (base: Base) => Promise<unknown>,
   hecho: keyof typeof MENSAJE_SALA,
+  publicar = true,
 ): Promise<ResultadoSala> {
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) redirect('/ingresar')
@@ -186,7 +195,8 @@ async function ejecutarEnSala(
     asambleaId: texto(datos, 'asamblea'),
   }
   try {
-    await conAviso(AVISO_EN_VIVO, after, base.asambleaId, () => trabajo(base))
+    if (publicar) await conAviso(AVISO_EN_VIVO, after, base.asambleaId, () => trabajo(base))
+    else await trabajo(base)
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
     return { ok: false, error: error.mensajeParaUsuario }
@@ -196,7 +206,11 @@ async function ejecutarEnSala(
 }
 
 export async function accionAbrir(datos: FormData) {
-  await ejecutar(datos, (b) => abrir(HABILITACIONES, RELOJ, b), 'asamblea-abierta')
+  await ejecutar(
+    datos,
+    (b) => conAviso(AVISO_EN_VIVO, after, b.asambleaId, () => abrir(HABILITACIONES, RELOJ, b)),
+    'asamblea-abierta',
+  )
 }
 
 export async function accionAcreditarme(datos: FormData): Promise<ResultadoSala> {
@@ -324,7 +338,7 @@ export async function accionOposicionEnPapel(datos: FormData) {
 
 // Acta -----------------------------------------------------------------------
 
-/** Se guarda sola mientras se escribe: no refresca la sala de nadie, ni avisa si salió bien. */
+/** Se guarda con el botón; no refresca la sala de nadie. */
 export async function accionObservacion(datos: FormData): Promise<ResultadoSala> {
   return ejecutarEnSala(
     datos,
@@ -334,6 +348,7 @@ export async function accionObservacion(datos: FormData): Promise<ResultadoSala>
         texto: String(datos.get('texto') ?? ''),
       }),
     'observacion-guardada',
+    false,
   )
 }
 
@@ -347,10 +362,15 @@ export async function accionNotas(datos: FormData): Promise<ResultadoSala> {
       asambleaId: texto(datos, 'asamblea'),
       puntoId: texto(datos, 'punto'),
       notas: String(datos.get('notas') ?? ''),
+      anterior: String(datos.get('anterior') ?? ''),
     })
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
-    return { ok: false, error: error.mensajeParaUsuario }
+    return {
+      ok: false,
+      error: error.mensajeParaUsuario,
+      ...(error instanceof NotasCambiaron && { actuales: error.actuales }),
+    }
   }
   return { ok: true, mensaje: '' }
 }
@@ -414,6 +434,18 @@ export async function accionFirmar(datos: FormData) {
         },
       ),
     'acta-firmada',
+    'acta',
+  )
+}
+
+export async function accionCompletarActa(datos: FormData) {
+  await ejecutar(
+    datos,
+    async (b) => {
+      const { completa } = await completarActa(HABILITACIONES, RELOJ, ACTA, b)
+      if (!completa) throw new FirmanteInvalido('Todavía faltan firmas para completar el acta.')
+    },
+    'acta-completada',
     'acta',
   )
 }

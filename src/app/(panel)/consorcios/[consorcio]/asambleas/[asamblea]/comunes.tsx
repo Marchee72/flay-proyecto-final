@@ -1,5 +1,6 @@
 import { Decimal } from '@/compartido/dinero'
 import { coeficienteParaMostrar } from '@/compartido/formato'
+import { textoDeResultado } from '@/compartido/avance-asamblea'
 import type { ConteoVista, PuntoVista, VistaAsamblea } from '@/aplicacion/asambleas/ver'
 
 /** Los dos campos que toda acción de la asamblea necesita. */
@@ -73,16 +74,7 @@ export function TablaConteo({ punto, conteo }: { punto: PuntoVista; conteo: Cont
   )
 }
 
-export function textoResultado(p: PuntoVista): string {
-  if (p.resultado === 'aprobado') {
-    return p.modalidad === 'opcion_multiple' && p.opcionGanadora
-      ? `Aprobada: ${p.opcionGanadora}`
-      : 'Aprobado'
-  }
-  if (p.resultado === 'rechazado') return 'Rechazado'
-  if (p.resultado === 'sin_decision') return 'Sin decisión'
-  return ''
-}
+export const textoResultado = (p: PuntoVista): string => textoDeResultado(p)
 
 export const ETIQUETA_DECISION = {
   firme: 'Firme',

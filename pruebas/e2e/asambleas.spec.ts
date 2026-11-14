@@ -1,15 +1,13 @@
 import { expect, test, type Browser, type Page } from '@playwright/test'
 
+import { confirmarUnaVez, sembrarAsambleaE2E } from './asambleas-escenario'
 import {
   CONTRASENA,
   desbordaALoAncho,
   entrar,
-  limpiarEscenario,
-  limpiarServicios,
   prisma,
-  sembrarEscenario,
-  sembrarUsuarioEn,
   type Escenario,
+  type sembrarUsuarioEn,
 } from './sesion'
 
 /**
@@ -28,91 +26,15 @@ let cora: Extra
 let dino: Extra
 let eva: Extra // del consorcio, sin unidad ni poder: mira, pero no vota
 let asambleaId: string
-
-const ruta = () => `/consorcios/${ada.consorcioId}/asambleas/${asambleaId}`
+let ruta: () => string
+let limpiar: () => Promise<void>
 
 test.beforeAll(async () => {
-  ada = await sembrarEscenario('consorcista', 'Sol 123')
-  bruno = await sembrarUsuarioEn(ada, 'consejo')
-  cora = await sembrarUsuarioEn(ada, 'consorcista')
-  dino = await sembrarUsuarioEn(ada, 'consorcista')
-  eva = await sembrarUsuarioEn(ada, 'consorcista')
-  for (const [extra, nombre] of [
-    [bruno, 'Bruno'],
-    [cora, 'Cora'],
-    [dino, 'Dino'],
-  ] as const) {
-    await prisma.persona.update({ where: { id: extra.personaId }, data: { nombre } })
-  }
-
-  const unidades = [
-    { designacion: '1A', coeficiente: '40.00000000', persona: ada.personaId },
-    { designacion: '1B', coeficiente: '30.00000000', persona: bruno.personaId },
-    { designacion: '2A', coeficiente: '20.00000000', persona: cora.personaId },
-    { designacion: '2B', coeficiente: '10.00000000', persona: dino.personaId },
-  ].map((u) => ({ ...u, id: crypto.randomUUID() }))
-  await prisma.unidad.createMany({
-    data: unidades.map(({ id, designacion, coeficiente }) => ({
-      id,
-      designacion,
-      coeficiente,
-      consorcioId: ada.consorcioId,
-    })),
-  })
-  for (const u of unidades) {
-    await prisma.$executeRaw`
-      INSERT INTO "Ocupacion" (unidad_id, persona_id, tipo, vigencia)
-      VALUES (${u.id}::uuid, ${u.persona}::uuid, 'propietario'::"TipoOcupacion", daterange('2026-01-01', NULL))`
-  }
-
-  // Convocada hace semanas para una reunión que empezó hace diez minutos.
-  const asamblea = await prisma.asamblea.create({
-    data: {
-      consorcioId: ada.consorcioId,
-      tipo: 'ordinaria',
-      titulo: 'Asamblea ordinaria',
-      fechaHora: new Date(Date.now() - 10 * 60_000),
-      lugar: 'SUM',
-      organizadorId: bruno.usuarioId,
-    },
-  })
-  asambleaId = asamblea.id
-  await prisma.puntoAsamblea.create({
-    data: {
-      consorcioId: ada.consorcioId,
-      asambleaId,
-      orden: 1,
-      titulo: 'Pintura del frente',
-      modalidad: 'binaria',
-      mayoria: 'absoluta',
-    },
-  })
-  await prisma.puntoAsamblea.create({
-    data: {
-      consorcioId: ada.consorcioId,
-      asambleaId,
-      orden: 2,
-      titulo: `Reglamento_${'x'.repeat(170)}`,
-      modalidad: 'binaria',
-      mayoria: 'absoluta',
-    },
-  })
-  await prisma.asamblea.update({
-    where: { id: asambleaId },
-    data: {
-      estado: 'convocada',
-      convocadaEn: new Date(Date.now() - 20 * 86_400_000),
-      reglaMayoria: 'presentes',
-      anticipacionDias: 15,
-      topeApoderado: 3,
-      umbralSinVoto: 2,
-    },
-  })
+  ;({ ada, bruno, cora, dino, eva, asambleaId, ruta, limpiar } = await sembrarAsambleaE2E())
 })
 
 test.afterAll(async () => {
-  await limpiarServicios(ada, [bruno, cora, dino, eva])
-  await limpiarEscenario(ada)
+  await limpiar()
   await prisma.$disconnect()
 })
 
@@ -127,30 +49,6 @@ async function sesion(browser: Browser, correo: string, viewport = { width: 390,
 const presente = async (page: Page) => {
   await page.getByRole('button', { name: /Estoy presente/ }).click()
   await expect(page.getByText('Asistencia registrada.').first()).toBeVisible()
-}
-
-/**
- * Doble clic a propósito, con la respuesta retenida: el botón avisa que está
- * trabajando y el segundo clic no sale.
- */
-const confirmarUnaVez = async (page: Page, etiqueta: string, enviando: string, destino: RegExp) => {
-  let soltar = () => {}
-  const retenido = new Promise<void>((resolver) => (soltar = resolver))
-  const envios: string[] = []
-  const patron = `**/asambleas/${asambleaId}**`
-  await page.route(patron, async (pedido) => {
-    if (pedido.request().method() === 'POST') {
-      envios.push(pedido.request().url())
-      await retenido
-    }
-    await pedido.continue()
-  })
-  await page.getByRole('button', { name: etiqueta }).dblclick()
-  await expect(page.getByRole('button', { name: enviando })).toBeDisabled()
-  soltar()
-  await expect(page).toHaveURL(destino)
-  expect(envios).toHaveLength(1)
-  await page.unroute(patron)
 }
 
 test('el permiso de escucha exige sesión', async ({ browser }) => {
@@ -276,6 +174,7 @@ test('acreditarse, votar en vivo, finalizar y firmar el acta', async ({ browser,
   await page.getByRole('button', { name: 'Finalizar la asamblea' }).click()
   await confirmarUnaVez(
     page,
+    asambleaId,
     'Confirmar finalización',
     'Finalizando…',
     /acta\?hecho=asamblea-finalizada/,
@@ -314,7 +213,7 @@ test('acreditarse, votar en vivo, finalizar y firmar el acta', async ({ browser,
   await page.getByRole('button', { name: 'Guardar firmantes' }).click()
   await expect(page).toHaveURL(/hecho=firmantes-designados/)
   await page.getByRole('button', { name: 'Enviar a firmar' }).click()
-  await confirmarUnaVez(page, 'Confirmar envío', 'Enviando…', /hecho=acta-enviada/)
+  await confirmarUnaVez(page, asambleaId, 'Confirmar envío', 'Enviando…', /hecho=acta-enviada/)
 
   // Firman los cuatro con su contraseña.
   for (const firmante of [page, deAda, deCora, deDino]) {

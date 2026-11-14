@@ -393,6 +393,10 @@ Treinta y dos decisiones que costaron una vuelta y conviene no volver a tomar de
     da `saldoImpagoPorUnidad().vencidos`. La decisión provisoria (CCyC 2060) es **derivada** de la
     fecha y las oposiciones, sin cron; el único cron nuevo es el recordatorio de firmas
     (`/api/tareas/asambleas`).
+    Quién estaba ausente se congela **por punto** al cerrarlo (`ausentes_con_voto`): la oposición y el
+    silencio conforme se miden contra eso, no contra el padrón final. La última firma y `completarActa`
+    cierran el acta bajo `FOR UPDATE`; un acta con las cuatro firmas sin cerrar se completa desde su
+    pantalla. El voto y el cierre del punto se serializan (`FOR SHARE`/`FOR UPDATE`).
 
 31. **La sala de asamblea escucha, no sondea (016).** El servidor publica en Ably un aviso **sin datos**
     y cada pantalla relee con sus permisos, así que nada de la asamblea pasa por el canal. `conAviso`
@@ -413,6 +417,8 @@ Treinta y dos decisiones que costaron una vuelta y conviene no volver a tomar de
     navegador de todos los asistentes.
     `borradorPedidoEn` marca que se está redactando, y pasados 2 minutos se deja de esperar: un trabajo
     trabado no puede bloquear la edición.
+    Las notas se guardan con compare-and-set (`anterior`): la segunda escritura sobre una versión vieja
+    no pisa, devuelve `NotasCambiaron`.
 
 ## Notas
 

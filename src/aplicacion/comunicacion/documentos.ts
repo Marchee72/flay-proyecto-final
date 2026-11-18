@@ -56,6 +56,8 @@ export interface DocumentoDelConsorcio {
   estadoIndexacion: EstadoIndexacion | null
   errorIndexacion: string | null
   fragmentos: number
+  /** Sugerencias de configuracion sin revisar (RN-14); `null` para quien no administra. */
+  sugerenciasPendientes: number | null
 }
 
 export class DocumentoIncompleto extends ErrorDeAplicacion {
@@ -225,7 +227,11 @@ export async function listarDocumentos(
       const documentos = await prisma.documentoConsorcio.findMany({
         where: visiblesPara(acceso.roles),
         orderBy: [{ tipo: 'asc' }, { fechaDocumento: 'desc' }, { creadoEn: 'desc' }],
-        include: { _count: { select: { fragmentos: true } } },
+        include: {
+          _count: {
+            select: { fragmentos: true, sugerencias: { where: { estado: 'pendiente' } } },
+          },
+        },
       })
       return documentos.map((d) => ({
         id: d.id,
@@ -237,6 +243,7 @@ export async function listarDocumentos(
         estadoIndexacion: administra ? d.estadoIndexacion : null,
         errorIndexacion: administra ? d.errorIndexacion : null,
         fragmentos: d._count.fragmentos,
+        sugerenciasPendientes: administra ? d._count.sugerencias : null,
       }))
     },
   )

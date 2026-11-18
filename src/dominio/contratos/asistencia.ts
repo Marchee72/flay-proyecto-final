@@ -1,3 +1,5 @@
+import { z } from 'zod'
+
 /**
  * Las interfaces de la asistencia automatica (§ 12.8.2, RNF-14, RNF-15,
  * Principio IV). El dominio las declara; `src/infraestructura/asistencia/` las
@@ -244,6 +246,59 @@ export type SugerenciaLeida = { cita: string } & (
     }
   | { tipo: 'instrucciones_pago'; datos: { texto: string } }
 )
+
+const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+const entero = z.number().int().nonnegative()
+const porcentaje = z.string().regex(/^\d+(\.\d+)?$/)
+const espacioZod = z.object({
+  nombre: z.string().min(1).max(80),
+  capacidadMaxima: entero.nullish(),
+  anticipacionMinimaHoras: entero.nullish(),
+  anticipacionMaximaDias: entero.nullish(),
+  duracionMaximaHoras: entero.nullish(),
+  reservasMaxMesUnidad: entero.nullish(),
+  horario: z.object({ apertura: hhmm, cierre: hhmm }).nullish(),
+  rechazaConDeuda: z.boolean().nullish(),
+})
+
+/**
+ * La forma valida de una `SugerenciaLeida`: la usa el proveedor al leer y la
+ * aplicacion al aplicar lo guardado (RN-14). Admite `null` donde el tipo omite la clave.
+ */
+export const ESQUEMA_SUGERENCIA_LEIDA = z.discriminatedUnion('tipo', [
+  z.object({ tipo: z.literal('espacio_nuevo'), cita: z.string().min(1), datos: espacioZod }),
+  z.object({
+    tipo: z.literal('espacio_cambio'),
+    cita: z.string().min(1),
+    espacioId: z.string().min(1),
+    datos: espacioZod.partial(),
+  }),
+  z.object({
+    tipo: z.literal('vencimientos'),
+    cita: z.string().min(1),
+    datos: z.object({
+      tramos: z
+        .array(z.object({ diaDelMes: entero.min(1).max(28), recargoPorcentaje: porcentaje }))
+        .nullish(),
+      tasaMoraMensual: porcentaje.nullish(),
+    }),
+  }),
+  z.object({
+    tipo: z.literal('asambleas'),
+    cita: z.string().min(1),
+    datos: z.object({
+      reglaMayoria: z.enum(['presentes', 'totalidad']).nullish(),
+      anticipacionDias: entero.nullish(),
+      topeApoderado: entero.nullish(),
+      umbralSinVoto: entero.nullish(),
+    }),
+  }),
+  z.object({
+    tipo: z.literal('instrucciones_pago'),
+    cita: z.string().min(1),
+    datos: z.object({ texto: z.string().min(1) }),
+  }),
+])
 
 /** La septima interfaz: lee el texto de un reglamento o contrato y propone configuracion. */
 export interface LectorDeConfiguracion {

@@ -1,15 +1,19 @@
-import type { Prisma } from '@prisma/client'
+import type { EstadoSugerencia, Prisma, TipoSugerencia } from '@prisma/client'
 import { z } from 'zod'
 
 import { importe } from '@/compartido/dinero'
+import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import { plural } from '@/compartido/formato'
 import { mismoNombre } from '@/compartido/nombres'
 import { errorDeInstrucciones } from '@/dominio/consorcios/instrucciones-de-pago'
-import type {
-  EspacioSugerido,
-  LectorDeConfiguracion,
-  SugerenciaLeida,
+import {
+  ESQUEMA_SUGERENCIA_LEIDA,
+  type EspacioSugerido,
+  type LectorDeConfiguracion,
+  type SugerenciaLeida,
 } from '@/dominio/contratos/asistencia'
+import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
+import type { Reloj } from '@/dominio/contratos/reloj'
 import {
   escalonadoDesdeTramos,
   validarReglaVencimientos,
@@ -18,12 +22,22 @@ import {
 import { horarioParaMostrar, minutosDesdeHora, type HorarioDeUso } from '@/dominio/reservas/horario'
 import {
   ESQUEMA_CONFIGURACION_ASAMBLEAS,
+  guardarConfiguracion,
   type ConfiguracionAsambleas,
 } from '@/aplicacion/asambleas/configuracion'
+import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { TIPOS_ANALIZABLES } from '@/aplicacion/comunicacion/documentos'
 import type { Transaccion } from '@/aplicacion/comunicacion/notificar'
+import { guardarInstruccionesDePago } from '@/aplicacion/consorcios/instrucciones-de-pago'
+import { guardarReglaVencimientos } from '@/aplicacion/consorcios/regla-vencimientos'
 import type { Manejador } from '@/aplicacion/pendientes/drenar'
-import { validarEspacio, type DatosDeEspacio } from '@/aplicacion/reservas/espacios'
+import {
+  altaEspacio,
+  contarReservasAfectadas,
+  editarEspacio,
+  validarEspacio,
+  type DatosDeEspacio,
+} from '@/aplicacion/reservas/espacios'
 import { enConsorcio, sinConsorcio } from '@/infraestructura/cliente-aislado'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 
@@ -387,4 +401,233 @@ export function manejadorSugerencias(lector: LectorDeConfiguracion): Manejador {
       })
     })
   }
+}
+
+/** Una tarjeta de sugerencia: que cambia, ya en texto, calculado al mirar y no al generar. */
+export interface SugerenciaVisible {
+  id: string
+  tipo: TipoSugerencia
+  titulo: string
+  cita: string
+  estado: EstadoSugerencia
+  cambios: Cambio[]
+  /** Falso si el `espacio_cambio` apunta a un espacio que ya no existe o esta deshabilitado. */
+  aplicable: boolean
+  /** Las reservas confirmadas que un cambio de horario cancelaria al aplicarlo. */
+  reservasAfectadas: number
+  /** ISO; `null` mientras esta pendiente. */
+  resueltaEn: string | null
+}
+
+export class SugerenciaYaResuelta extends ErrorDeAplicacion {
+  constructor() {
+    super('Esta sugerencia ya se aplicó o se descartó.', 'RN-14')
+  }
+}
+
+const SOLO_ADMINISTRADOR = {
+  rolesPermitidos: ['administrador'],
+  accion: 'revisar las sugerencias de configuración',
+} as const
+
+/** La fila de vuelta a la forma del lector (`espacioId` viaja en `datos`); `null` si no valida. */
+function leida(fila: { tipo: TipoSugerencia; cita: string; datos: Prisma.JsonValue }) {
+  const { espacioId, ...datos } = fila.datos as Record<string, unknown>
+  const r = ESQUEMA_SUGERENCIA_LEIDA.safeParse({
+    tipo: fila.tipo,
+    cita: fila.cita,
+    espacioId,
+    datos,
+  })
+  return r.success ? (r.data as SugerenciaLeida) : null
+}
+
+const espacioDe = (s: SugerenciaLeida, vigente: ConfiguracionVigente) =>
+  s.tipo === 'espacio_cambio' ? vigente.espacios.find((e) => e.id === s.espacioId) : undefined
+
+function tituloDe(s: SugerenciaLeida, vigente: ConfiguracionVigente): string {
+  switch (s.tipo) {
+    case 'espacio_nuevo':
+      return `Nuevo espacio: ${s.datos.nombre}`
+    case 'espacio_cambio': {
+      const espacio = espacioDe(s, vigente)
+      return espacio ? `Cambios en ${espacio.nombre}` : 'Cambios en un espacio que ya no está'
+    }
+    case 'vencimientos':
+      return 'Vencimientos y mora'
+    case 'asambleas':
+      return 'Reglas de asamblea'
+    case 'instrucciones_pago':
+      return 'Instrucciones de pago'
+  }
+}
+
+/** Las sugerencias de un documento: pendientes primero, despues la historia (RN-14). */
+export async function listarSugerencias(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: { usuarioId: string; consorcioId: string; documentoId: string },
+): Promise<SugerenciaVisible[]> {
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    { usuarioId: datos.usuarioId, consorcioId: datos.consorcioId, ...SOLO_ADMINISTRADOR },
+    async () => {
+      const filas = await prisma.sugerenciaConfiguracion.findMany({
+        where: { documentoId: datos.documentoId },
+        orderBy: [{ resueltaEn: { sort: 'desc', nulls: 'first' } }, { creadoEn: 'asc' }],
+      })
+      const vigente = await vigenteDelConsorcio(prisma, datos.consorcioId)
+      const visibles: SugerenciaVisible[] = []
+      for (const fila of filas) {
+        const s = leida(fila)
+        if (!s) continue
+        const cambios = cambiosDe(s, vigente)
+        const espacio = espacioDe(s, vigente)
+        const cambiaHorario =
+          fila.estado === 'pendiente' &&
+          espacio !== undefined &&
+          cambios.some((c) => c.campo === ETIQUETAS_ESPACIO.horario)
+        visibles.push({
+          id: fila.id,
+          tipo: fila.tipo,
+          titulo: tituloDe(s, vigente),
+          cita: fila.cita,
+          estado: fila.estado,
+          cambios,
+          aplicable: s.tipo !== 'espacio_cambio' || espacio !== undefined,
+          reservasAfectadas:
+            cambiaHorario && s.tipo === 'espacio_cambio'
+              ? await contarReservasAfectadas(repositorio, reloj, {
+                  usuarioId: datos.usuarioId,
+                  consorcioId: datos.consorcioId,
+                  espacioId: s.espacioId,
+                  horario: aEspacio(s.datos)?.horario ?? null,
+                })
+              : 0,
+          resueltaEn: fila.resueltaEn?.toISOString() ?? null,
+        })
+      }
+      return visibles
+    },
+  )
+}
+
+async function pendiente(sugerenciaId: string) {
+  // Aislada: la de otro consorcio no existe (RN-12).
+  const fila = await prisma.sugerenciaConfiguracion.findFirst({ where: { id: sugerenciaId } })
+  if (!fila) throw new NoEncontrado()
+  if (fila.estado !== 'pendiente') throw new SugerenciaYaResuelta()
+  return fila
+}
+
+const resolver = (
+  sugerenciaId: string,
+  estado: 'aplicada' | 'descartada',
+  usuarioId: string,
+  reloj: Reloj,
+) =>
+  prisma.sugerenciaConfiguracion.updateMany({
+    where: { id: sugerenciaId, estado: 'pendiente' },
+    data: { estado, resueltaPor: usuarioId, resueltaEn: reloj.ahora() },
+  })
+
+/** Llama al caso de uso de esa configuracion, mezclando la sugerencia con lo vigente. */
+async function aplicarPorSuCasoDeUso(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  quien: { usuarioId: string; consorcioId: string },
+  s: SugerenciaLeida | null,
+  vigente: ConfiguracionVigente,
+): Promise<{ canceladas: number }> {
+  switch (s?.tipo) {
+    case 'espacio_nuevo':
+      await altaEspacio(repositorio, reloj, {
+        ...quien,
+        ...aEspacio(s.datos),
+        nombre: s.datos.nombre,
+      })
+      return { canceladas: 0 }
+    case 'espacio_cambio': {
+      const existente = espacioDe(s, vigente)
+      const cambios = aEspacio(s.datos)
+      if (!existente || !cambios) {
+        throw new ErrorDeAplicacion(
+          'El espacio de esta sugerencia ya no existe o está deshabilitado: solo se puede descartar.',
+          'RF-15',
+        )
+      }
+      const { id, ...actual } = existente
+      return editarEspacio(repositorio, reloj, { ...quien, espacioId: id, ...actual, ...cambios })
+    }
+    case 'vencimientos':
+      await guardarReglaVencimientos(repositorio, reloj, {
+        ...quien,
+        ...reglaPropuesta(s.datos, vigente),
+      })
+      return { canceladas: 0 }
+    case 'asambleas':
+      await guardarConfiguracion(repositorio, reloj, { ...quien, ...vigente.asambleas, ...s.datos })
+      return { canceladas: 0 }
+    case 'instrucciones_pago':
+      await guardarInstruccionesDePago(repositorio, reloj, {
+        ...quien,
+        texto: s.datos.texto.trim(),
+      })
+      return { canceladas: 0 }
+    default:
+      throw new ErrorDeAplicacion('Esta sugerencia no se puede aplicar: descartala.', 'RN-14')
+  }
+}
+
+/**
+ * El clic de «Aplicar» (RN-14): la sugerencia pasa por el caso de uso de esa
+ * configuracion, con sus validaciones y su autorizacion. Si rechaza, el error
+ * es el suyo y la sugerencia sigue pendiente.
+ */
+export async function aplicarSugerencia(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: { usuarioId: string; consorcioId: string; sugerenciaId: string },
+): Promise<{ canceladas: number }> {
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    { usuarioId: datos.usuarioId, consorcioId: datos.consorcioId, ...SOLO_ADMINISTRADOR },
+    async () => {
+      const fila = await pendiente(datos.sugerenciaId)
+      const vigente = await vigenteDelConsorcio(prisma, datos.consorcioId)
+      const resultado = await aplicarPorSuCasoDeUso(
+        repositorio,
+        reloj,
+        { usuarioId: datos.usuarioId, consorcioId: datos.consorcioId },
+        leida(fila),
+        vigente,
+      )
+      // ponytail: la configuracion y la marca no son una sola transaccion, porque
+      // cada caso de uso abre la suya. El doble aplicar lo frenan el estado
+      // `pendiente` de esta condicion y la unicidad del caso de uso (nombre de
+      // espacio); si otro pedido marco primero (`count === 0`), se devuelve igual.
+      await resolver(fila.id, 'aplicada', datos.usuarioId, reloj)
+      return resultado
+    },
+  )
+}
+
+/** «Descartar»: queda como historia y no toca la configuracion. */
+export async function descartarSugerencia(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: { usuarioId: string; consorcioId: string; sugerenciaId: string },
+): Promise<void> {
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    { usuarioId: datos.usuarioId, consorcioId: datos.consorcioId, ...SOLO_ADMINISTRADOR },
+    async () => {
+      const fila = await pendiente(datos.sugerenciaId)
+      const { count } = await resolver(fila.id, 'descartada', datos.usuarioId, reloj)
+      if (count === 0) throw new SugerenciaYaResuelta()
+    },
+  )
 }

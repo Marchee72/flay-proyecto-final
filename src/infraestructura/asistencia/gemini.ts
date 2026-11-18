@@ -7,6 +7,7 @@ import {
   type ContextoAgente,
   DIMENSIONES_VECTOR,
   disponible,
+  ESQUEMA_SUGERENCIA_LEIDA,
   type ExtraccionPropuesta,
   noDisponible,
   type Resultado,
@@ -255,55 +256,6 @@ async function generarJson<T>(
 /** ponytail: tope de caracteres que se le manda al modelo; un reglamento largo se lee recortado. */
 const MAX_CARACTERES_CONFIGURACION = 200_000
 
-const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)
-const entero = z.number().int().nonnegative()
-const porcentaje = z.string().regex(/^\d+(\.\d+)?$/)
-const espacioZod = z.object({
-  nombre: z.string().min(1).max(80),
-  capacidadMaxima: entero.nullish(),
-  anticipacionMinimaHoras: entero.nullish(),
-  anticipacionMaximaDias: entero.nullish(),
-  duracionMaximaHoras: entero.nullish(),
-  reservasMaxMesUnidad: entero.nullish(),
-  horario: z.object({ apertura: hhmm, cierre: hhmm }).nullish(),
-  rechazaConDeuda: z.boolean().nullish(),
-})
-
-const SugerenciaZod = z.discriminatedUnion('tipo', [
-  z.object({ tipo: z.literal('espacio_nuevo'), cita: z.string().min(1), datos: espacioZod }),
-  z.object({
-    tipo: z.literal('espacio_cambio'),
-    cita: z.string().min(1),
-    espacioId: z.string().min(1),
-    datos: espacioZod.partial(),
-  }),
-  z.object({
-    tipo: z.literal('vencimientos'),
-    cita: z.string().min(1),
-    datos: z.object({
-      tramos: z
-        .array(z.object({ diaDelMes: entero.min(1).max(28), recargoPorcentaje: porcentaje }))
-        .nullish(),
-      tasaMoraMensual: porcentaje.nullish(),
-    }),
-  }),
-  z.object({
-    tipo: z.literal('asambleas'),
-    cita: z.string().min(1),
-    datos: z.object({
-      reglaMayoria: z.enum(['presentes', 'totalidad']).nullish(),
-      anticipacionDias: entero.nullish(),
-      topeApoderado: entero.nullish(),
-      umbralSinVoto: entero.nullish(),
-    }),
-  }),
-  z.object({
-    tipo: z.literal('instrucciones_pago'),
-    cita: z.string().min(1),
-    datos: z.object({ texto: z.string().min(1) }),
-  }),
-])
-
 const EnvolturaZod = z.object({ sugerencias: z.array(z.unknown()) })
 
 const nuloAEntero = { type: Type.INTEGER, nullable: true } as const
@@ -386,7 +338,7 @@ const sinNulos = (v: unknown): unknown =>
 /** Cada sugerencia se valida sola: la mal formada se descarta y las buenas se conservan (RNF-15). */
 export function sugerenciasValidas(crudas: unknown[]): SugerenciaLeida[] {
   return crudas.flatMap((c) => {
-    const r = SugerenciaZod.safeParse(sinNulos(c))
+    const r = ESQUEMA_SUGERENCIA_LEIDA.safeParse(sinNulos(c))
     // El esquema admite null/undefined donde el tipo del dominio omite la clave; sinNulos ya quito los null.
     return r.success ? [r.data as SugerenciaLeida] : []
   })

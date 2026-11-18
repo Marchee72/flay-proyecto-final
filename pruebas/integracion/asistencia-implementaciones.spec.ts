@@ -1,4 +1,4 @@
-import { readdirSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
@@ -18,7 +18,7 @@ const RUBROS = [
   { codigo: 'R02', nombre: 'Mantenimiento de ascensores', descripcion: 'Gasto corriente' },
 ]
 
-const exponeLasSeis = (a: Asistencia) =>
+const exponeLasSiete = (a: Asistencia) =>
   typeof a.extractor.extraer === 'function' &&
   typeof a.clasificador.clasificar === 'function' &&
   typeof a.vectores.vectorizar === 'function' &&
@@ -26,6 +26,7 @@ const exponeLasSeis = (a: Asistencia) =>
   typeof a.agente.conversar === 'function' &&
   typeof a.agente.sugerir === 'function' &&
   typeof a.redactor.redactar === 'function' &&
+  typeof a.lector.leer === 'function' &&
   a.vectores.dimensiones === 768
 
 describe('tres implementaciones por interfaz (SC-012)', () => {
@@ -34,13 +35,13 @@ describe('tres implementaciones por interfaz (SC-012)', () => {
     expect(archivos).toEqual(['determinista.ts', 'gemini.ts', 'nula.ts'])
   })
 
-  it('cada una expone las seis interfaces', () => {
+  it('cada una expone las siete interfaces', () => {
     for (const a of [asistenciaGemini, asistenciaDeterminista, asistenciaNula]) {
-      expect(exponeLasSeis(a)).toBe(true)
+      expect(exponeLasSiete(a)).toBe(true)
     }
   })
 
-  it('la nula responde «no disponible» en los siete metodos, sin lanzar', async () => {
+  it('la nula responde «no disponible» en los ocho metodos, sin lanzar', async () => {
     const r1 = await asistenciaNula.extractor.extraer(
       { bytes: new Uint8Array(), tipoContenido: 'application/pdf' },
       { rubros: RUBROS },
@@ -63,7 +64,8 @@ describe('tres implementaciones por interfaz (SC-012)', () => {
       [],
       [],
     )
-    for (const r of [r1, r2, r3, r4, r5, r6, r7]) {
+    const r8 = await asistenciaNula.lector.leer('texto', { espaciosExistentes: [] })
+    for (const r of [r1, r2, r3, r4, r5, r6, r7, r8]) {
       expect(r.disponible).toBe(false)
       if (!r.disponible) expect(r.motivo).toMatch(/no está configurado/)
     }
@@ -116,5 +118,36 @@ describe('tres implementaciones por interfaz (SC-012)', () => {
       expect(r.valor.urgencia).toBe('critica')
       expect(['p1', null]).toContain(r.valor.proveedorId)
     }
+  })
+
+  it('el lector determinista lee el reglamento de prueba y cita literal', async () => {
+    const texto = readFileSync('pruebas/fixtures/reglamento-de-prueba.txt', 'utf-8')
+    const r = await asistenciaDeterminista.lector.leer(texto, {
+      espaciosExistentes: [{ id: 'e1', nombre: 'Quincho' }],
+    })
+    if (!r.disponible) throw new Error('debía estar disponible')
+    expect(r.valor).toEqual([
+      {
+        tipo: 'espacio_nuevo',
+        cita: expect.any(String),
+        datos: {
+          nombre: 'SUM',
+          horario: { apertura: '10:00', cierre: '23:00' },
+          anticipacionMinimaHoras: 48,
+        },
+      },
+      {
+        tipo: 'espacio_cambio',
+        espacioId: 'e1',
+        cita: expect.any(String),
+        datos: { duracionMaximaHoras: 6 },
+      },
+      { tipo: 'vencimientos', cita: expect.any(String), datos: { tasaMoraMensual: '3.0000' } },
+    ])
+    for (const s of r.valor) expect(texto).toContain(s.cita)
+    const otro = await asistenciaDeterminista.lector.leer('Nada de nada', {
+      espaciosExistentes: [],
+    })
+    expect(otro).toEqual({ disponible: true, valor: [] })
   })
 })

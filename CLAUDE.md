@@ -149,7 +149,7 @@ Estas atraviesan todo el sistema; violarlas es un defecto, no una preferencia de
 4. **Ninguna salida de un servicio automático impacta un dato económico sin confirmación humana**
    (RN-14). `ExtraccionComprobante` es una entidad separada de `Gasto`; el gasto nace al confirmar.
 5. **Cada interfaz de IA del dominio** (`ExtractorDocumental`, `ClasificadorTexto`,
-   `GeneradorVectores`, `GeneradorRespuesta`, `AgenteConversacional`, `RedactorActa`) **tiene tres implementaciones**: la del proveedor, una
+   `GeneradorVectores`, `GeneradorRespuesta`, `AgenteConversacional`, `RedactorActa`, `LectorDeConfiguracion`) **tiene tres implementaciones**: la del proveedor, una
    determinística para pruebas y una nula para degradación (RNF-14, RNF-15).
 6. **Auditoría por disparadores de base de datos** (RN-15), sin permisos de update/delete para el
    usuario de la aplicación: ninguna ruta de código puede omitirla.

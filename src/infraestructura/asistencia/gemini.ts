@@ -11,6 +11,7 @@ import {
   noDisponible,
   type Resultado,
   type Sugerencia,
+  type SugerenciaLeida,
 } from '@/dominio/contratos/asistencia'
 import { SISTEMA_ACTA } from '../prompts-acta'
 
@@ -250,6 +251,150 @@ async function generarJson<T>(
     return noDisponible('El servicio de asistencia devolvió una respuesta que no se entiende.')
   }
 }
+
+/** ponytail: tope de caracteres que se le manda al modelo; un reglamento largo se lee recortado. */
+const MAX_CARACTERES_CONFIGURACION = 200_000
+
+const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+const entero = z.number().int().nonnegative()
+const porcentaje = z.string().regex(/^\d+(\.\d+)?$/)
+const espacioZod = z.object({
+  nombre: z.string().min(1).max(80),
+  capacidadMaxima: entero.nullish(),
+  anticipacionMinimaHoras: entero.nullish(),
+  anticipacionMaximaDias: entero.nullish(),
+  duracionMaximaHoras: entero.nullish(),
+  reservasMaxMesUnidad: entero.nullish(),
+  horario: z.object({ apertura: hhmm, cierre: hhmm }).nullish(),
+  rechazaConDeuda: z.boolean().nullish(),
+})
+
+const LecturaZod = z.object({
+  sugerencias: z.array(
+    z.discriminatedUnion('tipo', [
+      z.object({ tipo: z.literal('espacio_nuevo'), cita: z.string().min(1), datos: espacioZod }),
+      z.object({
+        tipo: z.literal('espacio_cambio'),
+        cita: z.string().min(1),
+        espacioId: z.string().min(1),
+        datos: espacioZod.partial(),
+      }),
+      z.object({
+        tipo: z.literal('vencimientos'),
+        cita: z.string().min(1),
+        datos: z.object({
+          tramos: z.array(z.object({ diaDelMes: entero, recargoPorcentaje: porcentaje })).nullish(),
+          tasaMoraMensual: porcentaje.nullish(),
+        }),
+      }),
+      z.object({
+        tipo: z.literal('asambleas'),
+        cita: z.string().min(1),
+        datos: z.object({
+          reglaMayoria: z.enum(['presentes', 'totalidad']).nullish(),
+          anticipacionDias: entero.nullish(),
+          topeApoderado: entero.nullish(),
+          umbralSinVoto: entero.nullish(),
+        }),
+      }),
+      z.object({
+        tipo: z.literal('instrucciones_pago'),
+        cita: z.string().min(1),
+        datos: z.object({ texto: z.string().min(1) }),
+      }),
+    ]),
+  ),
+})
+
+const nuloAEntero = { type: Type.INTEGER, nullable: true } as const
+const ESQUEMA_LECTURA: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    sugerencias: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          tipo: {
+            type: Type.STRING,
+            enum: [
+              'espacio_nuevo',
+              'espacio_cambio',
+              'vencimientos',
+              'asambleas',
+              'instrucciones_pago',
+            ],
+          },
+          cita: { type: Type.STRING },
+          espacioId: { type: Type.STRING, nullable: true },
+          datos: {
+            type: Type.OBJECT,
+            properties: {
+              nombre: { type: Type.STRING, nullable: true },
+              capacidadMaxima: nuloAEntero,
+              anticipacionMinimaHoras: nuloAEntero,
+              anticipacionMaximaDias: nuloAEntero,
+              duracionMaximaHoras: nuloAEntero,
+              reservasMaxMesUnidad: nuloAEntero,
+              horario: {
+                type: Type.OBJECT,
+                nullable: true,
+                properties: { apertura: { type: Type.STRING }, cierre: { type: Type.STRING } },
+                required: ['apertura', 'cierre'],
+              },
+              rechazaConDeuda: { type: Type.BOOLEAN, nullable: true },
+              tramos: {
+                type: Type.ARRAY,
+                nullable: true,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    diaDelMes: { type: Type.INTEGER },
+                    recargoPorcentaje: { type: Type.STRING },
+                  },
+                  required: ['diaDelMes', 'recargoPorcentaje'],
+                },
+              },
+              tasaMoraMensual: { type: Type.STRING, nullable: true },
+              reglaMayoria: { type: Type.STRING, nullable: true, enum: ['presentes', 'totalidad'] },
+              anticipacionDias: nuloAEntero,
+              topeApoderado: nuloAEntero,
+              umbralSinVoto: nuloAEntero,
+              texto: { type: Type.STRING, nullable: true },
+            },
+          },
+        },
+        required: ['tipo', 'cita', 'datos'],
+      },
+    },
+  },
+  required: ['sugerencias'],
+}
+
+/** El esquema del proveedor no tiene uniones: llegan nulos donde no aplica; se quitan antes de validar. */
+const sinNulos = (v: unknown): unknown =>
+  Array.isArray(v)
+    ? v.map(sinNulos)
+    : v && typeof v === 'object'
+      ? Object.fromEntries(
+          Object.entries(v)
+            .filter(([, x]) => x !== null)
+            .map(([k, x]) => [k, sinNulos(x)]),
+        )
+      : v
+
+const SISTEMA_LECTOR = (
+  espacios: { id: string; nombre: string }[],
+) => `Sos el asistente de configuracion de una administracion de consorcios de Rosario, Argentina.
+Lee el texto de un reglamento, acta o contrato y devolve SOLO lo que el texto fija de manera explicita, cada cosa con su "cita": la frase literal del texto, copiada sin cambios. Si no esta escrito, no lo devuelvas. Si el texto no fija nada de esto, devolve una lista vacia.
+Lo configurable, por "tipo" (completa solo los campos de "datos" que el texto dice):
+- espacio_nuevo: un espacio comun que no esta en la lista de existentes. nombre; capacidadMaxima (personas); anticipacionMinimaHoras (horas antes de la reserva); anticipacionMaximaDias (dias hacia adelante); duracionMaximaHoras (horas por reserva); reservasMaxMesUnidad (reservas por mes y unidad); horario {apertura, cierre} en 'HH:MM' de 24 horas, hora argentina; rechazaConDeuda (true si se niega la reserva a quien debe expensas).
+- espacio_cambio: lo mismo para un espacio YA existente; "espacioId" es uno de esta lista, nunca inventado:
+${espacios.map((e) => `  ${e.id} — ${e.nombre}`).join('\n') || '  (ninguno)'}
+- vencimientos: "tramos" con diaDelMes (1 a 28) y recargoPorcentaje como cadena con punto decimal ('5.0000'), en convencion de boleta: el recargo rige «pagando hasta el dia N», y el primer tramo va con '0.0000'; "tasaMoraMensual" es el interes por mora mensual, cadena ('3.0000').
+- asambleas: reglaMayoria ('presentes' o 'totalidad'); anticipacionDias (dias de anticipacion de la convocatoria); topeApoderado (unidades por apoderado); umbralSinVoto (expensas impagas que quitan el voto).
+- instrucciones_pago: texto con las instrucciones para pagar las expensas (cuenta, alias, CBU, lugar de pago), copiado del texto.
+No incluyas el deposito de garantia ni el padron de unidades.`
 
 export const asistenciaGemini: Asistencia = {
   extractor: {
@@ -494,6 +639,19 @@ Segun la conversacion, propone hasta tres proximos pasos concretos que la person
       )
       if (!r.disponible) return r
       return disponible(r.valor.resumenes.filter((x) => puntos.some((p) => p.orden === x.orden)))
+    },
+  },
+
+  lector: {
+    async leer(texto, contexto) {
+      const r = await generarJson(
+        SISTEMA_LECTOR(contexto.espaciosExistentes),
+        [texto.slice(0, MAX_CARACTERES_CONFIGURACION)],
+        ESQUEMA_LECTURA,
+        z.unknown().transform((v) => LecturaZod.parse(sinNulos(v))),
+      )
+      if (!r.disponible) return r
+      return disponible(r.valor.sugerencias as SugerenciaLeida[])
     },
   },
 }

@@ -208,7 +208,52 @@ export interface RedactorActa {
   ): Promise<Resultado<ResumenPropuesto[]>>
 }
 
-/** Las seis juntas: lo que el punto de composicion elige y los casos de uso reciben. */
+/** Un espacio comun tal como lo fija un reglamento; espejo de `DatosDeEspacio` (RF-15). */
+export interface EspacioSugerido {
+  nombre: string
+  capacidadMaxima?: number | null
+  anticipacionMinimaHoras?: number
+  anticipacionMaximaDias?: number
+  duracionMaximaHoras?: number
+  reservasMaxMesUnidad?: number
+  /** 'HH:MM' en hora argentina. */
+  horario?: { apertura: string; cierre: string } | null
+  rechazaConDeuda?: boolean
+}
+
+/** Lo que el texto fija explicitamente, con la cita literal. Nada se aplica sin el clic (RN-14). */
+export type SugerenciaLeida = { cita: string } & (
+  | { tipo: 'espacio_nuevo'; datos: EspacioSugerido }
+  | { tipo: 'espacio_cambio'; espacioId: string; datos: Partial<EspacioSugerido> }
+  /** Tramos en convencion de boleta (decision 27): el 1º a 0 %. Porcentajes como cadena. */
+  | {
+      tipo: 'vencimientos'
+      datos: {
+        tramos?: { diaDelMes: number; recargoPorcentaje: string }[]
+        tasaMoraMensual?: string
+      }
+    }
+  | {
+      tipo: 'asambleas'
+      datos: {
+        reglaMayoria?: 'presentes' | 'totalidad'
+        anticipacionDias?: number
+        topeApoderado?: number
+        umbralSinVoto?: number
+      }
+    }
+  | { tipo: 'instrucciones_pago'; datos: { texto: string } }
+)
+
+/** La septima interfaz: lee el texto de un reglamento o contrato y propone configuracion. */
+export interface LectorDeConfiguracion {
+  leer(
+    texto: string,
+    contexto: { espaciosExistentes: { id: string; nombre: string }[] },
+  ): Promise<Resultado<SugerenciaLeida[]>>
+}
+
+/** Las siete juntas: lo que el punto de composicion elige y los casos de uso reciben. */
 export interface Asistencia {
   extractor: ExtractorDocumental
   clasificador: ClasificadorTexto
@@ -216,4 +261,5 @@ export interface Asistencia {
   respuestas: GeneradorRespuesta
   agente: AgenteConversacional
   redactor: RedactorActa
+  lector: LectorDeConfiguracion
 }

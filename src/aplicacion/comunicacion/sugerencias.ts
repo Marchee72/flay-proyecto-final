@@ -417,6 +417,9 @@ export function manejadorSugerencias(lector: LectorDeConfiguracion): Manejador {
 /** Una tarjeta de sugerencia: que cambia, ya en texto, calculado al mirar y no al generar. */
 export interface SugerenciaVisible {
   id: string
+  documentoId: string
+  /** El titulo del documento del que sale. */
+  documento: string
   tipo: TipoSugerencia
   titulo: string
   cita: string
@@ -476,11 +479,14 @@ function tituloDe(s: SugerenciaLeida, vigente: ConfiguracionVigente): string {
   }
 }
 
-/** Las sugerencias de un documento: pendientes primero, despues la historia (RN-14). */
+/**
+ * Las sugerencias de un documento, o de todo el consorcio si no se da `documentoId`:
+ * pendientes primero, despues la historia (RN-14).
+ */
 export async function listarSugerencias(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
-  datos: { usuarioId: string; consorcioId: string; documentoId: string },
+  datos: { usuarioId: string; consorcioId: string; documentoId?: string },
 ): Promise<SugerenciaVisible[]> {
   return conAutorizacion(
     repositorio,
@@ -488,8 +494,13 @@ export async function listarSugerencias(
     { usuarioId: datos.usuarioId, consorcioId: datos.consorcioId, ...SOLO_ADMINISTRADOR },
     async () => {
       const filas = await prisma.sugerenciaConfiguracion.findMany({
-        where: { documentoId: datos.documentoId },
-        orderBy: [{ resueltaEn: { sort: 'desc', nulls: 'first' } }, { creadoEn: 'asc' }],
+        where: datos.documentoId ? { documentoId: datos.documentoId } : {},
+        include: { documento: { select: { titulo: true } } },
+        orderBy: [
+          { resueltaEn: { sort: 'desc', nulls: 'first' } },
+          { documento: { titulo: 'asc' } },
+          { creadoEn: 'asc' },
+        ],
       })
       const vigente = await vigenteDelConsorcio(prisma, datos.consorcioId)
       const visibles: SugerenciaVisible[] = []
@@ -506,6 +517,8 @@ export async function listarSugerencias(
           cambios.some((c) => c.campo === ETIQUETAS_ESPACIO.horario)
         visibles.push({
           id: fila.id,
+          documentoId: fila.documentoId,
+          documento: fila.documento.titulo,
           tipo: s.tipo,
           titulo: tituloDe(s, vigente),
           cita: fila.cita,

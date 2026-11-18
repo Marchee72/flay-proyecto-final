@@ -262,12 +262,15 @@ describe('sugerencias de configuración', () => {
   })
 })
 
-const sugerir = async (tipo: TipoSugerencia, datos: Prisma.InputJsonValue) =>
+const sugerirEn = async (docId: string, tipo: TipoSugerencia, datos: Prisma.InputJsonValue) =>
   (
     await prismaBase.sugerenciaConfiguracion.create({
-      data: { consorcioId, documentoId, tipo, datos, cita: 'Lo dice el reglamento.' },
+      data: { consorcioId, documentoId: docId, tipo, datos, cita: 'Lo dice el reglamento.' },
     })
   ).id
+
+const sugerir = (tipo: TipoSugerencia, datos: Prisma.InputJsonValue) =>
+  sugerirEn(documentoId, tipo, datos)
 
 const estadoDe = (id: string) =>
   prismaBase.sugerenciaConfiguracion.findUniqueOrThrow({ where: { id } })
@@ -481,6 +484,55 @@ describe('aplicar y descartar sugerencias (RN-14)', () => {
     expect(porTitulo('Vencimientos y mora').cambios).toEqual([
       { campo: 'Tasa de mora mensual', actual: '2 %', propuesto: '3 %' },
     ])
+  })
+
+  it('agregado: sin documento trae las del consorcio entero, con el documento de cada una', async () => {
+    const otro = await prismaBase.documentoConsorcio.create({
+      data: {
+        consorcioId,
+        tipo: 'acta',
+        titulo: 'Acta de marzo',
+        claveAlmacenamiento: `documentos/${consorcioId}/${crypto.randomUUID()}/a.txt`,
+        tipoContenido: 'text/plain',
+        cargadoPor: administrador,
+      },
+    })
+    await sugerir('instrucciones_pago', { texto: 'Alias flay.mitre' })
+    await sugerirEn(otro.id, 'asambleas', { anticipacionDias: 20 })
+    const lista = await listarSugerencias(repo, RELOJ, { usuarioId: administrador, consorcioId })
+    expect(lista.map((s) => [s.documento, s.titulo, s.documentoId])).toEqual([
+      ['Acta de marzo', 'Reglas de asamblea', otro.id],
+      ['Reglamento', 'Instrucciones de pago', documentoId],
+    ])
+  })
+
+  it('agregado: no trae sugerencias de otro consorcio y el consorcista es RolInsuficiente', async () => {
+    const otroConsorcio = await crearConsorcio((await crearAdministradora('Otra')).id, 'Ajeno 2')
+    const ajeno = await prismaBase.documentoConsorcio.create({
+      data: {
+        consorcioId: otroConsorcio.id,
+        tipo: 'reglamento_interno',
+        titulo: 'Ajeno',
+        claveAlmacenamiento: `documentos/${otroConsorcio.id}/${crypto.randomUUID()}/r.txt`,
+        tipoContenido: 'text/plain',
+        cargadoPor: administrador,
+      },
+    })
+    await prismaBase.sugerenciaConfiguracion.create({
+      data: {
+        consorcioId: otroConsorcio.id,
+        documentoId: ajeno.id,
+        tipo: 'asambleas',
+        datos: { anticipacionDias: 20 },
+        cita: 'Ajena.',
+      },
+    })
+    expect(await listarSugerencias(repo, RELOJ, { usuarioId: administrador, consorcioId })).toEqual(
+      [],
+    )
+    await expect(
+      listarSugerencias(repo, RELOJ, { usuarioId: vecino, consorcioId }),
+    ).rejects.toBeInstanceOf(RolInsuficiente)
   })
 
   it('espacio_cambio de un espacio deshabilitado: no aplicable, solo se descarta', async () => {

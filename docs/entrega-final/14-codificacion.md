@@ -116,7 +116,7 @@ modo que desarrollo, verificación y demostración corren la misma. Las transiti
 | Gráficos del panel de indicadores | Recharts | 2.15.0 | MIT | Biblioteca de gráficos dentro de la aplicación, conforme a la decisión del punto 14.2: los indicadores heredan la autorización por consorcio |
 | Almacenamiento de objetos | Cloudflare R2, vía el SDK de S3 (`@aws-sdk/client-s3`) | 3.1152.0 | Apache-2.0 | Comprobantes y documentos de hasta 25 MB con subida directa del navegador al almacenamiento mediante una URL prefirmada de corta duración: la función de despliegue limita el cuerpo de un pedido muy por debajo de ese tamaño. R2 habla el protocolo S3, por lo que no acopla a un proveedor propietario; su capa gratuita (10 GB, sin cargo de egreso) sostiene el escenario académico. Se consume tras una interfaz del dominio (punto 12.1.3), de modo que el acoplamiento con la plataforma queda en un solo archivo |
 | Correo transaccional | Resend | 6.26.0 | MIT | Invitación de usuario de la iteración 1 y, más adelante, el despachador de RF-14. Se consume tras la interfaz `Notificador` del dominio |
-| Servicios de procesamiento automático | Gemini API (`@google/genai`) | 2.22.0 | Apache-2.0 | Proveedor elegido en el punto 14.3 tras las dos pruebas de concepto de § 8.4.3. Se consume únicamente detrás de las cuatro interfaces del dominio de § 12.8.2, con una implementación determinística y una nula al lado (RNF-14, RNF-15); el archivo que lo importa es uno solo |
+| Servicios de procesamiento automático | Gemini API (`@google/genai`) | 2.22.0 | Apache-2.0 | Proveedor elegido en el punto 14.3 tras las dos pruebas de concepto de § 8.4.3. Se consume únicamente detrás de las siete interfaces del dominio de § 12.8.2, con una implementación determinística y una nula al lado (RNF-14, RNF-15); el archivo que lo importa es uno solo |
 | Extracción de texto de PDF | `unpdf` | 1.8.1 | MIT | Texto por página de los documentos del consorcio para la indexación de RF-20, en el propio proceso y sin depender del proveedor externo: si el proveedor no está, el texto igual existe y la indexación se reintenta |
 | Iconos de interfaz | Lucide (`lucide-react`) | 0.525.0 | ISC | Set abierto de trazo consistente 24px (urgencias, estados, navegación); se verifica contra `package-lock` junto al resto |
 | Pruebas automatizadas | Vitest y Playwright | Vitest 3.2.7 + `@vitest/coverage-v8` 3.2.7 / Playwright 1.63.0 + `@axe-core/playwright` 4.9.0 | MIT y Apache-2.0 | Vitest ejercita el dominio sin base de datos (punto 8.3.3); Playwright cubre extremo a extremo y verifica RNF-01 sobre ventana de teléfono |
@@ -216,7 +216,7 @@ Escala: **✔** cumple · **~** cumple con condición · **✘** no cumple.
 | Criterio | Google — Gemini API | Mistral — La Plateforme | Anthropic — Claude API + Voyage AI |
 |---|---|---|---|
 | C1 Capa gratuita suficiente | ~ Existe (modelos `flash` y `gemini-embedding` sin cargo, cuota diaria visible sólo en la consola del proyecto), **pero es incompatible con C3**: en la capa gratuita el contenido se usa para mejorar los productos | ~ Plan *Experiment* gratuito con límite de ~1 solicitud/s y ~1.000 millones de tokens/mes; la documentación lo declara "para evaluación, no para producción" | ✘ Sin capa gratuita. El volumen del punto 4.2 (900 comprobantes y 70 reclamos mensuales, ~1,5 M de tokens de entrada) cuesta del orden de **USD 2 a 8 por mes** según el modelo; Voyage ofrece 200 M de tokens de vectores sin cargo, más que suficiente |
-| C2 Reemplazabilidad | ✔ REST y JSON con esquema | ✔ REST compatible con el formato de mensajes más difundido | ✔ SDK oficial y REST; las cuatro interfaces del punto 12.8.2 lo aíslan igual que a los otros dos |
+| C2 Reemplazabilidad | ✔ REST y JSON con esquema | ✔ REST compatible con el formato de mensajes más difundido | ✔ SDK oficial y REST; las siete interfaces del punto 12.8.2 lo aíslan igual que a los otros dos |
 | C3 Términos de tratamiento | ~ Sólo en la capa **paga** el contenido no se usa para mejorar productos; el tratamiento por cuenta del responsable requiere aceptar el anexo de protección de datos | ~ El plan gratuito comparte datos para entrenamiento salvo exclusión; los planes pagos permiten "sin telemetría" y retención cero | ✔ Los términos comerciales prohíben entrenar con el contenido de la API sin permiso expreso; retención máxima de 30 días y retención cero disponible por contrato |
 | C4 Procesamiento de imágenes y documentos | ✔ Imágenes y PDF en línea | ✔ Imágenes y PDF en línea, más un modelo de OCR dedicado | ✔ Imágenes y PDF en línea, hasta 100 páginas |
 | C5 Vectores semánticos | ✔ `gemini-embedding`, propio | ✔ `mistral-embed`, propio | ~ No tiene modelo propio; se combina con Voyage AI (`voyage-4`), que el criterio admite explícitamente |
@@ -234,7 +234,7 @@ en pie y la decisión pasa a depender de las dos pruebas de concepto de § 8.4.3
 
 ### Decisión y justificación
 
-**Se elige Google — Gemini API, en su capa paga**, para las cuatro interfaces del punto 12.8.2:
+**Se elige Google — Gemini API, en su capa paga**, para las siete interfaces del punto 12.8.2 (al elegirlo eran estas cuatro):
 `gemini-3.5-flash-lite` (o el `flash` vigente; el grande devolvía 503 por demanda y tardaba de
 25 s a minutos, PI-07) como `ExtractorDocumental` y `ClasificadorTexto`,
 `gemini-embedding-001` como `GeneradorVectores` y el mismo modelo de texto como
@@ -295,8 +295,9 @@ Las tres implementaciones del punto 12.8.2 existen, y son exactamente tres archi
 | `determinista.ts` | La de pruebas | Expresiones regulares para CUIT, fecha e importe; rubro y urgencia por palabras; bolsa de palabras proyectada por hash como vector; cita el fragmento que comparte más palabras con sentido o se abstiene. Mismo texto, misma salida, sin red |
 | `nula.ts` | La de degradación | Cada método responde «no disponible» con un motivo legible y nada lanza |
 
-Las seis interfaces del dominio (`ExtractorDocumental`, `ClasificadorTexto`,
-`GeneradorVectores`, `GeneradorRespuesta`, `AgenteConversacional` y `RedactorActa`, en
+Las siete interfaces del dominio (`ExtractorDocumental`, `ClasificadorTexto`,
+`GeneradorVectores`, `GeneradorRespuesta`, `AgenteConversacional`, `RedactorActa` y
+`LectorDeConfiguracion`, en
 `src/dominio/contratos/asistencia.ts`) devuelven
 `Resultado<T>`: `{ disponible: true, valor }` o `{ disponible: false, motivo }`. Ningún caso de
 uso conoce cuál de las tres corre: la elige una sola vez `src/aplicacion/dependencias.ts` según el

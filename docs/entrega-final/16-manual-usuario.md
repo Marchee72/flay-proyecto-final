@@ -472,7 +472,7 @@ El **Horario de uso** (apertura y cierre) es optativo: vacío, el espacio se res
 
 #### Control de reservas y regla de no morosidad (`/reservas`):
 - Los consorcistas solicitan turnos desde su interfaz móvil.
-- **Precondición mandatoria del sistema:** Flay examina automáticamente el estado de deuda de la unidad funcional. Si la unidad registra saldo impago vencido de expensas, el sistema inhabilita la confirmación del turno mostrando el mensaje: *«Una unidad con deuda vencida no puede reservar hasta regularizar»*.
+- **Precondición mandatoria del sistema:** Flay examina automáticamente el estado de deuda de la unidad funcional. Si la unidad registra saldo impago vencido de expensas, el sistema inhabilita la confirmación del turno mostrando el mensaje: *«Una unidad con deuda vencida no puede reservar hasta regularizar»*, salvo que el espacio tenga desmarcada la casilla **Rechazar reservas de unidades con deuda vencida**.
 - **Restricción de exclusión física (RN-10):** La base de datos impide a nivel de esquema (`EXCLUDE USING gist`) que existan dos reservas superpuestas sobre el mismo espacio en un mismo horario.
 
 ---

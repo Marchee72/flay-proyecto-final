@@ -16,7 +16,7 @@ import {
   habilitarEspacio,
 } from '@/aplicacion/reservas/espacios'
 import { cancelarReserva, reservar } from '@/aplicacion/reservas/reservar'
-import { minutosDesdeHora } from '@/aplicacion/reservas/horario-reglas'
+import { errorDeHorario, minutosDesdeHora } from '@/aplicacion/reservas/horario-reglas'
 
 export type Resultado = { mensaje: string } & ConValores
 
@@ -88,6 +88,11 @@ export async function accionGuardarEspacio(
 
   const consorcioId = texto(datos, 'consorcio')
   const espacioId = texto(datos, 'espacio')
+  const apertura = texto(datos, 'apertura')
+  const cierre = texto(datos, 'cierre')
+  // El mismo mensaje que el campo mostro al tipear (RNF-10, decision 28).
+  const errorHorario = errorDeHorario(apertura, cierre)
+  if (errorHorario) return { mensaje: errorHorario }
   const reglas = {
     nombre: texto(datos, 'nombre'),
     capacidadMaxima: entero(datos, 'capacidad') ?? null,
@@ -95,14 +100,11 @@ export async function accionGuardarEspacio(
     anticipacionMaximaDias: entero(datos, 'anticipacionMaxima'),
     duracionMaximaHoras: entero(datos, 'duracionMaxima'),
     reservasMaxMesUnidad: entero(datos, 'topeMensual'),
-    // Los dos vacios borran el horario; uno solo lo rechaza el caso de uso.
+    // Los dos vacios borran el horario.
     horario:
-      texto(datos, 'apertura') === '' && texto(datos, 'cierre') === ''
+      apertura === '' && cierre === ''
         ? null
-        : {
-            apertura: minutosDesdeHora(texto(datos, 'apertura')) ?? -1,
-            cierre: minutosDesdeHora(texto(datos, 'cierre')) ?? -1,
-          },
+        : { apertura: minutosDesdeHora(apertura)!, cierre: minutosDesdeHora(cierre)! },
     // La casilla desmarcada no viaja en el formulario.
     rechazaConDeuda: datos.get('rechazaConDeuda') !== null,
   }

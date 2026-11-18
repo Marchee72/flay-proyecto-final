@@ -133,6 +133,7 @@ test('el administrador fija el horario de un espacio y la tarjeta lo muestra; al
     await expect(dialogo).toContainText('Completá la apertura y el cierre')
     await cierre.fill('23:00')
     await expect(dialogo.getByLabel('Apertura')).not.toHaveAttribute('aria-invalid', 'true')
+    await expect(cierre).toHaveAttribute('aria-describedby', /^ayuda-horario-/)
     await dialogo.getByRole('button', { name: 'Guardar' }).click()
     await expect(page.getByRole('article', { name: 'SUM' })).toContainText('de 10:00 a 23:00')
   } finally {

@@ -141,7 +141,7 @@ function FormularioEspacio({ consorcioId, espacio }: { consorcioId: string; espa
             value={cierre}
             onChange={(e) => setCierre(e.target.value)}
             aria-invalid={errorHorario ? true : undefined}
-            aria-describedby={errorHorario ? `error-apertura-${sufijo}` : undefined}
+            aria-describedby={errorHorario ? `error-apertura-${sufijo}` : `ayuda-horario-${sufijo}`}
           />
         </div>
         {errorHorario && (

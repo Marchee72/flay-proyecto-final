@@ -50,87 +50,96 @@ export function Sugerencias({
       {!analizando && pendientes.length === 0 && (
         <p className="apagado">No hay sugerencias para revisar.</p>
       )}
-      {pendientes.map((s) => (
-        <article className="tarjeta" key={s.id} aria-labelledby={`sugerencia-${s.id}`}>
-          <h3 id={`sugerencia-${s.id}`}>{s.titulo}</h3>
-          <TablaDesplazable
-            paginar={false}
-            tabIndex={0}
-            role="region"
-            aria-label={`Cambios de «${s.titulo}»`}
-          >
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">Qué</th>
-                  <th scope="col">Ahora</th>
-                  <th scope="col">Propuesto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {s.cambios.map((c) => (
-                  <tr key={c.campo}>
-                    <th scope="row">{c.campo}</th>
-                    <td>{c.actual}</td>
-                    <td>{c.propuesto}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TablaDesplazable>
-          <blockquote>{s.cita}</blockquote>
-          {!s.aplicable && (
-            <p className="aviso aviso--atencion">
-              El espacio de esta sugerencia ya no existe o está deshabilitado: solo se puede
-              descartar.
-            </p>
-          )}
-          {s.aplicable && s.reservasAfectadas > 0 && (
-            <p className="aviso aviso--atencion">
-              <TriangleAlert className="icono" aria-hidden="true" />
-              <span>
-                Aplicar cancela{' '}
-                {plural(s.reservasAfectadas, 'reserva confirmada', 'reservas confirmadas')}.
-              </span>
-            </p>
-          )}
-          <div className="fila-acciones">
-            {s.aplicable &&
-              (s.reservasAfectadas > 0 ? (
-                <BotonModal
-                  etiqueta="Aplicar"
-                  titulo={`Aplicar «${s.titulo}»`}
-                  variante="boton--peligro"
-                >
+      {pendientes.map((s) => {
+        // Pendiente pero ya igual a lo vigente (se cambio a mano): no hay nada que aplicar.
+        const aplicable = s.aplicable && s.cambios.length > 0
+        return (
+          <article className="tarjeta" key={s.id} aria-labelledby={`sugerencia-${s.id}`}>
+            <h3 id={`sugerencia-${s.id}`}>{s.titulo}</h3>
+            {s.cambios.length > 0 && (
+              <TablaDesplazable
+                paginar={false}
+                tabIndex={0}
+                role="region"
+                aria-label={`Cambios de «${s.titulo}»`}
+              >
+                <table>
+                  <thead>
+                    <tr>
+                      <th scope="col">Qué</th>
+                      <th scope="col">Ahora</th>
+                      <th scope="col">Propuesto</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {s.cambios.map((c) => (
+                      <tr key={c.campo}>
+                        <th scope="row">{c.campo}</th>
+                        <td>{c.actual}</td>
+                        <td>{c.propuesto}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TablaDesplazable>
+            )}
+            {s.aplicable && s.cambios.length === 0 && (
+              <p className="apagado">Ya coincide con la configuración.</p>
+            )}
+            <blockquote>{s.cita}</blockquote>
+            {!s.aplicable && (
+              <p className="aviso aviso--atencion">
+                El espacio de esta sugerencia ya no existe o está deshabilitado: solo se puede
+                descartar.
+              </p>
+            )}
+            {aplicable && s.reservasAfectadas > 0 && (
+              <p className="aviso aviso--atencion">
+                <TriangleAlert className="icono" aria-hidden="true" />
+                <span>
+                  Aplicar cancela{' '}
+                  {plural(s.reservasAfectadas, 'reserva confirmada', 'reservas confirmadas')}.
+                </span>
+              </p>
+            )}
+            <div className="fila-acciones">
+              {aplicable &&
+                (s.reservasAfectadas > 0 ? (
+                  <BotonModal
+                    etiqueta="Aplicar"
+                    titulo={`Aplicar «${s.titulo}»`}
+                    variante="boton--peligro"
+                  >
+                    <form action={accionAplicarSugerencia}>
+                      {campos(s)}
+                      <p className="ayuda">
+                        Se cancelan{' '}
+                        {plural(s.reservasAfectadas, 'reserva confirmada', 'reservas confirmadas')}{' '}
+                        y se avisa a quienes las hicieron. No se puede deshacer.
+                      </p>
+                      <button className="boton boton--peligro" type="submit">
+                        Aplicar
+                      </button>
+                    </form>
+                  </BotonModal>
+                ) : (
                   <form action={accionAplicarSugerencia}>
                     {campos(s)}
-                    <p className="ayuda">
-                      Se cancelan{' '}
-                      {plural(s.reservasAfectadas, 'reserva confirmada', 'reservas confirmadas')} y
-                      se avisa a quienes las hicieron. No se puede deshacer.
-                    </p>
-                    <button className="boton boton--peligro" type="submit">
+                    <button className="boton boton--primario" type="submit">
                       Aplicar
                     </button>
                   </form>
-                </BotonModal>
-              ) : (
-                <form action={accionAplicarSugerencia}>
-                  {campos(s)}
-                  <button className="boton boton--primario" type="submit">
-                    Aplicar
-                  </button>
-                </form>
-              ))}
-            <form action={accionDescartarSugerencia}>
-              {campos(s)}
-              <button className="boton boton--terciario" type="submit">
-                Descartar
-              </button>
-            </form>
-          </div>
-        </article>
-      ))}
+                ))}
+              <form action={accionDescartarSugerencia}>
+                {campos(s)}
+                <button className="boton boton--terciario" type="submit">
+                  Descartar
+                </button>
+              </form>
+            </div>
+          </article>
+        )
+      })}
       {resueltas.length > 0 && (
         <details className="sugerencias__historia">
           <summary>Ya revisadas ({resueltas.length})</summary>

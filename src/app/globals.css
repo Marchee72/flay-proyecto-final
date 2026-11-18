@@ -2575,7 +2575,6 @@ td select {
   margin-bottom: var(--e1);
 }
 
-/* Visor de comprobante: alto fijo para que la pagina no salte al cargar. */
 /* Sugerencias de configuracion (RF-19): una tarjeta por cambio, la cita del
    documento a la izquierda con la linea lima, la historia plegada abajo. */
 .sugerencias {
@@ -2610,6 +2609,8 @@ td select {
   margin: var(--e2) 0 0;
   padding-left: var(--e4);
 }
+
+/* Visor de comprobante: alto fijo para que la pagina no salte al cargar. */
 .visor {
   width: 100%;
   height: 60vh;

@@ -1,20 +1,12 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
-
-import { avisar } from '@/app/avisos'
-import { subirAlAlmacen } from '@/app/(panel)/subida'
-
 import { accionConfirmarComprobante } from '../acciones'
+import { SubidaDirecta } from '../../../../subida-directa'
 
 /**
- * Subida directa del comprobante (FR-018b).
- *
- * El archivo va del navegador al almacenamiento y **no pasa por el servidor**:
- * la plataforma limita el cuerpo de un pedido muy por debajo de los 25 MB que
- * admite un comprobante. Lo que pasa por el servidor es el permiso, y la
- * verificacion de tipo y tamano ocurre ahi, antes de transferir un byte.
+ * Comprobante de un gasto ya registrado (FR-018b): la misma subida directa que
+ * el resto. El archivo va del navegador al almacenamiento y no pasa por el
+ * servidor; el permiso verifica tipo y tamaño antes de transferir un byte.
  */
 export function AdjuntarComprobante({
   consorcioId,
@@ -23,88 +15,18 @@ export function AdjuntarComprobante({
   consorcioId: string
   gastoId: string
 }) {
-  const [mensaje, setMensaje] = useState('')
-  const [subiendo, setSubiendo] = useState(false)
-  const router = useRouter()
-
-  async function subir(evento: React.FormEvent<HTMLFormElement>) {
-    evento.preventDefault()
-    const archivo = new FormData(evento.currentTarget).get('archivo')
-
-    if (!(archivo instanceof File) || archivo.size === 0) {
-      setMensaje('Falta el archivo: seleccionar un comprobante para subir.')
-      return
-    }
-
-    setSubiendo(true)
-    setMensaje('')
-
-    try {
-      const respuesta = await fetch('/api/comprobantes/permiso', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          consorcio: consorcioId,
-          gasto: gastoId,
-          tipoContenido: archivo.type,
-          bytes: archivo.size,
-          nombre: archivo.name,
-        }),
-      })
-
-      const cuerpo = await respuesta.json()
-
-      // El rechazo llega antes de subir nada: 26 MB no viajan (SC-006c).
-      if (!respuesta.ok) {
-        avisar(cuerpo.mensaje ?? 'No se pudo preparar la subida.', 'problema')
-        return
-      }
-
-      await subirAlAlmacen(cuerpo.credencial, archivo)
-
-      const confirmacion = await accionConfirmarComprobante({
-        consorcioId,
-        gastoId,
-        clave: cuerpo.clave,
-      })
-
-      // Lo que devuelve la accion es validacion y va al campo; el exito sale por
-      // la pila y se revalida el detalle (Server Component) sin recarga completa.
-      setMensaje(confirmacion.mensaje)
-      if (!confirmacion.mensaje) {
-        avisar('Comprobante subido.')
-        router.refresh()
-      }
-    } catch {
-      // Si la confirmacion no llegó, el trabajo pendiente la reintenta (FR-006b).
-      avisar('La subida falló. Volver a intentar; el gasto ya quedó registrado.', 'problema')
-    } finally {
-      setSubiendo(false)
-    }
-  }
-
   return (
-    <form onSubmit={subir}>
-      <div className="campo">
-        <label htmlFor="archivo">Comprobante</label>
-        <input
-          id="archivo"
-          name="archivo"
-          type="file"
-          accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/tiff"
-        />
-        <p className="ayuda">PDF, JPEG, PNG, WebP, HEIC o TIFF, hasta 25 MB.</p>
-      </div>
-
-      {mensaje && (
-        <p className="error" role="alert">
-          {mensaje}
-        </p>
-      )}
-
-      <button className="boton boton--primario" type="submit" disabled={subiendo}>
-        {subiendo ? 'Subiendo…' : 'Subir'}
-      </button>
-    </form>
+    <SubidaDirecta
+      consorcioId={consorcioId}
+      permiso={{ ruta: '/api/comprobantes/permiso', campos: { gasto: gastoId } }}
+      accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/tiff"
+      objeto="el comprobante"
+      ayuda="PDF, JPEG, PNG, WebP, HEIC o TIFF · hasta 25 MB"
+      etiquetaBoton="Subir"
+      confirmar={accionConfirmarComprobante}
+      exito="Comprobante subido."
+    >
+      <input type="hidden" name="gasto" value={gastoId} />
+    </SubidaDirecta>
   )
 }

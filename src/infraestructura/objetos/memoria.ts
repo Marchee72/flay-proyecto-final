@@ -14,7 +14,9 @@ export const almacenEnMemoria: AlmacenObjetos = {
     guardados.set(clave, bytes)
   },
   async resolverLecturaAutorizada(clave) {
-    const bytes = guardados.get(clave)
+    // Los documentos sembrados por los e2e no pasan por `guardar`: se ven vacíos.
+    const bytes =
+      guardados.get(clave) ?? (clave.startsWith('documentos/') ? new Uint8Array() : undefined)
     if (!bytes) throw new Error(`no existe ${clave}`)
     return `data:application/pdf;base64,${Buffer.from(bytes).toString('base64')}`
   },

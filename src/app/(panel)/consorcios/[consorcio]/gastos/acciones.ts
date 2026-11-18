@@ -149,15 +149,18 @@ export async function accionEliminarGasto(_previo: Resultado, datos: FormData): 
  * ya llego al almacenamiento; si no llega, el trabajo pendiente la reintenta
  * (FR-006b).
  */
-export async function accionConfirmarComprobante(datos: {
-  consorcioId: string
-  gastoId: string
-  clave: string
-}): Promise<Resultado> {
+export async function accionConfirmarComprobante(
+  datos: FormData,
+): Promise<{ mensaje: string; destino?: string }> {
   const usuarioId = await quienOpera()
 
   try {
-    await confirmarComprobante(HABILITACIONES, RELOJ, { usuarioId, ...datos })
+    await confirmarComprobante(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId: String(datos.get('consorcio') ?? ''),
+      gastoId: String(datos.get('gasto') ?? ''),
+      clave: String(datos.get('clave') ?? ''),
+    })
   } catch (error) {
     if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
     throw error

@@ -129,3 +129,26 @@ test('el administrador elimina un documento; el consorcista no ve el botón (RF-
   await expect(page.getByRole('status').filter({ hasText: 'Documento eliminado.' })).toBeVisible()
   await expect(page.getByRole('table')).not.toContainText('Póliza para eliminar')
 })
+
+test('el modal de carga se cierra al confirmar, y con error queda abierto (RF-19)', async ({
+  page,
+}) => {
+  // El almacén en memoria no recibe PUT: se da por subido.
+  await page.route('**/memoria', (ruta) => ruta.fulfill({ status: 200 }))
+  await entrar(page, administrador.correo)
+  await page.goto(`/consorcios/${administrador.consorcioId}/documentos`)
+  const abrir = () => page.getByRole('button', { name: 'Cargar documento' }).click()
+  const pdf = { name: 'r.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4') }
+
+  // Sin título: el servidor rechaza y el mensaje queda en el modal abierto.
+  await abrir()
+  const dialogo = page.getByRole('dialog')
+  await dialogo.locator('input[type=file]').setInputFiles(pdf)
+  await dialogo.getByRole('button', { name: 'Cargar', exact: true }).click()
+  await expect(dialogo.getByRole('alert')).toBeVisible()
+
+  await dialogo.getByLabel('Título').fill('Reglamento interno 2026')
+  await dialogo.getByRole('button', { name: 'Cargar', exact: true }).click()
+  await expect(dialogo).toBeHidden()
+  await expect(page.getByRole('table')).toContainText('Reglamento interno 2026')
+})

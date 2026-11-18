@@ -16,9 +16,9 @@ import {
 } from '@/aplicacion/liquidacion/liquidar'
 
 import { BotonLiquidar } from '../acciones-de-estado'
-import { BotonModal } from '../../../../modal'
 import { AvisoDeError, conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
+import { TablaDesplazable } from '../../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Liquidar período — Flay' }
 
@@ -28,8 +28,8 @@ export const metadata: Metadata = { title: 'Liquidar período — Flay' }
  *
  * Lo que se revisa son **los gastos**, y el boton esta al pie de esa lista
  * porque emitir es la consecuencia de que esa lista este bien. El reparto por
- * unidad es el resultado del calculo, no una decision: con 96 unidades empuja
- * el boton fuera de la pantalla, asi que se consulta en un dialogo.
+ * unidad es el resultado del calculo, no una decision: va debajo de las
+ * acciones, con un enlace que lleva hasta ahi, asi no empuja el boton.
  */
 export default async function LiquidarPeriodoPage({
   params,
@@ -146,7 +146,7 @@ export default async function LiquidarPeriodoPage({
       )}
       {/* El pie de los gastos generales es donde se decide: emitir es la
           consecuencia de que esta lista esté bien. El reparto por unidad es
-          detalle y se consulta aparte, en el diálogo. */}
+          detalle y va debajo, en la misma página. */}
       <div className="fila-acciones">
         <BotonLiquidar consorcioId={activo.id} periodoId={id} totalRevisado={previa.totalGeneral} />
         {previa.estado === 'abierto' && (
@@ -157,26 +157,25 @@ export default async function LiquidarPeriodoPage({
             Corregir gastos
           </Link>
         )}
-        <BotonModal
-          etiqueta={`Ver el reparto entre ${plural(previa.detalles.length, 'unidad', 'unidades')}`}
-          titulo={`Reparto de ${previa.periodo} por unidad`}
-          variante="boton--fantasma"
-        >
-          <RepartoPorUnidad detalles={previa.detalles} />
-        </BotonModal>
+        <a className="boton boton--fantasma" href="#reparto">
+          Ver el reparto entre {plural(previa.detalles.length, 'unidad', 'unidades')}
+        </a>
       </div>
+      <section id="reparto" aria-labelledby="titulo-reparto">
+        <h2 id="titulo-reparto">Reparto de {previa.periodo} por unidad</h2>
+        <RepartoPorUnidad detalles={previa.detalles} />
+      </section>
     </>
   )
 }
 
 /**
- * El reparto por unidad, dentro del diálogo. Se renderiza en el servidor y
- * viaja como hijo del modal: no hace falta que el cliente tenga los importes
- * para dibujarlos, y siguen cruzando como cadena (medida 3 de § 14.1).
+ * El reparto por unidad. Se renderiza en el servidor: el cliente no necesita
+ * los importes para dibujarlos, y siguen cruzando como cadena (medida 3 de § 14.1).
  */
 function RepartoPorUnidad({ detalles }: { detalles: VistaPreviaDeLiquidacion['detalles'] }) {
   return (
-    <div className="tabla-desplazable" tabIndex={0} role="region" aria-label="Reparto por unidad">
+    <TablaDesplazable tabIndex={0} role="region" aria-label="Reparto por unidad">
       <table>
         <caption className="ayuda">
           Lo que se le va a emitir a cada unidad. El ajuste por redondeo va en su propia columna.
@@ -228,6 +227,6 @@ function RepartoPorUnidad({ detalles }: { detalles: VistaPreviaDeLiquidacion['de
           ))}
         </tbody>
       </table>
-    </div>
+    </TablaDesplazable>
   )
 }

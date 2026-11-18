@@ -45,19 +45,19 @@ test('revisa los gastos y el reparto, y liquida el periodo abierto', async ({ pa
   await expect(page.getByText('El período está abierto')).toBeVisible()
   await expect(page.getByRole('cell', { name: 'Mantenimiento mensual del ascensor' })).toBeVisible()
 
-  // El reparto por unidad no esta en la pagina: es detalle y vive en el dialogo.
-  await expect(page.getByRole('cell', { name: '3B', exact: true })).toHaveCount(0)
-  await page.getByRole('button', { name: /Ver el reparto entre 2 unidades/ }).click()
-
-  const dialogo = page.getByRole('dialog')
-  await expect(dialogo.getByRole('cell', { name: '3B', exact: true })).toBeVisible()
-  await expect(dialogo.getByRole('cell', { name: '3C', exact: true })).toBeVisible()
+  // El reparto por unidad está en la misma página, debajo de las acciones: sin diálogo.
+  await expect(page.getByRole('link', { name: /Ver el reparto entre 2 unidades/ })).toHaveAttribute(
+    'href',
+    '#reparto',
+  )
+  const reparto = page.getByRole('region', { name: 'Reparto por unidad' })
+  await expect(reparto).toBeVisible()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(reparto.getByRole('cell', { name: '3B', exact: true })).toBeVisible()
+  await expect(reparto.getByRole('cell', { name: '3C', exact: true })).toBeVisible()
   // La mitad de 184.320,75 son 92.160,375: el ajuste por redondeo va aparte.
-  await expect(dialogo).toContainText('$ 92.160,38')
+  await expect(reparto).toContainText('$ 92.160,38')
   expect(await desbordaALoAncho(page)).toBe(false)
-
-  await page.keyboard.press('Escape')
-  await expect(dialogo).toBeHidden()
 
   // Un solo clic: la pantalla ya es la revision, no hay segundo paso.
   await page.getByRole('button', { name: 'Confirmar y liquidar' }).click()

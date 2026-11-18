@@ -3883,8 +3883,8 @@ table.calendario th {
   height: 56px;
   border: none;
   border-radius: 999px;
-  background: var(--grafito);
-  color: var(--tinta-clara);
+  background: var(--ia-gradiente);
+  color: #fff;
   box-shadow: var(--sombra-alta);
   cursor: pointer;
 }
@@ -3907,8 +3907,8 @@ table.calendario th {
   align-items: center;
   gap: var(--e2);
   padding: var(--e3) var(--e4);
-  background: var(--grafito);
-  color: var(--tinta-clara);
+  background: var(--ia-gradiente);
+  color: #fff;
 }
 .asistente__hilo {
   flex: 1;
@@ -3920,6 +3920,11 @@ table.calendario th {
 }
 .asistente__msg {
   max-width: 100%;
+}
+.asistente__msg:not(.asistente__msg--usuario, .tarjeta) {
+  background: var(--ia-palido);
+  padding: var(--e2) var(--e3);
+  border-radius: var(--radio-chico);
 }
 .asistente__msg--usuario {
   align-self: flex-end;

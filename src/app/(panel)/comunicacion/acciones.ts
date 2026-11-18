@@ -10,11 +10,12 @@ import { consultarDocumentacion, valorarConsulta } from '@/aplicacion/comunicaci
 import { despacharNotificaciones, reintentarAgotados } from '@/aplicacion/comunicacion/despachar'
 import {
   cargarDocumento,
+  eliminarDocumento,
   reindexarDocumento,
   TIPOS_DOCUMENTO,
 } from '@/aplicacion/comunicacion/documentos'
 import { descartarNovedad, publicarNovedad } from '@/aplicacion/comunicacion/novedades'
-import { ASISTENCIA, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
+import { ALMACEN, ASISTENCIA, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { irAIngresar } from '@/app/ir-a-ingresar'
 import { MANEJADORES } from '@/aplicacion/pendientes/manejadores'
@@ -139,6 +140,23 @@ export async function accionReindexar(datos: FormData): Promise<void> {
   })
   revalidatePath('/consorcios/[consorcio]/documentos', 'page')
   redirect(conHecho(`/consorcios/${consorcioId}/documentos`, 'documento-reindexado'))
+}
+
+export async function accionEliminarDocumento(datos: FormData): Promise<void> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) return irAIngresar()
+  const consorcioId = texto(datos, 'consorcio')
+  const documentoId = texto(datos, 'documento')
+  try {
+    await eliminarDocumento(ALMACEN, HABILITACIONES, RELOJ, { usuarioId, consorcioId, documentoId })
+  } catch (error) {
+    if (!(error instanceof ErrorDeAplicacion)) throw error
+    redirect(
+      conError(`/consorcios/${consorcioId}/documentos/${documentoId}`, error.mensajeParaUsuario),
+    )
+  }
+  revalidatePath('/consorcios/[consorcio]/documentos', 'page')
+  redirect(conHecho(`/consorcios/${consorcioId}/documentos`, 'documento-eliminado'))
 }
 
 export async function accionDespachar(datos: FormData): Promise<void> {

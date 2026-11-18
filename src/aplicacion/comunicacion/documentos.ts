@@ -53,6 +53,12 @@ export class DocumentoIncompleto extends ErrorDeAplicacion {
   }
 }
 
+export class DocumentoDeActa extends ErrorDeAplicacion {
+  constructor() {
+    super('Este documento es el acta firmada de una asamblea y no se puede eliminar.', 'RF-19')
+  }
+}
+
 /** Al confirmar la subida: la fila y su trabajo de indexacion, juntos. */
 export async function cargarDocumento(
   repositorio: RepositorioHabilitaciones,
@@ -203,6 +209,46 @@ export async function verDocumento(
         almacen.resolverLecturaAutorizada(documento.claveAlmacenamiento, 600),
       ])
       return { titulo: documento.titulo, tipoContenido: documento.tipoContenido, vista, descarga }
+    },
+  )
+}
+
+/**
+ * Baja del documento (`RF-19`): solo el administrador, y no el acta firmada de
+ * una asamblea. Los fragmentos caen en cascada. El objeto se borra *después* de
+ * la fila: si el almacén falla queda un objeto huérfano, que es mejor que un
+ * documento listado sin archivo.
+ */
+export async function eliminarDocumento(
+  almacen: Pick<AlmacenObjetos, 'eliminar'>,
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: { usuarioId: string; consorcioId: string; documentoId: string },
+): Promise<void> {
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    {
+      usuarioId: datos.usuarioId,
+      consorcioId: datos.consorcioId,
+      rolesPermitidos: ['administrador'],
+      accion: 'eliminar documentos',
+    },
+    async () => {
+      const documento = await prisma.documentoConsorcio.findFirst({
+        where: { id: datos.documentoId },
+        select: { id: true, claveAlmacenamiento: true },
+      })
+      if (!documento) throw new NoEncontrado()
+      if (await prisma.actaAsamblea.findFirst({ where: { documentoId: documento.id } })) {
+        throw new DocumentoDeActa()
+      }
+      await prisma.documentoConsorcio.delete({ where: { id: documento.id } })
+      try {
+        await almacen.eliminar(documento.claveAlmacenamiento)
+      } catch {
+        console.error('[documentos] objeto huérfano', documento.claveAlmacenamiento)
+      }
     },
   )
 }

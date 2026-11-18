@@ -1,7 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { cargarDocumento, listarDocumentos, verDocumento } from '@/aplicacion/comunicacion/documentos'
-import { NoEncontrado } from '@/compartido/errores'
+import {
+  cargarDocumento,
+  DocumentoDeActa,
+  eliminarDocumento,
+  listarDocumentos,
+  verDocumento,
+} from '@/aplicacion/comunicacion/documentos'
+import { NoEncontrado, RolInsuficiente } from '@/compartido/errores'
+import { manejadorIndexacion } from '@/aplicacion/comunicacion/indexar'
 import {
   descartarNovedad,
   listarNovedades,
@@ -322,6 +329,102 @@ describe('documentos', () => {
     expect(doc.vista).toMatch(/inline$/)
     expect(doc.descarga).toMatch(/attachment$/)
     expect(pedidos.map((p) => p.enLinea)).toEqual([true, undefined])
+  })
+
+  describe('eliminar', () => {
+    const quien = (usuarioId: string) => ({ usuarioId, consorcioId })
+    const almacenSinFallas = (borrados: string[] = []) => ({
+      async eliminar(clave: string) {
+        borrados.push(clave)
+      },
+    })
+
+    it('el administrador elimina: se van la fila, los fragmentos y el objeto (RF-19)', async () => {
+      const borrados: string[] = []
+      const { documentoId } = await cargar('Reglamento', true)
+      await prismaBase.fragmentoDocumento.create({
+        data: { documentoId, numeroFragmento: 1, contenido: 'Art. 1' },
+      })
+      await eliminarDocumento(almacenSinFallas(borrados), repo, RELOJ, {
+        ...quien(administrador),
+        documentoId,
+      })
+      expect(await prismaBase.documentoConsorcio.count({ where: { id: documentoId } })).toBe(0)
+      expect(await prismaBase.fragmentoDocumento.count({ where: { documentoId } })).toBe(0)
+      expect(borrados).toHaveLength(1)
+    })
+
+    it('consorcista y consejo no eliminan', async () => {
+      const { documentoId } = await cargar('Reglamento', true)
+      for (const usuarioId of [vecino, consejo]) {
+        await expect(
+          eliminarDocumento(almacenSinFallas(), repo, RELOJ, { ...quien(usuarioId), documentoId }),
+        ).rejects.toBeInstanceOf(RolInsuficiente)
+      }
+      expect(await prismaBase.documentoConsorcio.count({ where: { id: documentoId } })).toBe(1)
+    })
+
+    it('el acta firmada no se elimina', async () => {
+      const { documentoId } = await cargar('Acta 2026', true)
+      const asamblea = await prismaBase.asamblea.create({
+        data: {
+          consorcioId,
+          tipo: 'ordinaria',
+          titulo: 'Asamblea',
+          fechaHora: new Date('2026-11-25T22:00:00Z'),
+          lugar: 'SUM',
+          organizadorId: administrador,
+        },
+      })
+      for (const datos of [
+        { estado: 'convocada' as const },
+        { estado: 'en_curso' as const, constituidaEn: new Date() },
+        { estado: 'finalizada' as const },
+      ]) {
+        await prismaBase.asamblea.update({ where: { id: asamblea.id }, data: datos })
+      }
+      await prismaBase.actaAsamblea.create({
+        data: { consorcioId, asambleaId: asamblea.id, documentoId },
+      })
+      await expect(
+        eliminarDocumento(almacenSinFallas(), repo, RELOJ, { ...quien(administrador), documentoId }),
+      ).rejects.toBeInstanceOf(DocumentoDeActa)
+      expect(await prismaBase.documentoConsorcio.count({ where: { id: documentoId } })).toBe(1)
+    })
+
+    it('si el almacén falla, la fila igual se borra', async () => {
+      const { documentoId } = await cargar('Reglamento', true)
+      const roto = {
+        async eliminar() {
+          throw new Error('almacén caído')
+        },
+      }
+      await eliminarDocumento(roto, repo, RELOJ, { ...quien(administrador), documentoId })
+      expect(await prismaBase.documentoConsorcio.count({ where: { id: documentoId } })).toBe(0)
+    })
+
+    it('eliminar dos veces: la segunda es no encontrado', async () => {
+      const { documentoId } = await cargar('Reglamento', true)
+      const datos = { ...quien(administrador), documentoId }
+      await eliminarDocumento(almacenSinFallas(), repo, RELOJ, datos)
+      await expect(eliminarDocumento(almacenSinFallas(), repo, RELOJ, datos)).rejects.toBeInstanceOf(
+        NoEncontrado,
+      )
+    })
+
+    it('el trabajo de indexación de un documento borrado termina sin lanzar', async () => {
+      const { documentoId } = await cargar('Reglamento', true)
+      await eliminarDocumento(almacenSinFallas(), repo, RELOJ, {
+        ...quien(administrador),
+        documentoId,
+      })
+      const manejador = manejadorIndexacion(
+        almacenSinFallas() as never,
+        {} as never,
+        async () => [],
+      )
+      await expect(manejador({ documentoId })).resolves.toBeUndefined()
+    })
   })
 
   it('nace pendiente con su trabajo de indexacion, y una clave ajena no se confirma', async () => {

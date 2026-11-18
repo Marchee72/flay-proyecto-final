@@ -37,6 +37,7 @@ export const HECHO = {
   'novedad-publicada': 'Novedad publicada y avisada.',
   'documento-cargado':
     'Documento cargado. Se procesa en segundo plano; cuando diga «Procesado» ya entra en las consultas.',
+  'documento-eliminado': 'Documento eliminado.',
   'documento-reindexado': 'El documento se volvió a encolar para indexar.',
   'indicadores-actualizados': 'Indicadores actualizados.',
   invitado:

@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 
 import { verDocumento } from '@/aplicacion/comunicacion/documentos'
+import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 
 import { AvisoDeError, conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
+import { ModalEliminar } from './modal-eliminar'
 
 export const metadata: Metadata = { title: 'Documento — Flay' }
 
@@ -21,20 +23,26 @@ export default async function DocumentoPage({
   const { usuarioId, activo } = pantalla
 
   try {
-    const documento = await verDocumento(ALMACEN, HABILITACIONES, RELOJ, {
-      usuarioId,
-      consorcioId: activo.id,
-      documentoId: id,
-    })
+    const [documento, roles] = await Promise.all([
+      verDocumento(ALMACEN, HABILITACIONES, RELOJ, {
+        usuarioId,
+        consorcioId: activo.id,
+        documentoId: id,
+      }),
+      rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id),
+    ])
     return (
       <>
         <Volver href={`/consorcios/${activo.id}/documentos`} />
         <h1>{documento.titulo}</h1>
-        <p>
+        <div className="fila-acciones">
           <a className="boton boton--fantasma" href={documento.descarga} download>
             Descargar
           </a>
-        </p>
+          {roles.includes('administrador') && (
+            <ModalEliminar consorcioId={activo.id} documentoId={id} />
+          )}
+        </div>
         {documento.tipoContenido === 'application/pdf' ? (
           <iframe className="visor" src={documento.vista} title={documento.titulo} />
         ) : (

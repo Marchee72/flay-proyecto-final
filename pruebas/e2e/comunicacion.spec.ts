@@ -99,3 +99,33 @@ test('la novedad del administrador la ve el consorcista, y el contrato no visibl
   await expect(page.getByRole('button', { name: 'Cargar documento' })).toHaveCount(0)
   expect(await desbordaALoAncho(page)).toBe(false)
 })
+
+test('el administrador elimina un documento; el consorcista no ve el botón (RF-19)', async ({
+  page,
+}) => {
+  const documento = await prisma.documentoConsorcio.create({
+    data: {
+      consorcioId: administrador.consorcioId,
+      tipo: 'otro',
+      titulo: 'Póliza para eliminar',
+      claveAlmacenamiento: `documentos/${administrador.consorcioId}/c/poliza.pdf`,
+      tipoContenido: 'application/pdf',
+      visibleConsorcistas: true,
+      cargadoPor: administrador.usuarioId,
+    },
+  })
+  const ruta = `/consorcios/${administrador.consorcioId}/documentos/${documento.id}`
+
+  await entrar(page, consorcista.correo)
+  await page.goto(ruta)
+  await expect(page.getByRole('heading', { name: 'Póliza para eliminar' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Eliminar' })).toHaveCount(0)
+
+  await page.context().clearCookies()
+  await entrar(page, administrador.correo)
+  await page.goto(ruta)
+  await page.getByRole('button', { name: 'Eliminar' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Eliminar' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Documento eliminado.' })).toBeVisible()
+  await expect(page.getByRole('table')).not.toContainText('Póliza para eliminar')
+})

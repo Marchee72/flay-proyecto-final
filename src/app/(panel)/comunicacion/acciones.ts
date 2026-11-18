@@ -162,18 +162,20 @@ export async function accionEliminarDocumento(datos: FormData): Promise<void> {
 }
 
 /**
- * Las tres acciones de la seccion de sugerencias (`RF-19`, RN-14): vuelven a la
- * pagina del documento con el aviso; el rechazo del caso de uso sale como
- * problema y la sugerencia sigue pendiente.
+ * Las tres acciones de las sugerencias (`RF-19`, RN-14): aplicar y descartar
+ * vuelven a la pantalla de sugerencias, y «Buscar configuración» a la pagina del
+ * documento (que es la que sondea mientras analiza); todas con el aviso. El
+ * rechazo del caso de uso sale como problema y la sugerencia sigue pendiente.
  */
 async function sobreSugerencias(
   datos: FormData,
   hacer: (quien: { usuarioId: string; consorcioId: string }) => Promise<ClaveHecho>,
+  destino: (consorcioId: string) => string = (c) => `/consorcios/${c}/documentos/sugerencias`,
 ): Promise<void> {
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) return irAIngresar()
   const consorcioId = texto(datos, 'consorcio')
-  const ruta = `/consorcios/${consorcioId}/documentos/${texto(datos, 'documento')}`
+  const ruta = destino(consorcioId)
   let hecho: ClaveHecho
   try {
     hecho = await hacer({ usuarioId, consorcioId })
@@ -208,13 +210,17 @@ export async function accionDescartarSugerencia(datos: FormData): Promise<void> 
 
 /** «Buscar configuración» en un documento cargado antes de que existiera el analisis. */
 export async function accionBuscarConfiguracion(datos: FormData): Promise<void> {
-  return sobreSugerencias(datos, async (quien) => {
-    await buscarConfiguracion(HABILITACIONES, RELOJ, {
-      ...quien,
-      documentoId: texto(datos, 'documento'),
-    })
-    return 'analisis-encolado'
-  })
+  return sobreSugerencias(
+    datos,
+    async (quien) => {
+      await buscarConfiguracion(HABILITACIONES, RELOJ, {
+        ...quien,
+        documentoId: texto(datos, 'documento'),
+      })
+      return 'analisis-encolado'
+    },
+    (consorcioId) => `/consorcios/${consorcioId}/documentos/${texto(datos, 'documento')}`,
+  )
 }
 
 export async function accionDespachar(datos: FormData): Promise<void> {

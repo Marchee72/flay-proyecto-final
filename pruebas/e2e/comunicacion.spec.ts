@@ -182,44 +182,59 @@ test('las sugerencias de configuración de un reglamento se aplican o se descart
   })
   const ruta = `/consorcios/${administrador.consorcioId}/documentos/${documento.id}`
 
+  const lista = `/consorcios/${administrador.consorcioId}/documentos`
   await entrar(page, administrador.correo)
   await page.goto(ruta)
-  const seccion = page.getByRole('region', { name: 'Configuración que menciona este documento' })
-  await expect(seccion).toBeVisible()
   // Un documento cargado antes del analisis se lee a pedido; el sondeo drena la cola.
   await page.getByRole('button', { name: 'Buscar configuración' }).click()
   await expect(
     page.getByRole('status').filter({ hasText: 'Estamos leyendo el documento' }),
   ).toBeVisible()
+  const aviso = page.getByRole('region', { name: /La IA encontró 2 cambios de configuración/ })
+  await expect(aviso).toBeVisible({ timeout: 25_000 })
+  await aviso.getByRole('link', { name: 'Revisar' }).click()
+  await expect(page).toHaveURL(new RegExp(`/documentos/sugerencias#documento-${documento.id}$`))
+  await expect(
+    page.getByRole('heading', { name: 'Sugerencias de configuración', level: 1 }),
+  ).toBeVisible()
+  const seccion = page.getByRole('region', { name: 'Reglamento interno de espacios' })
   const sum = seccion.getByRole('article').filter({
     has: page.getByRole('heading', { name: 'Nuevo espacio: SUM', level: 3 }),
   })
-  await expect(sum).toBeVisible({ timeout: 25_000 })
+  await expect(sum).toBeVisible()
   await expect(sum.getByRole('columnheader', { name: 'Propuesto' })).toBeVisible()
   await expect(sum.getByRole('row', { name: /Horario.*de 10:00 a 23:00/ })).toBeVisible()
   await expect(sum.locator('blockquote')).toContainText('El SUM se usa de 10 a 23 horas')
   expect(await desbordaALoAncho(page)).toBe(false)
 
-  // En el listado, la fila lo avisa y lleva a la seccion.
-  await page.goto(`/consorcios/${administrador.consorcioId}/documentos`)
+  // En el listado, el aviso nombra el documento y la fila lleva a su grupo.
+  await page.goto(lista)
+  await expect(page.getByRole('region', { name: /La IA encontró/ })).toContainText(
+    'Reglamento interno de espacios',
+  )
   await page.getByRole('link', { name: '2 sugerencias' }).click()
-  await expect(page).toHaveURL(new RegExp(`/documentos/${documento.id}#sugerencias$`))
+  await expect(page).toHaveURL(new RegExp(`/documentos/sugerencias#documento-${documento.id}$`))
 
   await sum.getByRole('button', { name: 'Aplicar' }).click()
   await expect(
     page.getByRole('status').filter({ hasText: 'Configuración aplicada.' }),
   ).toBeVisible()
+  await expect(page).toHaveURL(/\/documentos\/sugerencias/)
   const mora = seccion.getByRole('article').filter({ hasText: 'Vencimientos y mora' })
   await mora.getByRole('button', { name: 'Descartar' }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Sugerencia descartada.' })).toBeVisible()
-  await expect(seccion.getByRole('article')).toHaveCount(0)
-  const historia = seccion.locator('details')
+  await expect(page.getByRole('article')).toHaveCount(0)
+  const historia = page.locator('details.sugerencias__historia')
   await expect(historia.locator('summary')).toHaveText('Ya revisadas (2)')
   await historia.locator('summary').click()
   await expect(historia).toContainText('Nuevo espacio: SUM')
   await expect(historia).toContainText('Aplicada')
   await expect(historia).toContainText('Descartada')
+  await expect(historia).toContainText('Reglamento interno de espacios')
   expect(await desbordaALoAncho(page)).toBe(false)
+
+  await page.goto(lista)
+  await expect(page.getByRole('region', { name: /La IA encontró/ })).toHaveCount(0)
 
   await page.goto(`/consorcios/${administrador.consorcioId}/espacios`)
   const espacio = page.getByRole('article').filter({ hasText: 'SUM' })
@@ -229,6 +244,9 @@ test('las sugerencias de configuración de un reglamento se aplican o se descart
   await entrar(page, consorcista.correo)
   await page.goto(ruta)
   await expect(page.getByRole('heading', { name: 'Reglamento interno de espacios' })).toBeVisible()
-  await expect(page.getByText('Configuración que menciona este documento')).toHaveCount(0)
+  await expect(page.getByRole('region', { name: /La IA encontró/ })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Buscar configuración' })).toHaveCount(0)
+  await page.goto(`${lista}/sugerencias`)
+  await expect(page.getByRole('article')).toHaveCount(0)
+  await expect(page.getByText(/administrador/i).first()).toBeVisible()
 })

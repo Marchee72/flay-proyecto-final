@@ -157,8 +157,12 @@ const DEL_ADMINISTRADOR = [
     ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/gastos/asistida`,
   },
   {
-    nombre: 'documento con sugerencias de configuración',
+    nombre: 'documento con aviso de sugerencias',
     ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/documentos/${documentoId}`,
+  },
+  {
+    nombre: 'sugerencias de configuración',
+    ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/documentos/sugerencias`,
   },
   {
     nombre: 'revisión del comprobante',

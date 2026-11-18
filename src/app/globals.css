@@ -67,6 +67,16 @@
   --radio-grande: 22px;
   --pastilla: 999px;
   --toque: 44px;
+
+  /* Marca de la IA: lo que propone o responde un servicio automatico y todavia no
+     confirmo una persona. El gradiente no es un color de estado. */
+  --ia-1: #2563eb;
+  --ia-2: #7c3aed;
+  --ia-3: #9333ea;
+  --ia-gradiente: linear-gradient(120deg, var(--ia-1), var(--ia-2) 55%, var(--ia-3));
+  --ia-tinta: linear-gradient(120deg, #1d4ed8, #6d28d9 55%, #7e22ce);
+  --ia-palido: linear-gradient(120deg, #eaf1fe, #f1ecfe 55%, #f8f0ff);
+  --ia-texto: #4c1d95;
 }
 
 * {
@@ -2573,6 +2583,65 @@ td select {
   border-radius: var(--pastilla);
   padding: 0 var(--e2);
   margin-bottom: var(--e1);
+}
+
+/* Marca de la IA: borde en gradiente sobre fondo palido. */
+.tarjeta--ia,
+.aviso--ia {
+  border: 1.5px solid transparent;
+  background:
+    var(--ia-palido) padding-box,
+    var(--ia-gradiente) border-box;
+  color: var(--tinta);
+}
+.aviso--ia {
+  flex-wrap: wrap;
+  align-items: center;
+}
+.aviso--ia__texto {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.aviso--ia__texto p {
+  margin: 0;
+}
+.boton--ia {
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--superficie), var(--superficie)) padding-box,
+    var(--ia-gradiente) border-box;
+  color: var(--tinta);
+}
+.boton--ia:hover {
+  background:
+    linear-gradient(var(--superficie-hundida), var(--superficie-hundida)) padding-box,
+    var(--ia-gradiente) border-box;
+}
+.boton--ia-lleno {
+  border: 0;
+  background: var(--ia-gradiente);
+  color: #fff;
+}
+.etiqueta--ia {
+  background: var(--ia-palido);
+  color: var(--ia-texto);
+}
+.titulo-ia {
+  background: var(--ia-tinta);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+@media (forced-colors: active) {
+  .titulo-ia {
+    background: none;
+    color: CanvasText;
+  }
+}
+.sugerencias__grupo {
+  display: grid;
+  gap: var(--e3);
+  scroll-margin-top: var(--e5);
 }
 
 /* Sugerencias de configuracion (RF-19): una tarjeta por cambio, la cita del

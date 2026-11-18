@@ -1,7 +1,5 @@
 import type { Metadata } from 'next'
 
-import { ScanSearch } from 'lucide-react'
-
 import { analisisDeConfiguracion, verDocumento } from '@/aplicacion/comunicacion/documentos'
 import { listarSugerencias } from '@/aplicacion/comunicacion/sugerencias'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
@@ -11,8 +9,9 @@ import { accionBuscarConfiguracion } from '../../../../comunicacion/acciones'
 import { AvisoDeError, conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
 import { EnVivo } from '../../../../en-vivo'
+import { IconoIA } from '../../../../icono-ia'
+import { AvisoDeSugerencias } from '../aviso-sugerencias'
 import { ModalEliminar } from './modal-eliminar'
-import { Sugerencias } from './sugerencias'
 
 export const metadata: Metadata = { title: 'Documento — Flay' }
 
@@ -41,7 +40,11 @@ export default async function DocumentoPage({
     const quien = { usuarioId, consorcioId: activo.id, documentoId: id }
     // Solo el administrador, y solo reglamentos, actas y contratos (RF-19, RN-14).
     const analisis = administra ? await analisisDeConfiguracion(HABILITACIONES, RELOJ, quien) : null
-    const sugerencias = analisis ? await listarSugerencias(HABILITACIONES, RELOJ, quien) : []
+    const pendientes = analisis
+      ? (await listarSugerencias(HABILITACIONES, RELOJ, quien)).filter(
+          (s) => s.estado === 'pendiente',
+        )
+      : []
     return (
       <>
         {/* Cada refresco drena la cola: es lo que trae las sugerencias (decision 21). */}
@@ -56,12 +59,8 @@ export default async function DocumentoPage({
             <form action={accionBuscarConfiguracion}>
               <input type="hidden" name="consorcio" value={activo.id} />
               <input type="hidden" name="documento" value={id} />
-              <button
-                className="boton boton--fantasma"
-                type="submit"
-                disabled={analisis.analizando}
-              >
-                <ScanSearch className="icono" aria-hidden="true" />
+              <button className="boton boton--ia" type="submit" disabled={analisis.analizando}>
+                <IconoIA />
                 Buscar configuración
               </button>
             </form>
@@ -73,12 +72,16 @@ export default async function DocumentoPage({
         ) : (
           <p className="ayuda">Este formato se abre con la descarga.</p>
         )}
-        {analisis && (
-          <Sugerencias
-            consorcioId={activo.id}
-            documentoId={id}
-            sugerencias={sugerencias}
-            analizando={analisis.analizando}
+        {analisis?.analizando ? (
+          <p className="aviso aviso--ia" role="status">
+            <IconoIA />
+            <span>Estamos leyendo el documento: las sugerencias aparecen en un momento.</span>
+          </p>
+        ) : (
+          <AvisoDeSugerencias
+            href={`/consorcios/${activo.id}/documentos/sugerencias#documento-${id}`}
+            cantidad={pendientes.length}
+            documentos={[documento.titulo]}
           />
         )}
       </>

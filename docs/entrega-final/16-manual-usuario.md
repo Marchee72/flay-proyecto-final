@@ -491,6 +491,7 @@ El módulo de espacios comunes (`/espacios`) parametriza las dependencias de uso
    - *Público:* Visible para la totalidad de consorcistas y propietarios.
    - *Reservado:* Accesible exclusivamente por el Administrador y el Consejo de Propietarios (ejemplo: auditorías contables o dictámenes jurídicos).
 4. Al confirmar la subida directa a la nube, el sistema pone en marcha el proceso de **indexación vectorial semántica** en segundo plano, preparando el documento para responder consultas inteligentes.
+5. Al abrir un documento se lo ve en línea (PDF) y puede descargarse aparte. El Administrador puede **Eliminar** el documento desde esa pantalla; el acta firmada de una asamblea no se puede eliminar.
 
 ---
 

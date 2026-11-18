@@ -8,6 +8,7 @@ import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
 import {
   altaEspacio,
+  EspacioInvalido,
   deshabilitarEspacio,
   habilitarEspacio,
   listarEspacios,
@@ -166,33 +167,37 @@ describe('superposicion (regla RN-10, SC-005)', () => {
   })
 })
 
+async function generarDeudaVencida() {
+  // Un periodo de enero liquidado y sin pagar: a septiembre esta vencido.
+  const rubroId = (
+    await prismaBase.rubroGasto.upsert({
+      where: { nombre: 'Rubro de prueba' },
+      update: {},
+      create: { nombre: 'Rubro de prueba', clasificacion: 'ordinario' },
+    })
+  ).id
+  const { periodoId } = await periodoPara(repo, RELOJ, {
+    usuarioId: administrador,
+    consorcioId,
+    anio: 2026,
+    mes: 1,
+  })
+  await registrarGasto(repo, RELOJ, {
+    usuarioId: administrador,
+    consorcioId,
+    periodoId,
+    rubroId,
+    importe: '1000.00',
+    fecha: new Date('2026-01-05'),
+    descripcion: 'Gasto',
+  })
+  await cerrarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
+  await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
+}
+
 describe('deuda vencida (SC-006) y reglas del espacio', () => {
   it('una unidad con deuda vencida no reserva, y el mensaje nombra la causa', async () => {
-    // Un periodo de enero liquidado y sin pagar: a septiembre esta vencido.
-    const rubroId = (
-      await prismaBase.rubroGasto.upsert({
-        where: { nombre: 'Rubro de prueba' },
-        update: {},
-        create: { nombre: 'Rubro de prueba', clasificacion: 'ordinario' },
-      })
-    ).id
-    const { periodoId } = await periodoPara(repo, RELOJ, {
-      usuarioId: administrador,
-      consorcioId,
-      anio: 2026,
-      mes: 1,
-    })
-    await registrarGasto(repo, RELOJ, {
-      usuarioId: administrador,
-      consorcioId,
-      periodoId,
-      rubroId,
-      importe: '1000.00',
-      fecha: new Date('2026-01-05'),
-      descripcion: 'Gasto',
-    })
-    await cerrarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
-    await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
+    await generarDeudaVencida()
 
     await expect(
       reservar(repo, RELOJ, {
@@ -244,6 +249,72 @@ describe('deuda vencida (SC-006) y reglas del espacio', () => {
         hasta: enHoras(74),
       }),
     ).rejects.toThrow('No encontramos lo que buscabas.')
+  })
+})
+
+describe('horario y rechazo por deuda configurables (RF-15, CU-09)', () => {
+  const AR = (iso: string) => new Date(`${iso}:00-03:00`)
+  const nuevoEspacio = async (extra: Record<string, unknown>) =>
+    (
+      await altaEspacio(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        nombre: 'Quincho',
+        ...extra,
+      })
+    ).espacioId
+  const base = () => ({ usuarioId: vecino.id, consorcioId, unidadId: unidadA })
+
+  it('fuera del horario se rechaza con el horario en el mensaje (RF-15)', async () => {
+    const id = await nuevoEspacio({ horario: { apertura: 600, cierre: 1380 } })
+    await expect(
+      reservar(repo, RELOJ, {
+        ...base(),
+        espacioId: id,
+        desde: AR('2026-09-20T08:00'),
+        hasta: AR('2026-09-20T10:00'),
+      }),
+    ).rejects.toThrow('se usa de 10:00 a 23:00')
+    await expect(
+      reservar(repo, RELOJ, {
+        ...base(),
+        espacioId: id,
+        desde: AR('2026-09-20T11:00'),
+        hasta: AR('2026-09-20T13:00'),
+      }),
+    ).resolves.toHaveProperty('reservaId')
+  })
+
+  it('sin horario, una reserva de madrugada se acepta igual que antes', async () => {
+    await expect(
+      reservar(repo, RELOJ, {
+        ...base(),
+        espacioId,
+        desde: AR('2026-09-20T03:00'),
+        hasta: AR('2026-09-20T04:00'),
+      }),
+    ).resolves.toHaveProperty('reservaId')
+  })
+
+  it('con rechazaConDeuda en false, la unidad con deuda vencida reserva (CU-09)', async () => {
+    await generarDeudaVencida()
+    const id = await nuevoEspacio({ rechazaConDeuda: false })
+    await expect(
+      reservar(repo, RELOJ, { ...base(), espacioId: id, desde: enHoras(72), hasta: enHoras(74) }),
+    ).resolves.toHaveProperty('reservaId')
+  })
+
+  it('por defecto, la unidad con deuda sigue rechazada', async () => {
+    await generarDeudaVencida()
+    await expect(
+      reservar(repo, RELOJ, { ...base(), espacioId, desde: enHoras(72), hasta: enHoras(74) }),
+    ).rejects.toThrow('tiene deuda vencida')
+  })
+
+  it('alta con apertura igual al cierre es EspacioInvalido', async () => {
+    await expect(nuevoEspacio({ horario: { apertura: 600, cierre: 600 } })).rejects.toBeInstanceOf(
+      EspacioInvalido,
+    )
   })
 })
 

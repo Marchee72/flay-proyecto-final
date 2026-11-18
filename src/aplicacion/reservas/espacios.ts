@@ -3,6 +3,7 @@ import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { notificar } from '@/aplicacion/comunicacion/notificar'
+import { errorDeHorario, horaDesdeMinutos, type HorarioDeUso } from '@/dominio/reservas/horario'
 import { sinConsorcio } from '@/infraestructura/cliente-aislado'
 import { prisma } from '@/infraestructura/prisma'
 
@@ -30,6 +31,8 @@ export interface EspacioDelConsorcio {
   duracionMaximaHoras: number
   reservasMaxMesUnidad: number
   activo: boolean
+  horario: HorarioDeUso | null
+  rechazaConDeuda: boolean
   /** Presente solo si esta deshabilitado y tiene el tramo registrado. */
   suspension: SuspensionVigente | null
 }
@@ -41,6 +44,9 @@ export interface DatosDeEspacio {
   anticipacionMaximaDias?: number
   duracionMaximaHoras?: number
   reservasMaxMesUnidad?: number
+  /** `undefined` no toca el horario; `null` lo borra. */
+  horario?: HorarioDeUso | null
+  rechazaConDeuda?: boolean
 }
 
 export class EspacioInvalido extends ErrorDeAplicacion {
@@ -49,7 +55,7 @@ export class EspacioInvalido extends ErrorDeAplicacion {
   }
 }
 
-function validar(datos: DatosDeEspacio): void {
+export function validarEspacio(datos: DatosDeEspacio): void {
   if (datos.nombre.trim().length === 0 || datos.nombre.length > 80) {
     throw new EspacioInvalido('Poné un nombre de hasta 80 caracteres.')
   }
@@ -66,6 +72,28 @@ function validar(datos: DatosDeEspacio): void {
         'Las reglas del espacio son números enteros, sin decimales ni negativos.',
       )
     }
+  }
+  const { horario } = datos
+  if (horario) {
+    const enRango = (m: number) => Number.isInteger(m) && m >= 0 && m <= 1439
+    const mensaje =
+      !enRango(horario.apertura) || !enRango(horario.cierre)
+        ? 'Usá horas del día, de 00:00 a 23:59.'
+        : errorDeHorario(horaDesdeMinutos(horario.apertura), horaDesdeMinutos(horario.cierre))
+    if (mensaje) throw new EspacioInvalido(mensaje)
+  }
+}
+
+/** Las tres columnas nuevas; `horario` ausente no las toca. */
+function columnasDeReglas(datos: DatosDeEspacio) {
+  return {
+    ...(datos.horario !== undefined
+      ? {
+          aperturaMinutos: datos.horario?.apertura ?? null,
+          cierreMinutos: datos.horario?.cierre ?? null,
+        }
+      : {}),
+    ...(datos.rechazaConDeuda !== undefined ? { rechazaConDeuda: datos.rechazaConDeuda } : {}),
   }
 }
 
@@ -93,6 +121,9 @@ export async function listarEspacios(
           duracionMaximaHoras: true,
           reservasMaxMesUnidad: true,
           activo: true,
+          aperturaMinutos: true,
+          cierreMinutos: true,
+          rechazaConDeuda: true,
           // El tramo en curso del deshabilitado: el mas reciente (abierto o con
           // fin planificado). Solo se usa cuando el espacio esta inactivo.
           suspensiones: {
@@ -102,8 +133,12 @@ export async function listarEspacios(
           },
         },
       })
-      return espacios.map(({ suspensiones, ...e }) => ({
+      return espacios.map(({ suspensiones, aperturaMinutos, cierreMinutos, ...e }) => ({
         ...e,
+        horario:
+          aperturaMinutos != null && cierreMinutos != null
+            ? { apertura: aperturaMinutos, cierre: cierreMinutos }
+            : null,
         suspension:
           !e.activo && suspensiones[0]
             ? {
@@ -132,7 +167,7 @@ export async function altaEspacio(
       accion: 'administrar espacios',
     },
     async () => {
-      validar(datos)
+      validarEspacio(datos)
       const existente = await prisma.espacioComun.findFirst({
         where: { nombre: datos.nombre.trim() },
       })
@@ -154,6 +189,7 @@ export async function altaEspacio(
           ...(datos.reservasMaxMesUnidad != null
             ? { reservasMaxMesUnidad: datos.reservasMaxMesUnidad }
             : {}),
+          ...columnasDeReglas(datos),
         }),
         select: { id: true },
       })
@@ -177,7 +213,7 @@ export async function editarEspacio(
       accion: 'administrar espacios',
     },
     async () => {
-      validar(datos)
+      validarEspacio(datos)
       const espacio = await prisma.espacioComun.findFirst({ where: { id: datos.espacioId } })
       if (!espacio) throw new NoEncontrado()
       await prisma.espacioComun.update({
@@ -197,6 +233,7 @@ export async function editarEspacio(
           ...(datos.reservasMaxMesUnidad != null
             ? { reservasMaxMesUnidad: datos.reservasMaxMesUnidad }
             : {}),
+          ...columnasDeReglas(datos),
         },
       })
     },

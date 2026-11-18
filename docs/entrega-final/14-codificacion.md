@@ -304,8 +304,8 @@ uso conoce cuál de las tres corre: la elige una sola vez `src/aplicacion/depend
 entorno (`FLAY_ASISTENCIA=determinista` → pruebas; `GEMINI_API_KEY` → proveedor; ninguna → nula).
 
 La verificación es una prueba y no una afirmación: `pruebas/integracion/asistencia-implementaciones.spec.ts`
-cuenta los archivos del directorio (exactamente tres), comprueba que cada uno expone las seis
-interfaces, que la nula responde «no disponible» en los siete métodos sin lanzar y que la
+cuenta los archivos del directorio (exactamente tres), comprueba que cada uno expone las siete
+interfaces, que la nula responde «no disponible» en los ocho métodos sin lanzar y que la
 determinista es idempotente (SC-012). Reemplazar el proveedor es escribir un cuarto archivo con la
 misma forma y cambiar una línea en `dependencias.ts`; el resto del sistema, incluidas las pruebas
 de extremo a extremo que corren con la determinista, no se entera.

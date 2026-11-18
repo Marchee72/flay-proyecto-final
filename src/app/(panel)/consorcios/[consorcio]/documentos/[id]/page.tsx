@@ -31,12 +31,12 @@ export default async function DocumentoPage({
         <Volver href={`/consorcios/${activo.id}/documentos`} />
         <h1>{documento.titulo}</h1>
         <p>
-          <a className="boton boton--fantasma" href={documento.direccion} download>
+          <a className="boton boton--fantasma" href={documento.descarga} download>
             Descargar
           </a>
         </p>
         {documento.tipoContenido === 'application/pdf' ? (
-          <iframe className="visor" src={documento.direccion} title={documento.titulo} />
+          <iframe className="visor" src={documento.vista} title={documento.titulo} />
         ) : (
           <p className="ayuda">Este formato se abre con la descarga.</p>
         )}

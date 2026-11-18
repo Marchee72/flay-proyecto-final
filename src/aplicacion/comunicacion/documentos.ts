@@ -187,7 +187,7 @@ export async function verDocumento(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
   datos: { usuarioId: string; consorcioId: string; documentoId: string },
-): Promise<{ titulo: string; tipoContenido: string; direccion: string }> {
+): Promise<{ titulo: string; tipoContenido: string; vista: string; descarga: string }> {
   return conAutorizacion(
     repositorio,
     reloj,
@@ -197,8 +197,12 @@ export async function verDocumento(
         where: { id: datos.documentoId, ...visiblesPara(acceso.roles) },
       })
       if (!documento) throw new NoEncontrado()
-      const direccion = await almacen.resolverLecturaAutorizada(documento.claveAlmacenamiento, 600)
-      return { titulo: documento.titulo, tipoContenido: documento.tipoContenido, direccion }
+      // Dos enlaces: uno en línea para el visor y otro como adjunto para «Descargar».
+      const [vista, descarga] = await Promise.all([
+        almacen.resolverLecturaAutorizada(documento.claveAlmacenamiento, 600, { enLinea: true }),
+        almacen.resolverLecturaAutorizada(documento.claveAlmacenamiento, 600),
+      ])
+      return { titulo: documento.titulo, tipoContenido: documento.tipoContenido, vista, descarga }
     },
   )
 }

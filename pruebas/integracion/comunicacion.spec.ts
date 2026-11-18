@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { cargarDocumento, listarDocumentos } from '@/aplicacion/comunicacion/documentos'
+import { cargarDocumento, listarDocumentos, verDocumento } from '@/aplicacion/comunicacion/documentos'
 import { NoEncontrado } from '@/compartido/errores'
 import {
   descartarNovedad,
@@ -299,6 +299,29 @@ describe('documentos', () => {
     expect(await estados(vecino)).toEqual([null])
     expect(await estados(consejo)).toEqual([null, null])
     expect(await estados(administrador)).toEqual(['pendiente', 'pendiente'])
+  })
+
+  it('la vista se pide en línea y la descarga como adjunto (RF-19)', async () => {
+    const pedidos: { clave: string; enLinea?: boolean }[] = []
+    const almacen = {
+      async resolverLecturaAutorizada(
+        clave: string,
+        _segundos: number,
+        opciones?: { enLinea?: boolean },
+      ) {
+        pedidos.push({ clave, enLinea: opciones?.enLinea })
+        return `https://almacen.test/${clave}?${opciones?.enLinea ? 'inline' : 'attachment'}`
+      },
+    }
+    const { documentoId } = await cargar('Reglamento', true)
+    const doc = await verDocumento(almacen as never, repo, RELOJ, {
+      usuarioId: vecino,
+      consorcioId,
+      documentoId,
+    })
+    expect(doc.vista).toMatch(/inline$/)
+    expect(doc.descarga).toMatch(/attachment$/)
+    expect(pedidos.map((p) => p.enLinea)).toEqual([true, undefined])
   })
 
   it('nace pendiente con su trabajo de indexacion, y una clave ajena no se confirma', async () => {

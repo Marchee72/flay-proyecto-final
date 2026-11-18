@@ -5,12 +5,19 @@ import { BotonModal } from '../../../../modal'
 export function ModalEliminar({
   consorcioId,
   documentoId,
+  titulo,
 }: {
   consorcioId: string
   documentoId: string
+  /** El nombre, para que en una tabla se sepa cuál se elimina. */
+  titulo?: string
 }) {
   return (
-    <BotonModal etiqueta="Eliminar" titulo="Eliminar el documento" variante="boton--peligro">
+    <BotonModal
+      etiqueta="Eliminar"
+      titulo={titulo ? `Eliminar «${titulo}»` : 'Eliminar el documento'}
+      variante="boton--peligro"
+    >
       <form action={accionEliminarDocumento}>
         <input type="hidden" name="consorcio" value={consorcioId} />
         <input type="hidden" name="documento" value={documentoId} />

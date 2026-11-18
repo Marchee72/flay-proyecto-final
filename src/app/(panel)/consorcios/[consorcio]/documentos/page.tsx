@@ -15,6 +15,7 @@ import { accionReindexar } from '../../../comunicacion/acciones'
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
 import { EnVivo } from '../../../en-vivo'
 import { ModalDocumento } from './modal-documento'
+import { ModalEliminar } from './[id]/modal-eliminar'
 import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Documentación — Flay' }
@@ -134,6 +135,13 @@ export default async function DocumentosPage({
                       >
                         Abrir
                       </Link>
+                      {administra && (
+                        <ModalEliminar
+                          consorcioId={activo.id}
+                          documentoId={d.id}
+                          titulo={d.titulo}
+                        />
+                      )}
                     </td>
                   </tr>
                 ))}

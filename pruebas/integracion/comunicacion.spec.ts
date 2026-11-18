@@ -387,7 +387,10 @@ describe('documentos', () => {
         data: { consorcioId, asambleaId: asamblea.id, documentoId },
       })
       await expect(
-        eliminarDocumento(almacenSinFallas(), repo, RELOJ, { ...quien(administrador), documentoId }),
+        eliminarDocumento(almacenSinFallas(), repo, RELOJ, {
+          ...quien(administrador),
+          documentoId,
+        }),
       ).rejects.toBeInstanceOf(DocumentoDeActa)
       expect(await prismaBase.documentoConsorcio.count({ where: { id: documentoId } })).toBe(1)
     })
@@ -407,9 +410,9 @@ describe('documentos', () => {
       const { documentoId } = await cargar('Reglamento', true)
       const datos = { ...quien(administrador), documentoId }
       await eliminarDocumento(almacenSinFallas(), repo, RELOJ, datos)
-      await expect(eliminarDocumento(almacenSinFallas(), repo, RELOJ, datos)).rejects.toBeInstanceOf(
-        NoEncontrado,
-      )
+      await expect(
+        eliminarDocumento(almacenSinFallas(), repo, RELOJ, datos),
+      ).rejects.toBeInstanceOf(NoEncontrado)
     })
 
     it('el trabajo de indexación de un documento borrado termina sin lanzar', async () => {

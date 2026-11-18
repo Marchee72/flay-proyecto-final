@@ -9,6 +9,7 @@ import { verMorosidad } from '@/aplicacion/pagos/estado-de-cuenta'
 
 import { conConsorcio } from '../../../con-consorcio'
 import { TablaDesplazable } from '../../../tabla-desplazable'
+import { DetallePeriodos } from './detalle-periodos'
 
 export const metadata: Metadata = { title: 'Morosidad — Flay' }
 
@@ -16,8 +17,7 @@ export const metadata: Metadata = { title: 'Morosidad — Flay' }
  * Morosidad (`FR-029`, regla RN-13 § 7.2). Lo que se muestra es lo que el caso
  * de uso devolvio segun el rol: si no vino nomina, no hay nomina que ocultar.
  *
- * Por deudor: a quien llamar, que periodos debe (un `<details>`, sin
- * JavaScript) y el enlace a su estado de cuenta, donde se registra el pago.
+ * Por deudor: a quien llamar, que periodos debe (un tooltip) y el enlace a su estado de cuenta, donde se registra el pago.
  */
 export default async function MorosidadPage({
   params,
@@ -129,24 +129,14 @@ export default async function MorosidadPage({
                         )}
                       </td>
                       <td>
-                        <details>
-                          <summary>
-                            {plural(deudor.periodosVencidos, 'período', 'períodos')}
-                          </summary>
-                          <ul className="lista-simple">
-                            {deudor.periodos.map((periodo) => (
-                              <li key={periodo.periodo}>
-                                <span>
-                                  {periodo.periodo}{' '}
-                                  <span className="ayuda">
-                                    venció {fechaParaMostrar(periodo.vencimiento)}
-                                  </span>
-                                </span>
-                                <span className="cifra">{importeParaMostrar(periodo.saldo)}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </details>
+                        <DetallePeriodos
+                          resumen={plural(deudor.periodosVencidos, 'período', 'períodos')}
+                          periodos={deudor.periodos.map((p) => ({
+                            periodo: p.periodo,
+                            vence: fechaParaMostrar(p.vencimiento),
+                            saldo: importeParaMostrar(p.saldo),
+                          }))}
+                        />
                       </td>
                       <td className="numero cifra">{importeParaMostrar(deudor.deuda)}</td>
                     </tr>

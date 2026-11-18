@@ -269,42 +269,42 @@ const espacioZod = z.object({
   rechazaConDeuda: z.boolean().nullish(),
 })
 
-const LecturaZod = z.object({
-  sugerencias: z.array(
-    z.discriminatedUnion('tipo', [
-      z.object({ tipo: z.literal('espacio_nuevo'), cita: z.string().min(1), datos: espacioZod }),
-      z.object({
-        tipo: z.literal('espacio_cambio'),
-        cita: z.string().min(1),
-        espacioId: z.string().min(1),
-        datos: espacioZod.partial(),
-      }),
-      z.object({
-        tipo: z.literal('vencimientos'),
-        cita: z.string().min(1),
-        datos: z.object({
-          tramos: z.array(z.object({ diaDelMes: entero, recargoPorcentaje: porcentaje })).nullish(),
-          tasaMoraMensual: porcentaje.nullish(),
-        }),
-      }),
-      z.object({
-        tipo: z.literal('asambleas'),
-        cita: z.string().min(1),
-        datos: z.object({
-          reglaMayoria: z.enum(['presentes', 'totalidad']).nullish(),
-          anticipacionDias: entero.nullish(),
-          topeApoderado: entero.nullish(),
-          umbralSinVoto: entero.nullish(),
-        }),
-      }),
-      z.object({
-        tipo: z.literal('instrucciones_pago'),
-        cita: z.string().min(1),
-        datos: z.object({ texto: z.string().min(1) }),
-      }),
-    ]),
-  ),
-})
+const SugerenciaZod = z.discriminatedUnion('tipo', [
+  z.object({ tipo: z.literal('espacio_nuevo'), cita: z.string().min(1), datos: espacioZod }),
+  z.object({
+    tipo: z.literal('espacio_cambio'),
+    cita: z.string().min(1),
+    espacioId: z.string().min(1),
+    datos: espacioZod.partial(),
+  }),
+  z.object({
+    tipo: z.literal('vencimientos'),
+    cita: z.string().min(1),
+    datos: z.object({
+      tramos: z
+        .array(z.object({ diaDelMes: entero.min(1).max(28), recargoPorcentaje: porcentaje }))
+        .nullish(),
+      tasaMoraMensual: porcentaje.nullish(),
+    }),
+  }),
+  z.object({
+    tipo: z.literal('asambleas'),
+    cita: z.string().min(1),
+    datos: z.object({
+      reglaMayoria: z.enum(['presentes', 'totalidad']).nullish(),
+      anticipacionDias: entero.nullish(),
+      topeApoderado: entero.nullish(),
+      umbralSinVoto: entero.nullish(),
+    }),
+  }),
+  z.object({
+    tipo: z.literal('instrucciones_pago'),
+    cita: z.string().min(1),
+    datos: z.object({ texto: z.string().min(1) }),
+  }),
+])
+
+const EnvolturaZod = z.object({ sugerencias: z.array(z.unknown()) })
 
 const nuloAEntero = { type: Type.INTEGER, nullable: true } as const
 const ESQUEMA_LECTURA: Schema = {
@@ -382,6 +382,15 @@ const sinNulos = (v: unknown): unknown =>
             .map(([k, x]) => [k, sinNulos(x)]),
         )
       : v
+
+/** Cada sugerencia se valida sola: la mal formada se descarta y las buenas se conservan (RNF-15). */
+export function sugerenciasValidas(crudas: unknown[]): SugerenciaLeida[] {
+  return crudas.flatMap((c) => {
+    const r = SugerenciaZod.safeParse(sinNulos(c))
+    // El esquema admite null/undefined donde el tipo del dominio omite la clave; sinNulos ya quito los null.
+    return r.success ? [r.data as SugerenciaLeida] : []
+  })
+}
 
 const SISTEMA_LECTOR = (
   espacios: { id: string; nombre: string }[],
@@ -648,10 +657,10 @@ Segun la conversacion, propone hasta tres proximos pasos concretos que la person
         SISTEMA_LECTOR(contexto.espaciosExistentes),
         [texto.slice(0, MAX_CARACTERES_CONFIGURACION)],
         ESQUEMA_LECTURA,
-        z.unknown().transform((v) => LecturaZod.parse(sinNulos(v))),
+        EnvolturaZod,
       )
       if (!r.disponible) return r
-      return disponible(r.valor.sugerencias as SugerenciaLeida[])
+      return disponible(sugerenciasValidas(r.valor.sugerencias))
     },
   },
 }

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Asistencia, PuntoParaRedactar } from '@/dominio/contratos/asistencia'
 import { asistenciaDeterminista } from '@/infraestructura/asistencia/determinista'
-import { asistenciaGemini } from '@/infraestructura/asistencia/gemini'
+import { asistenciaGemini, sugerenciasValidas } from '@/infraestructura/asistencia/gemini'
 import { asistenciaNula } from '@/infraestructura/asistencia/nula'
 
 /**
@@ -149,5 +149,27 @@ describe('tres implementaciones por interfaz (SC-012)', () => {
       espaciosExistentes: [],
     })
     expect(otro).toEqual({ disponible: true, valor: [] })
+  })
+
+  it('una sugerencia mal formada se descarta sola, no el lote', () => {
+    const buena = {
+      tipo: 'vencimientos',
+      cita: 'interés del 3 % mensual',
+      datos: { tasaMoraMensual: '3.0000', tramos: null },
+    }
+    expect(
+      sugerenciasValidas([
+        buena,
+        { tipo: 'vencimientos', cita: 'x', datos: { tasaMoraMensual: 'tres por ciento' } },
+        { tipo: 'inventado', cita: 'x', datos: {} },
+        { tipo: 'instrucciones_pago', cita: '', datos: { texto: 'CBU 123' } },
+      ]),
+    ).toEqual([
+      {
+        tipo: 'vencimientos',
+        cita: 'interés del 3 % mensual',
+        datos: { tasaMoraMensual: '3.0000' },
+      },
+    ])
   })
 })

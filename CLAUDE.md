@@ -434,6 +434,20 @@ Treinta y tres decisiones que costaron una vuelta y conviene no volver a tomar d
     (`HorarioDeUso`, no `TIME`) y siempre en hora argentina; si el cierre es menor o igual a la apertura
     cruza la medianoche, y entonces la madrugada pertenece a la ventana del **día anterior**
     (`dentroDelHorario` en `src/dominio/reservas/horario.ts`).
+    Las sugerencias se revisan **todas juntas, agrupadas por documento**, en `documentos/sugerencias`;
+    Documentación y la página del documento solo avisan (`AvisoDeSugerencias`). Aplicar y descartar
+    vuelven a esa pantalla; «Buscar configuración» vuelve a la página del documento, que es la que
+    sondea mientras analiza.
+
+34. **La marca de la IA (`IconoIA`, tokens `--ia-*`, clases `.tarjeta--ia`, `.aviso--ia`, `.boton--ia`,
+    `.etiqueta--ia`, `.titulo-ia`) va solo en lo que la IA propone o responde y todavía no confirmó una
+    persona**: asistente, carga asistida, sugerencias de configuración y de reclamo, borrador del acta,
+    respuesta de la consulta documental. Un gasto confirmado o un acta guardada ya no la llevan. El
+    gradiente no es un color de estado. El degradado del ícono vive una vez en `layout.tsx`
+    (`#ia-trazo`, `userSpaceOnUse`: con `objectBoundingBox` las cruces chicas de los destellos no se
+    pintan). Los azules/violetas son más oscuros que los de la maqueta para pasar AA con texto blanco.
+    **Las e2e corren contra `npm run build` y con `CI=1`** (`FLAY_ALMACEN=memoria`): sin eso, la
+    página de un documento sembrado a mano da «no encontrado».
 
 ## Notas
 

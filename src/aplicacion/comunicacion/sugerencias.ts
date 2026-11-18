@@ -58,6 +58,8 @@ export interface EspacioVigente extends Required<DatosDeEspacio> {
 export interface ConfiguracionVigente {
   /** Los activos: los que el lector conoce y los que se pueden editar. */
   espacios: EspacioVigente[]
+  /** Nombres de los deshabilitados: un espacio nuevo con uno de ellos no se aplica. */
+  deshabilitados: string[]
   /** Convencion de boleta (decision 27). Sin regla cargada, el tramo unico por omision. */
   tramos: TramoRegla[]
   tasaMoraMensual: string
@@ -94,10 +96,8 @@ export async function vigenteDelConsorcio(
       instruccionesPago: true,
     },
   })
-  const espacios = await cliente.espacioComun.findMany({
-    where: { activo: true },
-    orderBy: { nombre: 'asc' },
-  })
+  const todos = await cliente.espacioComun.findMany({ orderBy: { nombre: 'asc' } })
+  const espacios = todos.filter((e) => e.activo)
   const tramos = await cliente.tramoVencimiento.findMany({ orderBy: { orden: 'asc' } })
 
   return {
@@ -115,6 +115,7 @@ export async function vigenteDelConsorcio(
           : null,
       rechazaConDeuda: e.rechazaConDeuda,
     })),
+    deshabilitados: todos.filter((e) => !e.activo).map((e) => e.nombre),
     tramos:
       tramos.length > 0
         ? tramos.map((t) => ({
@@ -241,17 +242,8 @@ function textoDeAsamblea(campo: keyof ConfiguracionAsambleas, valor: string | nu
  */
 export function cambiosDe(sugerencia: SugerenciaLeida, vigente: ConfiguracionVigente): Cambio[] {
   switch (sugerencia.tipo) {
-    case 'espacio_nuevo': {
-      const propuesto = aEspacio(sugerencia.datos) ?? {}
-      const existente = vigente.espacios.find((e) => mismoNombre(e.nombre, sugerencia.datos.nombre))
-      // Uno con el mismo nombre ya cargado: solo cuenta lo que difiere de el.
-      if (!existente) return cambiosDeEspacio(propuesto, undefined)
-      return cambiosDeEspacio(
-        propuesto,
-        existente,
-        (Object.keys(ETIQUETAS_ESPACIO) as (keyof DatosDeEspacio)[]).filter((c) => c !== 'nombre'),
-      )
-    }
+    case 'espacio_nuevo':
+      return cambiosDeEspacio(aEspacio(sugerencia.datos) ?? {}, undefined)
     case 'espacio_cambio': {
       const existente = vigente.espacios.find((e) => e.id === sugerencia.espacioId)
       if (!existente) return []
@@ -333,6 +325,24 @@ function esValida(sugerencia: SugerenciaLeida, vigente: ConfiguracionVigente): b
   }
 }
 
+/**
+ * Un `espacio_nuevo` con el nombre (sin tildes ni mayusculas) de un espacio
+ * activo es un cambio sobre ese espacio, que conserva su nombre: darlo de alta
+ * lo rechazaria por repetido o, con otra grafia, lo duplicaria.
+ */
+function comoCambioSiExiste(s: SugerenciaLeida, vigente: ConfiguracionVigente): SugerenciaLeida {
+  if (s.tipo !== 'espacio_nuevo') return s
+  const existente = vigente.espacios.find((e) => mismoNombre(e.nombre, s.datos.nombre))
+  if (!existente) return s
+  const datos: Partial<EspacioSugerido> = { ...s.datos }
+  delete datos.nombre
+  return { tipo: 'espacio_cambio', espacioId: existente.id, cita: s.cita, datos }
+}
+
+/** Un `espacio_nuevo` con el nombre de uno deshabilitado: se rehabilita a mano, no se duplica. */
+const chocaConDeshabilitado = (s: SugerenciaLeida, vigente: ConfiguracionVigente) =>
+  s.tipo === 'espacio_nuevo' && vigente.deshabilitados.some((n) => mismoNombre(n, s.datos.nombre))
+
 /** Una clave en `undefined` pisaria lo vigente al mezclar y no viaja en el JSONB. */
 function sinIndefinidos(sugerencia: SugerenciaLeida): SugerenciaLeida {
   const datos = Object.fromEntries(
@@ -376,6 +386,7 @@ export function manejadorSugerencias(lector: LectorDeConfiguracion): Manejador {
 
       const nuevas = resultado.valor
         .map(sinIndefinidos)
+        .map((s) => comoCambioSiExiste(s, vigente))
         .filter((s) => esValida(s, vigente) && cambiosDe(s, vigente).length > 0)
 
       await prisma.$transaction(async (tx) => {
@@ -411,7 +422,10 @@ export interface SugerenciaVisible {
   cita: string
   estado: EstadoSugerencia
   cambios: Cambio[]
-  /** Falso si el `espacio_cambio` apunta a un espacio que ya no existe o esta deshabilitado. */
+  /**
+   * Falso si el `espacio_cambio` apunta a un espacio que ya no existe o esta
+   * deshabilitado, o si el `espacio_nuevo` lleva el nombre de uno deshabilitado.
+   */
   aplicable: boolean
   /** Las reservas confirmadas que un cambio de horario cancelaria al aplicarlo. */
   reservasAfectadas: number
@@ -480,8 +494,10 @@ export async function listarSugerencias(
       const vigente = await vigenteDelConsorcio(prisma, datos.consorcioId)
       const visibles: SugerenciaVisible[] = []
       for (const fila of filas) {
-        const s = leida(fila)
-        if (!s) continue
+        const original = leida(fila)
+        if (!original) continue
+        // Solo la pendiente se mira contra hoy; la resuelta dice lo que fue.
+        const s = fila.estado === 'pendiente' ? comoCambioSiExiste(original, vigente) : original
         const cambios = cambiosDe(s, vigente)
         const espacio = espacioDe(s, vigente)
         const cambiaHorario =
@@ -490,12 +506,14 @@ export async function listarSugerencias(
           cambios.some((c) => c.campo === ETIQUETAS_ESPACIO.horario)
         visibles.push({
           id: fila.id,
-          tipo: fila.tipo,
+          tipo: s.tipo,
           titulo: tituloDe(s, vigente),
           cita: fila.cita,
           estado: fila.estado,
           cambios,
-          aplicable: s.tipo !== 'espacio_cambio' || espacio !== undefined,
+          aplicable:
+            (s.tipo !== 'espacio_cambio' || espacio !== undefined) &&
+            !chocaConDeshabilitado(s, vigente),
           reservasAfectadas:
             cambiaHorario && s.tipo === 'espacio_cambio'
               ? await contarReservasAfectadas(repositorio, reloj, {
@@ -537,11 +555,19 @@ async function aplicarPorSuCasoDeUso(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
   quien: { usuarioId: string; consorcioId: string },
-  s: SugerenciaLeida | null,
+  guardada: SugerenciaLeida | null,
   vigente: ConfiguracionVigente,
 ): Promise<{ canceladas: number }> {
+  // Una fila guardada antes de que el analisis la convirtiera, o un espacio cargado despues.
+  const s = guardada && comoCambioSiExiste(guardada, vigente)
   switch (s?.tipo) {
     case 'espacio_nuevo':
+      if (chocaConDeshabilitado(s, vigente)) {
+        throw new ErrorDeAplicacion(
+          'Ya hay un espacio deshabilitado con ese nombre: solo se puede descartar.',
+          'RF-15',
+        )
+      }
       await altaEspacio(repositorio, reloj, {
         ...quien,
         ...aEspacio(s.datos),

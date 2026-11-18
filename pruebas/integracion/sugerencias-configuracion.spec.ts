@@ -502,6 +502,87 @@ describe('aplicar y descartar sugerencias (RN-14)', () => {
     expect((await estadoDe(id)).estado).toBe('descartada')
   })
 
+  it('reanalizar con el espacio ya cargado propone cambiarlo: aplicar edita, no duplica', async () => {
+    await analizar()
+    const sumNuevo = (await sugerencias()).find((f) => f.tipo === 'espacio_nuevo')!
+    await aplicarSugerencia(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      sugerenciaId: sumNuevo.id,
+    })
+    // A mano, el horario del SUM ya no es el del reglamento.
+    await prismaBase.espacioComun.updateMany({
+      where: { consorcioId, nombre: 'SUM' },
+      data: { aperturaMinutos: 540, cierreMinutos: 1200 },
+    })
+
+    await analizar()
+    const sum = await prismaBase.espacioComun.findFirstOrThrow({
+      where: { consorcioId, nombre: 'SUM' },
+    })
+    const pendientes = (await sugerencias()).filter((f) => f.estado === 'pendiente')
+    expect(pendientes.map((f) => f.tipo).sort()).toEqual([
+      'espacio_cambio',
+      'espacio_cambio',
+      'vencimientos',
+    ])
+    const cambio = pendientes.find((f) => (f.datos as { espacioId?: string }).espacioId === sum.id)!
+    expect(cambio.datos).toEqual({
+      espacioId: sum.id,
+      horario: { apertura: '10:00', cierre: '23:00' },
+      anticipacionMinimaHoras: 48,
+    })
+
+    const tarjeta = (
+      await listarSugerencias(repo, RELOJ, { usuarioId: administrador, consorcioId, documentoId })
+    ).find((s) => s.id === cambio.id)!
+    expect(tarjeta).toMatchObject({ titulo: 'Cambios en SUM', aplicable: true })
+    expect(tarjeta.cambios.map((c) => c.campo)).toEqual(['Horario'])
+
+    await aplicarSugerencia(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      sugerenciaId: cambio.id,
+    })
+    const espacios = await prismaBase.espacioComun.findMany({ where: { consorcioId } })
+    expect(espacios.map((e) => e.nombre).sort()).toEqual(['Quincho', 'SUM'])
+    // La historia dice lo que se aplico en su momento: el alta sigue siendo un alta.
+    const historia = await listarSugerencias(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      documentoId,
+    })
+    expect(
+      historia
+        .filter((s) => s.estado === 'aplicada')
+        .map((s) => s.titulo)
+        .sort(),
+    ).toEqual(['Cambios en SUM', 'Nuevo espacio: SUM'])
+    expect(
+      await prismaBase.espacioComun.findUniqueOrThrow({ where: { id: sum.id } }),
+    ).toMatchObject({
+      aperturaMinutos: 600,
+      cierreMinutos: 1380,
+    })
+  })
+
+  it('espacio_nuevo con el nombre de un espacio deshabilitado: no aplicable, solo se descarta', async () => {
+    await prismaBase.espacioComun.create({ data: { consorcioId, nombre: 'Sum', activo: false } })
+    await analizar()
+
+    const tarjeta = (
+      await listarSugerencias(repo, RELOJ, { usuarioId: administrador, consorcioId, documentoId })
+    ).find((s) => s.titulo === 'Nuevo espacio: SUM')!
+    expect(tarjeta).toMatchObject({ estado: 'pendiente', aplicable: false })
+
+    const datos = { usuarioId: administrador, consorcioId, sugerenciaId: tarjeta.id }
+    await expect(aplicarSugerencia(repo, RELOJ, datos)).rejects.toThrow('solo se puede descartar')
+    expect(await prismaBase.espacioComun.count({ where: { consorcioId } })).toBe(2)
+    expect((await estadoDe(tarjeta.id)).estado).toBe('pendiente')
+    await descartarSugerencia(repo, RELOJ, datos)
+    expect((await estadoDe(tarjeta.id)).estado).toBe('descartada')
+  })
+
   it('descartar no toca la configuración', async () => {
     const id = await sugerir('instrucciones_pago', { texto: 'Alias flay.mitre' })
     const datos = { usuarioId: administrador, consorcioId, sugerenciaId: id }

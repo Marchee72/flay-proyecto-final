@@ -66,7 +66,7 @@ model Consorcio {
   creadoEn                     DateTime     @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn                DateTime     @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  administradora        Administradora          @relation(fields: [administradoraId], references: [id])
+  administradora        Administradora            @relation(fields: [administradoraId], references: [id])
   unidades              Unidad[]
   proveedores           Proveedor[]
   periodos              Periodo[]
@@ -79,6 +79,7 @@ model Consorcio {
   reservas              Reserva[]
   novedades             Novedad[]
   documentos            DocumentoConsorcio[]
+  sugerencias           SugerenciaConfiguracion[]
   consultas             ConsultaDocumental[]
   extracciones          ExtraccionComprobante[]
   conversaciones        ConversacionAsistente[]
@@ -145,6 +146,7 @@ enum TipoTrabajo {
   conciliar_pago
   correo_directo
   redactar_acta
+  sugerir_configuracion
 }
 
 enum EstadoTrabajo {
@@ -992,8 +994,9 @@ model DocumentoConsorcio {
   creadoEn            DateTime         @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn       DateTime         @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
 
-  consorcio  Consorcio            @relation(fields: [consorcioId], references: [id])
-  fragmentos FragmentoDocumento[]
+  consorcio   Consorcio                 @relation(fields: [consorcioId], references: [id])
+  fragmentos  FragmentoDocumento[]
+  sugerencias SugerenciaConfiguracion[]
 
   @@index([consorcioId, tipo])
 }
@@ -1005,6 +1008,44 @@ enum TipoDocumento {
   contrato
   poliza
   otro
+}
+
+/// Configuracion que un reglamento, acta o contrato fija, leida por la
+/// asistencia (RF-19). Nada se aplica sin el clic del administrador (RN-14):
+/// `datos` es la propuesta, validada al guardar y al aplicar; en
+/// `espacio_cambio` lleva tambien `espacioId`.
+model SugerenciaConfiguracion {
+  id            String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId   String           @map("consorcio_id") @db.Uuid
+  documentoId   String           @map("documento_id") @db.Uuid
+  tipo          TipoSugerencia
+  datos         Json             @db.JsonB
+  /// El texto del documento que la respalda.
+  cita          String           @db.Text
+  estado        EstadoSugerencia @default(pendiente)
+  resueltaPor   String?          @map("resuelta_por") @db.Uuid
+  resueltaEn    DateTime?        @map("resuelta_en") @db.Timestamptz(6)
+  creadoEn      DateTime         @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime         @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+
+  consorcio Consorcio          @relation(fields: [consorcioId], references: [id])
+  documento DocumentoConsorcio @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+
+  @@index([consorcioId, documentoId, estado])
+}
+
+enum TipoSugerencia {
+  espacio_nuevo
+  espacio_cambio
+  vencimientos
+  asambleas
+  instrucciones_pago
+}
+
+enum EstadoSugerencia {
+  pendiente
+  aplicada
+  descartada
 }
 
 enum EstadoIndexacion {

@@ -41,6 +41,8 @@ const PERMITIDOS: Record<string, string> = {
     'lee y escribe las reglas de asamblea del consorcio por su propio identificador (como regla-vencimientos)',
   'src/aplicacion/asambleas/acta.ts':
     'lee la cabecera del consorcio por su propio identificador para el encabezado del acta (como ver-consorcio)',
+  'src/aplicacion/comunicacion/sugerencias.ts':
+    'lee del consorcio, por su propio identificador, la configuracion vigente que compara con las sugerencias (como regla-vencimientos)',
   'src/aplicacion/asistente/conversar.ts':
     'lee la cabecera del consorcio activo por su propio identificador, para situar al modelo (como ver-consorcio)',
 }

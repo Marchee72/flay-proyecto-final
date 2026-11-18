@@ -8,7 +8,7 @@ import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { claveEsDe } from '@/aplicacion/comunicacion/objetos'
 import type { Transaccion } from '@/aplicacion/comunicacion/notificar'
 import { sinConsorcio } from '@/infraestructura/cliente-aislado'
-import { prisma } from '@/infraestructura/prisma'
+import { prisma, prismaBase } from '@/infraestructura/prisma'
 
 /**
  * Documentacion del consorcio (`RF-19`, `CU-15`, `FR-016`): reglamento,
@@ -24,6 +24,17 @@ export const TIPOS_DOCUMENTO: readonly { valor: TipoDocumento; etiqueta: string 
   { valor: 'contrato', etiqueta: 'Contrato' },
   { valor: 'poliza', etiqueta: 'Póliza' },
   { valor: 'otro', etiqueta: 'Otro' },
+]
+
+/**
+ * La documentacion que fija configuracion (`RF-19`): al indexarse se lee en
+ * busca de sugerencias. Poliza y «otro» no se analizan.
+ */
+export const TIPOS_ANALIZABLES: readonly TipoDocumento[] = [
+  'reglamento_copropiedad',
+  'reglamento_interno',
+  'acta',
+  'contrato',
 ]
 
 /** Solo lo ve el administrador: al consorcista la indexacion no le dice nada. */
@@ -117,6 +128,50 @@ const encolarIndexacion = (tx: Transaccion, documentoId: string) => tx.$executeR
   INSERT INTO "TrabajoPendiente" (tipo, carga)
   VALUES ('indexar_documento'::"TipoTrabajo", jsonb_build_object('documentoId', ${documentoId}::text))
 `
+
+/** Sin `proximo_intento`: lo pone el reloj de la base (decision 9). */
+export const encolarSugerencias = (
+  cliente: Pick<typeof prismaBase, '$executeRaw'>,
+  documentoId: string,
+) => cliente.$executeRaw`
+  INSERT INTO "TrabajoPendiente" (tipo, carga)
+  VALUES ('sugerir_configuracion'::"TipoTrabajo", jsonb_build_object('documentoId', ${documentoId}::text))
+`
+
+/**
+ * «Buscar configuración» sobre un documento ya indexado (`RF-19`): encola el
+ * analisis sin reindexar, para los reglamentos cargados antes de que existiera.
+ */
+export async function buscarConfiguracion(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: { usuarioId: string; consorcioId: string; documentoId: string },
+): Promise<void> {
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    {
+      usuarioId: datos.usuarioId,
+      consorcioId: datos.consorcioId,
+      rolesPermitidos: ['administrador'],
+      accion: 'buscar configuración en los documentos',
+    },
+    async () => {
+      const documento = await prisma.documentoConsorcio.findFirst({
+        where: { id: datos.documentoId },
+        select: { id: true, tipo: true, estadoIndexacion: true },
+      })
+      if (!documento) throw new NoEncontrado()
+      if (
+        documento.estadoIndexacion !== 'indexado' ||
+        !TIPOS_ANALIZABLES.includes(documento.tipo)
+      ) {
+        throw new ErrorDeAplicacion('Este documento no se analiza para configuración.', 'RF-19')
+      }
+      await encolarSugerencias(prisma, documento.id)
+    },
+  )
+}
 
 /**
  * Vuelve a encolar un documento que quedo en `error` (o trabado en

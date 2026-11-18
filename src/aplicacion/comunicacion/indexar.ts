@@ -5,6 +5,7 @@ import { z } from 'zod'
 import type { AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
 import type { GeneradorVectores } from '@/dominio/contratos/asistencia'
 import { fragmentar, type PaginaDeTexto } from '@/dominio/documentos/fragmentar'
+import { encolarSugerencias, TIPOS_ANALIZABLES } from '@/aplicacion/comunicacion/documentos'
 import type { Manejador } from '@/aplicacion/pendientes/drenar'
 import { prismaBase } from '@/infraestructura/prisma'
 import { guardarFragmentos } from '@/infraestructura/repositorios/fragmentos'
@@ -76,9 +77,14 @@ export function manejadorIndexacion(
       console.error('[indexar]', error)
       return fallar('No se pudo guardar el índice del documento.')
     }
-    await prismaBase.documentoConsorcio.update({
-      where: { id: documentoId },
-      data: { estadoIndexacion: 'indexado', hashSha256: hash, errorIndexacion: null },
+    // La documentacion que fija configuracion se lee despues, en su propio
+    // trabajo: la indexacion no espera ni falla por eso (RF-19).
+    await prismaBase.$transaction(async (tx) => {
+      await tx.documentoConsorcio.update({
+        where: { id: documentoId },
+        data: { estadoIndexacion: 'indexado', hashSha256: hash, errorIndexacion: null },
+      })
+      if (TIPOS_ANALIZABLES.includes(documento.tipo)) await encolarSugerencias(tx, documentoId)
     })
   }
 }

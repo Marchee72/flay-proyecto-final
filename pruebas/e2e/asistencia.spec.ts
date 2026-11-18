@@ -116,6 +116,43 @@ test('la propuesta del comprobante se revisa y el gasto nace al confirmar (SC-01
   expect(gasto.importe.toFixed(2)).toBe('15450.00')
 })
 
+test('una factura de proveedor desconocido ofrece darlo de alta y al confirmar queda en el padrón (RF-06)', async ({
+  page,
+}) => {
+  const extraccion = await prisma.extraccionComprobante.create({
+    data: {
+      consorcioId: escenario.consorcioId,
+      claveObjeto: `extracciones/${escenario.consorcioId}/e2e/nuevo-proveedor.pdf`,
+      tipoContenido: 'application/pdf',
+      cargadoPor: escenario.usuarioId,
+      estado: 'propuesta',
+      proveedorDetectado: 'Ascensores Sur SRL',
+      cuitDetectado: '30-71234567-9',
+      importeDetectado: '8200.00',
+      fechaDetectada: new Date('2026-09-04'),
+      rubroSugeridoId: rubroId,
+      confianza: '0.800',
+      procesadoEn: new Date(),
+    },
+  })
+  await entrar(page, escenario.correo)
+  await page.goto(`/consorcios/${escenario.consorcioId}/gastos/asistida/${extraccion.id}`)
+  const casilla = page.getByLabel('Dar de alta como proveedor')
+  await expect(casilla).toBeChecked()
+  await expect(page.getByLabel('Razón social')).toHaveValue('Ascensores Sur SRL')
+  await expect(page.getByLabel('CUIT')).toHaveValue('30-71234567-9')
+  expect(await desbordaALoAncho(page)).toBe(false)
+
+  await page.getByRole('button', { name: 'Registrar', exact: true }).click()
+  await expect(page).toHaveURL(/\/gastos\/[0-9a-f-]+\?hecho=gasto-registrado/)
+  const proveedor = await prisma.proveedor.findFirstOrThrow({
+    where: { consorcioId: escenario.consorcioId, cuit: '30-71234567-9' },
+  })
+  expect(proveedor.razonSocial).toBe('Ascensores Sur SRL')
+  await page.goto(`/consorcios/${escenario.consorcioId}/proveedores`)
+  await expect(page.getByText('Ascensores Sur SRL').first()).toBeVisible()
+})
+
 test('la lista avanza sola de «Extrayendo…» a «Para revisar» sin recargar', async ({ page }) => {
   // Pendiente y sin fila de trabajo: el drenaje real del panel no la toca, y
   // la prueba hace de cola cambiando el estado por detras.

@@ -83,7 +83,19 @@ export async function accionRegistrarGasto(
     // (`004-servicios` FR-026): es el unico camino por el que una extraccion
     // produce un gasto, y sigue siendo la persona la que aprieta el boton.
     const { gastoId } = extraccionId
-      ? await confirmarExtraccion(HABILITACIONES, RELOJ, { ...gasto, periodoId, extraccionId })
+      ? await confirmarExtraccion(HABILITACIONES, RELOJ, {
+          ...gasto,
+          periodoId,
+          extraccionId,
+          // Solo con la casilla marcada y sin proveedor elegido (RN-14).
+          nuevoProveedor:
+            datos.get('altaProveedor') === 'on' && !gasto.proveedorId
+              ? {
+                  razonSocial: String(datos.get('proveedorRazonSocial') ?? ''),
+                  cuit: String(datos.get('proveedorCuit') ?? ''),
+                }
+              : null,
+        })
       : await registrarGasto(HABILITACIONES, RELOJ, { ...gasto, periodoId })
     creado = gastoId
   } catch (error) {

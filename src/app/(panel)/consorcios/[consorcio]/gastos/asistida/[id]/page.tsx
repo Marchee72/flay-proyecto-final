@@ -147,6 +147,11 @@ export default async function RevisarExtraccionPage({
               }))}
               proveedores={proveedores.map((p) => ({ id: p.id, etiqueta: p.razonSocial }))}
               precargado={precargado}
+              altaProveedor={
+                !proveedor && propuesta.proveedor && propuesta.cuit
+                  ? { razonSocial: propuesta.proveedor, cuit: propuesta.cuit }
+                  : undefined
+              }
               accionesExtra={
                 <button className="boton boton--fantasma" type="submit" form="descartar-extraccion">
                   Descartar

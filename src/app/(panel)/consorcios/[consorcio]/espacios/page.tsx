@@ -6,6 +6,7 @@ import { fechaEnArParaMostrar } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarEspacios } from '@/aplicacion/reservas/espacios'
+import { horarioParaMostrar } from '@/aplicacion/reservas/horario-reglas'
 
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
 import { accionHabilitarEspacio } from '../reservas/acciones'
@@ -85,6 +86,8 @@ export default async function EspaciosPage({ params }: { params: Promise<{ conso
                   <dd>{e.duracionMaximaHoras} h</dd>
                   <dt>Por mes y unidad</dt>
                   <dd>{e.reservasMaxMesUnidad}</dd>
+                  <dt>Horario</dt>
+                  <dd>{e.horario ? horarioParaMostrar(e.horario) : 'Cualquier hora'}</dd>
                 </dl>
                 {administra && (
                   <div className="fila-acciones">

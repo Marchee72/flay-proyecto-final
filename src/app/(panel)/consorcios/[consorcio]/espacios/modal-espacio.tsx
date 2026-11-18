@@ -1,6 +1,8 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
+
+import { errorDeHorario, horaDesdeMinutos } from '@/aplicacion/reservas/horario-reglas'
 
 import { BotonModal } from '../../../modal'
 import { accionGuardarEspacio, type Resultado } from '../reservas/acciones'
@@ -15,6 +17,8 @@ type Espacio = {
   anticipacionMaximaDias: number
   duracionMaximaHoras: number
   reservasMaxMesUnidad: number
+  horario: { apertura: number; cierre: number } | null
+  rechazaConDeuda: boolean
 }
 
 /** Alta y edicion de un espacio comun con sus reglas (`RF-15`). */
@@ -35,6 +39,13 @@ function FormularioEspacio({ consorcioId, espacio }: { consorcioId: string; espa
   const [estado, accion, enviando] = useActionState(accionGuardarEspacio, SIN_ERROR)
   const hayError = estado.mensaje !== ''
   const sufijo = espacio?.id ?? 'nuevo'
+  const [apertura, setApertura] = useState(
+    espacio?.horario ? horaDesdeMinutos(espacio.horario.apertura) : '',
+  )
+  const [cierre, setCierre] = useState(
+    espacio?.horario ? horaDesdeMinutos(espacio.horario.cierre) : '',
+  )
+  const errorHorario = errorDeHorario(apertura, cierre)
   const campo = (
     id: string,
     etiqueta: string,
@@ -107,6 +118,53 @@ function FormularioEspacio({ consorcioId, espacio }: { consorcioId: string; espa
         espacio?.reservasMaxMesUnidad ?? 2,
         'Tope mensual por unidad.',
       )}
+      <fieldset>
+        <legend>Horario de uso</legend>
+        <div className="campo">
+          <label htmlFor={`apertura-${sufijo}`}>Apertura</label>
+          <input
+            id={`apertura-${sufijo}`}
+            name="apertura"
+            type="time"
+            value={apertura}
+            onChange={(e) => setApertura(e.target.value)}
+            aria-invalid={errorHorario ? true : undefined}
+            aria-describedby={errorHorario ? `error-apertura-${sufijo}` : `ayuda-horario-${sufijo}`}
+          />
+        </div>
+        <div className="campo">
+          <label htmlFor={`cierre-${sufijo}`}>Cierre</label>
+          <input
+            id={`cierre-${sufijo}`}
+            name="cierre"
+            type="time"
+            value={cierre}
+            onChange={(e) => setCierre(e.target.value)}
+            aria-invalid={errorHorario ? true : undefined}
+            aria-describedby={errorHorario ? `error-apertura-${sufijo}` : undefined}
+          />
+        </div>
+        {errorHorario && (
+          <p className="error" id={`error-apertura-${sufijo}`}>
+            {errorHorario}
+          </p>
+        )}
+        <p className="ayuda" id={`ayuda-horario-${sufijo}`}>
+          Vacío si se usa a cualquier hora. Si el cierre es antes que la apertura, cruza la
+          medianoche.
+        </p>
+      </fieldset>
+      <div className="campo">
+        <label htmlFor={`rechazaConDeuda-${sufijo}`}>
+          <input
+            id={`rechazaConDeuda-${sufijo}`}
+            name="rechazaConDeuda"
+            type="checkbox"
+            defaultChecked={espacio?.rechazaConDeuda ?? true}
+          />{' '}
+          Rechazar reservas de unidades con deuda vencida
+        </label>
+      </div>
       {hayError && (
         <p className="error" id={`error-${sufijo}`} role="alert">
           {estado.mensaje}

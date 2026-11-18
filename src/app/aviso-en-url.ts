@@ -32,6 +32,8 @@ export const HECHO = {
   'reserva-confirmada': 'Reserva confirmada. Te llega un aviso por correo.',
   'reserva-cancelada': 'Reserva cancelada.',
   'espacio-guardado': 'Espacio guardado.',
+  'horario-cancelo-reservas':
+    'Espacio guardado. Las reservas que quedaron fuera del nuevo horario se cancelaron y se avisó a quienes las hicieron.',
   'espacio-alta': 'Espacio habilitado; vuelve a admitir reservas.',
   'espacio-baja': 'Espacio dado de baja; las reservas futuras quedaron canceladas y avisadas.',
   'novedad-publicada': 'Novedad publicada y avisada.',

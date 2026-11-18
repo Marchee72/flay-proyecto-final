@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+
 import { expect, test } from '@playwright/test'
 
 import {
@@ -48,7 +50,6 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
-  await prisma.documentoConsorcio.deleteMany({ where: { consorcioId: administrador.consorcioId } })
   await prisma.novedad.deleteMany({ where: { consorcioId: administrador.consorcioId } })
   await limpiarServicios(administrador, [consorcista])
   await limpiarEscenario(administrador)
@@ -151,4 +152,83 @@ test('el modal de carga se cierra al confirmar, y con error queda abierto (RF-19
   await dialogo.getByRole('button', { name: 'Cargar', exact: true }).click()
   await expect(dialogo).toBeHidden()
   await expect(page.getByRole('table')).toContainText('Reglamento interno 2026')
+})
+
+test('las sugerencias de configuración de un reglamento se aplican o se descartan (RF-19, RN-14)', async ({
+  page,
+}) => {
+  // Lo que deja la cola despues de `indexar_documento`: el texto del reglamento
+  // de prueba en un fragmento. El almacen de los e2e no guarda lo que se sube.
+  const documento = await prisma.documentoConsorcio.create({
+    data: {
+      consorcioId: administrador.consorcioId,
+      tipo: 'reglamento_interno',
+      titulo: 'Reglamento interno de espacios',
+      claveAlmacenamiento: `documentos/${administrador.consorcioId}/d/reglamento-interno.pdf`,
+      tipoContenido: 'application/pdf',
+      visibleConsorcistas: true,
+      cargadoPor: administrador.usuarioId,
+      estadoIndexacion: 'indexado',
+      hashSha256: 'f'.repeat(64),
+    },
+  })
+  await prisma.fragmentoDocumento.create({
+    data: {
+      documentoId: documento.id,
+      numeroFragmento: 1,
+      pagina: 1,
+      contenido: readFileSync('pruebas/fixtures/reglamento-de-prueba.txt', 'utf8'),
+    },
+  })
+  const ruta = `/consorcios/${administrador.consorcioId}/documentos/${documento.id}`
+
+  await entrar(page, administrador.correo)
+  await page.goto(ruta)
+  const seccion = page.getByRole('region', { name: 'Configuración que menciona este documento' })
+  await expect(seccion).toBeVisible()
+  // Un documento cargado antes del analisis se lee a pedido; el sondeo drena la cola.
+  await page.getByRole('button', { name: 'Buscar configuración' }).click()
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Estamos leyendo el documento' }),
+  ).toBeVisible()
+  const sum = seccion.getByRole('article').filter({
+    has: page.getByRole('heading', { name: 'Nuevo espacio: SUM', level: 3 }),
+  })
+  await expect(sum).toBeVisible({ timeout: 25_000 })
+  await expect(sum.getByRole('columnheader', { name: 'Propuesto' })).toBeVisible()
+  await expect(sum.getByRole('row', { name: /Horario.*de 10:00 a 23:00/ })).toBeVisible()
+  await expect(sum.locator('blockquote')).toContainText('El SUM se usa de 10 a 23 horas')
+  expect(await desbordaALoAncho(page)).toBe(false)
+
+  // En el listado, la fila lo avisa y lleva a la seccion.
+  await page.goto(`/consorcios/${administrador.consorcioId}/documentos`)
+  await page.getByRole('link', { name: '2 sugerencias' }).click()
+  await expect(page).toHaveURL(new RegExp(`/documentos/${documento.id}#sugerencias$`))
+
+  await sum.getByRole('button', { name: 'Aplicar' }).click()
+  await expect(
+    page.getByRole('status').filter({ hasText: 'Configuración aplicada.' }),
+  ).toBeVisible()
+  const mora = seccion.getByRole('article').filter({ hasText: 'Vencimientos y mora' })
+  await mora.getByRole('button', { name: 'Descartar' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Sugerencia descartada.' })).toBeVisible()
+  await expect(seccion.getByRole('article')).toHaveCount(0)
+  const historia = seccion.locator('details')
+  await expect(historia.locator('summary')).toHaveText('Ya revisadas (2)')
+  await historia.locator('summary').click()
+  await expect(historia).toContainText('Nuevo espacio: SUM')
+  await expect(historia).toContainText('Aplicada')
+  await expect(historia).toContainText('Descartada')
+  expect(await desbordaALoAncho(page)).toBe(false)
+
+  await page.goto(`/consorcios/${administrador.consorcioId}/espacios`)
+  const espacio = page.getByRole('article').filter({ hasText: 'SUM' })
+  await expect(espacio).toContainText('de 10:00 a 23:00')
+
+  await page.context().clearCookies()
+  await entrar(page, consorcista.correo)
+  await page.goto(ruta)
+  await expect(page.getByRole('heading', { name: 'Reglamento interno de espacios' })).toBeVisible()
+  await expect(page.getByText('Configuración que menciona este documento')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Buscar configuración' })).toHaveCount(0)
 })

@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { EyeOff, FileText, MessageCircleQuestion } from 'lucide-react'
 
-import { fechaParaMostrar } from '@/compartido/formato'
+import { fechaParaMostrar, plural } from '@/compartido/formato'
 import {
   ETIQUETA_INDEXACION,
   listarDocumentos,
@@ -114,6 +114,13 @@ export default async function DocumentosPage({
                         <span className={`etiqueta ${CLASE_INDEXACION[d.estadoIndexacion]}`}>
                           {ETIQUETA_INDEXACION[d.estadoIndexacion]}
                         </span>
+                        {!!d.sugerenciasPendientes && (
+                          <p>
+                            <Link href={`/consorcios/${activo.id}/documentos/${d.id}#sugerencias`}>
+                              {plural(d.sugerenciasPendientes, 'sugerencia', 'sugerencias')}
+                            </Link>
+                          </p>
+                        )}
                         {d.estadoIndexacion === 'error' && d.errorIndexacion && (
                           <p className="ayuda">{d.errorIndexacion}</p>
                         )}

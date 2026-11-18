@@ -468,6 +468,8 @@ El módulo de espacios comunes (`/espacios`) parametriza las dependencias de uso
    - **Reservas máximas por mes y unidad:** Cupo mensual para evitar el acaparamiento por parte de un solo vecino (ejemplo: *2* reservas al mes).
 4. Presione **Guardar espacio**.
 
+El **Horario de uso** (apertura y cierre) es optativo: vacío, el espacio se reserva a cualquier hora; cargado, se rechaza toda reserva que empiece antes de la apertura o termine después del cierre, y la tarjeta del espacio lo muestra (*de 10:00 a 23:00*). Si el cierre es anterior a la apertura, el horario cruza la medianoche: *de 20:00 a 02:00* admite una reserva de las 22 a la 1. Cambiar el horario de un espacio cancela las reservas futuras que quedan afuera y les avisa a quienes las hicieron. La casilla **Rechazar reservas de unidades con deuda vencida** viene marcada; desmarcada, ese espacio se reserva aunque la unidad deba expensas.
+
 #### Control de reservas y regla de no morosidad (`/reservas`):
 - Los consorcistas solicitan turnos desde su interfaz móvil.
 - **Precondición mandatoria del sistema:** Flay examina automáticamente el estado de deuda de la unidad funcional. Si la unidad registra saldo impago vencido de expensas, el sistema inhabilita la confirmación del turno mostrando el mensaje: *«Una unidad con deuda vencida no puede reservar hasta regularizar»*.
@@ -492,6 +494,8 @@ El módulo de espacios comunes (`/espacios`) parametriza las dependencias de uso
    - *Reservado:* Accesible exclusivamente por el Administrador y el Consejo de Propietarios (ejemplo: auditorías contables o dictámenes jurídicos).
 4. Al confirmar la subida directa a la nube, el sistema pone en marcha el proceso de **indexación vectorial semántica** en segundo plano, preparando el documento para responder consultas inteligentes.
 5. Al abrir un documento se lo ve en línea (PDF) y puede descargarse aparte. El Administrador puede **Eliminar** el documento desde esa pantalla; el acta firmada de una asamblea no se puede eliminar.
+
+**Configuración que menciona el documento.** Cuando termina de procesarse un reglamento, un acta o un contrato, Flay lo lee en busca de lo que fija sobre la configuración del consorcio: espacios comunes nuevos o cambios en los existentes (horario, anticipación, duración), vencimientos y tasa de mora, reglas de asamblea e instrucciones de pago. Lo que encuentra y difiere de lo cargado aparece en la página del documento, bajo **Configuración que menciona este documento**: una tarjeta por cambio, con el valor de ahora al lado del propuesto y el párrafo del documento que lo respalda. En el listado, la fila avisa *«2 sugerencias»*. **Nada se aplica sin su clic:** **Aplicar** pasa el cambio por la misma validación que la pantalla de configuración correspondiente, y si cancelaría reservas confirmadas lo advierte y pide confirmación; **Descartar** lo deja como historia, plegada en *Ya revisadas*. Para los documentos cargados antes de esta función, el botón **Buscar configuración** de la página del documento los vuelve a leer.
 
 ---
 

@@ -41,6 +41,11 @@ export const HECHO = {
     'Documento cargado. Se procesa en segundo plano; cuando diga «Procesado» ya entra en las consultas.',
   'documento-eliminado': 'Documento eliminado.',
   'documento-reindexado': 'El documento se volvió a encolar para indexar.',
+  'sugerencia-aplicada': 'Configuración aplicada.',
+  'sugerencia-aplicada-con-cancelaciones':
+    'Configuración aplicada. Las reservas que quedaron fuera del nuevo horario se cancelaron y se avisó a quienes las hicieron.',
+  'sugerencia-descartada': 'Sugerencia descartada.',
+  'analisis-encolado': 'Estamos leyendo el documento. Las sugerencias aparecen acá en un momento.',
   'indicadores-actualizados': 'Indicadores actualizados.',
   invitado:
     'Invitación creada. El correo con el enlace sale en el próximo pedido; abajo se ve su estado.',

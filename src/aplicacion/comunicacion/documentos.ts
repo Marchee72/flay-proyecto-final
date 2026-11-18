@@ -140,6 +140,16 @@ export const encolarSugerencias = (
   VALUES ('sugerir_configuracion'::"TipoTrabajo", jsonb_build_object('documentoId', ${documentoId}::text))
 `
 
+/** Solo despues de leer el documento por el cliente aislado: la cola no tiene `consorcio_id`. */
+const sugerenciasEnCola = async (documentoId: string) =>
+  (await prismaBase.trabajoPendiente.count({
+    where: {
+      tipo: 'sugerir_configuracion',
+      estado: 'pendiente',
+      carga: { path: ['documentoId'], equals: documentoId },
+    },
+  })) > 0
+
 /**
  * «Buscar configuración» sobre un documento ya indexado (`RF-19`): encola el
  * analisis sin reindexar, para los reglamentos cargados antes de que existiera.
@@ -170,7 +180,45 @@ export async function buscarConfiguracion(
       ) {
         throw new ErrorDeAplicacion('Este documento no se analiza para configuración.', 'RF-19')
       }
-      await encolarSugerencias(prisma, documento.id)
+      // Otro clic con el analisis en cola no encola uno mas: leeria lo mismo.
+      if (!(await sugerenciasEnCola(documento.id))) await encolarSugerencias(prisma, documento.id)
+    },
+  )
+}
+
+/**
+ * Para la pantalla del documento (`RF-19`), solo el administrador: `null` si el
+ * tipo no se analiza. `analizando` mientras se indexa o hay un
+ * `sugerir_configuracion` en cola: la pagina sondea (decision 21) y no deja
+ * encolar otro.
+ */
+export async function analisisDeConfiguracion(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: { usuarioId: string; consorcioId: string; documentoId: string },
+): Promise<{ indexado: boolean; analizando: boolean } | null> {
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    {
+      usuarioId: datos.usuarioId,
+      consorcioId: datos.consorcioId,
+      rolesPermitidos: ['administrador'],
+      accion: 'revisar las sugerencias de configuración',
+    },
+    async () => {
+      const documento = await prisma.documentoConsorcio.findFirst({
+        where: { id: datos.documentoId },
+        select: { id: true, tipo: true, estadoIndexacion: true },
+      })
+      if (!documento) throw new NoEncontrado()
+      if (!TIPOS_ANALIZABLES.includes(documento.tipo)) return null
+      const indexando =
+        documento.estadoIndexacion === 'pendiente' || documento.estadoIndexacion === 'procesando'
+      return {
+        indexado: documento.estadoIndexacion === 'indexado',
+        analizando: indexando || (await sugerenciasEnCola(documento.id)),
+      }
     },
   )
 }

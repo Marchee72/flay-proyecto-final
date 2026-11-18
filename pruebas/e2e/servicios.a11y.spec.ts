@@ -21,6 +21,7 @@ let escenario: Escenario
 let administrador: Escenario
 let reclamoId: string
 let extraccionId: string
+let documentoId: string
 
 test.beforeAll(async () => {
   escenario = await sembrarEscenario('consorcista')
@@ -57,6 +58,53 @@ test.beforeAll(async () => {
     },
   })
   extraccionId = extraccion.id
+  // Lo que deja `sugerir_configuracion` sobre el reglamento de prueba: dos
+  // pendientes y una ya revisada, para ver tarjetas e historia (RF-19).
+  const documento = await prisma.documentoConsorcio.create({
+    data: {
+      consorcioId: administrador.consorcioId,
+      tipo: 'reglamento_interno',
+      titulo: 'Reglamento interno',
+      claveAlmacenamiento: `documentos/${administrador.consorcioId}/a11y/reglamento.pdf`,
+      tipoContenido: 'application/pdf',
+      visibleConsorcistas: true,
+      cargadoPor: administrador.usuarioId,
+      estadoIndexacion: 'indexado',
+    },
+  })
+  documentoId = documento.id
+  await prisma.sugerenciaConfiguracion.createMany({
+    data: [
+      {
+        consorcioId: administrador.consorcioId,
+        documentoId,
+        tipo: 'espacio_nuevo',
+        cita: 'El SUM se usa de 10 a 23 horas y se reserva con 48 horas de anticipación.',
+        datos: {
+          nombre: 'SUM',
+          horario: { apertura: '10:00', cierre: '23:00' },
+          anticipacionMinimaHoras: 48,
+        },
+      },
+      {
+        consorcioId: administrador.consorcioId,
+        documentoId,
+        tipo: 'vencimientos',
+        cita: 'La mora devenga un interés punitorio del 3 % mensual.',
+        datos: { tasaMoraMensual: '3.0000' },
+      },
+      {
+        consorcioId: administrador.consorcioId,
+        documentoId,
+        tipo: 'instrucciones_pago',
+        cita: 'Las expensas se pagan por transferencia.',
+        datos: { texto: 'Transferencia a la cuenta del consorcio.' },
+        estado: 'descartada',
+        resueltaPor: administrador.usuarioId,
+        resueltaEn: new Date(),
+      },
+    ],
+  })
 })
 
 test.afterAll(async () => {
@@ -107,6 +155,10 @@ const DEL_ADMINISTRADOR = [
   {
     nombre: 'carga asistida',
     ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/gastos/asistida`,
+  },
+  {
+    nombre: 'documento con sugerencias de configuración',
+    ruta: (e: Escenario) => `/consorcios/${e.consorcioId}/documentos/${documentoId}`,
   },
   {
     nombre: 'revisión del comprobante',

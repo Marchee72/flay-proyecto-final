@@ -5,7 +5,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { NoEncontrado, RolInsuficiente } from '@/compartido/errores'
 import { disponible, type LectorDeConfiguracion } from '@/dominio/contratos/asistencia'
-import { buscarConfiguracion, listarDocumentos } from '@/aplicacion/comunicacion/documentos'
+import {
+  analisisDeConfiguracion,
+  buscarConfiguracion,
+  listarDocumentos,
+} from '@/aplicacion/comunicacion/documentos'
 import { manejadorIndexacion } from '@/aplicacion/comunicacion/indexar'
 import {
   aplicarSugerencia,
@@ -220,6 +224,14 @@ describe('sugerencias de configuración', () => {
       documentoId,
     })
     expect((await trabajos()).map((t) => t.carga)).toEqual([{ documentoId }])
+    // Con el analisis en cola, la pantalla lo dice y otro clic no encola uno mas.
+    const quien = { usuarioId: administrador, consorcioId, documentoId }
+    expect(await analisisDeConfiguracion(repositorioHabilitaciones, RELOJ, quien)).toEqual({
+      indexado: true,
+      analizando: true,
+    })
+    await buscarConfiguracion(repositorioHabilitaciones, RELOJ, quien)
+    expect(await trabajos()).toHaveLength(1)
 
     await expect(
       buscarConfiguracion(repositorioHabilitaciones, RELOJ, {

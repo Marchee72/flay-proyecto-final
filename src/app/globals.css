@@ -856,6 +856,12 @@ th a:not(.boton):hover,
   padding: 0;
   min-width: var(--toque);
 }
+/* El tachito de eliminar: redondo, del tamaño táctil. */
+.boton--icono.boton--peligro {
+  border-radius: 50%;
+  width: var(--toque);
+  height: var(--toque);
+}
 /* Cerrar un dialogo: un circulo gris con la cruz, sin borde ni texto; el
    nombre lo lleva `aria-label`. */
 .boton--cerrar {

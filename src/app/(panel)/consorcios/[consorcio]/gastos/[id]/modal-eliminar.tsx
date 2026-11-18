@@ -1,5 +1,6 @@
 'use client'
 
+import { Trash2 } from 'lucide-react'
 import { useActionState } from 'react'
 
 import { BotonModal } from '../../../../modal'
@@ -19,7 +20,13 @@ export function ModalEliminar({
   importe: string
 }) {
   return (
-    <BotonModal etiqueta="Eliminar" titulo="Eliminar gasto" variante="boton--peligro">
+    <BotonModal
+      etiqueta={<Trash2 className="icono" aria-hidden="true" />}
+      nombre="Eliminar gasto"
+      claseBoton="boton--icono"
+      titulo="Eliminar gasto"
+      variante="boton--peligro"
+    >
       <FormularioEliminar consorcioId={consorcioId} gastoId={gastoId} importe={importe} />
     </BotonModal>
   )

@@ -1,3 +1,5 @@
+import { Trash2 } from 'lucide-react'
+
 import { accionEliminarDocumento } from '../../../../comunicacion/acciones'
 import { BotonModal } from '../../../../modal'
 
@@ -14,7 +16,9 @@ export function ModalEliminar({
 }) {
   return (
     <BotonModal
-      etiqueta="Eliminar"
+      etiqueta={<Trash2 className="icono" aria-hidden="true" />}
+      nombre={titulo ? `Eliminar «${titulo}»` : 'Eliminar'}
+      claseBoton="boton--icono"
       titulo={titulo ? `Eliminar «${titulo}»` : 'Eliminar el documento'}
       variante="boton--peligro"
     >

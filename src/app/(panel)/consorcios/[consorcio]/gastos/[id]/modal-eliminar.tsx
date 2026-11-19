@@ -13,11 +13,14 @@ export function ModalEliminar({
   consorcioId,
   gastoId,
   importe,
+  comprobantes = 0,
 }: {
   consorcioId: string
   gastoId: string
   /** Ya formateado para mostrar. */
   importe: string
+  /** Los que se borran con el gasto: se avisa antes de confirmar. */
+  comprobantes?: number
 }) {
   return (
     <BotonModal
@@ -27,7 +30,12 @@ export function ModalEliminar({
       titulo="Eliminar gasto"
       variante="boton--peligro"
     >
-      <FormularioEliminar consorcioId={consorcioId} gastoId={gastoId} importe={importe} />
+      <FormularioEliminar
+        consorcioId={consorcioId}
+        gastoId={gastoId}
+        importe={importe}
+        comprobantes={comprobantes}
+      />
     </BotonModal>
   )
 }
@@ -36,10 +44,12 @@ function FormularioEliminar({
   consorcioId,
   gastoId,
   importe,
+  comprobantes,
 }: {
   consorcioId: string
   gastoId: string
   importe: string
+  comprobantes: number
 }) {
   const [estado, accion, enviando] = useActionState(accionEliminarGasto, SIN_ERROR)
 
@@ -49,6 +59,13 @@ function FormularioEliminar({
       <input type="hidden" name="gasto" value={gastoId} />
 
       <p>¿Eliminar este gasto de {importe}?</p>
+      {comprobantes > 0 && (
+        <p className="apagado">
+          También se{' '}
+          {comprobantes === 1 ? 'borra su comprobante' : `borran sus ${comprobantes} comprobantes`}.
+          No se puede deshacer.
+        </p>
+      )}
 
       {estado.mensaje !== '' && (
         <p className="error" role="alert">

@@ -25,8 +25,10 @@ export interface ComprobanteDelGasto {
   bytes: number
   estado: string
   soloDescarga: boolean
-  /** Vacia mientras la subida no confirmo: todavia no hay nada que mostrar. */
+  /** Vacia mientras la subida no confirmo: todavia no hay nada que mostrar. Descarga el archivo. */
   direccion: string
+  /** El mismo archivo para mostrarlo en el navegador (iframe, imagen): sin esto se descarga solo. */
+  vista: string
 }
 
 export interface GastoConDetalle {
@@ -43,6 +45,15 @@ export interface GastoConDetalle {
   periodoAbierto: boolean
   periodoEstado: string
   comprobantes: ComprobanteDelGasto[]
+}
+
+/** Los dos enlaces firmados: el adjunto y el que se ve en linea. Si el almacen no responde, vacios. */
+async function enlaces(almacen: AlmacenObjetos, clave: string) {
+  const [direccion, vista] = await Promise.all([
+    almacen.resolverLecturaAutorizada(clave, SEGUNDOS).catch(() => ''),
+    almacen.resolverLecturaAutorizada(clave, SEGUNDOS, { enLinea: true }).catch(() => ''),
+  ])
+  return { direccion, vista }
 }
 
 export async function verGasto(
@@ -93,12 +104,9 @@ export async function verGasto(
             // La direccion se resuelve recien aca, con la habilitacion ya
             // verificada: el comprobante no es publico (FR-018). Si el almacen
             // no responde, el gasto se ve igual y el comprobante dice que no.
-            direccion:
-              comprobante.estado === 'disponible'
-                ? await almacen
-                    .resolverLecturaAutorizada(comprobante.claveObjeto, SEGUNDOS)
-                    .catch(() => '')
-                : '',
+            ...(comprobante.estado === 'disponible'
+              ? await enlaces(almacen, comprobante.claveObjeto)
+              : { direccion: '', vista: '' }),
           })),
         ),
       }

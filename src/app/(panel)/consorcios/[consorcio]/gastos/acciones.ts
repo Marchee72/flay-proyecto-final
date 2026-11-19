@@ -8,7 +8,7 @@ import { ErrorDeAplicacion } from '@/compartido/errores'
 import { conError, conHecho } from '@/app/aviso-en-url'
 import { valoresDe, type ConValores } from '@/app/valores-de-formulario'
 import { importeDesdeEntrada } from '@/compartido/formato'
-import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
+import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { confirmarComprobante } from '@/aplicacion/gastos/comprobantes'
 import {
   confirmarExtraccion,
@@ -143,7 +143,7 @@ export async function accionEliminarGasto(_previo: Resultado, datos: FormData): 
   let periodoId = ''
 
   try {
-    ;({ periodoId } = await eliminarGasto(HABILITACIONES, RELOJ, {
+    ;({ periodoId } = await eliminarGasto(ALMACEN, HABILITACIONES, RELOJ, {
       usuarioId,
       consorcioId,
       gastoId: String(datos.get('gasto') ?? ''),

@@ -428,9 +428,11 @@ Treinta y tres decisiones que costaron una vuelta y conviene no volver a tomar d
     (`editarEspacio`, `altaEspacio`, etc.). Esa escritura **no es atómica** con marcar la sugerencia como
     aplicada: lo que frena una doble aplicación es la guarda de estado más la unicidad del propio caso de
     uso. Una sugerencia de «nuevo espacio» cuyo nombre coincide con un espacio activo se convierte en un
-    cambio sobre ese espacio; si el homónimo está inactivo, no es aplicable. «No disponible» del proveedor
-    termina el trabajo sin reintento (igual que triage, extracción y acta): la persona vuelve a apretar
-    «Buscar configuración». El horario de uso de un espacio se guarda en **minutos desde las 00:00**
+    cambio sobre ese espacio; si el homónimo está inactivo, no es aplicable. Un «no disponible» del proveedor
+    marcado `reintentable` (Gemini saturado, caído o con respuesta ilegible) **lanza**, y la cola reintenta
+    con su espera creciente; la pantalla del documento dice «seguimos intentando» y, agotado, «no pudimos
+    leer el documento» con «Buscar de nuevo». La nula no es reintentable y termina sin error (triage,
+    extracción y acta siguen terminando sin reintento). El horario de uso de un espacio se guarda en **minutos desde las 00:00**
     (`HorarioDeUso`, no `TIME`) y siempre en hora argentina; si el cierre es menor o igual a la apertura
     cruza la medianoche, y entonces la madrugada pertenece a la ventana del **día anterior**
     (`dentroDelHorario` en `src/dominio/reservas/horario.ts`).

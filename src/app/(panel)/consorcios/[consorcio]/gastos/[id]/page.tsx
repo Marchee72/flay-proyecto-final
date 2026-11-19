@@ -68,14 +68,17 @@ export default async function GastoPage({
         {gasto.periodo} · {conMayuscula(gasto.clasificacion)} · {gasto.proveedor ?? 'sin proveedor'}
       </p>
 
-      <div className="tarjeta">
-        <p>
-          Importe <strong className="cifra">{importeParaMostrar(gasto.importe)}</strong>
-        </p>
-        <p className="apagado">
-          Fecha {fechaParaMostrar(gasto.fecha)}
-          {gasto.descripcion ? ` · ${gasto.descripcion}` : ''}
-        </p>
+      <div className="tarjeta resumen-gasto">
+        <div className="resumen-gasto__cuerpo">
+          <p className="resumen-gasto__importe">
+            Importe
+            <strong className="cifra">{importeParaMostrar(gasto.importe)}</strong>
+          </p>
+          <p className="resumen-gasto__detalle">
+            Fecha {fechaParaMostrar(gasto.fecha)}
+            {gasto.descripcion ? ` · ${gasto.descripcion}` : ''}
+          </p>
+        </div>
         {editable && (
           <div className="fila-acciones">
             <BotonModal etiqueta="Editar" titulo="Editar gasto" variante="boton--fantasma">
@@ -107,11 +110,12 @@ export default async function GastoPage({
               consorcioId={activo.id}
               gastoId={gasto.id}
               importe={importeParaMostrar(gasto.importe)}
+              comprobantes={gasto.comprobantes.length}
             />
           </div>
         )}
         {administra && !gasto.periodoAbierto && (
-          <p className="apagado">
+          <p className="resumen-gasto__aviso">
             El período está {gasto.periodoEstado}: lo que haya que corregir va como ajuste en el
             período siguiente.
           </p>
@@ -188,10 +192,18 @@ function Comprobante({ comprobante }: { comprobante: ComprobanteDelGasto }) {
     <div className="tarjeta">
       <p>{peso}</p>
       {comprobante.tipoContenido === 'application/pdf' ? (
-        <iframe className="visor" src={comprobante.direccion} title="Comprobante en PDF" />
+        <iframe
+          className="visor"
+          src={comprobante.vista || comprobante.direccion}
+          title="Comprobante en PDF"
+        />
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
-        <img className="visor" src={comprobante.direccion} alt="Comprobante digitalizado" />
+        <img
+          className="visor"
+          src={comprobante.vista || comprobante.direccion}
+          alt="Comprobante digitalizado"
+        />
       )}
       <p>
         <a href={comprobante.direccion} download>

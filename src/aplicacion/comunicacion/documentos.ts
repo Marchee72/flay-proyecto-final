@@ -141,14 +141,15 @@ export const encolarSugerencias = (
 `
 
 /** Solo despues de leer el documento por el cliente aislado: la cola no tiene `consorcio_id`. */
+const ultimoTrabajo = (tipo: 'indexar_documento' | 'sugerir_configuracion', documentoId: string) =>
+  prismaBase.trabajoPendiente.findFirst({
+    where: { tipo, carga: { path: ['documentoId'], equals: documentoId } },
+    orderBy: { creadoEn: 'desc' },
+    select: { estado: true, ultimoError: true },
+  })
+
 const sugerenciasEnCola = async (documentoId: string) =>
-  (await prismaBase.trabajoPendiente.count({
-    where: {
-      tipo: 'sugerir_configuracion',
-      estado: 'pendiente',
-      carga: { path: ['documentoId'], equals: documentoId },
-    },
-  })) > 0
+  (await ultimoTrabajo('sugerir_configuracion', documentoId))?.estado === 'pendiente'
 
 /**
  * «Buscar configuración» sobre un documento ya indexado (`RF-19`): encola el
@@ -196,7 +197,14 @@ export async function analisisDeConfiguracion(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
   datos: { usuarioId: string; consorcioId: string; documentoId: string },
-): Promise<{ indexado: boolean; analizando: boolean } | null> {
+): Promise<{
+  indexado: boolean
+  analizando: boolean
+  /** El proveedor fallo al menos una vez y la cola sigue reintentando. */
+  reintentando: boolean
+  /** La ultima busqueda agoto sus intentos sin respuesta del proveedor. */
+  fallo: boolean
+} | null> {
   return conAutorizacion(
     repositorio,
     reloj,
@@ -213,11 +221,22 @@ export async function analisisDeConfiguracion(
       })
       if (!documento) throw new NoEncontrado()
       if (!TIPOS_ANALIZABLES.includes(documento.tipo)) return null
+      const [indexacion, busqueda] = await Promise.all([
+        ultimoTrabajo('indexar_documento', documento.id),
+        ultimoTrabajo('sugerir_configuracion', documento.id),
+      ])
+      // En `error` con su trabajo todavia en cola, la indexacion sigue: la cola reintenta.
       const indexando =
-        documento.estadoIndexacion === 'pendiente' || documento.estadoIndexacion === 'procesando'
+        documento.estadoIndexacion === 'pendiente' ||
+        documento.estadoIndexacion === 'procesando' ||
+        (documento.estadoIndexacion === 'error' && indexacion?.estado === 'pendiente')
+      const buscando = busqueda?.estado === 'pendiente'
       return {
         indexado: documento.estadoIndexacion === 'indexado',
-        analizando: indexando || (await sugerenciasEnCola(documento.id)),
+        analizando: indexando || buscando,
+        reintentando:
+          (indexando && !!indexacion?.ultimoError) || (buscando && !!busqueda.ultimoError),
+        fallo: !indexando && !buscando && busqueda?.estado === 'agotado',
       }
     },
   )

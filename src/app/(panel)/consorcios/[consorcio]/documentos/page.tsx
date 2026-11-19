@@ -52,6 +52,8 @@ export default async function DocumentosPage({
     ])
     const administra = roles.includes('administrador')
     const conSugerencias = documentos.filter((d) => !!d.sugerenciasPendientes)
+    // El estado de indexacion solo lo ve el administrador; para el resto, basta con que haya documentos.
+    const consultable = documentos.some((d) => (d.estadoIndexacion ?? 'indexado') === 'indexado')
     const enProceso = documentos.some(
       (d) => d.estadoIndexacion === 'pendiente' || d.estadoIndexacion === 'procesando',
     )
@@ -117,13 +119,15 @@ export default async function DocumentosPage({
             <p className="apagado">Reglamento, actas y contratos del consorcio.</p>
           </div>
           <div className="cabecera-pagina__acciones">
-            <Link
-              className="boton boton--ia"
-              href={`/consorcios/${activo.id}/documentos/consultar`}
-            >
-              <IconoIA />
-              Preguntarle a la documentación
-            </Link>
+            {consultable && (
+              <Link
+                className="boton boton--ia"
+                href={`/consorcios/${activo.id}/documentos/consultar`}
+              >
+                <IconoIA />
+                Preguntarle a la documentación
+              </Link>
+            )}
             {administra && <ModalDocumento consorcioId={activo.id} tipos={TIPOS_DOCUMENTO} />}
           </div>
         </div>

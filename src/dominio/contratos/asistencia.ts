@@ -13,9 +13,20 @@ import { z } from 'zod'
  * de cada llamador.
  */
 
-export type Resultado<T> = { disponible: true; valor: T } | { disponible: false; motivo: string }
+/**
+ * `reintentable`: el proveedor fallo (saturado, caido, respuesta ilegible) y
+ * otro intento puede andar. La nula nunca lo marca: sin servicio no hay a quien
+ * reintentarle.
+ */
+export type Resultado<T> =
+  | { disponible: true; valor: T }
+  | { disponible: false; motivo: string; reintentable?: true }
 
-export const noDisponible = (motivo: string): Resultado<never> => ({ disponible: false, motivo })
+export const noDisponible = (motivo: string, reintentable = false): Resultado<never> => ({
+  disponible: false,
+  motivo,
+  ...(reintentable && { reintentable: true }),
+})
 export const disponible = <T>(valor: T): Resultado<T> => ({ disponible: true, valor })
 
 export interface RubroParaClasificar {

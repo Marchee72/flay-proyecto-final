@@ -2,6 +2,7 @@ import type { Clasificacion } from '@prisma/client'
 
 import { importe } from '@/compartido/dinero'
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
+import type { AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { exigirPeriodoConGastos } from '@/dominio/periodos/estado'
@@ -19,10 +20,7 @@ import { IMPORTE_VALIDO, ImporteInvalido } from './registrar-gasto'
 
 export class GastoConVinculos extends ErrorDeAplicacion {
   constructor() {
-    super(
-      'Este gasto tiene comprobantes o un reclamo asociado: corregí sus datos en lugar de borrarlo.',
-      'RF-04',
-    )
+    super('Este gasto tiene un reclamo asociado: corregí sus datos en lugar de borrarlo.', 'RF-04')
   }
 }
 
@@ -90,7 +88,14 @@ export async function editarGasto(
   )
 }
 
+/**
+ * Borra el gasto con sus comprobantes y la extraccion que lo origino: viven
+ * del gasto y sin el no tienen sentido. Un reclamo asociado si lo frena: es
+ * de otra persona y apunta a ese gasto. Los archivos se sacan del almacen
+ * despues, y un fallo ahi no deshace el borrado (queda un objeto huerfano).
+ */
 export async function eliminarGasto(
+  almacen: Pick<AlmacenObjetos, 'eliminar'>,
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
   datos: { usuarioId: string; consorcioId: string; gastoId: string },
@@ -106,16 +111,38 @@ export async function eliminarGasto(
     },
     async () => {
       const gasto = await gastoConPeriodo(datos.gastoId)
+      if ((await prisma.reclamo.count({ where: { gastoId: gasto.id } })) > 0) {
+        throw new GastoConVinculos()
+      }
 
-      // Comprobante y reclamo cuelgan del gasto; la extraccion lo referencia.
-      const [comprobantes, extracciones, reclamos] = await Promise.all([
-        prismaBase.comprobante.count({ where: { gastoId: gasto.id } }),
-        prisma.extraccionComprobante.count({ where: { gastoId: gasto.id } }),
-        prisma.reclamo.count({ where: { gastoId: gasto.id } }),
-      ])
-      if (comprobantes + extracciones + reclamos > 0) throw new GastoConVinculos()
+      // `Comprobante` no lleva consorcio: se alcanza por el gasto, ya aislado arriba.
+      const comprobantes = await prismaBase.comprobante.findMany({
+        where: { gastoId: gasto.id },
+        select: { id: true, claveObjeto: true },
+      })
+      // La extraccion apunta al gasto y al comprobante: cae antes que ellos.
+      const vinculos = {
+        OR: [{ gastoId: gasto.id }, { comprobanteId: { in: comprobantes.map((c) => c.id) } }],
+      }
+      const extracciones = await prisma.extraccionComprobante.findMany({
+        where: vinculos,
+        select: { claveObjeto: true },
+      })
+      await prisma.$transaction(async (tx) => {
+        await tx.extraccionComprobante.deleteMany({ where: vinculos })
+        await tx.comprobante.deleteMany({ where: { gastoId: gasto.id } })
+        await tx.gasto.delete({ where: { id: gasto.id } })
+      })
 
-      await prisma.gasto.delete({ where: { id: gasto.id } })
+      // El comprobante y su extraccion suelen compartir archivo: una sola baja.
+      const claves = new Set([...comprobantes, ...extracciones].map((c) => c.claveObjeto))
+      for (const clave of claves) {
+        try {
+          await almacen.eliminar(clave)
+        } catch {
+          console.error('[gastos] objeto huérfano', clave)
+        }
+      }
       return { periodoId: gasto.periodoId }
     },
   )

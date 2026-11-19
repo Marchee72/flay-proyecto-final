@@ -12,11 +12,7 @@ export function ModalEliminar({
   espacio: { id: string; nombre: string }
 }) {
   return (
-    <BotonModal
-      etiqueta="Eliminar"
-      titulo={`Eliminar ${espacio.nombre}`}
-      variante="boton--peligro"
-    >
+    <BotonModal etiqueta="Eliminar" titulo={`Eliminar ${espacio.nombre}`} variante="boton--peligro">
       <form action={accionEliminarEspacio}>
         <input type="hidden" name="consorcio" value={consorcioId} />
         <input type="hidden" name="espacio" value={espacio.id} />

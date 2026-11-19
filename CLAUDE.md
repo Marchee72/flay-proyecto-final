@@ -114,7 +114,7 @@ que permite probar la liquidación sin base de datos.
 - **Presentación**: vistas y formularios. Sin reglas de negocio, sin acceso directo a la base.
 - **Aplicación**: orquesta casos de uso, verifica autorización por rol y por consorcio, abre
   transacciones, registra auditoría. Sin cálculos de negocio.
-- **Dominio**: RN-01 a RN-21 — prorrateo, intereses, imputación, asambleas.
+- **Dominio**: RN-01 a RN-22 — prorrateo, intereses, imputación, asambleas.
 - **Infraestructura**: repositorios, ORM, almacenamiento de objetos, correo, servicios externos.
 
 ### Stack

@@ -56,6 +56,57 @@ export default async function DocumentosPage({
       (d) => d.estadoIndexacion === 'pendiente' || d.estadoIndexacion === 'procesando',
     )
 
+    // Celdas de la tabla de documentos, compartidas por las columnas que las usan.
+    const celdaTitulo = (d: (typeof documentos)[number]) => (
+      <>
+        <span>{d.titulo}</span>
+        {!d.visibleConsorcistas && (
+          <EyeOff className="icono" aria-label="No visible para consorcistas" />
+        )}
+      </>
+    )
+    const celdaEstados = (d: (typeof documentos)[number]) => (
+      <div className="estados">
+        <span className={`etiqueta ${CLASE_INDEXACION[d.estadoIndexacion!]}`}>
+          {ETIQUETA_INDEXACION[d.estadoIndexacion!]}
+        </span>
+        {!!d.sugerenciasPendientes && (
+          <Link
+            className="etiqueta etiqueta--ia"
+            href={`/consorcios/${activo.id}/documentos/sugerencias#documento-${d.id}`}
+          >
+            <IconoIA />
+            {plural(d.sugerenciasPendientes, 'sugerencia', 'sugerencias')}
+          </Link>
+        )}
+        {d.estadoIndexacion === 'error' && d.errorIndexacion && (
+          <p className="ayuda">{d.errorIndexacion}</p>
+        )}
+        {d.estadoIndexacion !== 'indexado' && (
+          <form action={accionReindexar}>
+            <input type="hidden" name="consorcio" value={activo.id} />
+            <input type="hidden" name="documento" value={d.id} />
+            <button type="submit" className="boton boton--terciario">
+              Reintentar
+            </button>
+          </form>
+        )}
+      </div>
+    )
+    const celdaAcciones = (d: (typeof documentos)[number]) => (
+      <div className="acciones">
+        <Link
+          className="boton boton--terciario"
+          href={`/consorcios/${activo.id}/documentos/${d.id}`}
+        >
+          Abrir
+        </Link>
+        {administra && (
+          <ModalEliminar consorcioId={activo.id} documentoId={d.id} titulo={d.titulo} />
+        )}
+      </div>
+    )
+
     return (
       <>
         {/* Cada refresco drena la cola: es lo que hace avanzar el proceso (decision 21). */}
@@ -90,14 +141,13 @@ export default async function DocumentosPage({
           </div>
         ) : (
           <TablaDesplazable tabIndex={0} role="region" aria-label="Documentos">
-            <table>
+            <table className="documentos">
               <caption>
                 Los que los consorcistas no ven llevan el ojo tachado junto al título.
               </caption>
               <thead>
                 <tr>
                   <th scope="col">Documento</th>
-                  <th scope="col">Tipo</th>
                   <th scope="col">Fecha</th>
                   {administra && <th scope="col">Consultas</th>}
                   <th scope="col">
@@ -109,61 +159,16 @@ export default async function DocumentosPage({
                 {documentos.map((d) => (
                   <tr key={d.id}>
                     <td>
-                      {d.titulo}
-                      {!d.visibleConsorcistas && (
-                        <>
-                          {' '}
-                          <EyeOff className="icono" aria-label="No visible para consorcistas" />
-                        </>
-                      )}
+                      <div className="doc">
+                        <span className="titulo-fila">{celdaTitulo(d)}</span>
+                        <small>{d.tipoEtiqueta}</small>
+                      </div>
                     </td>
-                    <td>{d.tipoEtiqueta}</td>
-                    <td>{d.fechaDocumento ? fechaParaMostrar(d.fechaDocumento) : '—'}</td>
-                    {administra && d.estadoIndexacion && (
-                      <td>
-                        <span className={`etiqueta ${CLASE_INDEXACION[d.estadoIndexacion]}`}>
-                          {ETIQUETA_INDEXACION[d.estadoIndexacion]}
-                        </span>
-                        {!!d.sugerenciasPendientes && (
-                          <p>
-                            <Link
-                              className="etiqueta etiqueta--ia"
-                              href={`/consorcios/${activo.id}/documentos/sugerencias#documento-${d.id}`}
-                            >
-                              <IconoIA />
-                              {plural(d.sugerenciasPendientes, 'sugerencia', 'sugerencias')}
-                            </Link>
-                          </p>
-                        )}
-                        {d.estadoIndexacion === 'error' && d.errorIndexacion && (
-                          <p className="ayuda">{d.errorIndexacion}</p>
-                        )}
-                        {d.estadoIndexacion !== 'indexado' && (
-                          <form action={accionReindexar}>
-                            <input type="hidden" name="consorcio" value={activo.id} />
-                            <input type="hidden" name="documento" value={d.id} />
-                            <button type="submit" className="boton boton--terciario">
-                              Reintentar
-                            </button>
-                          </form>
-                        )}
-                      </td>
-                    )}
-                    <td>
-                      <Link
-                        className="boton boton--terciario"
-                        href={`/consorcios/${activo.id}/documentos/${d.id}`}
-                      >
-                        Abrir
-                      </Link>
-                      {administra && (
-                        <ModalEliminar
-                          consorcioId={activo.id}
-                          documentoId={d.id}
-                          titulo={d.titulo}
-                        />
-                      )}
+                    <td className="fecha">
+                      {d.fechaDocumento ? fechaParaMostrar(d.fechaDocumento) : '—'}
                     </td>
+                    {administra && d.estadoIndexacion && <td>{celdaEstados(d)}</td>}
+                    <td>{celdaAcciones(d)}</td>
                   </tr>
                 ))}
               </tbody>

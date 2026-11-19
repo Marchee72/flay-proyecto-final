@@ -46,80 +46,99 @@ function FormularioEspacio({ consorcioId, espacio }: { consorcioId: string; espa
     espacio?.horario ? horaDesdeMinutos(espacio.horario.cierre) : '',
   )
   const errorHorario = errorDeHorario(apertura, cierre)
-  const campo = (
+  // Las piezas del formulario, en el orden en que se dibujan.
+  const ocultos = (
+    <>
+      <input type="hidden" name="consorcio" value={consorcioId} />
+      {espacio && <input type="hidden" name="espacio" value={espacio.id} />}
+    </>
+  )
+  const nombre = (
+    <div className="campo">
+      <label htmlFor={`nombre-${sufijo}`}>Nombre</label>
+      <input
+        id={`nombre-${sufijo}`}
+        name="nombre"
+        maxLength={80}
+        required
+        defaultValue={espacio?.nombre ?? ''}
+        aria-invalid={hayError || undefined}
+        aria-describedby={hayError ? `error-${sufijo}` : undefined}
+      />
+    </div>
+  )
+  const num = (
     id: string,
     etiqueta: string,
     valor: number | null | undefined,
     ayuda: string,
+    unidad: string,
     requerido = true,
   ) => (
-    <div className="campo">
+    <div className="campo campo--num">
       <label htmlFor={`${id}-${sufijo}`}>{etiqueta}</label>
-      <input
-        id={`${id}-${sufijo}`}
-        name={id}
-        type="number"
-        min={0}
-        inputMode="numeric"
-        defaultValue={valor ?? ''}
-        required={requerido}
-        aria-describedby={`ayuda-${id}-${sufijo}`}
-      />
+      <span className="campo__caja">
+        <input
+          id={`${id}-${sufijo}`}
+          name={id}
+          type="number"
+          min={0}
+          inputMode="numeric"
+          defaultValue={valor ?? ''}
+          required={requerido}
+          aria-describedby={`ayuda-${id}-${sufijo}`}
+        />
+        <span className="campo__unidad" aria-hidden="true">
+          {unidad}
+        </span>
+      </span>
       <p className="ayuda" id={`ayuda-${id}-${sufijo}`}>
         {ayuda}
       </p>
     </div>
   )
-
-  return (
-    <form action={accion} noValidate>
-      <input type="hidden" name="consorcio" value={consorcioId} />
-      {espacio && <input type="hidden" name="espacio" value={espacio.id} />}
-      <div className="campo">
-        <label htmlFor={`nombre-${sufijo}`}>Nombre</label>
-        <input
-          id={`nombre-${sufijo}`}
-          name="nombre"
-          maxLength={80}
-          required
-          defaultValue={espacio?.nombre ?? ''}
-          aria-invalid={hayError || undefined}
-          aria-describedby={hayError ? `error-${sufijo}` : undefined}
-        />
-      </div>
-      {campo(
-        'capacidad',
-        'Capacidad máxima',
-        espacio?.capacidadMaxima,
-        'Personas. Vacío si no hay tope.',
-        false,
-      )}
-      {campo(
-        'anticipacionMinima',
-        'Anticipación mínima',
-        espacio?.anticipacionMinimaHoras ?? 48,
-        'Horas antes del inicio.',
-      )}
-      {campo(
-        'anticipacionMaxima',
-        'Anticipación máxima',
-        espacio?.anticipacionMaximaDias ?? 60,
-        'Días antes del inicio.',
-      )}
-      {campo(
-        'duracionMaxima',
-        'Duración máxima',
-        espacio?.duracionMaximaHoras ?? 8,
-        'Horas seguidas.',
-      )}
-      {campo(
-        'topeMensual',
-        'Reservas por mes y unidad',
-        espacio?.reservasMaxMesUnidad ?? 2,
-        'Tope mensual por unidad.',
-      )}
-      <fieldset>
-        <legend>Horario de uso</legend>
+  const numericos = [
+    num(
+      'capacidad',
+      'Capacidad máxima',
+      espacio?.capacidadMaxima,
+      'Personas. Vacío si no hay tope.',
+      'personas',
+      false,
+    ),
+    num(
+      'anticipacionMinima',
+      'Anticipación mínima',
+      espacio?.anticipacionMinimaHoras ?? 48,
+      'Horas antes del inicio.',
+      'horas',
+    ),
+    num(
+      'anticipacionMaxima',
+      'Anticipación máxima',
+      espacio?.anticipacionMaximaDias ?? 60,
+      'Días antes del inicio.',
+      'días',
+    ),
+    num(
+      'duracionMaxima',
+      'Duración máxima',
+      espacio?.duracionMaximaHoras ?? 8,
+      'Horas seguidas.',
+      'horas',
+    ),
+    num(
+      'topeMensual',
+      'Reservas por mes y unidad',
+      espacio?.reservasMaxMesUnidad ?? 2,
+      'Tope mensual por unidad.',
+      'por mes',
+    ),
+  ]
+  const horario = (
+    <fieldset className="horario">
+      <legend>Horario de uso</legend>
+      <div className="horario__par">
         <div className="campo">
           <label htmlFor={`apertura-${sufijo}`}>Apertura</label>
           <input
@@ -144,27 +163,33 @@ function FormularioEspacio({ consorcioId, espacio }: { consorcioId: string; espa
             aria-describedby={errorHorario ? `error-apertura-${sufijo}` : `ayuda-horario-${sufijo}`}
           />
         </div>
-        {errorHorario && (
-          <p className="error" id={`error-apertura-${sufijo}`}>
-            {errorHorario}
-          </p>
-        )}
-        <p className="ayuda" id={`ayuda-horario-${sufijo}`}>
-          Vacío si se usa a cualquier hora. Si el cierre es antes que la apertura, cruza la
-          medianoche.
-        </p>
-      </fieldset>
-      <div className="campo">
-        <label htmlFor={`rechazaConDeuda-${sufijo}`}>
-          <input
-            id={`rechazaConDeuda-${sufijo}`}
-            name="rechazaConDeuda"
-            type="checkbox"
-            defaultChecked={espacio?.rechazaConDeuda ?? true}
-          />{' '}
-          Rechazar reservas de unidades con deuda vencida
-        </label>
       </div>
+      {errorHorario && (
+        <p className="error" id={`error-apertura-${sufijo}`}>
+          {errorHorario}
+        </p>
+      )}
+      <p className="ayuda" id={`ayuda-horario-${sufijo}`}>
+        Vacío si se usa a cualquier hora. Si el cierre es antes que la apertura, cruza la
+        medianoche.
+      </p>
+    </fieldset>
+  )
+  const deuda = (
+    <div className="campo">
+      <label htmlFor={`rechazaConDeuda-${sufijo}`}>
+        <input
+          id={`rechazaConDeuda-${sufijo}`}
+          name="rechazaConDeuda"
+          type="checkbox"
+          defaultChecked={espacio?.rechazaConDeuda ?? true}
+        />{' '}
+        Rechazar reservas de unidades con deuda vencida
+      </label>
+    </div>
+  )
+  const pie = (
+    <>
       {hayError && (
         <p className="error" id={`error-${sufijo}`} role="alert">
           {estado.mensaje}
@@ -173,6 +198,17 @@ function FormularioEspacio({ consorcioId, espacio }: { consorcioId: string; espa
       <button className="boton boton--primario" type="submit" disabled={enviando}>
         {enviando ? 'Guardando…' : 'Guardar'}
       </button>
+    </>
+  )
+
+  return (
+    <form action={accion} noValidate className="form-espacio">
+      {ocultos}
+      {nombre}
+      {numericos}
+      {horario}
+      {deuda}
+      {pie}
     </form>
   )
 }

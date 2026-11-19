@@ -28,6 +28,23 @@ export class RolInsuficiente extends ErrorDeAplicacion {
   }
 }
 
+/** El consorcio está archivado: se consulta, no se opera (RN-22). */
+export class ConsorcioArchivado extends ErrorDeAplicacion {
+  constructor() {
+    super('Este consorcio está archivado: se puede consultar, pero no operar.', 'RN-22')
+  }
+}
+
+export const textoDe = (error: unknown): string =>
+  error instanceof Error
+    ? `${error.message} ${JSON.stringify((error as { meta?: unknown }).meta ?? '')}`
+    : ''
+
+/** Lo que rechazó el candado de la base (RN-22), como error de aplicación; lo demás pasa igual. */
+export function traducirArchivado(error: unknown): unknown {
+  return textoDe(error).includes('Este consorcio está archivado') ? new ConsorcioArchivado() : error
+}
+
 export class SinConsorcioActivo extends ErrorDeAplicacion {
   constructor() {
     super('No hay un consorcio seleccionado.', 'RN-12')

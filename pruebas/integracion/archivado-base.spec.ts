@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { altaEspacio, listarEspacios } from '@/aplicacion/reservas/espacios'
+import { ConsorcioArchivado } from '@/compartido/errores'
 import { prismaBase } from '@/infraestructura/prisma'
+import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
+
+import { relojFijo } from '../dominio/reloj-fijo'
 
 import {
   crearAdministradora,
@@ -61,7 +66,9 @@ describe('candado de consorcio archivado (RN-22)', () => {
   it('rechaza borrar en un consorcio archivado', async () => {
     const espacio = await prismaBase.espacioComun.create({ data: { consorcioId, nombre: 'SUM' } })
     await archivar()
-    await expect(prismaBase.espacioComun.delete({ where: { id: espacio.id } })).rejects.toThrow()
+    await expect(prismaBase.espacioComun.delete({ where: { id: espacio.id } })).rejects.toThrow(
+      /Este consorcio está archivado/,
+    )
   })
 
   it('una excepción sigue escribiendo', async () => {
@@ -82,5 +89,20 @@ describe('candado de consorcio archivado (RN-22)', () => {
       SELECT count(*) AS n FROM "BitacoraAuditoria"
       WHERE tabla = 'EspacioComun' AND clave = ${espacio.id}`
     expect(Number(filas[0].n)).toBeGreaterThan(0)
+  })
+})
+
+describe('ConsorcioArchivado en los casos de uso (RN-22, RNF-10)', () => {
+  const RELOJ = relojFijo('2026-09-15T12:00:00Z')
+
+  it('una escritura devuelve ConsorcioArchivado y leer sigue funcionando', async () => {
+    const admin = await crearUsuario()
+    await habilitarEnConsorcio(admin.id, consorcioId, 'administrador')
+    await archivar()
+    const datos = { usuarioId: admin.id, consorcioId }
+    await expect(
+      altaEspacio(repositorioHabilitaciones, RELOJ, { ...datos, nombre: 'SUM' }),
+    ).rejects.toBeInstanceOf(ConsorcioArchivado)
+    await expect(listarEspacios(repositorioHabilitaciones, RELOJ, datos)).resolves.toEqual([])
   })
 })

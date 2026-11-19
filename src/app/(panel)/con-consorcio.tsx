@@ -15,6 +15,7 @@ export type ConsorcioAlcanzable = {
   nombre: string
   direccion: string
   localidad: string
+  archivadoEn: string | null
 }
 
 /**

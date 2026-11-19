@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client'
 
-import { ErrorDeAplicacion } from '@/compartido/errores'
+import { ErrorDeAplicacion, textoDe, traducirArchivado } from '@/compartido/errores'
 
 /**
  * Errores de las asambleas (016, `contracts/contratos.md`). Mensajes para el
@@ -214,11 +214,6 @@ export class ReglaDeAsamblea extends ErrorDeAsamblea {
   }
 }
 
-const textoDe = (error: unknown): string =>
-  error instanceof Error
-    ? `${error.message} ${JSON.stringify((error as { meta?: unknown }).meta ?? '')}`
-    : ''
-
 /**
  * Traduce lo que rechazó la base al error de aplicación (research R-02): una
  * clave única violada (`23505` / `P2002`) a `duplicado`, y un `RAISE` de los
@@ -226,6 +221,8 @@ const textoDe = (error: unknown): string =>
  */
 export function traducirErrorDeBase(error: unknown, duplicado?: () => ErrorDeAplicacion): unknown {
   if (error instanceof ErrorDeAplicacion) return error
+  const archivado = traducirArchivado(error)
+  if (archivado !== error) return archivado
   const texto = textoDe(error)
   const regla = /FLAY: ([^"\\]+?)(?:\\n|"|$)/.exec(texto)
   if (regla) return new ReglaDeAsamblea(regla[1].trim())

@@ -8,7 +8,7 @@ import { cargarPadron } from '@/aplicacion/consorcios/unidades'
 import { registrarReclamo } from '@/aplicacion/reclamos/registrar'
 import { altaEspacio } from '@/aplicacion/reservas/espacios'
 import { reservar } from '@/aplicacion/reservas/reservar'
-import { NoEncontrado } from '@/compartido/errores'
+import { ConsorcioArchivado, NoEncontrado } from '@/compartido/errores'
 import type { Asistencia } from '@/dominio/contratos/asistencia'
 import {
   asistenciaDeterminista,
@@ -139,6 +139,26 @@ describe('alcance (RN-12, Principio I)', () => {
       expect(r.texto).toContain('SUM')
       expect(r.texto).not.toContain('Quincho')
       expect(r.enlaces[0].consorcioId).toBe(consorcioId)
+    }
+  })
+})
+
+describe('consorcio archivado (RN-22)', () => {
+  it('una lectura responde y una escritura confirmada rechaza con ConsorcioArchivado', async () => {
+    const p = await pedir(
+      administrador,
+      `deshabilitar_espacio espacioId=${espacioId} motivo=pintura`,
+    )
+    if (p.modo !== 'propuesta') throw new Error('se esperaba una propuesta')
+    await prismaBase.$executeRaw`UPDATE "Consorcio" SET archivado_en = now() WHERE id = ${consorcioId}::uuid`
+    try {
+      const r = await pedir(administrador, 'ver_espacios')
+      expect(r.modo === 'respuesta' && r.texto).toContain('SUM')
+      await expect(confirmar(administrador, p.propuestaId)).rejects.toBeInstanceOf(
+        ConsorcioArchivado,
+      )
+    } finally {
+      await prismaBase.$executeRaw`UPDATE "Consorcio" SET archivado_en = NULL`
     }
   })
 })

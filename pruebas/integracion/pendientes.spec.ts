@@ -62,6 +62,22 @@ describe('trabajos pendientes', () => {
     expect(trabajo.proximoIntento.getTime()).toBeGreaterThan(Date.now())
   })
 
+  it('un trabajo de un consorcio archivado no se reintenta (RN-22)', async () => {
+    const creado = await encolar('invitacion', { destino: 'archivado@ejemplo.test' })
+
+    await drenar({
+      invitacion: async () => {
+        throw new Error('FLAY: Este consorcio está archivado: se puede consultar, pero no operar.')
+      },
+    })
+
+    const trabajo = await prismaBase.trabajoPendiente.findUniqueOrThrow({
+      where: { id: creado.id },
+    })
+    expect(trabajo.estado).toBe('despachado')
+    expect(trabajo.ultimoError).toContain('archivado')
+  })
+
   it('no vuelve a tomar lo que todavia no vencio', async () => {
     await encolar('invitacion', { destino: 'espera@ejemplo.test' })
     await drenar({

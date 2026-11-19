@@ -16,16 +16,19 @@ export async function misConsorcios(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
   usuarioId: string,
-): Promise<{ id: string; nombre: string; direccion: string; localidad: string }[]> {
+): Promise<
+  { id: string; nombre: string; direccion: string; localidad: string; archivadoEn: string | null }[]
+> {
   const alcanzables = await repositorio.consorciosDe(usuarioId, reloj.hoy())
 
   if (alcanzables.length === 0) return []
 
-  return prismaBase.consorcio.findMany({
+  const filas = await prismaBase.consorcio.findMany({
     where: { id: { in: alcanzables } },
-    select: { id: true, nombre: true, direccion: true, localidad: true },
+    select: { id: true, nombre: true, direccion: true, localidad: true, archivadoEn: true },
     orderBy: { nombre: 'asc' },
   })
+  return filas.map((f) => ({ ...f, archivadoEn: f.archivadoEn?.toISOString() ?? null }))
 }
 
 /**

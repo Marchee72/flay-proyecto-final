@@ -11,6 +11,10 @@ import { z } from 'zod'
  * servicio: devuelve `{ disponible: false, motivo }`. Lanzar queda para errores
  * de programacion. Es lo que hace que RNF-14 sea una propiedad de la firma y no
  * de cada llamador.
+ *
+ * Privacidad (RNF-13, § 5.3.2, § 7.8): ninguna de estas interfaces puede recibir
+ * datos personales identificatorios de personas fisicas (nombres y apellidos,
+ * correos, telefonos, DNI/CUIL, personaId/usuarioId ni enlaces firmados).
  */
 
 /**

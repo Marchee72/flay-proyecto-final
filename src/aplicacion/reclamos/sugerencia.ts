@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { NoEncontrado } from '@/compartido/errores'
+import { redactarContactoEnTexto } from '@/dominio/asistencia/privacidad'
 import type { ClasificadorTexto, RubroParaClasificar } from '@/dominio/contratos/asistencia'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
@@ -50,7 +51,10 @@ export function manejadorTriage(clasificador: ClasificadorTexto): Manejador {
     )
 
     const resultado = await clasificador.clasificar(
-      { titulo: reclamo.titulo, descripcion: reclamo.descripcion },
+      {
+        titulo: redactarContactoEnTexto(reclamo.titulo),
+        descripcion: redactarContactoEnTexto(reclamo.descripcion),
+      },
       {
         rubros: rubros.map(
           ({ codigo, nombre, descripcion }): RubroParaClasificar => ({

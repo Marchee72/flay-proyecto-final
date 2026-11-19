@@ -915,7 +915,7 @@ a otro.
 |---|---|
 | Cifrado en tránsito | Obligatorio en toda comunicación, con redirección forzada y transporte estricto (RNF-05) |
 | Cifrado en reposo | Provisto por la plataforma para base de datos y almacenamiento de objetos |
-| Minimización hacia terceros | A los servicios externos se envía únicamente el comprobante, el texto del reclamo o la documentación reglamentaria. **Nunca la nómina de propietarios ni datos de deuda** |
+| Minimización hacia terceros | A los servicios externos de procesamiento se envía únicamente el comprobante, el texto del reclamo saneado de datos de contacto, la documentación reglamentaria, agregados de asambleas y salidas operativas del asistente conversacional (CU-16, RF-27) proyectadas y saneadas en la capa de aplicación (solo designaciones de unidad, estados, fechas e importes). **Nunca nombres y apellidos de personas físicas, correos, teléfonos, documentos de identidad, nóminas de usuarios ni enlaces firmados** |
 | Copias de respaldo | Diarias, con retención de 30 días y restauración probada antes de la puesta en marcha | 
 | Retención | Bitácora de auditoría 24 meses, luego se anonimiza la dirección IP |
 | Portabilidad | Exportación completa en formato abierto, conforme al contrato del punto 6.4.5 |

@@ -154,6 +154,12 @@ Estas atraviesan todo el sistema; violarlas es un defecto, no una preferencia de
 6. **Auditoría por disparadores de base de datos** (RN-15), sin permisos de update/delete para el
    usuario de la aplicación: ninguna ruta de código puede omitirla.
 7. **Migraciones versionadas en el repositorio.** Ningún cambio manual sobre la base.
+8. **Ningún dato personal identificatorio (PII) sale hacia proveedores externos de IA** (RNF-13,
+   § 5.3.2, § 7.8). Nombres y apellidos de personas físicas, correos, teléfonos, DNI/CUIL,
+   `personaId`/`usuarioId` y enlaces firmados nunca integran el contexto ni los resultados de
+   herramientas enviados al modelo. Toda lectura del asistente pasa por proyección explícita y
+   `sanitizarParaModelo()` (`src/dominio/asistencia/privacidad.ts`), las nóminas de personas quedan
+   excluidas del chat y las pruebas canario en `pruebas/integracion/asistente.spec.ts` lo verifican.
 
 ## Proceso de desarrollo
 

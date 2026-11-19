@@ -310,6 +310,18 @@ determinista es idempotente (SC-012). Reemplazar el proveedor es escribir un cua
 misma forma y cambiar una línea en `dependencias.ts`; el resto del sistema, incluidas las pruebas
 de extremo a extremo que corren con la determinista, no se entera.
 
+**Frontera de privacidad hacia el proveedor de IA (RNF-13, § 5.3.2, § 7.8):** ningún dato personal
+identificatorio de personas físicas (nombres y apellidos, correos, teléfonos, DNI/CUIL,
+`personaId`/`usuarioId`) ni enlaces firmados salen hacia la API externa. Se implementa una doble
+barrera verificable: (1) retiro de `ver_usuarios` y `ver_responsables` del asistente, ajuste de
+`asignar_reclamo` para fijar el responsable desde la sesión y proyectores explícitos en
+`src/aplicacion/asistente/lectura.ts` (`ver_morosidad`, `ver_historial_reservas`, `ver_reclamos`,
+`ver_reclamo`); y (2) `sanitizarParaModelo()` y `redactarContactoEnTexto()` en el módulo puro
+`src/dominio/asistencia/privacidad.ts`, aplicados en `src/aplicacion/asistente/base.ts`,
+`conversar.ts`, `src/aplicacion/asambleas/acta.ts` y `src/aplicacion/reclamos/sugerencia.ts`. La
+garantía se verifica en cada corrida con `pruebas/dominio/privacidad-llm.spec.ts` y pruebas canario
+en `pruebas/integracion/asistente.spec.ts`.
+
 ## 14.4 Estándares de codificación
 
 *Definidos al abrir la iteración 1 (FR-024 de `001-andamiaje`). Rigen desde el primer RF; lo escrito

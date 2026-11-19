@@ -751,6 +751,50 @@ th a:not(.boton):hover,
     var(--sombra),
     inset 0 0 0 1px var(--linea);
 }
+/* Resumen de un gasto: grafito pleno con el importe en lima, compacto, y las
+   acciones a la derecha. Los botones llevan su propio fondo claro y se leen
+   sobre el oscuro sin tocarlos. */
+.resumen-gasto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e4) var(--e6);
+  padding: var(--e5) var(--e6);
+  background: var(--grafito);
+  color: var(--tinta-clara);
+  box-shadow: var(--sombra-alta);
+}
+.resumen-gasto__cuerpo {
+  min-width: 0;
+  flex: 1 1 16rem;
+}
+.resumen-gasto__importe {
+  margin: 0;
+  color: var(--tinta-clara-apagada);
+}
+.resumen-gasto__importe .cifra {
+  display: block;
+  margin-top: var(--e1);
+  color: var(--lima-alto);
+  font-size: var(--t-titulo1);
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+.resumen-gasto__detalle {
+  margin: var(--e3) 0 0;
+  color: var(--tinta-clara-apagada);
+}
+.resumen-gasto .fila-acciones {
+  margin: 0;
+}
+.resumen-gasto__aviso {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--tinta-clara-apagada);
+}
+
 /* Buscador a todo el ancho: el campo crece, los botones quedan al final. */
 .buscador .campo {
   flex: 1 1 auto;

@@ -124,18 +124,73 @@ describe('editar un gasto (RF-04)', () => {
 
 describe('eliminar un gasto (RF-04)', () => {
   const eliminar = () =>
-    eliminarGasto(repo, RELOJ, { usuarioId: administrador, consorcioId, gastoId })
+    eliminarGasto({ eliminar: async () => {} }, repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      gastoId,
+    })
 
   it('eliminar un gasto sin vínculos lo borra', async () => {
     expect(await eliminar()).toEqual({ periodoId })
     expect(await prismaBase.gasto.count({ where: { id: gastoId } })).toBe(0)
   })
 
-  it('eliminar un gasto con comprobante se rechaza', async () => {
-    await prismaBase.comprobante.create({
+  it('eliminar un gasto con comprobante y extracción los borra y saca el archivo', async () => {
+    const comprobante = await prismaBase.comprobante.create({
       data: { gastoId, claveObjeto: 'k/1', tipoContenido: 'application/pdf', bytes: 10 },
+    })
+    await prismaBase.extraccionComprobante.create({
+      data: {
+        consorcioId,
+        claveObjeto: 'k/1',
+        tipoContenido: 'application/pdf',
+        estado: 'confirmada',
+        gastoId,
+        comprobanteId: comprobante.id,
+        cargadoPor: administrador,
+      },
+    })
+    const borrados: string[] = []
+    const almacen = { eliminar: async (clave: string) => void borrados.push(clave) }
+
+    expect(
+      await eliminarGasto(almacen, repo, RELOJ, { usuarioId: administrador, consorcioId, gastoId }),
+    ).toEqual({ periodoId })
+    expect(await prismaBase.gasto.count({ where: { id: gastoId } })).toBe(0)
+    expect(await prismaBase.comprobante.count({ where: { gastoId } })).toBe(0)
+    expect(await prismaBase.extraccionComprobante.count({ where: { consorcioId } })).toBe(0)
+    expect(borrados).toEqual(['k/1'])
+  })
+
+  it('si el almacén falla, el gasto se borra igual', async () => {
+    await prismaBase.comprobante.create({
+      data: { gastoId, claveObjeto: 'k/2', tipoContenido: 'application/pdf', bytes: 10 },
+    })
+    const almacen = {
+      eliminar: async () => {
+        throw new Error('sin red')
+      },
+    }
+    await eliminarGasto(almacen, repo, RELOJ, { usuarioId: administrador, consorcioId, gastoId })
+    expect(await prismaBase.gasto.count({ where: { id: gastoId } })).toBe(0)
+  })
+
+  it('eliminar un gasto con un reclamo asociado se rechaza y no toca los comprobantes', async () => {
+    await prismaBase.comprobante.create({
+      data: { gastoId, claveObjeto: 'k/3', tipoContenido: 'application/pdf', bytes: 10 },
+    })
+    await prismaBase.reclamo.create({
+      data: {
+        consorcioId,
+        creadoPor: administrador,
+        titulo: 'Cobro dudoso',
+        descripcion: '-',
+        urgencia: 'media',
+        gastoId,
+      },
     })
     await expect(eliminar()).rejects.toBeInstanceOf(GastoConVinculos)
     expect(await prismaBase.gasto.count({ where: { id: gastoId } })).toBe(1)
+    expect(await prismaBase.comprobante.count({ where: { gastoId } })).toBe(1)
   })
 })

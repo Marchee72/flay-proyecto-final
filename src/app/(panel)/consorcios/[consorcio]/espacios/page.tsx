@@ -11,6 +11,7 @@ import { horarioParaMostrar } from '@/aplicacion/reservas/horario-reglas'
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
 import { accionHabilitarEspacio } from '../reservas/acciones'
 import { ModalDeshabilitar } from './modal-deshabilitar'
+import { ModalEliminar } from './modal-eliminar'
 import { ModalEspacio } from './modal-espacio'
 
 export const metadata: Metadata = { title: 'Espacios comunes — Flay' }
@@ -104,6 +105,7 @@ export default async function EspaciosPage({ params }: { params: Promise<{ conso
                         </button>
                       </form>
                     )}
+                    <ModalEliminar consorcioId={activo.id} espacio={e} />
                   </div>
                 )}
               </article>

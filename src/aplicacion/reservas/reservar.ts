@@ -1,5 +1,6 @@
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import { momentoParaMostrar } from '@/compartido/formato'
+import { dentroDelHorario, horarioParaMostrar } from '@/dominio/reservas/horario'
 import { ordenarUnidades } from '@/dominio/unidades/division'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 
@@ -83,8 +84,9 @@ export async function reservar(
       }
 
       // 1) Deuda vencida: la precondicion de CU-09, con el saldo que 003 produce (SC-006).
-      const deudas = await saldoImpagoPorUnidad(reloj.hoy())
-      const deuda = deudas.get(unidad.id)
+      const deuda = espacio.rechazaConDeuda
+        ? (await saldoImpagoPorUnidad(reloj.hoy())).get(unidad.id)
+        : undefined
       if (deuda) {
         throw new ReservaRechazada(
           `La unidad ${unidad.designacion} tiene deuda vencida (${deuda.vencidos} ${deuda.vencidos === 1 ? 'período' : 'períodos'}). Se puede reservar una vez regularizada.`,
@@ -95,6 +97,12 @@ export async function reservar(
       // 2) Las reglas del espacio, cada una con su valor admitido (RNF-10).
       if (!(datos.desde < datos.hasta)) {
         throw new ReservaRechazada('La reserva tiene que terminar después de empezar.')
+      }
+      if (espacio.aperturaMinutos != null && espacio.cierreMinutos != null) {
+        const horario = { apertura: espacio.aperturaMinutos, cierre: espacio.cierreMinutos }
+        if (!dentroDelHorario(datos.desde, datos.hasta, horario)) {
+          throw new ReservaRechazada(`${espacio.nombre} se usa ${horarioParaMostrar(horario)}.`)
+        }
       }
       const ahora = reloj.ahora().getTime()
       if (datos.desde.getTime() - ahora < espacio.anticipacionMinimaHoras * HORA) {

@@ -149,7 +149,7 @@ Estas atraviesan todo el sistema; violarlas es un defecto, no una preferencia de
 4. **Ninguna salida de un servicio automático impacta un dato económico sin confirmación humana**
    (RN-14). `ExtraccionComprobante` es una entidad separada de `Gasto`; el gasto nace al confirmar.
 5. **Cada interfaz de IA del dominio** (`ExtractorDocumental`, `ClasificadorTexto`,
-   `GeneradorVectores`, `GeneradorRespuesta`, `AgenteConversacional`, `RedactorActa`) **tiene tres implementaciones**: la del proveedor, una
+   `GeneradorVectores`, `GeneradorRespuesta`, `AgenteConversacional`, `RedactorActa`, `LectorDeConfiguracion`) **tiene tres implementaciones**: la del proveedor, una
    determinística para pruebas y una nula para degradación (RNF-14, RNF-15).
 6. **Auditoría por disparadores de base de datos** (RN-15), sin permisos de update/delete para el
    usuario de la aplicación: ninguna ruta de código puede omitirla.
@@ -172,7 +172,7 @@ comprensibles (RNF-10), auditoría registrada si toca datos económicos, documen
 
 ## Lo que no se adivina leyendo el código
 
-Treinta y dos decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
+Treinta y tres decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
 
 1. **El orden de las semillas y las pruebas.** `npm run test:integracion` **vacía** las tablas de
    negocio, semilla incluida: en una base compartida no hay forma de distinguir lo sembrado de lo
@@ -250,10 +250,11 @@ Treinta y dos decisiones que costaron una vuelta y conviene no volver a tomar de
     corte rígido de similitud de vectores en la aplicación: la emite el modelo generativo (`sinRespaldo:
     true`) al constatar que los fragmentos recuperados no contienen sustento fáctico para responder la
     pregunta, asegurando citas verificables.
-18. **La cola absorbe cuatro tipos de trabajo.** La tabla `Pendiente` no sólo encola avisos de correo:
+18. **La cola absorbe cinco tipos de trabajo.** La tabla `Pendiente` no sólo encola avisos de correo:
     procesa `indexar_documento` (extracción de texto, fragmentación y cálculo de vectores con reintentos),
     `extraccion_comprobante` (análisis estructurado con IA), `triage_reclamo` (clasificación de rubro y
-    urgencia) y avisos de notificación, desacoplando cualquier demora o caída de servicios externos del
+    urgencia), `sugerir_configuracion` (lectura de reglamentos, actas y contratos) y avisos de
+    notificación, desacoplando cualquier demora o caída de servicios externos del
     ciclo de petición del usuario.
 19. **El consorcio vive en la ruta, no en la galleta.** `/consorcios/[consorcio]/<sección>`;
     `conConsorcio(consorcioId, titulo)` es el único punto que valida el id contra el alcance, y
@@ -419,6 +420,34 @@ Treinta y dos decisiones que costaron una vuelta y conviene no volver a tomar de
     trabado no puede bloquear la edición.
     Las notas se guardan con compare-and-set (`anterior`): la segunda escritura sobre una versión vieja
     no pisa, devuelve `NotasCambiaron`.
+
+33. **Las sugerencias de configuración proponen, la persona aplica (RN-14).** «Buscar configuración» en un
+    documento encola `sugerir_configuracion`; solo se analizan `reglamento_copropiedad`, `reglamento_interno`,
+    `acta` y `contrato` (`TIPOS_ANALIZABLES`). El resultado queda en `SugerenciaConfiguracion` y nada se
+    escribe hasta el clic de «Aplicar», que pasa por los casos de uso de configuración que ya existen
+    (`editarEspacio`, `altaEspacio`, etc.). Esa escritura **no es atómica** con marcar la sugerencia como
+    aplicada: lo que frena una doble aplicación es la guarda de estado más la unicidad del propio caso de
+    uso. Una sugerencia de «nuevo espacio» cuyo nombre coincide con un espacio activo se convierte en un
+    cambio sobre ese espacio; si el homónimo está inactivo, no es aplicable. «No disponible» del proveedor
+    termina el trabajo sin reintento (igual que triage, extracción y acta): la persona vuelve a apretar
+    «Buscar configuración». El horario de uso de un espacio se guarda en **minutos desde las 00:00**
+    (`HorarioDeUso`, no `TIME`) y siempre en hora argentina; si el cierre es menor o igual a la apertura
+    cruza la medianoche, y entonces la madrugada pertenece a la ventana del **día anterior**
+    (`dentroDelHorario` en `src/dominio/reservas/horario.ts`).
+    Las sugerencias se revisan **todas juntas, agrupadas por documento**, en `documentos/sugerencias`;
+    Documentación y la página del documento solo avisan (`AvisoDeSugerencias`). Aplicar y descartar
+    vuelven a esa pantalla; «Buscar configuración» vuelve a la página del documento, que es la que
+    sondea mientras analiza.
+
+34. **La marca de la IA (`IconoIA`, tokens `--ia-*`, clases `.tarjeta--ia`, `.aviso--ia`, `.boton--ia`,
+    `.etiqueta--ia`, `.titulo-ia`) va solo en lo que la IA propone o responde y todavía no confirmó una
+    persona**: asistente, carga asistida, sugerencias de configuración y de reclamo, borrador del acta,
+    respuesta de la consulta documental. Un gasto confirmado o un acta guardada ya no la llevan. El
+    gradiente no es un color de estado. El degradado del ícono vive una vez en `layout.tsx`
+    (`#ia-trazo`, `userSpaceOnUse`: con `objectBoundingBox` las cruces chicas de los destellos no se
+    pintan). Los azules/violetas son más oscuros que los de la maqueta para pasar AA con texto blanco.
+    **Las e2e corren contra `npm run build` y con `CI=1`** (`FLAY_ALMACEN=memoria`): sin eso, la
+    página de un documento sembrado a mano da «no encontrado».
 
 ## Notas
 

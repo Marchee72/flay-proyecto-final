@@ -104,6 +104,11 @@ export const ASISTENCIA: Asistencia = {
       return impl.redactor.redactar(asamblea, puntos, observaciones)
     },
   },
+  lector: {
+    async leer(texto, contexto) {
+      return (await resolverAsistencia()).lector.leer(texto, contexto)
+    },
+  },
 }
 
 async function resolverProcesadorPagos(): Promise<ProcesadorDePagos> {

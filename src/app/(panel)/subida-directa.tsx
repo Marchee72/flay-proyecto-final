@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useRef, useState, type ReactNode } from 'react'
+import { useId, useRef, useState, type ReactNode } from 'react'
 import { CloudUpload, FileText, TriangleAlert, X } from 'lucide-react'
 
 import { pesoParaMostrar } from '@/compartido/formato'
@@ -22,7 +22,7 @@ import { subirAlAlmacen } from '@/app/(panel)/subida'
  */
 export function SubidaDirecta({
   consorcioId,
-  prefijo,
+  permiso,
   accept,
   objeto,
   ayuda,
@@ -30,9 +30,14 @@ export function SubidaDirecta({
   children,
   confirmar,
   exito,
+  alTerminar,
 }: {
   consorcioId: string
-  prefijo: 'documentos' | 'extracciones'
+  /** Ruta que emite el permiso de subida y lo que ella pide además del archivo. */
+  permiso: {
+    ruta: '/api/objetos/permiso' | '/api/comprobantes/permiso'
+    campos: Record<string, string>
+  }
   accept: string
   /** Lo que se arrastra: «el comprobante», «el documento». */
   objeto: string
@@ -44,6 +49,8 @@ export function SubidaDirecta({
   confirmar: (datos: FormData) => Promise<{ mensaje: string; destino?: string }>
   /** Si la confirmacion no navega, esto sale por la pila de avisos y el formulario queda listo para el siguiente. */
   exito?: string
+  /** Se llama solo tras una confirmación sin mensaje de error (p. ej. para cerrar el modal). */
+  alTerminar?: () => void
 }) {
   const [mensaje, setMensaje] = useState('')
   const [subiendo, setSubiendo] = useState(false)
@@ -52,7 +59,7 @@ export function SubidaDirecta({
   const [arrastrando, setArrastrando] = useState(false)
   const entrada = useRef<HTMLInputElement | null>(null)
   const router = useRouter()
-  const id = `archivo-${prefijo}`
+  const id = useId()
 
   function elegir(lista: FileList | null) {
     const elegido = lista?.[0]
@@ -87,12 +94,12 @@ export function SubidaDirecta({
     setMensaje('')
     setProgreso({ cargado: 0, total: archivo.size })
     try {
-      const respuesta = await fetch('/api/objetos/permiso', {
+      const respuesta = await fetch(permiso.ruta, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           consorcio: consorcioId,
-          prefijo,
+          ...permiso.campos,
           tipoContenido: archivo.type,
           bytes: archivo.size,
           nombre: archivo.name,
@@ -115,6 +122,7 @@ export function SubidaDirecta({
         setMensaje(resultado.mensaje)
         return
       }
+      alTerminar?.()
       if (resultado.destino) {
         router.push(resultado.destino)
         return

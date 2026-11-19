@@ -16,6 +16,7 @@ import {
   habilitarEspacio,
 } from '@/aplicacion/reservas/espacios'
 import { cancelarReserva, reservar } from '@/aplicacion/reservas/reservar'
+import { errorDeHorario, minutosDesdeHora } from '@/aplicacion/reservas/horario-reglas'
 
 export type Resultado = { mensaje: string } & ConValores
 
@@ -87,6 +88,11 @@ export async function accionGuardarEspacio(
 
   const consorcioId = texto(datos, 'consorcio')
   const espacioId = texto(datos, 'espacio')
+  const apertura = texto(datos, 'apertura')
+  const cierre = texto(datos, 'cierre')
+  // El mismo mensaje que el campo mostro al tipear (RNF-10, decision 28).
+  const errorHorario = errorDeHorario(apertura, cierre)
+  if (errorHorario) return { mensaje: errorHorario }
   const reglas = {
     nombre: texto(datos, 'nombre'),
     capacidadMaxima: entero(datos, 'capacidad') ?? null,
@@ -94,11 +100,24 @@ export async function accionGuardarEspacio(
     anticipacionMaximaDias: entero(datos, 'anticipacionMaxima'),
     duracionMaximaHoras: entero(datos, 'duracionMaxima'),
     reservasMaxMesUnidad: entero(datos, 'topeMensual'),
+    // Los dos vacios borran el horario.
+    horario:
+      apertura === '' && cierre === ''
+        ? null
+        : { apertura: minutosDesdeHora(apertura)!, cierre: minutosDesdeHora(cierre)! },
+    // La casilla desmarcada no viaja en el formulario.
+    rechazaConDeuda: datos.get('rechazaConDeuda') !== null,
   }
 
+  let canceladas = 0
   try {
     if (espacioId) {
-      await editarEspacio(HABILITACIONES, RELOJ, { usuarioId, consorcioId, espacioId, ...reglas })
+      ;({ canceladas } = await editarEspacio(HABILITACIONES, RELOJ, {
+        usuarioId,
+        consorcioId,
+        espacioId,
+        ...reglas,
+      }))
     } else {
       await altaEspacio(HABILITACIONES, RELOJ, { usuarioId, consorcioId, ...reglas })
     }
@@ -108,7 +127,12 @@ export async function accionGuardarEspacio(
   }
 
   revalidatePath('/consorcios/[consorcio]/espacios', 'page')
-  redirect(conHecho(`/consorcios/${consorcioId}/espacios`, 'espacio-guardado'))
+  redirect(
+    conHecho(
+      `/consorcios/${consorcioId}/espacios`,
+      canceladas > 0 ? 'horario-cancelo-reservas' : 'espacio-guardado',
+    ),
+  )
 }
 
 export async function accionDeshabilitarEspacio(

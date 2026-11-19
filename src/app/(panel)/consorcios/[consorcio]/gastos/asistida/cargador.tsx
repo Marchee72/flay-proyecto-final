@@ -8,7 +8,7 @@ export function CargadorDeComprobante({ consorcioId }: { consorcioId: string }) 
   return (
     <SubidaDirecta
       consorcioId={consorcioId}
-      prefijo="extracciones"
+      permiso={{ ruta: '/api/objetos/permiso', campos: { prefijo: 'extracciones' } }}
       accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/tiff"
       objeto="el comprobante"
       ayuda="PDF o foto (JPG, PNG, WEBP, HEIC, TIFF) · hasta 25 MB"

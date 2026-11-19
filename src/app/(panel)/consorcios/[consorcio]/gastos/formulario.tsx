@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useRef, type ReactNode } from 'react'
+import { useActionState, useRef, useState, type ReactNode } from 'react'
 
 import { accionEditarGasto, accionRegistrarGasto, type Resultado } from './acciones'
 
@@ -45,6 +45,7 @@ export function FormularioGasto({
   extraccionId,
   accionesExtra,
   gasto,
+  altaProveedor,
 }: {
   consorcioId: string
   /** `YYYY-MM` de hoy: el mes al que se imputa si nadie elige otro. */
@@ -58,6 +59,8 @@ export function FormularioGasto({
   accionesExtra?: ReactNode
   /** Con `gasto` el formulario edita: sin periodo, y guarda por la accion de edicion. */
   gasto?: GastoAEditar
+  /** Lo leido de la factura cuando el proveedor no esta en el padron: ofrece darlo de alta al confirmar (RF-06). */
+  altaProveedor?: { razonSocial: string; cuit: string }
 }) {
   const [estado, accion, enviando] = useActionState(
     gasto ? accionEditarGasto : accionRegistrarGasto,
@@ -86,6 +89,10 @@ export function FormularioGasto({
   // No controlado, como todo desplegable que vuelve con `estado.valores`: el
   // reinicio del formulario de React 19 pisaria un `value` (ver la `key`).
   const clasificacionRef = useRef<HTMLSelectElement>(null)
+
+  const [proveedorElegido, setProveedorElegido] = useState(
+    estado.valores?.proveedor ?? base.proveedor ?? '',
+  )
 
   const marca = (campo: string) =>
     precargado[campo] ? (
@@ -172,6 +179,7 @@ export function FormularioGasto({
           id="proveedor"
           name="proveedor"
           defaultValue={estado.valores?.proveedor ?? base.proveedor ?? ''}
+          onChange={(evento) => setProveedorElegido(evento.target.value)}
           aria-invalid={hayError || undefined}
           aria-describedby={hayError ? 'error-gasto' : undefined}
         >
@@ -183,6 +191,33 @@ export function FormularioGasto({
           ))}
         </select>
       </div>
+
+      {altaProveedor && !proveedorElegido && (
+        <fieldset>
+          <legend>Proveedor nuevo</legend>
+          <label>
+            <input
+              type="checkbox"
+              name="altaProveedor"
+              defaultChecked={estado.valores ? estado.valores.altaProveedor === 'on' : true}
+            />{' '}
+            Dar de alta como proveedor
+          </label>
+          <label htmlFor="proveedorRazonSocial">Razón social</label>
+          <input
+            id="proveedorRazonSocial"
+            name="proveedorRazonSocial"
+            defaultValue={estado.valores?.proveedorRazonSocial ?? altaProveedor.razonSocial}
+          />
+          <label htmlFor="proveedorCuit">CUIT</label>
+          <input
+            id="proveedorCuit"
+            name="proveedorCuit"
+            inputMode="numeric"
+            defaultValue={estado.valores?.proveedorCuit ?? altaProveedor.cuit}
+          />
+        </fieldset>
+      )}
 
       <div className="campo">
         <label htmlFor="importe">Importe</label>

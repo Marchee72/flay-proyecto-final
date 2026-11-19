@@ -5,16 +5,19 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { conError, conHecho } from '@/app/aviso-en-url'
+import { conError, conHecho, type ClaveHecho } from '@/app/aviso-en-url'
 import { consultarDocumentacion, valorarConsulta } from '@/aplicacion/comunicacion/consultar'
 import { despacharNotificaciones, reintentarAgotados } from '@/aplicacion/comunicacion/despachar'
 import {
+  buscarConfiguracion,
   cargarDocumento,
+  eliminarDocumento,
   reindexarDocumento,
   TIPOS_DOCUMENTO,
 } from '@/aplicacion/comunicacion/documentos'
 import { descartarNovedad, publicarNovedad } from '@/aplicacion/comunicacion/novedades'
-import { ASISTENCIA, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
+import { aplicarSugerencia, descartarSugerencia } from '@/aplicacion/comunicacion/sugerencias'
+import { ALMACEN, ASISTENCIA, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { irAIngresar } from '@/app/ir-a-ingresar'
 import { MANEJADORES } from '@/aplicacion/pendientes/manejadores'
@@ -139,6 +142,85 @@ export async function accionReindexar(datos: FormData): Promise<void> {
   })
   revalidatePath('/consorcios/[consorcio]/documentos', 'page')
   redirect(conHecho(`/consorcios/${consorcioId}/documentos`, 'documento-reindexado'))
+}
+
+export async function accionEliminarDocumento(datos: FormData): Promise<void> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) return irAIngresar()
+  const consorcioId = texto(datos, 'consorcio')
+  const documentoId = texto(datos, 'documento')
+  try {
+    await eliminarDocumento(ALMACEN, HABILITACIONES, RELOJ, { usuarioId, consorcioId, documentoId })
+  } catch (error) {
+    if (!(error instanceof ErrorDeAplicacion)) throw error
+    redirect(
+      conError(`/consorcios/${consorcioId}/documentos/${documentoId}`, error.mensajeParaUsuario),
+    )
+  }
+  revalidatePath('/consorcios/[consorcio]/documentos', 'page')
+  redirect(conHecho(`/consorcios/${consorcioId}/documentos`, 'documento-eliminado'))
+}
+
+/**
+ * Las tres acciones de las sugerencias (`RF-19`, RN-14): aplicar y descartar
+ * vuelven a la pantalla de sugerencias, y «Buscar configuración» a la pagina del
+ * documento (que es la que sondea mientras analiza); todas con el aviso. El
+ * rechazo del caso de uso sale como problema y la sugerencia sigue pendiente.
+ */
+async function sobreSugerencias(
+  datos: FormData,
+  hacer: (quien: { usuarioId: string; consorcioId: string }) => Promise<ClaveHecho>,
+  destino: (consorcioId: string) => string = (c) => `/consorcios/${c}/documentos/sugerencias`,
+): Promise<void> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) return irAIngresar()
+  const consorcioId = texto(datos, 'consorcio')
+  const ruta = destino(consorcioId)
+  let hecho: ClaveHecho
+  try {
+    hecho = await hacer({ usuarioId, consorcioId })
+  } catch (error) {
+    if (!(error instanceof ErrorDeAplicacion)) throw error
+    redirect(conError(ruta, error.mensajeParaUsuario))
+  }
+  // Aplicar toca espacios, vencimientos o asambleas: todo el consorcio.
+  revalidatePath('/consorcios/[consorcio]', 'layout')
+  redirect(conHecho(ruta, hecho))
+}
+
+export async function accionAplicarSugerencia(datos: FormData): Promise<void> {
+  return sobreSugerencias(datos, async (quien) => {
+    const { canceladas } = await aplicarSugerencia(HABILITACIONES, RELOJ, {
+      ...quien,
+      sugerenciaId: texto(datos, 'sugerencia'),
+    })
+    return canceladas > 0 ? 'sugerencia-aplicada-con-cancelaciones' : 'sugerencia-aplicada'
+  })
+}
+
+export async function accionDescartarSugerencia(datos: FormData): Promise<void> {
+  return sobreSugerencias(datos, async (quien) => {
+    await descartarSugerencia(HABILITACIONES, RELOJ, {
+      ...quien,
+      sugerenciaId: texto(datos, 'sugerencia'),
+    })
+    return 'sugerencia-descartada'
+  })
+}
+
+/** «Buscar configuración» en un documento cargado antes de que existiera el analisis. */
+export async function accionBuscarConfiguracion(datos: FormData): Promise<void> {
+  return sobreSugerencias(
+    datos,
+    async (quien) => {
+      await buscarConfiguracion(HABILITACIONES, RELOJ, {
+        ...quien,
+        documentoId: texto(datos, 'documento'),
+      })
+      return 'analisis-encolado'
+    },
+    (consorcioId) => `/consorcios/${consorcioId}/documentos/${texto(datos, 'documento')}`,
+  )
 }
 
 export async function accionDespachar(datos: FormData): Promise<void> {

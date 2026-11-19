@@ -83,7 +83,19 @@ export async function accionRegistrarGasto(
     // (`004-servicios` FR-026): es el unico camino por el que una extraccion
     // produce un gasto, y sigue siendo la persona la que aprieta el boton.
     const { gastoId } = extraccionId
-      ? await confirmarExtraccion(HABILITACIONES, RELOJ, { ...gasto, periodoId, extraccionId })
+      ? await confirmarExtraccion(HABILITACIONES, RELOJ, {
+          ...gasto,
+          periodoId,
+          extraccionId,
+          // Solo con la casilla marcada y sin proveedor elegido (RN-14).
+          nuevoProveedor:
+            datos.get('altaProveedor') === 'on' && !gasto.proveedorId
+              ? {
+                  razonSocial: String(datos.get('proveedorRazonSocial') ?? ''),
+                  cuit: String(datos.get('proveedorCuit') ?? ''),
+                }
+              : null,
+        })
       : await registrarGasto(HABILITACIONES, RELOJ, { ...gasto, periodoId })
     creado = gastoId
   } catch (error) {
@@ -149,15 +161,18 @@ export async function accionEliminarGasto(_previo: Resultado, datos: FormData): 
  * ya llego al almacenamiento; si no llega, el trabajo pendiente la reintenta
  * (FR-006b).
  */
-export async function accionConfirmarComprobante(datos: {
-  consorcioId: string
-  gastoId: string
-  clave: string
-}): Promise<Resultado> {
+export async function accionConfirmarComprobante(
+  datos: FormData,
+): Promise<{ mensaje: string; destino?: string }> {
   const usuarioId = await quienOpera()
 
   try {
-    await confirmarComprobante(HABILITACIONES, RELOJ, { usuarioId, ...datos })
+    await confirmarComprobante(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId: String(datos.get('consorcio') ?? ''),
+      gastoId: String(datos.get('gasto') ?? ''),
+      clave: String(datos.get('clave') ?? ''),
+    })
   } catch (error) {
     if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
     throw error

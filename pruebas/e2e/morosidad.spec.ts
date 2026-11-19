@@ -57,9 +57,18 @@ test('el administrador ve la nomina', async ({ page }) => {
   await expect(tabla).toBeVisible()
   await expect(tabla.getByRole('cell', { name: '3B', exact: true })).toBeVisible()
   await expect(tabla.getByRole('cell', { name: '3C', exact: true })).toBeVisible()
-  // El detalle por deudor: desglose desplegable y enlace a su estado de cuenta.
-  await tabla.getByText('1 período').first().click()
-  await expect(tabla.getByText(/venció/).first()).toBeVisible()
+  // El detalle por deudor: tooltip con los períodos y enlace a su estado de cuenta.
+  await expect(tabla.locator('details')).toHaveCount(0)
+  await tabla
+    .getByRole('button', { name: /\d+ períodos?/ })
+    .first()
+    .click()
+  const globo = page.getByRole('tooltip')
+  await expect(globo).toBeVisible()
+  await expect(globo).toContainText('venció')
+  await expect(globo).toContainText('$')
+  await page.keyboard.press('Escape')
+  await expect(globo).toBeHidden()
   await expect(tabla.getByRole('link', { name: '3B', exact: true })).toHaveAttribute(
     'href',
     /\/pagos\?unidad=/,

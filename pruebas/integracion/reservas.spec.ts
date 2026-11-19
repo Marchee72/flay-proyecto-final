@@ -8,6 +8,9 @@ import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
 import {
   altaEspacio,
+  contarReservasAfectadas,
+  editarEspacio,
+  EspacioInvalido,
   deshabilitarEspacio,
   habilitarEspacio,
   listarEspacios,
@@ -166,33 +169,37 @@ describe('superposicion (regla RN-10, SC-005)', () => {
   })
 })
 
+async function generarDeudaVencida() {
+  // Un periodo de enero liquidado y sin pagar: a septiembre esta vencido.
+  const rubroId = (
+    await prismaBase.rubroGasto.upsert({
+      where: { nombre: 'Rubro de prueba' },
+      update: {},
+      create: { nombre: 'Rubro de prueba', clasificacion: 'ordinario' },
+    })
+  ).id
+  const { periodoId } = await periodoPara(repo, RELOJ, {
+    usuarioId: administrador,
+    consorcioId,
+    anio: 2026,
+    mes: 1,
+  })
+  await registrarGasto(repo, RELOJ, {
+    usuarioId: administrador,
+    consorcioId,
+    periodoId,
+    rubroId,
+    importe: '1000.00',
+    fecha: new Date('2026-01-05'),
+    descripcion: 'Gasto',
+  })
+  await cerrarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
+  await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
+}
+
 describe('deuda vencida (SC-006) y reglas del espacio', () => {
   it('una unidad con deuda vencida no reserva, y el mensaje nombra la causa', async () => {
-    // Un periodo de enero liquidado y sin pagar: a septiembre esta vencido.
-    const rubroId = (
-      await prismaBase.rubroGasto.upsert({
-        where: { nombre: 'Rubro de prueba' },
-        update: {},
-        create: { nombre: 'Rubro de prueba', clasificacion: 'ordinario' },
-      })
-    ).id
-    const { periodoId } = await periodoPara(repo, RELOJ, {
-      usuarioId: administrador,
-      consorcioId,
-      anio: 2026,
-      mes: 1,
-    })
-    await registrarGasto(repo, RELOJ, {
-      usuarioId: administrador,
-      consorcioId,
-      periodoId,
-      rubroId,
-      importe: '1000.00',
-      fecha: new Date('2026-01-05'),
-      descripcion: 'Gasto',
-    })
-    await cerrarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
-    await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
+    await generarDeudaVencida()
 
     await expect(
       reservar(repo, RELOJ, {
@@ -244,6 +251,162 @@ describe('deuda vencida (SC-006) y reglas del espacio', () => {
         hasta: enHoras(74),
       }),
     ).rejects.toThrow('No encontramos lo que buscabas.')
+  })
+})
+
+describe('horario y rechazo por deuda configurables (RF-15, CU-09)', () => {
+  const AR = (iso: string) => new Date(`${iso}:00-03:00`)
+  const nuevoEspacio = async (extra: Record<string, unknown>) =>
+    (
+      await altaEspacio(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        nombre: 'Quincho',
+        ...extra,
+      })
+    ).espacioId
+  const base = () => ({ usuarioId: vecino.id, consorcioId, unidadId: unidadA })
+
+  it('fuera del horario se rechaza con el horario en el mensaje (RF-15)', async () => {
+    const id = await nuevoEspacio({ horario: { apertura: 600, cierre: 1380 } })
+    await expect(
+      reservar(repo, RELOJ, {
+        ...base(),
+        espacioId: id,
+        desde: AR('2026-09-20T08:00'),
+        hasta: AR('2026-09-20T10:00'),
+      }),
+    ).rejects.toThrow('se usa de 10:00 a 23:00')
+    await expect(
+      reservar(repo, RELOJ, {
+        ...base(),
+        espacioId: id,
+        desde: AR('2026-09-20T11:00'),
+        hasta: AR('2026-09-20T13:00'),
+      }),
+    ).resolves.toHaveProperty('reservaId')
+  })
+
+  it('sin horario, una reserva de madrugada se acepta igual que antes', async () => {
+    await expect(
+      reservar(repo, RELOJ, {
+        ...base(),
+        espacioId,
+        desde: AR('2026-09-20T03:00'),
+        hasta: AR('2026-09-20T04:00'),
+      }),
+    ).resolves.toHaveProperty('reservaId')
+  })
+
+  it('con rechazaConDeuda en false, la unidad con deuda vencida reserva (CU-09)', async () => {
+    await generarDeudaVencida()
+    const id = await nuevoEspacio({ rechazaConDeuda: false })
+    await expect(
+      reservar(repo, RELOJ, { ...base(), espacioId: id, desde: enHoras(72), hasta: enHoras(74) }),
+    ).resolves.toHaveProperty('reservaId')
+  })
+
+  it('por defecto, la unidad con deuda sigue rechazada', async () => {
+    await generarDeudaVencida()
+    await expect(
+      reservar(repo, RELOJ, { ...base(), espacioId, desde: enHoras(72), hasta: enHoras(74) }),
+    ).rejects.toThrow('tiene deuda vencida')
+  })
+
+  it('alta con apertura igual al cierre es EspacioInvalido', async () => {
+    await expect(nuevoEspacio({ horario: { apertura: 600, cierre: 600 } })).rejects.toBeInstanceOf(
+      EspacioInvalido,
+    )
+  })
+
+  describe('cambiar el horario con reservas hechas', () => {
+    const nuevaReserva = (id: string, desde: string, hasta: string) =>
+      prismaBase.reserva.create({
+        data: {
+          consorcioId,
+          espacioId: id,
+          unidadId: unidadA,
+          solicitadaPor: vecino.id,
+          desde: AR(desde),
+          hasta: AR(hasta),
+        },
+      })
+    const preparar = async () => {
+      const id = await nuevoEspacio({})
+      // En curso (desde < ahora = 09:00 AR), futura que no cabe, futura que cabe.
+      const enCurso = await nuevaReserva(id, '2026-09-15T08:00', '2026-09-15T10:00')
+      const afuera = await nuevaReserva(id, '2026-09-20T21:00', '2026-09-20T22:30')
+      const adentro = await nuevaReserva(id, '2026-09-21T12:00', '2026-09-21T14:00')
+      return { id, enCurso, afuera, adentro }
+    }
+    const estado = async (id: string) =>
+      (await prismaBase.reserva.findUniqueOrThrow({ where: { id } })).estado
+    const datos = (id: string, extra: Record<string, unknown>) => ({
+      usuarioId: administrador,
+      consorcioId,
+      espacioId: id,
+      nombre: 'Quincho',
+      ...extra,
+    })
+
+    it('al achicar el horario se cancelan y avisan solo las futuras que no caben', async () => {
+      const { id, enCurso, afuera, adentro } = await preparar()
+      const { canceladas } = await editarEspacio(
+        repo,
+        RELOJ,
+        datos(id, { horario: { apertura: 600, cierre: 1200 } }),
+      )
+      expect(canceladas).toBe(1)
+      const cancelada = await prismaBase.reserva.findUniqueOrThrow({ where: { id: afuera.id } })
+      expect(cancelada.estado).toBe('cancelada')
+      expect(cancelada.motivoRechazo).toBe('Cambió el horario de uso del espacio')
+      expect(await estado(adentro.id)).toBe('confirmada')
+      expect(await estado(enCurso.id)).toBe('confirmada')
+      const avisos = await prismaBase.notificacion.findMany({
+        where: { usuarioId: vecino.id, tipo: 'reserva_rechazada', entidadId: afuera.id },
+      })
+      expect(avisos).toHaveLength(1)
+      expect(avisos[0]!.cuerpo).toContain('Quincho')
+      expect(avisos[0]!.cuerpo).toContain('de 10:00 a 20:00')
+    })
+
+    it('editar sin cambiar el horario no cancela nada', async () => {
+      const { id, afuera } = await preparar()
+      await editarEspacio(repo, RELOJ, datos(id, { horario: { apertura: 600, cierre: 1200 } }))
+      await prismaBase.reserva.update({ where: { id: afuera.id }, data: { estado: 'confirmada' } })
+      const { canceladas } = await editarEspacio(
+        repo,
+        RELOJ,
+        datos(id, { horario: { apertura: 600, cierre: 1200 } }),
+      )
+      expect(canceladas).toBe(0)
+      expect(await estado(afuera.id)).toBe('confirmada')
+    })
+
+    it('horario undefined conserva el guardado y null lo borra, sin cancelar', async () => {
+      const { id, afuera } = await preparar()
+      const leer = () => prismaBase.espacioComun.findUniqueOrThrow({ where: { id } })
+      await editarEspacio(repo, RELOJ, datos(id, { horario: { apertura: 600, cierre: 1200 } }))
+      await prismaBase.reserva.update({ where: { id: afuera.id }, data: { estado: 'confirmada' } })
+      await editarEspacio(repo, RELOJ, datos(id, {}))
+      expect((await leer()).aperturaMinutos).toBe(600)
+      const { canceladas } = await editarEspacio(repo, RELOJ, datos(id, { horario: null }))
+      expect(canceladas).toBe(0)
+      expect((await leer()).aperturaMinutos).toBeNull()
+      expect(await estado(afuera.id)).toBe('confirmada')
+    })
+
+    it('contarReservasAfectadas anticipa lo mismo sin escribir', async () => {
+      const { id, afuera } = await preparar()
+      const n = await contarReservasAfectadas(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        espacioId: id,
+        horario: { apertura: 600, cierre: 1200 },
+      })
+      expect(n).toBe(1)
+      expect(await estado(afuera.id)).toBe('confirmada')
+    })
   })
 })
 

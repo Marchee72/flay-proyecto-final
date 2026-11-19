@@ -7,6 +7,7 @@ import { enlaceDelActa, verificarHuella } from '@/aplicacion/asambleas/acta'
 import { verAsamblea } from '@/aplicacion/asambleas/ver'
 
 import { AvisoDeError, conConsorcio, idONoEncontrado } from '../../../../../con-consorcio'
+import { IconoIA } from '../../../../../icono-ia'
 import { Volver } from '../../../../../encabezado-consorcio'
 import { EnVivo } from '../../../../../en-vivo'
 import { BotonModal } from '../../../../../modal'
@@ -145,7 +146,9 @@ export default async function ActaPage({
             <div className="campo campo--ancho">
               <label htmlFor={`resumen-${p.id}`}>Resumen de lo debatido</label>
               {!p.resumen && p.borradorResumen && (
-                <p className="etiqueta etiqueta--pendiente">Borrador de IA, revisalo</p>
+                <p className="etiqueta etiqueta--ia">
+                  <IconoIA /> Borrador de IA, revisalo
+                </p>
               )}
               {/* La clave cambia al llegar el borrador: `defaultValue` solo vale al montar. */}
               <textarea

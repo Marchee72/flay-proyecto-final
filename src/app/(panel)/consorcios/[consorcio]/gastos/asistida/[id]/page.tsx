@@ -6,6 +6,7 @@ import { verExtraccion } from '@/aplicacion/gastos/extraccion'
 import { listarProveedores, listarRubros } from '@/aplicacion/proveedores/proveedores'
 
 import { AvisoDeError, conConsorcio, idONoEncontrado } from '../../../../../con-consorcio'
+import { IconoIA } from '../../../../../icono-ia'
 import { EnVivo } from '../../../../../en-vivo'
 import { Volver } from '../../../../../encabezado-consorcio'
 import { accionDescartarExtraccion } from '../../acciones'
@@ -125,8 +126,8 @@ export default async function RevisarExtraccionPage({
             </span>
           </p>
         ) : (
-          <p className="aviso aviso--atencion" role="status">
-            <TriangleAlert className="icono" aria-hidden="true" />
+          <p className="aviso aviso--ia" role="status">
+            <IconoIA />
             <span>
               Propuesta automática{propuesta.confianza ? ` (confianza ${propuesta.confianza})` : ''}
               . Revisar cada campo contra el comprobante: el gasto se crea recién al confirmar.
@@ -147,6 +148,11 @@ export default async function RevisarExtraccionPage({
               }))}
               proveedores={proveedores.map((p) => ({ id: p.id, etiqueta: p.razonSocial }))}
               precargado={precargado}
+              altaProveedor={
+                !proveedor && propuesta.proveedor && propuesta.cuit
+                  ? { razonSocial: propuesta.proveedor, cuit: propuesta.cuit }
+                  : undefined
+              }
               accionesExtra={
                 <button className="boton boton--fantasma" type="submit" form="descartar-extraccion">
                   Descartar

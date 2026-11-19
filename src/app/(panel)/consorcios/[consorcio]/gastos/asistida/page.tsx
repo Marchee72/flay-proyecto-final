@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { BadgeCheck, Clock, LoaderCircle, ScanSearch, TriangleAlert } from 'lucide-react'
+import { BadgeCheck, Clock, LoaderCircle, TriangleAlert } from 'lucide-react'
 
 import { momentoParaMostrar } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { listarExtracciones, type ExtraccionEnLista } from '@/aplicacion/gastos/extraccion'
 
 import { AvisoDeError, conConsorcio } from '../../../../con-consorcio'
+import { IconoIA } from '../../../../icono-ia'
 import { EnVivo } from '../../../../en-vivo'
 import { Volver } from '../../../../encabezado-consorcio'
 import { CargadorDeComprobante } from './cargador'
@@ -79,7 +80,9 @@ export default async function CargaAsistidaPage({
       <>
         {enProceso > 0 && <EnVivo />}
         <Volver href={`/consorcios/${activo.id}/gastos`} />
-        <h1>Carga asistida</h1>
+        <h1>
+          <IconoIA /> Carga asistida
+        </h1>
         <p className="apagado">
           Subí el comprobante y el sistema propone proveedor, fecha, importe y rubro. El gasto se
           crea recién cuando lo revisás y confirmás.
@@ -98,7 +101,7 @@ export default async function CargaAsistidaPage({
         </div>
         {extracciones.length === 0 ? (
           <div className="vacio">
-            <ScanSearch aria-hidden="true" />
+            <IconoIA />
             <p>No hay comprobantes en proceso ni esperando revisión.</p>
           </div>
         ) : (

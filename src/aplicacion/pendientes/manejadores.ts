@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import { manejadorNotificacion } from '@/aplicacion/comunicacion/despachar'
 import { manejadorIndexacion } from '@/aplicacion/comunicacion/indexar'
+import { manejadorSugerencias } from '@/aplicacion/comunicacion/sugerencias'
 import { manejadorBorradorActa } from '@/aplicacion/asambleas/acta'
 import { ASISTENCIA, PROCESADOR_PAGOS, RELOJ } from '@/aplicacion/dependencias'
 import { manejadorExtraccion } from '@/aplicacion/gastos/extraccion'
@@ -51,6 +52,8 @@ export const MANEJADORES: Partial<Record<TipoTrabajo, Manejador>> = {
   triage_reclamo: manejadorTriage(ASISTENCIA.clasificador),
   indexar_documento: manejadorIndexacion(almacenR2, ASISTENCIA.vectores, textoPorPagina),
   redactar_acta: manejadorBorradorActa(ASISTENCIA.redactor),
+  // RF-19: lo que un reglamento, acta o contrato fija, como sugerencia pendiente (RN-14).
+  sugerir_configuracion: manejadorSugerencias(ASISTENCIA.lector),
   // Red *pull* del cobro en linea (`RF-28`): sin webhook ni retorno, pregunta a la pasarela.
   conciliar_pago: manejadorConciliacion(PROCESADOR_PAGOS, RELOJ),
   correo_directo: async (carga) =>

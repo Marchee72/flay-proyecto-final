@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
+import { CuitInvalido } from '@/aplicacion/proveedores/proveedores'
 import {
   confirmarExtraccion,
   descartarExtraccion,
@@ -309,5 +310,106 @@ describe('extraccion y confirmacion', () => {
     expect(vista.propuesta.cuit).toBeNull()
     expect(vista.propuesta.importe).toBeNull()
     expect(vista.propuesta.fecha).toBeNull()
+  })
+})
+
+describe('alta del proveedor al confirmar (RF-06, RN-14)', () => {
+  const base = () => ({
+    usuarioId: administrador,
+    consorcioId,
+    periodoId,
+    importe: '96500.00',
+    fecha: new Date('2026-05-06T00:00:00Z'),
+    descripcion: 'EPE mayo',
+  })
+  const energia = () =>
+    prismaBase.rubroGasto.findUniqueOrThrow({ where: { nombre: 'Energia electrica' } })
+
+  it('con nuevoProveedor crea el proveedor en la misma confirmación y le ata el gasto', async () => {
+    const { extraccionId } = await subirYExtraer()
+    const rubro = await energia()
+    const { gastoId } = await confirmarExtraccion(repo, RELOJ, {
+      ...base(),
+      extraccionId,
+      rubroId: rubro.id,
+      proveedorId: null,
+      nuevoProveedor: { razonSocial: 'Ascensores Sur SRL', cuit: '30-71234567-9' },
+    })
+    const gasto = await prismaBase.gasto.findUniqueOrThrow({
+      where: { id: gastoId },
+      include: { proveedor: true },
+    })
+    expect(gasto.proveedor).toMatchObject({
+      razonSocial: 'Ascensores Sur SRL',
+      cuit: '30-71234567-9',
+      rubroHabitualId: rubro.id,
+      consorcioId,
+    })
+  })
+
+  it('si el CUIT ya está en el padrón, usa ese proveedor y no duplica', async () => {
+    const { extraccionId } = await subirYExtraer()
+    const rubro = await energia()
+    const existente = await prismaBase.proveedor.create({
+      data: { consorcioId, razonSocial: 'Ya Cargado SA', cuit: '30-71234567-9' },
+    })
+    const { gastoId } = await confirmarExtraccion(repo, RELOJ, {
+      ...base(),
+      extraccionId,
+      rubroId: rubro.id,
+      nuevoProveedor: { razonSocial: 'Ascensores Sur SRL', cuit: '30712345679' },
+    })
+    expect(await prismaBase.proveedor.count({ where: { consorcioId } })).toBe(1)
+    const gasto = await prismaBase.gasto.findUniqueOrThrow({ where: { id: gastoId } })
+    expect(gasto.proveedorId).toBe(existente.id)
+  })
+
+  it('un CUIT inválido rechaza con CuitInvalido y no crea el gasto', async () => {
+    const { extraccionId } = await subirYExtraer()
+    const rubro = await energia()
+    await expect(
+      confirmarExtraccion(repo, RELOJ, {
+        ...base(),
+        extraccionId,
+        rubroId: rubro.id,
+        nuevoProveedor: { razonSocial: 'Ascensores Sur SRL', cuit: '123' },
+      }),
+    ).rejects.toBeInstanceOf(CuitInvalido)
+    expect(await prismaBase.gasto.count({ where: { consorcioId } })).toBe(0)
+    expect(await prismaBase.proveedor.count({ where: { consorcioId } })).toBe(0)
+  })
+
+  it('con proveedorId, nuevoProveedor se ignora', async () => {
+    const { extraccionId } = await subirYExtraer()
+    const rubro = await energia()
+    const existente = await prismaBase.proveedor.create({
+      data: { consorcioId, razonSocial: 'Ya Cargado SA', cuit: '30-11111111-1' },
+    })
+    await confirmarExtraccion(repo, RELOJ, {
+      ...base(),
+      extraccionId,
+      rubroId: rubro.id,
+      proveedorId: existente.id,
+      nuevoProveedor: { razonSocial: 'Otro', cuit: '30-71234567-9' },
+    })
+    expect(await prismaBase.proveedor.count({ where: { consorcioId } })).toBe(1)
+  })
+
+  it('editar la razón social o el CUIT detectados cuenta como corrección', async () => {
+    const { extraccionId } = await subirYExtraer()
+    const rubro = await energia()
+    const detectada = await prismaBase.extraccionComprobante.findUniqueOrThrow({
+      where: { id: extraccionId },
+    })
+    const { camposCorregidos } = await confirmarExtraccion(repo, RELOJ, {
+      ...base(),
+      extraccionId,
+      rubroId: rubro.id,
+      nuevoProveedor: {
+        razonSocial: `${detectada.proveedorDetectado ?? ''} corregida`,
+        cuit: '30-71234567-9',
+      },
+    })
+    expect(camposCorregidos).toEqual(expect.arrayContaining(['proveedor', 'cuit']))
   })
 })

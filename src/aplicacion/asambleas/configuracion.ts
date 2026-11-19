@@ -22,7 +22,7 @@ export interface ConfiguracionAsambleas {
   umbralSinVoto: number
 }
 
-const ESQUEMA = z.object({
+export const ESQUEMA_CONFIGURACION_ASAMBLEAS = z.object({
   reglaMayoria: z.enum(['presentes', 'totalidad']),
   anticipacionDias: z
     .number({ message: 'Indicá los días de anticipación.' })
@@ -75,7 +75,7 @@ export async function guardarConfiguracion(
   reloj: Reloj,
   datos: ConfiguracionAsambleas & { usuarioId: string; consorcioId: string },
 ): Promise<void> {
-  const validos = ESQUEMA.safeParse(datos)
+  const validos = ESQUEMA_CONFIGURACION_ASAMBLEAS.safeParse(datos)
   if (!validos.success) throw new ConfiguracionInvalida(validos.error.issues[0].message)
   await conAutorizacion(
     repositorio,

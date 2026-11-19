@@ -113,3 +113,58 @@ test('el historial de reservas muestra la grilla de siete columnas sin desbordar
     await limpiarEscenario(admin)
   }
 })
+
+test('el administrador fija el horario de un espacio y la tarjeta lo muestra; al tipear solo la apertura avisa', async ({
+  page,
+}) => {
+  const admin = await sembrarEscenario('administrador', 'Alsina 321')
+  try {
+    await prisma.espacioComun.create({
+      data: { consorcioId: admin.consorcioId, nombre: 'SUM' },
+    })
+    await entrar(page, admin.correo)
+    await page.goto(`/consorcios/${admin.consorcioId}/espacios`)
+    const tarjeta = page.getByRole('article', { name: 'SUM' })
+    await tarjeta.getByRole('button', { name: 'Editar' }).click()
+    const dialogo = page.getByRole('dialog')
+    await dialogo.getByLabel('Apertura').fill('10:00')
+    const cierre = dialogo.getByLabel('Cierre')
+    await expect(dialogo.getByLabel('Apertura')).toHaveAttribute('aria-invalid', 'true')
+    await expect(dialogo).toContainText('Completá la apertura y el cierre')
+    await cierre.fill('23:00')
+    await expect(dialogo.getByLabel('Apertura')).not.toHaveAttribute('aria-invalid', 'true')
+    await expect(cierre).toHaveAttribute('aria-describedby', /^ayuda-horario-/)
+    await dialogo.getByRole('button', { name: 'Guardar' }).click()
+    await expect(page.getByRole('article', { name: 'SUM' })).toContainText('de 10:00 a 23:00')
+  } finally {
+    await prisma.espacioComun.deleteMany({ where: { consorcioId: admin.consorcioId } })
+    await limpiarEscenario(admin)
+  }
+})
+
+test('reservar fuera del horario del espacio dice cuándo se usa', async ({ page }) => {
+  const espacio = await prisma.espacioComun.create({
+    data: {
+      consorcioId: consorcista.consorcioId,
+      nombre: 'Quincho',
+      aperturaMinutos: 600,
+      cierreMinutos: 1380,
+    },
+  })
+  try {
+    await entrar(page, consorcista.correo)
+    await page.goto(`/consorcios/${consorcista.consorcioId}/reservas`)
+    await page.getByRole('button', { name: 'Reservar' }).click()
+    const dialogo = page.getByRole('dialog')
+    await dialogo.getByLabel('Espacio').selectOption(espacio.id)
+    const dia = new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10)
+    await dialogo.getByLabel('Desde').fill(`${dia}T08:00`)
+    await dialogo.getByLabel('Hasta').fill(`${dia}T09:00`)
+    await dialogo.getByLabel('Cantidad de personas').fill('5')
+    await dialogo.getByRole('button', { name: 'Confirmar', exact: true }).click()
+    await expect(dialogo.getByRole('alert')).toContainText('se usa de 10:00 a 23:00')
+  } finally {
+    await prisma.reserva.deleteMany({ where: { espacioId: espacio.id } })
+    await prisma.espacioComun.delete({ where: { id: espacio.id } })
+  }
+})

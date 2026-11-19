@@ -7,6 +7,7 @@ import {
   disponible,
   type HerramientaDisponible,
   type Sugerencia,
+  type SugerenciaLeida,
   type UrgenciaSugerida,
 } from '@/dominio/contratos/asistencia'
 
@@ -300,6 +301,39 @@ export const asistenciaDeterminista: Asistencia = {
           return { orden: p.orden, resumen: partes.filter(Boolean).join(' ') }
         }),
       )
+    },
+  },
+
+  lector: {
+    // Reconoce solo el reglamento de prueba (pruebas/fixtures/reglamento-de-prueba.txt).
+    async leer(texto, contexto) {
+      if (!/SUM[^]*10 a 23 horas/.test(texto)) return disponible([])
+      const quincho = contexto.espaciosExistentes.find((e) => e.nombre === 'Quincho')
+      const sugerencias: SugerenciaLeida[] = [
+        {
+          tipo: 'espacio_nuevo',
+          cita: 'El SUM se usa de 10 a 23 horas y se reserva con 48 horas de anticipación.',
+          datos: {
+            nombre: 'SUM',
+            horario: { apertura: '10:00', cierre: '23:00' },
+            anticipacionMinimaHoras: 48,
+          },
+        },
+      ]
+      if (quincho) {
+        sugerencias.push({
+          tipo: 'espacio_cambio',
+          espacioId: quincho.id,
+          cita: 'El Quincho se reserva por hasta 6 horas.',
+          datos: { duracionMaximaHoras: 6 },
+        })
+      }
+      sugerencias.push({
+        tipo: 'vencimientos',
+        cita: 'La mora devenga un interés punitorio del 3 % mensual.',
+        datos: { tasaMoraMensual: '3.0000' },
+      })
+      return disponible(sugerencias)
     },
   },
 }

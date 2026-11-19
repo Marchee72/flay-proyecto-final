@@ -9,6 +9,7 @@ import {
   accionValorar,
   type ResultadoDeConsultaVisible,
 } from '../../../../comunicacion/acciones'
+import { IconoIA } from '../../../../icono-ia'
 
 const INICIAL: ResultadoDeConsultaVisible = { modo: 'inicial' }
 
@@ -48,7 +49,10 @@ export function FormularioDeConsulta({ consorcioId }: { consorcioId: string }) {
       )}
 
       {estado.modo === 'respuesta' && (
-        <section className="tarjeta" aria-live="polite">
+        <section className="tarjeta tarjeta--ia" aria-live="polite">
+          <p className="etiqueta etiqueta--ia">
+            <IconoIA /> Respuesta de IA
+          </p>
           <p style={{ whiteSpace: 'pre-line' }}>{estado.respuesta}</p>
           <h2>Fuentes</h2>
           <ul>

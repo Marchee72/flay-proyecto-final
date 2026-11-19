@@ -7,6 +7,8 @@ import type { ExtractorDocumental } from '@/dominio/contratos/asistencia'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { exigirPeriodoConGastos } from '@/dominio/periodos/estado'
+import { normalizarCuit } from '@/dominio/proveedores/cuit'
+import { CuitInvalido, ProveedorIncompleto } from '@/aplicacion/proveedores/proveedores'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { claveEsDe } from '@/aplicacion/comunicacion/objetos'
 import { importe as aImporte } from '@/compartido/dinero'
@@ -225,6 +227,8 @@ export async function confirmarExtraccion(
     periodoId: string
     rubroId: string
     proveedorId?: string | null
+    /** Alta del proveedor leido de la factura, en la misma confirmacion. Ignorado si viene `proveedorId`. */
+    nuevoProveedor?: { razonSocial: string; cuit: string } | null
     importe: string
     fecha: Date
     descripcion: string
@@ -266,6 +270,14 @@ export async function confirmarExtraccion(
         const proveedor = await prisma.proveedor.findFirst({ where: { id: datos.proveedorId } })
         if (!proveedor) throw new NoEncontrado()
       }
+      let altaProveedor: { razonSocial: string; cuit: string } | null = null
+      if (!datos.proveedorId && datos.nuevoProveedor) {
+        const razonSocial = datos.nuevoProveedor.razonSocial.trim()
+        if (!razonSocial) throw new ProveedorIncompleto()
+        const cuit = normalizarCuit(datos.nuevoProveedor.cuit)
+        if (!cuit) throw new CuitInvalido()
+        altaProveedor = { razonSocial, cuit }
+      }
 
       // Lo que la persona cambio respecto de lo propuesto (I-5).
       const camposCorregidos: string[] = []
@@ -277,13 +289,34 @@ export async function confirmarExtraccion(
       )
         camposCorregidos.push('fecha')
       if ((extraccion.rubroSugeridoId ?? null) !== datos.rubroId) camposCorregidos.push('rubro')
+      if (altaProveedor) {
+        if ((extraccion.proveedorDetectado ?? null) !== altaProveedor.razonSocial)
+          camposCorregidos.push('proveedor')
+        const cuitDetectado = extraccion.cuitDetectado
+          ? normalizarCuit(extraccion.cuitDetectado)
+          : null
+        if (cuitDetectado !== altaProveedor.cuit) camposCorregidos.push('cuit')
+      }
 
       const gastoId = await prisma.$transaction(async (tx) => {
+        let proveedorId = datos.proveedorId ?? null
+        if (altaProveedor) {
+          // ponytail: findFirst y create no son atomicos; dos confirmaciones
+          // simultaneas del mismo CUIT hacen que la segunda falle con P2002 y
+          // la persona reintente. Si molesta, reintentar la confirmacion una vez.
+          const existente = await tx.proveedor.findFirst({ where: { cuit: altaProveedor.cuit } })
+          proveedorId = (
+            existente ??
+            (await tx.proveedor.create({
+              data: sinConsorcio({ ...altaProveedor, rubroHabitualId: rubro.id }),
+            }))
+          ).id
+        }
         const gasto = await tx.gasto.create({
           data: sinConsorcio({
             periodoId: periodo.id,
             rubroId: rubro.id,
-            proveedorId: datos.proveedorId ?? null,
+            proveedorId,
             importe: monto,
             clasificacion: datos.clasificacion ?? rubro.clasificacion,
             fecha: datos.fecha,

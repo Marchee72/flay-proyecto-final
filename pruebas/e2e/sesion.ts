@@ -364,7 +364,7 @@ export async function limpiarServicios(
     const ids = documentos.map((d) => d.id)
     await prisma.$executeRaw`
       DELETE FROM "TrabajoPendiente"
-      WHERE tipo = 'indexar_documento'
+      WHERE tipo IN ('indexar_documento', 'sugerir_configuracion')
         AND carga->>'documentoId' = ANY(${ids})`
   }
   if (usuarios.length > 0) {

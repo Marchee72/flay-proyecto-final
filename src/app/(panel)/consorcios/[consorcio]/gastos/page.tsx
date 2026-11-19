@@ -1,7 +1,7 @@
 import type { Clasificacion } from '@prisma/client'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Receipt, ScanSearch, Siren } from 'lucide-react'
+import { Receipt, Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { conMayuscula, fechaParaMostrar, importeParaMostrar, plural } from '@/compartido/formato'
@@ -13,6 +13,7 @@ import { listarPeriodos } from '@/aplicacion/periodos/periodos'
 import { listarProveedores, listarRubros } from '@/aplicacion/proveedores/proveedores'
 
 import { conConsorcio } from '../../../con-consorcio'
+import { IconoIA } from '../../../icono-ia'
 import { ModalGasto } from './modal-gasto'
 import { EnlaceExportar } from '../../../exportar'
 import { Filtros } from '../../../filtros'
@@ -102,11 +103,8 @@ export default async function GastosPage({
                 }))}
                 abrir={parametros.abrir === '1'}
               />
-              <Link
-                className="boton boton--fantasma"
-                href={`/consorcios/${activo.id}/gastos/asistida`}
-              >
-                <ScanSearch className="icono" aria-hidden="true" />
+              <Link className="boton boton--ia" href={`/consorcios/${activo.id}/gastos/asistida`}>
+                <IconoIA />
                 Carga asistida
               </Link>
             </>

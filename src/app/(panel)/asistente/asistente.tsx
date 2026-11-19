@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { ArrowRight, Bot, LoaderCircle, Send, X } from 'lucide-react'
+import { ArrowRight, LoaderCircle, Send, Sparkles, X } from 'lucide-react'
 
 import type { EnlaceDeDatos, EventoAsistente } from '@/aplicacion/asistente/conversar'
 import { accionConfirmar, accionDescartar } from './acciones'
@@ -252,7 +252,7 @@ export function Asistente({
         {abierto ? (
           <X className="icono" aria-hidden="true" />
         ) : (
-          <Bot className="icono" aria-hidden="true" />
+          <Sparkles className="icono" aria-hidden="true" />
         )}
       </button>
 
@@ -266,7 +266,7 @@ export function Asistente({
       {abierto && (
         <section className="asistente" role="dialog" aria-label="Asistente">
           <header className="asistente__cabeza">
-            <Bot className="icono" aria-hidden="true" />
+            <Sparkles className="icono" aria-hidden="true" />
             <strong>Asistente</strong>
             {consorcios.length > 1 && (
               <select
@@ -321,7 +321,7 @@ export function Asistente({
                 )
               if (linea.de === 'propuesta')
                 return (
-                  <div key={i} className="tarjeta asistente__msg">
+                  <div key={i} className="tarjeta tarjeta--ia asistente__msg">
                     <p>{linea.resumen}</p>
                     {!linea.resuelta ? (
                       <div className="fila-acciones">

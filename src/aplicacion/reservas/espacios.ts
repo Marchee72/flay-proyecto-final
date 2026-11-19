@@ -3,6 +3,13 @@ import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { notificar } from '@/aplicacion/comunicacion/notificar'
+import {
+  dentroDelHorario,
+  errorDeHorario,
+  horaDesdeMinutos,
+  horarioParaMostrar,
+  type HorarioDeUso,
+} from '@/dominio/reservas/horario'
 import { sinConsorcio } from '@/infraestructura/cliente-aislado'
 import { prisma } from '@/infraestructura/prisma'
 
@@ -30,6 +37,8 @@ export interface EspacioDelConsorcio {
   duracionMaximaHoras: number
   reservasMaxMesUnidad: number
   activo: boolean
+  horario: HorarioDeUso | null
+  rechazaConDeuda: boolean
   /** Presente solo si esta deshabilitado y tiene el tramo registrado. */
   suspension: SuspensionVigente | null
 }
@@ -41,6 +50,9 @@ export interface DatosDeEspacio {
   anticipacionMaximaDias?: number
   duracionMaximaHoras?: number
   reservasMaxMesUnidad?: number
+  /** `undefined` no toca el horario; `null` lo borra. */
+  horario?: HorarioDeUso | null
+  rechazaConDeuda?: boolean
 }
 
 export class EspacioInvalido extends ErrorDeAplicacion {
@@ -49,7 +61,7 @@ export class EspacioInvalido extends ErrorDeAplicacion {
   }
 }
 
-function validar(datos: DatosDeEspacio): void {
+export function validarEspacio(datos: DatosDeEspacio): void {
   if (datos.nombre.trim().length === 0 || datos.nombre.length > 80) {
     throw new EspacioInvalido('Poné un nombre de hasta 80 caracteres.')
   }
@@ -66,6 +78,28 @@ function validar(datos: DatosDeEspacio): void {
         'Las reglas del espacio son números enteros, sin decimales ni negativos.',
       )
     }
+  }
+  const { horario } = datos
+  if (horario) {
+    const enRango = (m: number) => Number.isInteger(m) && m >= 0 && m <= 1439
+    const mensaje =
+      !enRango(horario.apertura) || !enRango(horario.cierre)
+        ? 'Usá horas del día, de 00:00 a 23:59.'
+        : errorDeHorario(horaDesdeMinutos(horario.apertura), horaDesdeMinutos(horario.cierre))
+    if (mensaje) throw new EspacioInvalido(mensaje)
+  }
+}
+
+/** Las tres columnas nuevas; `horario` ausente no las toca. */
+function columnasDeReglas(datos: DatosDeEspacio) {
+  return {
+    ...(datos.horario !== undefined
+      ? {
+          aperturaMinutos: datos.horario?.apertura ?? null,
+          cierreMinutos: datos.horario?.cierre ?? null,
+        }
+      : {}),
+    ...(datos.rechazaConDeuda !== undefined ? { rechazaConDeuda: datos.rechazaConDeuda } : {}),
   }
 }
 
@@ -93,6 +127,9 @@ export async function listarEspacios(
           duracionMaximaHoras: true,
           reservasMaxMesUnidad: true,
           activo: true,
+          aperturaMinutos: true,
+          cierreMinutos: true,
+          rechazaConDeuda: true,
           // El tramo en curso del deshabilitado: el mas reciente (abierto o con
           // fin planificado). Solo se usa cuando el espacio esta inactivo.
           suspensiones: {
@@ -102,8 +139,12 @@ export async function listarEspacios(
           },
         },
       })
-      return espacios.map(({ suspensiones, ...e }) => ({
+      return espacios.map(({ suspensiones, aperturaMinutos, cierreMinutos, ...e }) => ({
         ...e,
+        horario:
+          aperturaMinutos != null && cierreMinutos != null
+            ? { apertura: aperturaMinutos, cierre: cierreMinutos }
+            : null,
         suspension:
           !e.activo && suspensiones[0]
             ? {
@@ -132,7 +173,7 @@ export async function altaEspacio(
       accion: 'administrar espacios',
     },
     async () => {
-      validar(datos)
+      validarEspacio(datos)
       const existente = await prisma.espacioComun.findFirst({
         where: { nombre: datos.nombre.trim() },
       })
@@ -154,6 +195,7 @@ export async function altaEspacio(
           ...(datos.reservasMaxMesUnidad != null
             ? { reservasMaxMesUnidad: datos.reservasMaxMesUnidad }
             : {}),
+          ...columnasDeReglas(datos),
         }),
         select: { id: true },
       })
@@ -162,11 +204,60 @@ export async function altaEspacio(
   )
 }
 
+/**
+ * Las reservas confirmadas y futuras (`desde > ahora`) que no caben en el
+ * horario dado. Una reserva en curso no se toca. Sin horario no queda ninguna.
+ */
+export async function reservasFueraDeHorario(
+  cliente: Pick<typeof prisma, 'reserva'>,
+  espacioId: string,
+  horario: HorarioDeUso | null,
+  ahora: Date,
+): Promise<{ id: string; solicitadaPor: string }[]> {
+  if (!horario) return []
+  const futuras = await cliente.reserva.findMany({
+    where: { espacioId, estado: 'confirmada', desde: { gt: ahora } },
+    select: { id: true, solicitadaPor: true, desde: true, hasta: true },
+  })
+  return futuras
+    .filter((r) => !dentroDelHorario(r.desde, r.hasta, horario))
+    .map(({ id, solicitadaPor }) => ({ id, solicitadaPor }))
+}
+
+/** Cuantas reservas cancelaria un cambio de horario, sin escribir (tarjeta del espacio). */
+export async function contarReservasAfectadas(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: {
+    usuarioId: string
+    consorcioId: string
+    espacioId: string
+    horario: HorarioDeUso | null
+  },
+): Promise<number> {
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    {
+      usuarioId: datos.usuarioId,
+      consorcioId: datos.consorcioId,
+      rolesPermitidos: ['administrador'],
+      accion: 'administrar espacios',
+    },
+    async () =>
+      (await reservasFueraDeHorario(prisma, datos.espacioId, datos.horario, reloj.ahora())).length,
+  )
+}
+
+/**
+ * Edita el espacio. Si el horario pedido difiere del guardado, las reservas
+ * futuras que quedan afuera se cancelan y avisan en la misma transaccion.
+ */
 export async function editarEspacio(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
   datos: { usuarioId: string; consorcioId: string; espacioId: string } & DatosDeEspacio,
-): Promise<void> {
+): Promise<{ canceladas: number }> {
   return conAutorizacion(
     repositorio,
     reloj,
@@ -177,27 +268,55 @@ export async function editarEspacio(
       accion: 'administrar espacios',
     },
     async () => {
-      validar(datos)
+      validarEspacio(datos)
       const espacio = await prisma.espacioComun.findFirst({ where: { id: datos.espacioId } })
       if (!espacio) throw new NoEncontrado()
-      await prisma.espacioComun.update({
-        where: { id: espacio.id },
-        data: {
-          nombre: datos.nombre.trim(),
-          capacidadMaxima: datos.capacidadMaxima ?? null,
-          ...(datos.anticipacionMinimaHoras != null
-            ? { anticipacionMinimaHoras: datos.anticipacionMinimaHoras }
-            : {}),
-          ...(datos.anticipacionMaximaDias != null
-            ? { anticipacionMaximaDias: datos.anticipacionMaximaDias }
-            : {}),
-          ...(datos.duracionMaximaHoras != null
-            ? { duracionMaximaHoras: datos.duracionMaximaHoras }
-            : {}),
-          ...(datos.reservasMaxMesUnidad != null
-            ? { reservasMaxMesUnidad: datos.reservasMaxMesUnidad }
-            : {}),
-        },
+      const nuevo = datos.horario
+      const cambia =
+        nuevo !== undefined &&
+        ((nuevo?.apertura ?? null) !== espacio.aperturaMinutos ||
+          (nuevo?.cierre ?? null) !== espacio.cierreMinutos)
+      return prisma.$transaction(async (tx) => {
+        await tx.espacioComun.update({
+          where: { id: espacio.id },
+          data: {
+            nombre: datos.nombre.trim(),
+            capacidadMaxima: datos.capacidadMaxima ?? null,
+            ...(datos.anticipacionMinimaHoras != null
+              ? { anticipacionMinimaHoras: datos.anticipacionMinimaHoras }
+              : {}),
+            ...(datos.anticipacionMaximaDias != null
+              ? { anticipacionMaximaDias: datos.anticipacionMaximaDias }
+              : {}),
+            ...(datos.duracionMaximaHoras != null
+              ? { duracionMaximaHoras: datos.duracionMaximaHoras }
+              : {}),
+            ...(datos.reservasMaxMesUnidad != null
+              ? { reservasMaxMesUnidad: datos.reservasMaxMesUnidad }
+              : {}),
+            ...columnasDeReglas(datos),
+          },
+        })
+        if (!cambia || !nuevo) return { canceladas: 0 }
+        const afuera = await reservasFueraDeHorario(tx, espacio.id, nuevo, reloj.ahora())
+        if (afuera.length === 0) return { canceladas: 0 }
+        await tx.reserva.updateMany({
+          where: { id: { in: afuera.map((r) => r.id) } },
+          data: { estado: 'cancelada', motivoRechazo: 'Cambió el horario de uso del espacio' },
+        })
+        const nombre = datos.nombre.trim()
+        await notificar(
+          tx,
+          afuera.map((r) => ({
+            usuarioId: r.solicitadaPor,
+            tipo: 'reserva_rechazada' as const,
+            titulo: `Reserva cancelada: ${nombre}`,
+            cuerpo: `${nombre} ahora se usa ${horarioParaMostrar(nuevo)} y tu reserva quedó afuera, así que se canceló.`,
+            entidadTipo: 'Reserva',
+            entidadId: r.id,
+          })),
+        )
+        return { canceladas: afuera.length }
       })
     },
   )

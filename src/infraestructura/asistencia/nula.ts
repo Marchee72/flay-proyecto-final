@@ -44,4 +44,9 @@ export const asistenciaNula: Asistencia = {
       return noDisponible(`${MOTIVO} Redactá los resúmenes del acta a mano.`)
     },
   },
+  lector: {
+    async leer() {
+      return noDisponible(`${MOTIVO} Configurá el consorcio desde sus pantallas.`)
+    },
+  },
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Siren, Sparkles } from 'lucide-react'
+import { Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { momentoParaMostrar } from '@/compartido/formato'
@@ -11,6 +11,7 @@ import { posiblesResponsables } from '@/aplicacion/reclamos/asignar'
 import { verReclamo } from '@/aplicacion/reclamos/consultar'
 
 import { conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
+import { IconoIA } from '../../../../icono-ia'
 import { Volver } from '../../../../encabezado-consorcio'
 import { EstadoDeReclamo, UrgenciaDeReclamo } from '../etiquetas'
 import { AccionesDeReclamo } from './acciones-de-reclamo'
@@ -93,9 +94,9 @@ export default async function ReclamoPage({
         />
 
         {reclamo.puedeAdministrar && reclamo.sugerencia && (
-          <section className="tarjeta" aria-labelledby="sugerencia">
+          <section className="tarjeta tarjeta--ia" aria-labelledby="sugerencia">
             <h2 id="sugerencia">
-              <Sparkles className="icono" aria-hidden="true" /> Sugerencia automática
+              <IconoIA /> <span className="titulo-ia">Sugerencia automática</span>
             </h2>
             <SugerenciaDeTriage
               consorcioId={activo.id}

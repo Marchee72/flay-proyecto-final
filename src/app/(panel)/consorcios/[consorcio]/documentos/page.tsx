@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { EyeOff, FileText, MessageCircleQuestion } from 'lucide-react'
+import { EyeOff, FileText } from 'lucide-react'
 
-import { fechaParaMostrar } from '@/compartido/formato'
+import { fechaParaMostrar, plural } from '@/compartido/formato'
 import {
   ETIQUETA_INDEXACION,
   listarDocumentos,
@@ -14,7 +14,10 @@ import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { accionReindexar } from '../../../comunicacion/acciones'
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
 import { EnVivo } from '../../../en-vivo'
+import { IconoIA } from '../../../icono-ia'
+import { AvisoDeSugerencias } from './aviso-sugerencias'
 import { ModalDocumento } from './modal-documento'
+import { ModalEliminar } from './[id]/modal-eliminar'
 import { TablaDesplazable } from '../../../tabla-desplazable'
 
 export const metadata: Metadata = { title: 'Documentación — Flay' }
@@ -48,6 +51,7 @@ export default async function DocumentosPage({
       rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id),
     ])
     const administra = roles.includes('administrador')
+    const conSugerencias = documentos.filter((d) => !!d.sugerenciasPendientes)
     const enProceso = documentos.some(
       (d) => d.estadoIndexacion === 'pendiente' || d.estadoIndexacion === 'procesando',
     )
@@ -63,15 +67,22 @@ export default async function DocumentosPage({
           </div>
           <div className="cabecera-pagina__acciones">
             <Link
-              className="boton boton--fantasma"
+              className="boton boton--ia"
               href={`/consorcios/${activo.id}/documentos/consultar`}
             >
-              <MessageCircleQuestion className="icono" aria-hidden="true" />
+              <IconoIA />
               Preguntarle a la documentación
             </Link>
             {administra && <ModalDocumento consorcioId={activo.id} tipos={TIPOS_DOCUMENTO} />}
           </div>
         </div>
+        {administra && (
+          <AvisoDeSugerencias
+            href={`/consorcios/${activo.id}/documentos/sugerencias`}
+            cantidad={conSugerencias.reduce((n, d) => n + (d.sugerenciasPendientes ?? 0), 0)}
+            documentos={conSugerencias.map((d) => d.titulo)}
+          />
+        )}
         {documentos.length === 0 ? (
           <div className="vacio">
             <FileText aria-hidden="true" />
@@ -113,6 +124,17 @@ export default async function DocumentosPage({
                         <span className={`etiqueta ${CLASE_INDEXACION[d.estadoIndexacion]}`}>
                           {ETIQUETA_INDEXACION[d.estadoIndexacion]}
                         </span>
+                        {!!d.sugerenciasPendientes && (
+                          <p>
+                            <Link
+                              className="etiqueta etiqueta--ia"
+                              href={`/consorcios/${activo.id}/documentos/sugerencias#documento-${d.id}`}
+                            >
+                              <IconoIA />
+                              {plural(d.sugerenciasPendientes, 'sugerencia', 'sugerencias')}
+                            </Link>
+                          </p>
+                        )}
                         {d.estadoIndexacion === 'error' && d.errorIndexacion && (
                           <p className="ayuda">{d.errorIndexacion}</p>
                         )}
@@ -134,6 +156,13 @@ export default async function DocumentosPage({
                       >
                         Abrir
                       </Link>
+                      {administra && (
+                        <ModalEliminar
+                          consorcioId={activo.id}
+                          documentoId={d.id}
+                          titulo={d.titulo}
+                        />
+                      )}
                     </td>
                   </tr>
                 ))}

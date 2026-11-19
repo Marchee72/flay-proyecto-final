@@ -5100,3 +5100,201 @@ table.calendario th {
   background: var(--rojo-palido);
   border-color: var(--rojo-borde);
 }
+
+/* Tabla de documentos: el tipo va bajo el título, y estado, pastilla de IA y
+   acciones comparten línea y alineado. Compacta solo con puntero fino; en
+   táctil quedan los 44 px (--toque). */
+table.documentos .doc {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+table.documentos .titulo-fila {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  font-weight: 600;
+}
+table.documentos .doc small {
+  font-size: var(--t-ayuda);
+  color: var(--tinta-apagada);
+}
+table.documentos td.fecha {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--tinta-apagada);
+}
+table.documentos .estados {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--e1) var(--e2);
+}
+table.documentos .estados .ayuda {
+  flex-basis: 100%;
+  margin: 0;
+}
+table.documentos .acciones {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--e1);
+}
+table.documentos td form {
+  display: inline-flex;
+}
+@media (min-width: 761px) and (pointer: fine) {
+  table.documentos td,
+  table.documentos th {
+    padding: 6px var(--e4);
+    height: 48px;
+  }
+  table.documentos thead th {
+    height: 36px;
+  }
+  table.documentos .boton {
+    height: 32px;
+    min-height: 32px;
+    padding: 0 var(--e3);
+    font-size: 13px;
+  }
+  table.documentos .boton--icono.boton--peligro {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+  }
+  table.documentos .boton--icono svg {
+    width: 16px;
+    height: 16px;
+  }
+  table.documentos .etiqueta {
+    height: 22px;
+    padding: 0 var(--e2);
+  }
+}
+
+/* Documento: lo que la IA propone (buscar y revisar) va en una sola tarjeta,
+   arriba del visor, con sus dos acciones juntas a la derecha. */
+.panel-ia {
+  margin: 0 0 var(--e4);
+  display: flex;
+  align-items: center;
+  gap: var(--e3);
+  flex-wrap: wrap;
+  border-radius: var(--radio-grande);
+  padding: var(--e3) var(--e4);
+}
+.panel-ia .aviso--ia__texto {
+  flex: 1 1 260px;
+}
+.panel-ia__acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  flex-wrap: wrap;
+}
+.panel-ia__acciones form {
+  display: inline-flex;
+  margin: 0;
+}
+.panel-ia__acciones form > .boton {
+  margin-top: 0;
+}
+
+/* Totales de la liquidación sobre el grafito: el Total es el único mosaico
+   en lima, con texto grafito (contraste cerca de 7:1). */
+.resumen--total-lima .resumen__item--total {
+  background: var(--lima);
+}
+.resumen--total-lima .resumen__item--total .resumen__rotulo,
+.resumen--total-lima .resumen__item--total .resumen__valor {
+  color: var(--grafito);
+}
+
+/* Formulario de un espacio: cada regla es una fila —etiqueta y ayuda a la
+   izquierda, un campo corto con su unidad a la derecha—, no un campo a todo el
+   ancho del dialogo para escribir un numero. */
+.form-espacio > .campo--num,
+.form-espacio .horario {
+  margin: 0;
+  padding: var(--e2) 0;
+  border-bottom: 1px solid var(--linea-suave);
+}
+.form-espacio .campo--num {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'l c' 'a c';
+  column-gap: var(--e4);
+  align-items: center;
+}
+.form-espacio .campo--num label {
+  grid-area: l;
+  margin: 0;
+}
+.form-espacio .campo__caja {
+  grid-area: c;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+}
+.form-espacio .campo--num .ayuda {
+  grid-area: a;
+  margin: 0;
+}
+.form-espacio .campo--num input {
+  width: 80px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.form-espacio .campo__unidad {
+  min-width: 56px;
+  color: var(--tinta-apagada);
+  font-size: var(--t-menor);
+}
+.form-espacio .horario {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'l p' 'a p';
+  column-gap: var(--e4);
+  align-items: center;
+}
+.form-espacio .horario > legend {
+  grid-area: l;
+  float: left;
+  width: 100%;
+  font-size: var(--t-menor);
+  font-weight: 600;
+}
+.form-espacio .horario__par {
+  grid-area: p;
+  display: flex;
+  gap: var(--e2);
+}
+.form-espacio .horario__par .campo {
+  margin: 0;
+}
+.form-espacio .horario__par input {
+  width: 120px;
+}
+.form-espacio .horario > .ayuda {
+  grid-area: a;
+  margin: 0;
+}
+.form-espacio .horario > .error {
+  grid-column: 1 / -1;
+}
+@media (max-width: 520px) {
+  .form-espacio .campo--num {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'l' 'c' 'a';
+  }
+  .form-espacio .campo__caja {
+    justify-content: flex-start;
+  }
+  .form-espacio .horario {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'l' 'p' 'a';
+  }
+}

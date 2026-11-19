@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 
 import { analisisDeConfiguracion, verDocumento } from '@/aplicacion/comunicacion/documentos'
 import { listarSugerencias } from '@/aplicacion/comunicacion/sugerencias'
+import { plural } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 
@@ -10,7 +12,6 @@ import { AvisoDeError, conConsorcio, idONoEncontrado } from '../../../../con-con
 import { Volver } from '../../../../encabezado-consorcio'
 import { EnVivo } from '../../../../en-vivo'
 import { IconoIA } from '../../../../icono-ia'
-import { AvisoDeSugerencias } from '../aviso-sugerencias'
 import { ModalEliminar } from './modal-eliminar'
 
 export const metadata: Metadata = { title: 'Documento — Flay' }
@@ -55,34 +56,48 @@ export default async function DocumentoPage({
           <a className="boton boton--fantasma" href={documento.descarga} download>
             Descargar
           </a>
-          {analisis?.indexado && (
-            <form action={accionBuscarConfiguracion}>
-              <input type="hidden" name="consorcio" value={activo.id} />
-              <input type="hidden" name="documento" value={id} />
-              <button className="boton boton--ia" type="submit" disabled={analisis.analizando}>
-                <IconoIA />
-                Buscar configuración
-              </button>
-            </form>
-          )}
           {administra && <ModalEliminar consorcioId={activo.id} documentoId={id} />}
         </div>
+        {analisis && (analisis.indexado || analisis.analizando) && (
+          <section className="aviso aviso--ia panel-ia" aria-labelledby="titulo-panel-ia">
+            <IconoIA />
+            <div className="aviso--ia__texto">
+              <p>
+                <strong className="titulo-ia" id="titulo-panel-ia">
+                  {analisis.analizando
+                    ? 'Estamos leyendo el documento'
+                    : pendientes.length > 0
+                      ? `La IA encontró ${plural(pendientes.length, 'cambio de configuración', 'cambios de configuración')}`
+                      : 'Buscar configuración en este documento'}
+                </strong>
+              </p>
+            </div>
+            <div className="panel-ia__acciones">
+              {!analisis.analizando && pendientes.length > 0 && (
+                <Link
+                  className="boton boton--ia-lleno"
+                  href={`/consorcios/${activo.id}/documentos/sugerencias#documento-${id}`}
+                >
+                  Revisar
+                </Link>
+              )}
+              {analisis.indexado && (
+                <form action={accionBuscarConfiguracion}>
+                  <input type="hidden" name="consorcio" value={activo.id} />
+                  <input type="hidden" name="documento" value={id} />
+                  <button className="boton boton--ia" type="submit" disabled={analisis.analizando}>
+                    <IconoIA />
+                    {pendientes.length > 0 ? 'Buscar de nuevo' : 'Buscar configuración'}
+                  </button>
+                </form>
+              )}
+            </div>
+          </section>
+        )}
         {documento.tipoContenido === 'application/pdf' ? (
           <iframe className="visor" src={documento.vista} title={documento.titulo} />
         ) : (
           <p className="ayuda">Este formato se abre con la descarga.</p>
-        )}
-        {analisis?.analizando ? (
-          <p className="aviso aviso--ia" role="status">
-            <IconoIA />
-            <span>Estamos leyendo el documento: las sugerencias aparecen en un momento.</span>
-          </p>
-        ) : (
-          <AvisoDeSugerencias
-            href={`/consorcios/${activo.id}/documentos/sugerencias#documento-${id}`}
-            cantidad={pendientes.length}
-            documentos={[documento.titulo]}
-          />
         )}
       </>
     )

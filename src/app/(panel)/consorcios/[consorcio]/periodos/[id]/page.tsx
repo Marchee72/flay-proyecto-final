@@ -75,8 +75,12 @@ export default async function LiquidarPeriodoPage({
         </p>
       )}
 
-      <div className="tarjeta">
-        <div className="resumen" role="list" aria-label="Totales de la liquidación">
+      <div className="tarjeta tarjeta--oscura">
+        <div
+          className="resumen resumen--total-lima"
+          role="list"
+          aria-label="Totales de la liquidación"
+        >
           <div className="resumen__item" role="listitem">
             <span className="resumen__rotulo">Ordinario</span>
             <span className="resumen__valor cifra">

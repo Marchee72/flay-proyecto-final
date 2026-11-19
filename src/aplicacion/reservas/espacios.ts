@@ -37,6 +37,7 @@ export interface EspacioDelConsorcio {
   duracionMaximaHoras: number
   reservasMaxMesUnidad: number
   activo: boolean
+  archivado: boolean
   horario: HorarioDeUso | null
   rechazaConDeuda: boolean
   /** Reservas de toda la historia (para avisar al archivar en vez de borrar). */
@@ -114,7 +115,12 @@ function columnasDeReglas(datos: DatosDeEspacio) {
 export async function listarEspacios(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
-  datos: { usuarioId: string; consorcioId: string; incluirInactivos?: boolean },
+  datos: {
+    usuarioId: string
+    consorcioId: string
+    incluirInactivos?: boolean
+    incluirArchivados?: boolean
+  },
 ): Promise<EspacioDelConsorcio[]> {
   return conAutorizacion(
     repositorio,
@@ -124,7 +130,10 @@ export async function listarEspacios(
     // resolverse **dentro** del contexto de aislamiento, no al devolverla.
     async () => {
       const espacios = await prisma.espacioComun.findMany({
-        where: datos.incluirInactivos ? { archivadoEn: null } : { activo: true, archivadoEn: null },
+        where: {
+          ...(datos.incluirInactivos ? {} : { activo: true }),
+          ...(datos.incluirArchivados ? {} : { archivadoEn: null }),
+        },
         orderBy: { nombre: 'asc' },
         select: {
           id: true,
@@ -135,6 +144,7 @@ export async function listarEspacios(
           duracionMaximaHoras: true,
           reservasMaxMesUnidad: true,
           activo: true,
+          archivadoEn: true,
           aperturaMinutos: true,
           cierreMinutos: true,
           rechazaConDeuda: true,
@@ -148,22 +158,25 @@ export async function listarEspacios(
           },
         },
       })
-      return espacios.map(({ suspensiones, aperturaMinutos, cierreMinutos, _count, ...e }) => ({
-        ...e,
-        reservasEnHistorial: _count.reservas,
-        horario:
-          aperturaMinutos != null && cierreMinutos != null
-            ? { apertura: aperturaMinutos, cierre: cierreMinutos }
-            : null,
-        suspension:
-          !e.activo && suspensiones[0]
-            ? {
-                desde: suspensiones[0].desde.toISOString(),
-                hasta: suspensiones[0].hasta?.toISOString() ?? null,
-                motivo: suspensiones[0].motivo,
-              }
-            : null,
-      }))
+      return espacios.map(
+        ({ suspensiones, aperturaMinutos, cierreMinutos, _count, archivadoEn, ...e }) => ({
+          ...e,
+          archivado: archivadoEn !== null,
+          reservasEnHistorial: _count.reservas,
+          horario:
+            aperturaMinutos != null && cierreMinutos != null
+              ? { apertura: aperturaMinutos, cierre: cierreMinutos }
+              : null,
+          suspension:
+            !e.activo && suspensiones[0]
+              ? {
+                  desde: suspensiones[0].desde.toISOString(),
+                  hasta: suspensiones[0].hasta?.toISOString() ?? null,
+                  motivo: suspensiones[0].motivo,
+                }
+              : null,
+        }),
+      )
     },
   )
 }

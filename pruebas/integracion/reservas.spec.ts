@@ -645,6 +645,12 @@ describe('archivado de espacios (RN-22)', () => {
     expect(await prismaBase.reserva.count({ where: { espacioId } })).toBe(1)
     const datos = { usuarioId: administrador, consorcioId }
     expect(await listarEspacios(repo, RELOJ, { ...datos, incluirInactivos: true })).toEqual([])
+    const con = await listarEspacios(repo, RELOJ, {
+      ...datos,
+      incluirInactivos: true,
+      incluirArchivados: true,
+    })
+    expect(con).toMatchObject([{ id: espacioId, archivado: true }])
     expect(await listarEspaciosArchivados(repo, RELOJ, datos)).toMatchObject([
       { id: espacioId, nombre: 'SUM', reservasEnHistorial: 1 },
     ])

@@ -2,9 +2,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { confirmarPropuesta, descartarPropuesta } from '@/aplicacion/asistente/confirmar'
 import { conversar, type EventoAsistente } from '@/aplicacion/asistente/conversar'
+import { herramientasPara } from '@/aplicacion/asistente/herramientas'
 import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
+import { registrarReclamo } from '@/aplicacion/reclamos/registrar'
 import { altaEspacio } from '@/aplicacion/reservas/espacios'
+import { reservar } from '@/aplicacion/reservas/reservar'
 import { NoEncontrado } from '@/compartido/errores'
 import type { Asistencia } from '@/dominio/contratos/asistencia'
 import {
@@ -447,7 +450,7 @@ describe('modo cartera (FR-017, FR-018, RT-04)', () => {
       where: { usuarioId: administrador, consorcioId: otroConsorcioId },
       data: { rol: 'consorcista' },
     })
-    const r = await pedirCartera(administrador, 'ver_usuarios')
+    const r = await pedirCartera(administrador, 'ver_extracciones')
     if (r.modo !== 'respuesta') throw new Error('se esperaba una respuesta')
     expect(r.enlaces.map((e) => e.consorcioId)).toEqual([consorcioId])
   })
@@ -487,5 +490,109 @@ describe('modo cartera (FR-017, FR-018, RT-04)', () => {
     const r = await pedirCartera(vecino.id, aviso)
     expect(r.modo).not.toBe('propuesta')
     expect(await prismaBase.novedad.count()).toBe(0)
+  })
+})
+
+describe('privacidad hacia el LLM (canario PII — RF-27, RNF-13)', () => {
+  it('retira ver_usuarios y ver_responsables pero conserva las operaciones del chat', () => {
+    const nombres = herramientasPara(['administrador']).map((h) => h.nombre)
+    expect(nombres).not.toContain('ver_usuarios')
+    expect(nombres).not.toContain('ver_responsables')
+    expect(nombres).toContain('crear_reserva')
+    expect(nombres).toContain('cancelar_reserva')
+    expect(nombres).toContain('crear_reclamo')
+    expect(nombres).toContain('asignar_reclamo')
+    expect(nombres).toContain('transicionar_reclamo')
+    expect(nombres).toContain('publicar_novedad')
+  })
+
+  it('ningún dato personal canario llega al modelo ni queda en los turnos de herramienta', async () => {
+    const canarios = [
+      'Zulema',
+      'Canario',
+      'zulema.canario@ejemplo.test',
+      '+54 9 341 555-0199',
+      '38.999.111',
+    ]
+
+    await prismaBase.persona.update({
+      where: { id: vecino.personaId },
+      data: {
+        nombre: 'Zulema',
+        apellido: 'Canario',
+        telefono: '+54 9 341 555-0199',
+        documento: '38.999.111',
+      },
+    })
+    await prismaBase.usuario.update({
+      where: { id: vecino.id },
+      data: { correo: 'zulema.canario@ejemplo.test' },
+    })
+
+    await reservar(repo, RELOJ, {
+      usuarioId: vecino.id,
+      consorcioId,
+      espacioId,
+      unidadId: unidadA,
+      desde: new Date(en(72)),
+      hasta: new Date(en(74)),
+      cantidadPersonas: 4,
+      observaciones: null,
+    })
+
+    const { reclamoId } = await registrarReclamo(repo, RELOJ, {
+      usuarioId: vecino.id,
+      consorcioId,
+      titulo: 'Humedad en pasillo',
+      descripcion:
+        'Filtración cerca de 1A. Contactar a zulema.canario@ejemplo.test o al +54 9 341 555-0199 (DNI 38.999.111).',
+      unidadId: unidadA,
+    })
+
+    vistos.length = 0
+    await pedir(administrador, 'ver_historial_reservas')
+    await pedir(administrador, 'ver_reclamos')
+    await pedir(administrador, `ver_reclamo reclamoId=${reclamoId}`)
+    await pedir(administrador, 'ver_morosidad')
+    await pedir(administrador, 'ver_padron')
+
+    const todoLoVisto = vistos.join('\n')
+    for (const c of canarios) {
+      expect(todoLoVisto).not.toContain(c)
+    }
+    expect(todoLoVisto).toContain('1A')
+    expect(todoLoVisto).toContain('Humedad en pasillo')
+    expect(todoLoVisto).toContain('[correo omitido]')
+    expect(todoLoVisto).toContain('[teléfono omitido]')
+    expect(todoLoVisto).toContain('[documento omitido]')
+
+    const mensajesHerramienta = await prismaBase.mensajeAsistente.findMany({
+      where: { rol: 'herramienta' },
+      select: { contenido: true },
+    })
+    const todoPersistido = mensajesHerramienta.map((m) => m.contenido).join('\n')
+    for (const c of canarios) {
+      expect(todoPersistido).not.toContain(c)
+    }
+  })
+
+  it('asignar_reclamo funciona sin responsableId y asigna al administrador en sesión', async () => {
+    const { reclamoId } = await registrarReclamo(repo, RELOJ, {
+      usuarioId: vecino.id,
+      consorcioId,
+      titulo: 'Luz quemada en palier',
+      descripcion: 'Se quemó el tubo del primer piso ayer a la noche.',
+      unidadId: unidadA,
+    })
+
+    const p = await pedir(administrador, `asignar_reclamo reclamoId=${reclamoId}`)
+    if (p.modo !== 'propuesta') throw new Error('se esperaba una propuesta')
+    expect(p.resumen).toContain('Luz quemada en palier')
+    expect(p.resumen).not.toContain('Ada')
+
+    const r = await confirmar(administrador, p.propuestaId)
+    expect(r.ejecutada).toBe(true)
+    const guardado = await prismaBase.reclamo.findUnique({ where: { id: reclamoId } })
+    expect(guardado?.responsableId).toBe(administrador)
   })
 })

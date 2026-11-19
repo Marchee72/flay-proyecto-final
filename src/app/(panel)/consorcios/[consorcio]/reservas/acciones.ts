@@ -13,6 +13,7 @@ import {
   altaEspacio,
   deshabilitarEspacio,
   editarEspacio,
+  eliminarEspacio,
   habilitarEspacio,
 } from '@/aplicacion/reservas/espacios'
 import { cancelarReserva, reservar } from '@/aplicacion/reservas/reservar'
@@ -159,6 +160,25 @@ export async function accionDeshabilitarEspacio(
   }
   revalidatePath('/consorcios/[consorcio]/espacios', 'page')
   redirect(conHecho(`/consorcios/${consorcioId}/espacios`, 'espacio-baja'))
+}
+
+export async function accionEliminarEspacio(datos: FormData): Promise<void> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) return irAIngresar()
+
+  const consorcioId = texto(datos, 'consorcio')
+  try {
+    await eliminarEspacio(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      espacioId: texto(datos, 'espacio'),
+    })
+  } catch (error) {
+    if (!(error instanceof ErrorDeAplicacion)) throw error
+    redirect(conError(`/consorcios/${consorcioId}/espacios`, error.mensajeParaUsuario))
+  }
+  revalidatePath('/consorcios/[consorcio]/espacios', 'page')
+  redirect(conHecho(`/consorcios/${consorcioId}/espacios`, 'espacio-eliminado'))
 }
 
 export async function accionHabilitarEspacio(datos: FormData): Promise<void> {

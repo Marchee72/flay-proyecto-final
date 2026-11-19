@@ -444,6 +444,55 @@ export async function habilitarEspacio(
   )
 }
 
+/**
+ * Elimina el espacio (RF-15) con sus reservas y tramos de deshabilitación.
+ * A quienes tenían reservas futuras confirmadas se les avisa. Para conservar
+ * el historial, deshabilitar.
+ */
+export async function eliminarEspacio(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: { usuarioId: string; consorcioId: string; espacioId: string },
+): Promise<void> {
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    {
+      usuarioId: datos.usuarioId,
+      consorcioId: datos.consorcioId,
+      rolesPermitidos: ['administrador'],
+      accion: 'administrar espacios',
+    },
+    async () => {
+      const espacio = await prisma.espacioComun.findFirst({ where: { id: datos.espacioId } })
+      if (!espacio) throw new NoEncontrado()
+      await prisma.$transaction(async (tx) => {
+        const futuras = await tx.reserva.findMany({
+          where: { espacioId: espacio.id, estado: 'confirmada', hasta: { gt: reloj.ahora() } },
+          select: { id: true, solicitadaPor: true },
+        })
+        if (futuras.length > 0) {
+          await notificar(
+            tx,
+            futuras.map((r) => ({
+              usuarioId: r.solicitadaPor,
+              tipo: 'reserva_rechazada' as const,
+              titulo: `Reserva cancelada: ${espacio.nombre}`,
+              cuerpo: `El espacio ${espacio.nombre} fue eliminado y tu reserva quedó cancelada.`,
+              entidadTipo: 'Reserva',
+              entidadId: r.id,
+            })),
+          )
+        }
+        // La auditoría (RN-15) deja constancia de cada baja.
+        await tx.reserva.deleteMany({ where: { espacioId: espacio.id } })
+        await tx.suspensionEspacio.deleteMany({ where: { espacioId: espacio.id } })
+        await tx.espacioComun.deleteMany({ where: { id: espacio.id } })
+      })
+    },
+  )
+}
+
 /** Un tramo deshabilitado, para el calendario de uso. */
 export interface TramoDeshabilitado {
   id: string

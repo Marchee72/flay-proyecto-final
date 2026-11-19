@@ -1,6 +1,5 @@
 import { z } from 'zod'
 
-import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { misAdministradoras } from '@/aplicacion/administradoras/mis-administradoras'
 import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
 import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
@@ -27,7 +26,6 @@ import { verEstadoDeCuenta, verMorosidad } from '@/aplicacion/pagos/estado-de-cu
 import { verBandeja } from '@/aplicacion/pendientes/bandeja'
 import { listarPeriodos } from '@/aplicacion/periodos/periodos'
 import { listarProveedores, listarRubros } from '@/aplicacion/proveedores/proveedores'
-import { posiblesResponsables } from '@/aplicacion/reclamos/asignar'
 import { listarReclamos, verReclamo } from '@/aplicacion/reclamos/consultar'
 import { unidadesParaReclamar } from '@/aplicacion/reclamos/registrar'
 import { listarEspacios, suspensionesEnRango } from '@/aplicacion/reservas/espacios'
@@ -36,11 +34,11 @@ import {
   listarReservas,
   unidadesParaReservar,
 } from '@/aplicacion/reservas/reservar'
-import { listarUsuarios } from '@/aplicacion/identidad/listar-usuarios'
 import {
   DIA,
   aFecha,
   generico,
+  sanitizarParaModelo,
   vacio,
   type ContextoHerramienta,
   type Herramienta,
@@ -57,17 +55,16 @@ const T = { type: 'string' }
 const ID = z.string().min(1)
 const Libre = z.object({}).passthrough()
 
-type Fn = (a: Record<string, unknown>, ctx: ContextoHerramienta) => Promise<unknown>
-
-function lec(
+function lec<T = unknown>(
   nombre: string,
   descripcion: string,
   roles: Herramienta['roles'],
-  fn: Fn,
+  fn: (a: Record<string, unknown>, ctx: ContextoHerramienta) => Promise<T>,
   props: Record<string, unknown> = {},
   requeridos: string[] = [],
   validar: z.ZodTypeAny = Libre,
   sinConsorcio = false,
+  proyectar?: (paraUI: T) => unknown,
 ): Herramienta {
   return {
     nombre,
@@ -81,7 +78,9 @@ function lec(
     escritura: false,
     sinConsorcio,
     async ejecutar(args, ctx): Promise<ResultadoHerramienta> {
-      return generico(await fn(args as Record<string, unknown>, ctx))
+      const paraUI = await fn(args as Record<string, unknown>, ctx)
+      if (!proyectar) return generico(paraUI)
+      return { paraUI, paraModelo: sanitizarParaModelo(proyectar(paraUI)) }
     },
   }
 }
@@ -181,7 +180,7 @@ export const lectura: Herramienta[] = [
   ),
   lec(
     'ver_historial_reservas',
-    'Historial de reservas con quién reservó (administrador).',
+    'Historial de reservas por unidad y espacio, sin datos personales (administrador).',
     ADMIN,
     (a, c) =>
       historialDeReservas(c.repositorio, c.reloj, {
@@ -194,6 +193,12 @@ export const lectura: Herramienta[] = [
     { ...RANGO, espacioId: T, unidadId: T },
     [],
     z.object({ ...ZRANGO, espacioId: z.string().optional(), unidadId: z.string().optional() }),
+    false,
+    (reservas) =>
+      reservas.map(({ solicitante: _solicitante, ...resto }) => {
+        void _solicitante
+        return resto
+      }),
   ),
   lec(
     'ver_suspensiones',
@@ -243,9 +248,23 @@ export const lectura: Herramienta[] = [
   ),
   lec(
     'ver_morosidad',
-    'Morosidad del consorcio: agregada para el consorcista, nominada para administrador y consejo.',
+    'Morosidad del consorcio: agregada para el consorcista; por unidad (sin datos personales) para administrador y consejo.',
     'todos',
     (_a, c) => verMorosidad(c.repositorio, c.reloj, quien(c)),
+    {},
+    [],
+    Libre,
+    false,
+    (m) =>
+      m.nominada
+        ? {
+            ...m,
+            deudores: m.deudores.map(({ ocupantes: _ocupantes, ...resto }) => {
+              void _ocupantes
+              return resto
+            }),
+          }
+        : m,
   ),
   lec(
     'ver_periodos',
@@ -292,9 +311,6 @@ export const lectura: Herramienta[] = [
     'Datos del consorcio y padrón de unidades con coeficientes (administrador y consejo).',
     PRIV,
     (_a, c) => verConsorcio(c.repositorio, c.reloj, quien(c)),
-  ),
-  lec('ver_usuarios', 'Usuarios del consorcio y su estado (administrador).', ADMIN, (_a, c) =>
-    listarUsuarios(c.repositorio, c.reloj, quien(c)),
   ),
 
   // —— Gastos, proveedores y carga asistida ——
@@ -373,6 +389,13 @@ export const lectura: Herramienta[] = [
         .enum(['abierto', 'asignado', 'en_curso', 'resuelto', 'cerrado', 'rechazado'])
         .optional(),
     }),
+    false,
+    (reclamos) =>
+      reclamos.map(({ autor: _autor, responsable: _responsable, ...resto }) => {
+        void _autor
+        void _responsable
+        return resto
+      }),
   ),
   lec(
     'ver_reclamo',
@@ -382,18 +405,25 @@ export const lectura: Herramienta[] = [
     { reclamoId: T },
     ['reclamoId'],
     z.object({ reclamoId: ID }),
-  ),
-  lec(
-    'ver_responsables',
-    'Personas que pueden ser responsables de un reclamo (administrador).',
-    ADMIN,
-    (_a, c) =>
-      conAutorizacion(
-        c.repositorio,
-        c.reloj,
-        { ...quien(c), rolesPermitidos: ADMIN, accion: 'ver responsables' },
-        async () => posiblesResponsables(c.consorcioId),
-      ),
+    false,
+    ({
+      autor: _autor,
+      responsable: _responsable,
+      responsableId: _responsableId,
+      historial,
+      ...resto
+    }) => {
+      void _autor
+      void _responsable
+      void _responsableId
+      return {
+        ...resto,
+        historial: historial.map(({ usuario: _usuario, ...h }) => {
+          void _usuario
+          return h
+        }),
+      }
+    },
   ),
 
   // —— Novedades y documentos ——

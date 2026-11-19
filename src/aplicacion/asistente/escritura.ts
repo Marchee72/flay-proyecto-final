@@ -1,11 +1,11 @@
 import { z } from 'zod'
 
-import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { momentoParaMostrar } from '@/compartido/formato'
 import { publicarNovedad } from '@/aplicacion/comunicacion/novedades'
-import { asignar, posiblesResponsables } from '@/aplicacion/reclamos/asignar'
+import { listarProveedores } from '@/aplicacion/proveedores/proveedores'
+import { asignar } from '@/aplicacion/reclamos/asignar'
 import { verReclamo } from '@/aplicacion/reclamos/consultar'
 import { registrarReclamo } from '@/aplicacion/reclamos/registrar'
 import { listarEspacios } from '@/aplicacion/reservas/espacios'
@@ -35,7 +35,6 @@ const CrearReclamo = z.object({
 
 const AsignarReclamo = z.object({
   reclamoId: z.string(),
-  responsableId: z.string(),
   proveedorId: z.string().optional(),
   rubroId: z.string().optional(),
 })
@@ -160,43 +159,41 @@ export const escritura: Herramienta[] = [
   },
   {
     nombre: 'asignar_reclamo',
-    descripcion: 'Asigna un reclamo a un responsable. Requiere reclamoId y responsableId.',
+    descripcion:
+      'Asigna un reclamo al administrador en sesión y opcionalmente lo vincula con un proveedor y un rubro. Requiere reclamoId.',
     parametros: {
       type: 'object',
       properties: {
         reclamoId: { type: 'string' },
-        responsableId: { type: 'string' },
         proveedorId: { type: 'string' },
         rubroId: { type: 'string' },
       },
-      required: ['reclamoId', 'responsableId'],
+      required: ['reclamoId'],
     },
     validar: AsignarReclamo,
     roles: ['administrador'],
     escritura: true,
     async resumir(args, ctx) {
       const a = args as z.infer<typeof AsignarReclamo>
-      const [reclamo, responsables] = await Promise.all([
+      const [reclamo, proveedores] = await Promise.all([
         verReclamo(ctx.repositorio, ctx.reloj, {
           usuarioId: ctx.usuarioId,
           consorcioId: ctx.consorcioId,
           reclamoId: a.reclamoId,
         }),
-        conAutorizacion(
-          ctx.repositorio,
-          ctx.reloj,
-          {
-            usuarioId: ctx.usuarioId,
-            consorcioId: ctx.consorcioId,
-            rolesPermitidos: ['administrador'],
-            accion: 'ver responsables',
-          },
-          async () => posiblesResponsables(ctx.consorcioId),
-        ),
+        a.proveedorId
+          ? listarProveedores(ctx.repositorio, ctx.reloj, {
+              usuarioId: ctx.usuarioId,
+              consorcioId: ctx.consorcioId,
+            })
+          : Promise.resolve([]),
       ])
-      const responsable =
-        responsables.find((r) => r.id === a.responsableId)?.nombre ?? 'el responsable'
-      return `Asignar el reclamo "${reclamo.titulo}" a ${responsable}.`
+      const proveedor = a.proveedorId
+        ? proveedores.find((p) => p.id === a.proveedorId)?.razonSocial
+        : undefined
+      return proveedor
+        ? `Asignarte el reclamo "${reclamo.titulo}" y vincularlo con ${proveedor}.`
+        : `Asignarte el reclamo "${reclamo.titulo}".`
     },
     async confirmar(args, ctx) {
       const a = args as z.infer<typeof AsignarReclamo>
@@ -204,7 +201,7 @@ export const escritura: Herramienta[] = [
         usuarioId: ctx.usuarioId,
         consorcioId: ctx.consorcioId,
         reclamoId: a.reclamoId,
-        responsableId: a.responsableId,
+        responsableId: ctx.usuarioId,
         proveedorId: a.proveedorId ?? null,
         rubroId: a.rubroId ?? null,
       })

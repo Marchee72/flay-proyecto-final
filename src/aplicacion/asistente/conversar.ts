@@ -1,3 +1,4 @@
+import { sanitizarParaModelo } from '@/dominio/asistencia/privacidad'
 import type { AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
 import type {
   Asistencia,
@@ -377,13 +378,14 @@ export async function conversar(
           if (!enlaces.some((e) => JSON.stringify(e) === JSON.stringify(enlace)))
             enlaces.push(enlace)
         }
-        const resultadoModelo = JSON.stringify(res.paraModelo)
+        const saneado = sanitizarParaModelo(res.paraModelo)
+        const resultadoModelo = JSON.stringify(saneado)
         await prisma.mensajeAsistente.create({
           data: {
             conversacionId,
             rol: 'herramienta',
             contenido: resultadoModelo,
-            herramienta: { nombre: tool.nombre, resultado: res.paraModelo },
+            herramienta: { nombre: tool.nombre, resultado: saneado },
           },
         })
         if (res.terminal) return responder(res.textoUI ?? '', res.citas)

@@ -1,5 +1,6 @@
 import type { z } from 'zod'
 
+import { sanitizarParaModelo } from '@/dominio/asistencia/privacidad'
 import type { AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
 import type { Asistencia } from '@/dominio/contratos/asistencia'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
@@ -10,9 +11,11 @@ import type { Rol } from '@/dominio/identidad/rol'
  * Tipos y ayudas compartidas del registro de herramientas (RF-27). Viven aparte
  * para que las herramientas de lectura y escritura no se importen en circulo.
  *
- * Regla de datos: el modelo ve lo mismo que la interfaz le muestra a ese rol —el
- * caso de uso ya recorto por rol, ocupacion y consorcio—, **salvo los enlaces
- * firmados**, que son credenciales temporales y no salen hacia el proveedor.
+ * Regla de privacidad (RNF-13, § 5.3.2, § 7.8): el modelo nunca recibe datos
+ * personales identificatorios (nombres de personas, correos, telefonos, DNI/CUIL,
+ * personaId/usuarioId) ni enlaces firmados. Las herramientas con personas aplican
+ * proyeccion explicita (Capa 1) y `sanitizarParaModelo` actua como red de
+ * contencion estructural en la frontera (Capa 2).
  */
 
 export interface ContextoHerramienta {
@@ -78,23 +81,10 @@ export const aFecha = (v: unknown): Date => {
   return d
 }
 
-/**
- * Copia sin los enlaces firmados: cualquier cadena `http(s)://`. Se filtra por
- * valor y no por clave porque `direccion` tambien es la calle del consorcio.
- */
-export function sinEnlaces<T>(valor: T): T {
-  if (typeof valor === 'string') return (/^https?:\/\//i.test(valor) ? null : valor) as T
-  if (Array.isArray(valor)) return valor.map((v) => sinEnlaces(v)) as unknown as T
-  if (valor !== null && typeof valor === 'object' && !(valor instanceof Date)) {
-    return Object.fromEntries(
-      Object.entries(valor).map(([k, v]) => [k, sinEnlaces(v)]),
-    ) as unknown as T
-  }
-  return valor
-}
+export { sanitizarParaModelo }
 
-/** Resultado estandar: la UI y el modelo ven lo mismo, salvo los enlaces. */
+/** Resultado estandar: la UI ve la salida del caso de uso; el modelo recibe la version saneada (sin PII ni enlaces). */
 export const generico = (paraUI: unknown): ResultadoHerramienta => ({
   paraUI,
-  paraModelo: sinEnlaces(paraUI),
+  paraModelo: sanitizarParaModelo(paraUI),
 })

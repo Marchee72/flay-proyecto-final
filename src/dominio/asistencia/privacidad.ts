@@ -20,6 +20,7 @@ export const CLAVES_PII: ReadonlySet<string> = new Set([
   'apellido',
   'personaId',
   'usuarioId',
+  'usuario',
   'solicitante',
   'autor',
   'responsable',

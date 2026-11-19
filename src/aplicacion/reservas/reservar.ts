@@ -70,7 +70,9 @@ export async function reservar(
     reloj,
     { usuarioId: datos.usuarioId, consorcioId: datos.consorcioId, accion: 'reservar' },
     async (acceso) => {
-      const espacio = await prisma.espacioComun.findFirst({ where: { id: datos.espacioId } })
+      const espacio = await prisma.espacioComun.findFirst({
+        where: { id: datos.espacioId, archivadoEn: null },
+      })
       if (!espacio || !espacio.activo) throw new NoEncontrado()
       const unidad = await prisma.unidad.findFirst({
         where: { id: datos.unidadId, bajaDesde: null },

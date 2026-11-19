@@ -97,7 +97,7 @@ export async function vigenteDelConsorcio(
     },
   })
   const todos = await cliente.espacioComun.findMany({ orderBy: { nombre: 'asc' } })
-  const espacios = todos.filter((e) => e.activo)
+  const espacios = todos.filter((e) => e.activo && !e.archivadoEn)
   const tramos = await cliente.tramoVencimiento.findMany({ orderBy: { orden: 'asc' } })
 
   return {
@@ -115,7 +115,7 @@ export async function vigenteDelConsorcio(
           : null,
       rechazaConDeuda: e.rechazaConDeuda,
     })),
-    deshabilitados: todos.filter((e) => !e.activo).map((e) => e.nombre),
+    deshabilitados: todos.filter((e) => !e.activo || e.archivadoEn).map((e) => e.nombre),
     tramos:
       tramos.length > 0
         ? tramos.map((t) => ({

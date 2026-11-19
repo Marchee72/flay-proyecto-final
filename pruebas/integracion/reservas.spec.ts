@@ -10,10 +10,14 @@ import {
   altaEspacio,
   contarReservasAfectadas,
   editarEspacio,
+  eliminarEspacio,
+  EspacioArchivadoConEseNombre,
   EspacioInvalido,
   deshabilitarEspacio,
   habilitarEspacio,
   listarEspacios,
+  listarEspaciosArchivados,
+  restaurarEspacio,
   suspensionesEnRango,
 } from '@/aplicacion/reservas/espacios'
 import {
@@ -23,7 +27,7 @@ import {
   listarReservas,
   reservar,
 } from '@/aplicacion/reservas/reservar'
-import { RolInsuficiente } from '@/compartido/errores'
+import { NoEncontrado, RolInsuficiente } from '@/compartido/errores'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
 
@@ -612,6 +616,121 @@ describe('historial de uso', () => {
 
     const todas = await historialDeReservas(repo, RELOJ, { ...agosto, usuarioId: administrador })
     expect(todas).toHaveLength(2)
+  })
+})
+
+describe('archivado de espacios (RN-22)', () => {
+  const quien = () => ({ usuarioId: administrador, consorcioId, espacioId })
+  const reservaVieja = (estado: 'cancelada' | 'confirmada' = 'cancelada') =>
+    prismaBase.reserva.create({
+      data: {
+        consorcioId,
+        espacioId,
+        unidadId: unidadA,
+        solicitadaPor: vecino.id,
+        desde: new Date('2026-08-10T21:00:00Z'),
+        hasta: new Date('2026-08-11T01:00:00Z'),
+        estado,
+      },
+    })
+
+  it('un espacio sin reservas se borra definitivamente', async () => {
+    expect(await eliminarEspacio(repo, RELOJ, quien())).toBe('borrado')
+    expect(await prismaBase.espacioComun.findFirst({ where: { id: espacioId } })).toBeNull()
+  })
+
+  it('un espacio con historia se archiva y se lista aparte', async () => {
+    await reservaVieja()
+    expect(await eliminarEspacio(repo, RELOJ, quien())).toBe('archivado')
+    expect(await prismaBase.reserva.count({ where: { espacioId } })).toBe(1)
+    const datos = { usuarioId: administrador, consorcioId }
+    expect(await listarEspacios(repo, RELOJ, { ...datos, incluirInactivos: true })).toEqual([])
+    expect(await listarEspaciosArchivados(repo, RELOJ, datos)).toMatchObject([
+      { id: espacioId, nombre: 'SUM', reservasEnHistorial: 1 },
+    ])
+  })
+
+  it('archivar cancela y avisa las reservas futuras', async () => {
+    const { reservaId } = await reservar(repo, RELOJ, {
+      usuarioId: vecino.id,
+      consorcioId,
+      espacioId,
+      unidadId: unidadA,
+      desde: enHoras(72),
+      hasta: enHoras(74),
+    })
+    expect(await eliminarEspacio(repo, RELOJ, quien())).toBe('archivado')
+    const reserva = await prismaBase.reserva.findUniqueOrThrow({ where: { id: reservaId } })
+    expect(reserva.estado).toBe('cancelada')
+    const avisos = await prismaBase.notificacion.findMany({
+      where: { usuarioId: vecino.id, entidadId: reservaId, tipo: 'reserva_rechazada' },
+    })
+    expect(avisos).toHaveLength(1)
+  })
+
+  it('el historial conserva el nombre del espacio archivado', async () => {
+    await reservaVieja('confirmada')
+    await eliminarEspacio(repo, RELOJ, quien())
+    const historial = await historialDeReservas(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      desde: new Date('2026-08-01T03:00:00Z'),
+      hasta: new Date('2026-09-01T03:00:00Z'),
+      unidadId: unidadA,
+    })
+    expect(historial).toHaveLength(1)
+    expect(historial[0]).toMatchObject({ espacio: 'SUM' })
+  })
+
+  it('no se reserva ni se edita un archivado', async () => {
+    await reservaVieja()
+    await eliminarEspacio(repo, RELOJ, quien())
+    await expect(
+      reservar(repo, RELOJ, {
+        usuarioId: vecino.id,
+        consorcioId,
+        espacioId,
+        unidadId: unidadA,
+        desde: enHoras(72),
+        hasta: enHoras(74),
+      }),
+    ).rejects.toBeInstanceOf(NoEncontrado)
+    await expect(editarEspacio(repo, RELOJ, { ...quien(), nombre: 'Otro' })).rejects.toBeInstanceOf(
+      NoEncontrado,
+    )
+  })
+
+  it('un alta con el nombre de un archivado remite a Eliminados', async () => {
+    await reservaVieja()
+    await eliminarEspacio(repo, RELOJ, quien())
+    await expect(
+      altaEspacio(repo, RELOJ, { usuarioId: administrador, consorcioId, nombre: 'SUM' }),
+    ).rejects.toBeInstanceOf(EspacioArchivadoConEseNombre)
+  })
+
+  it('restaurar lo devuelve a la lista; las reservas canceladas siguen canceladas', async () => {
+    await reservar(repo, RELOJ, {
+      usuarioId: vecino.id,
+      consorcioId,
+      espacioId,
+      unidadId: unidadA,
+      desde: enHoras(72),
+      hasta: enHoras(74),
+    })
+    await eliminarEspacio(repo, RELOJ, quien())
+    await restaurarEspacio(repo, RELOJ, quien())
+    const lista = await listarEspacios(repo, RELOJ, { usuarioId: administrador, consorcioId })
+    expect(lista.map((e) => e.id)).toEqual([espacioId])
+    const [reserva] = await prismaBase.reserva.findMany({ where: { espacioId } })
+    expect(reserva.estado).toBe('cancelada')
+  })
+
+  it('un consorcista no restaura', async () => {
+    await reservaVieja()
+    await eliminarEspacio(repo, RELOJ, quien())
+    await expect(
+      restaurarEspacio(repo, RELOJ, { ...quien(), usuarioId: vecino.id }),
+    ).rejects.toBeInstanceOf(RolInsuficiente)
   })
 })
 

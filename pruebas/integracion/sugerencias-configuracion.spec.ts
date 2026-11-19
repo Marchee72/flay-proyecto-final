@@ -4,7 +4,11 @@ import type { Prisma, TipoDocumento, TipoSugerencia } from '@prisma/client'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { NoEncontrado, RolInsuficiente } from '@/compartido/errores'
-import { disponible, type LectorDeConfiguracion } from '@/dominio/contratos/asistencia'
+import {
+  disponible,
+  noDisponible,
+  type LectorDeConfiguracion,
+} from '@/dominio/contratos/asistencia'
 import {
   analisisDeConfiguracion,
   buscarConfiguracion,
@@ -182,6 +186,40 @@ describe('sugerencias de configuración', () => {
     expect(await sugerencias()).toEqual([])
   })
 
+  it('proveedor saturado: lanza para que la cola reintente, y no toca las pendientes', async () => {
+    await analizar()
+    const antes = await sugerencias()
+    const saturado: LectorDeConfiguracion = {
+      leer: async () => noDisponible('saturado', true),
+    }
+    await expect(analizar(saturado)).rejects.toThrow('saturado')
+    expect(await sugerencias()).toEqual(antes)
+  })
+
+  it('la pantalla dice si la búsqueda está reintentando o agotó sus intentos', async () => {
+    const quien = { usuarioId: administrador, consorcioId, documentoId }
+    const estado = () => analisisDeConfiguracion(repositorioHabilitaciones, RELOJ, quien)
+    const [trabajo] = await prismaBase.trabajoPendiente.createManyAndReturn({
+      data: {
+        tipo: 'sugerir_configuracion',
+        carga: { documentoId },
+        intentos: 1,
+        ultimoError: 'saturado',
+      },
+    })
+    expect(await estado()).toMatchObject({ analizando: true, reintentando: true, fallo: false })
+
+    await prismaBase.trabajoPendiente.update({
+      where: { id: trabajo!.id },
+      data: { estado: 'agotado' },
+    })
+    expect(await estado()).toMatchObject({ analizando: false, reintentando: false, fallo: true })
+
+    // «Buscar de nuevo» encola otro: el agotado queda como historia y deja de contar.
+    await buscarConfiguracion(repositorioHabilitaciones, RELOJ, quien)
+    expect(await estado()).toMatchObject({ analizando: true, reintentando: false, fallo: false })
+  })
+
   it('documento borrado mientras esperaba: termina sin lanzar', async () => {
     await prismaBase.documentoConsorcio.delete({ where: { id: documentoId } })
     await expect(analizar()).resolves.toBeUndefined()
@@ -229,6 +267,8 @@ describe('sugerencias de configuración', () => {
     expect(await analisisDeConfiguracion(repositorioHabilitaciones, RELOJ, quien)).toEqual({
       indexado: true,
       analizando: true,
+      reintentando: false,
+      fallo: false,
     })
     await buscarConfiguracion(repositorioHabilitaciones, RELOJ, quien)
     expect(await trabajos()).toHaveLength(1)

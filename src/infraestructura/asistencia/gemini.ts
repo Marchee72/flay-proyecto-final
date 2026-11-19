@@ -75,6 +75,7 @@ async function conReintento<T>(fn: () => Promise<T>): Promise<Resultado<T>> {
         transitorio
           ? 'El servicio de asistencia está saturado en este momento. Probá de nuevo en unos minutos.'
           : 'El servicio de asistencia no respondió como se esperaba.',
+        true,
       )
     }
   }
@@ -249,7 +250,10 @@ async function generarJson<T>(
     return disponible(validar.parse(JSON.parse(resultado.valor)))
   } catch {
     // Fuera de esquema: se descarta y equivale a servicio no disponible (§ 8.3).
-    return noDisponible('El servicio de asistencia devolvió una respuesta que no se entiende.')
+    return noDisponible(
+      'El servicio de asistencia devolvió una respuesta que no se entiende.',
+      true,
+    )
   }
 }
 
@@ -259,6 +263,39 @@ const MAX_CARACTERES_CONFIGURACION = 200_000
 const EnvolturaZod = z.object({ sugerencias: z.array(z.unknown()) })
 
 const nuloAEntero = { type: Type.INTEGER, nullable: true } as const
+const DATOS_LEIDOS: Record<string, Schema> = {
+  nombre: { type: Type.STRING, nullable: true },
+  capacidadMaxima: nuloAEntero,
+  anticipacionMinimaHoras: nuloAEntero,
+  anticipacionMaximaDias: nuloAEntero,
+  duracionMaximaHoras: nuloAEntero,
+  reservasMaxMesUnidad: nuloAEntero,
+  horario: {
+    type: Type.OBJECT,
+    nullable: true,
+    properties: { apertura: { type: Type.STRING }, cierre: { type: Type.STRING } },
+    required: ['apertura', 'cierre'],
+  },
+  rechazaConDeuda: { type: Type.BOOLEAN, nullable: true },
+  tramos: {
+    type: Type.ARRAY,
+    nullable: true,
+    items: {
+      type: Type.OBJECT,
+      properties: {
+        diaDelMes: { type: Type.INTEGER },
+        recargoPorcentaje: { type: Type.STRING },
+      },
+      required: ['diaDelMes', 'recargoPorcentaje'],
+    },
+  },
+  tasaMoraMensual: { type: Type.STRING, nullable: true },
+  reglaMayoria: { type: Type.STRING, nullable: true, enum: ['presentes', 'totalidad'] },
+  anticipacionDias: nuloAEntero,
+  topeApoderado: nuloAEntero,
+  umbralSinVoto: nuloAEntero,
+  texto: { type: Type.STRING, nullable: true },
+}
 const ESQUEMA_LECTURA: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -279,44 +316,15 @@ const ESQUEMA_LECTURA: Schema = {
           },
           cita: { type: Type.STRING },
           espacioId: { type: Type.STRING, nullable: true },
+          // Todas requeridas y anulables: opcionales, el modelo emitia un subconjunto
+          // cualquiera de las claves y se le caia el horario de un espacio.
           datos: {
             type: Type.OBJECT,
-            properties: {
-              nombre: { type: Type.STRING, nullable: true },
-              capacidadMaxima: nuloAEntero,
-              anticipacionMinimaHoras: nuloAEntero,
-              anticipacionMaximaDias: nuloAEntero,
-              duracionMaximaHoras: nuloAEntero,
-              reservasMaxMesUnidad: nuloAEntero,
-              horario: {
-                type: Type.OBJECT,
-                nullable: true,
-                properties: { apertura: { type: Type.STRING }, cierre: { type: Type.STRING } },
-                required: ['apertura', 'cierre'],
-              },
-              rechazaConDeuda: { type: Type.BOOLEAN, nullable: true },
-              tramos: {
-                type: Type.ARRAY,
-                nullable: true,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    diaDelMes: { type: Type.INTEGER },
-                    recargoPorcentaje: { type: Type.STRING },
-                  },
-                  required: ['diaDelMes', 'recargoPorcentaje'],
-                },
-              },
-              tasaMoraMensual: { type: Type.STRING, nullable: true },
-              reglaMayoria: { type: Type.STRING, nullable: true, enum: ['presentes', 'totalidad'] },
-              anticipacionDias: nuloAEntero,
-              topeApoderado: nuloAEntero,
-              umbralSinVoto: nuloAEntero,
-              texto: { type: Type.STRING, nullable: true },
-            },
+            properties: DATOS_LEIDOS,
+            required: Object.keys(DATOS_LEIDOS),
           },
         },
-        required: ['tipo', 'cita', 'datos'],
+        required: ['tipo', 'cita', 'espacioId', 'datos'],
       },
     },
   },
@@ -347,15 +355,19 @@ export function sugerenciasValidas(crudas: unknown[]): SugerenciaLeida[] {
 const SISTEMA_LECTOR = (
   espacios: { id: string; nombre: string }[],
 ) => `Sos el asistente de configuracion de una administracion de consorcios de Rosario, Argentina.
-Lee el texto de un reglamento, acta o contrato y devolve SOLO lo que el texto fija de manera explicita, cada cosa con su "cita": la frase literal del texto, copiada sin cambios. Si no esta escrito, no lo devuelvas. Si el texto no fija nada de esto, devolve una lista vacia.
+Lee el texto de un reglamento, acta o contrato y devolve lo que el texto fija de manera explicita, cada cosa con su "cita": la frase literal del texto, copiada sin cambios. No inventes valores: un campo que el texto no fija va en null. Si el texto no fija nada de esto, devolve una lista vacia.
 Lo configurable, por "tipo" (completa solo los campos de "datos" que el texto dice):
-- espacio_nuevo: un espacio comun que no esta en la lista de existentes. nombre; capacidadMaxima (personas); anticipacionMinimaHoras (horas antes de la reserva); anticipacionMaximaDias (dias hacia adelante); duracionMaximaHoras (horas por reserva); reservasMaxMesUnidad (reservas por mes y unidad); horario {apertura, cierre} en 'HH:MM' de 24 horas, hora argentina; rechazaConDeuda (true si se niega la reserva a quien debe expensas).
-- espacio_cambio: lo mismo para un espacio YA existente; "espacioId" es uno de esta lista, nunca inventado:
+- espacio_nuevo: devolve UNA sugerencia por CADA espacio comun que el texto nombre con algun horario o regla de uso (salon, SUM, quincho, parrilla, piscina, gimnasio, lavadero, terraza, etc.) y que no este en la lista de existentes. Un espacio que solo tiene horario igual es una sugerencia. Campos: nombre; capacidadMaxima (personas); anticipacionMinimaHoras (horas antes de la reserva); anticipacionMaximaDias (dias hacia adelante); duracionMaximaHoras (horas por reserva); reservasMaxMesUnidad (reservas por mes y unidad); horario {apertura, cierre} en 'HH:MM' de 24 horas, hora argentina (el cierre puede pasar la medianoche, ej. 10:00 a 01:00); rechazaConDeuda (true si se niega la reserva a quien debe expensas).
+- espacio_cambio: lo mismo para un espacio YA existente (por nombre o sigla: "Salon de Usos Multiples (SUM)" es "SUM"); "espacioId" es uno de esta lista, nunca inventado:
 ${espacios.map((e) => `  ${e.id} — ${e.nombre}`).join('\n') || '  (ninguno)'}
 - vencimientos: "tramos" con diaDelMes (1 a 28) y recargoPorcentaje como cadena con punto decimal ('5.0000'), en convencion de boleta: el recargo rige «pagando hasta el dia N», y el primer tramo va con '0.0000'; "tasaMoraMensual" es el interes por mora mensual, cadena ('3.0000').
 - asambleas: reglaMayoria ('presentes' o 'totalidad'); anticipacionDias (dias de anticipacion de la convocatoria); topeApoderado (unidades por apoderado); umbralSinVoto (expensas impagas que quitan el voto).
 - instrucciones_pago: texto con las instrucciones para pagar las expensas (cuenta, alias, CBU, lugar de pago), copiado del texto.
-No incluyas el deposito de garantia ni el padron de unidades.`
+Reglas:
+- Una sola sugerencia por espacio, con todo lo que el texto fija de el. En espacio_cambio, nombre va en null: el espacio conserva el suyo.
+- El horario es uno solo para toda la semana. "Todos los dias: 07:00 a 22:00 hs." es horario {apertura: '07:00', cierre: '22:00'}. Si cambia segun el dia de la semana o la temporada, horario va en null (el espacio igual se sugiere, con el resto de lo que fije).
+- Un valor a completar en el texto ("[N.°]", "[Mes]", "XX") no es un valor: ese campo va en null.
+- No incluyas el deposito de garantia, los aranceles ni el padron de unidades.`
 
 export const asistenciaGemini: Asistencia = {
   extractor: {

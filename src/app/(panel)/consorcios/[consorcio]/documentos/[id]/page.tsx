@@ -13,6 +13,7 @@ import { Volver } from '../../../../encabezado-consorcio'
 import { EnVivo } from '../../../../en-vivo'
 import { IconoIA } from '../../../../icono-ia'
 import { ModalEliminar } from './modal-eliminar'
+import { Visor } from './visor'
 
 export const metadata: Metadata = { title: 'Documento — Flay' }
 
@@ -68,9 +69,23 @@ export default async function DocumentoPage({
                     ? 'Estamos leyendo el documento'
                     : pendientes.length > 0
                       ? `La IA encontró ${plural(pendientes.length, 'cambio de configuración', 'cambios de configuración')}`
-                      : 'Buscar configuración en este documento'}
+                      : analisis.fallo
+                        ? 'No pudimos leer el documento'
+                        : 'Buscar configuración en este documento'}
                 </strong>
               </p>
+              {analisis.reintentando && (
+                <p className="ayuda">
+                  El servicio de IA está saturado. Seguimos intentando solos; podés salir de esta
+                  pantalla.
+                </p>
+              )}
+              {analisis.fallo && (
+                <p className="ayuda">
+                  El servicio de IA no respondió después de varios intentos. Probá de nuevo en unos
+                  minutos.
+                </p>
+              )}
             </div>
             <div className="panel-ia__acciones">
               {!analisis.analizando && pendientes.length > 0 && (
@@ -87,7 +102,9 @@ export default async function DocumentoPage({
                   <input type="hidden" name="documento" value={id} />
                   <button className="boton boton--ia" type="submit" disabled={analisis.analizando}>
                     <IconoIA />
-                    {pendientes.length > 0 ? 'Buscar de nuevo' : 'Buscar configuración'}
+                    {pendientes.length > 0 || analisis.fallo
+                      ? 'Buscar de nuevo'
+                      : 'Buscar configuración'}
                   </button>
                 </form>
               )}
@@ -95,7 +112,7 @@ export default async function DocumentoPage({
           </section>
         )}
         {documento.tipoContenido === 'application/pdf' ? (
-          <iframe className="visor" src={documento.vista} title={documento.titulo} />
+          <Visor src={documento.vista} titulo={documento.titulo} />
         ) : (
           <p className="ayuda">Este formato se abre con la descarga.</p>
         )}

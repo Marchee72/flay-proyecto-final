@@ -382,7 +382,12 @@ export function manejadorSugerencias(lector: LectorDeConfiguracion): Manejador {
       const resultado = await lector.leer(texto, {
         espaciosExistentes: vigente.espacios.map(({ id, nombre }) => ({ id, nombre })),
       })
-      if (!resultado.disponible) return
+      if (!resultado.disponible) {
+        // Proveedor saturado o caido: lanzar deja el trabajo en la cola, que
+        // reintenta con espera creciente. La nula termina sin error (RNF-14).
+        if (resultado.reintentable) throw new Error(resultado.motivo)
+        return
+      }
 
       const nuevas = resultado.valor
         .map(sinIndefinidos)

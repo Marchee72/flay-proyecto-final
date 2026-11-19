@@ -23,7 +23,6 @@ const FIJAS: Record<string, [ruta: string, titulo: string]> = {
   ver_novedades: ['novedades', 'Novedades'],
   ver_documentos: ['documentos', 'Documentación'],
   ver_padron: ['unidades', 'Unidades'],
-  ver_usuarios: ['usuarios', 'Usuarios'],
   ver_proveedores: ['proveedores', 'Proveedores'],
   ver_indicador_morosidad: ['indicadores/morosidad', 'Indicadores'],
   ver_indicador_gastos: ['indicadores/gastos', 'Indicadores'],

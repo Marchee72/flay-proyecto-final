@@ -24,7 +24,6 @@ const RUTEO_LECTURA: [patron: RegExp, herramienta: string][] = [
   [/indicador/, 'ver_indicador_morosidad'],
   [/bandeja/, 'ver_bandeja'],
   [/notificaci/, 'ver_mis_notificaciones'],
-  [/usuarios/, 'ver_usuarios'],
   [/proveedor/, 'ver_proveedores'],
   [/periodo|período/, 'ver_periodos'],
   [/padron|padrón/, 'ver_padron'],

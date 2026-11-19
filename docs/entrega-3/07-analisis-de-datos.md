@@ -712,8 +712,11 @@ Conforme al punto 5.3.2:
 | De navegación | Bitácora de auditoría, dirección IP | Retención de 24 meses, luego se anonimiza la dirección IP |
 
 **Los datos personales de los consorcistas no se envían a servicios externos de procesamiento.** Lo
-que se procesa es la imagen del comprobante, el texto del reclamo y la documentación reglamentaria
-del consorcio, ninguno de los cuales contiene la nómina de propietarios ni información de deuda.
+que se procesa externamente es la imagen del comprobante, el texto del reclamo, la documentación
+reglamentaria del consorcio, los agregados de asambleas (sin personas ni votos individuales) y las
+consultas operativas del asistente conversacional (RF-27) restringidas a designaciones de unidad
+funcional, estados, fechas e importes. Ninguno de estos flujos recibe nombres y apellidos de
+personas físicas, correos electrónicos, teléfonos, documentos de identidad ni nóminas de usuarios.
 
 ---
 

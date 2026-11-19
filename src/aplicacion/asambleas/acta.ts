@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 
 import { z } from 'zod'
 
+import { redactarContactoEnTexto } from '@/dominio/asistencia/privacidad'
 import type { AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
 import type { DerivadorDeContrasenas } from '@/dominio/contratos/derivador-contrasenas'
 import type { RedactorActa } from '@/dominio/contratos/asistencia'
@@ -355,10 +356,10 @@ export function manejadorBorradorActa(redactor: RedactorActa): Manejador {
             presentesConVoto,
             noVotaron: Math.max(0, presentesConVoto - votaron),
             provisorio: p.provisorio,
-            notas: p.notas,
+            notas: p.notas ? redactarContactoEnTexto(p.notas) : p.notas,
           }
         }),
-        observaciones.map((o) => o.texto),
+        observaciones.map((o) => redactarContactoEnTexto(o.texto)),
       )
       if (resultado.disponible) {
         for (const { orden, resumen } of resultado.valor) {

@@ -65,6 +65,7 @@ model Consorcio {
   instruccionesPago            String?      @map("instrucciones_pago") @db.Text
   creadoEn                     DateTime     @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn                DateTime     @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+  archivadoEn                  DateTime?    @map("archivado_en") @db.Timestamptz(6)
 
   administradora        Administradora            @relation(fields: [administradoraId], references: [id])
   unidades              Unidad[]
@@ -840,27 +841,28 @@ model SugerenciaReclamo {
 
 /// Espacio de uso comun y las reglas del reglamento interno (RF-15).
 model EspacioComun {
-  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  consorcioId             String   @map("consorcio_id") @db.Uuid
-  nombre                  String   @db.VarChar(80)
-  capacidadMaxima         Int?     @map("capacidad_maxima")
-  anticipacionMinimaHoras Int      @default(48) @map("anticipacion_minima_horas")
-  anticipacionMaximaDias  Int      @default(60) @map("anticipacion_maxima_dias")
-  duracionMaximaHoras     Int      @default(8) @map("duracion_maxima_horas")
-  reservasMaxMesUnidad    Int      @default(2) @map("reservas_max_mes_unidad")
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  consorcioId             String    @map("consorcio_id") @db.Uuid
+  nombre                  String    @db.VarChar(80)
+  capacidadMaxima         Int?      @map("capacidad_maxima")
+  anticipacionMinimaHoras Int       @default(48) @map("anticipacion_minima_horas")
+  anticipacionMaximaDias  Int       @default(60) @map("anticipacion_maxima_dias")
+  duracionMaximaHoras     Int       @default(8) @map("duracion_maxima_horas")
+  reservasMaxMesUnidad    Int       @default(2) @map("reservas_max_mes_unidad")
   /// El cobro del deposito no se construye en esta etapa; el campo existe para
   /// que el reglamento se pueda cargar entero.
-  requiereDeposito        Boolean  @default(false) @map("requiere_deposito")
-  importeDeposito         Decimal? @map("importe_deposito") @db.Decimal(14, 2)
+  requiereDeposito        Boolean   @default(false) @map("requiere_deposito")
+  importeDeposito         Decimal?  @map("importe_deposito") @db.Decimal(14, 2)
   /// Horario de uso en minutos desde las 00:00, hora argentina (RF-15); ambos
   /// nulos = sin horario. `cierre <= apertura` cruza la medianoche.
-  aperturaMinutos         Int?     @map("apertura_minutos") @db.SmallInt
-  cierreMinutos           Int?     @map("cierre_minutos") @db.SmallInt
+  aperturaMinutos         Int?      @map("apertura_minutos") @db.SmallInt
+  cierreMinutos           Int?      @map("cierre_minutos") @db.SmallInt
   /// Si la unidad con deuda vencida no puede reservar este espacio (CU-09).
-  rechazaConDeuda         Boolean  @default(true) @map("rechaza_con_deuda")
-  activo                  Boolean  @default(true)
-  creadoEn                DateTime @default(now()) @map("creado_en") @db.Timestamptz(6)
-  actualizadoEn           DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+  rechazaConDeuda         Boolean   @default(true) @map("rechaza_con_deuda")
+  activo                  Boolean   @default(true)
+  creadoEn                DateTime  @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn           DateTime  @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+  archivadoEn             DateTime? @map("archivado_en") @db.Timestamptz(6)
 
   consorcio    Consorcio           @relation(fields: [consorcioId], references: [id])
   reservas     Reserva[]
@@ -993,6 +995,7 @@ model DocumentoConsorcio {
   cargadoPor          String           @map("cargado_por") @db.Uuid
   creadoEn            DateTime         @default(now()) @map("creado_en") @db.Timestamptz(6)
   actualizadoEn       DateTime         @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+  archivadoEn         DateTime?        @map("archivado_en") @db.Timestamptz(6)
 
   consorcio   Consorcio                 @relation(fields: [consorcioId], references: [id])
   fragmentos  FragmentoDocumento[]

@@ -1,7 +1,9 @@
+import { Archive, Trash2 } from 'lucide-react'
+
 import type { PreviaDeEliminarConsorcio } from '@/aplicacion/consorcios/archivar-consorcio'
 
-import { BotonModal } from '../../modal'
-import { accionEliminarConsorcio } from '../acciones'
+import { BotonModal } from '../modal'
+import { accionEliminarConsorcio } from './acciones'
 
 /** Texto de lo que va a pasar, o del motivo por el que hoy no se puede (RN-22). */
 function bloqueo(previa: PreviaDeEliminarConsorcio): string | null {
@@ -26,7 +28,21 @@ export function ModalEliminarConsorcio({
   const motivo = bloqueo(previa)
   const borra = previa.accion === 'borrar'
   return (
-    <BotonModal etiqueta="Eliminar" titulo="Eliminar consorcio" variante="boton--peligro">
+    <BotonModal
+      etiqueta={
+        <>
+          {borra ? (
+            <Trash2 className="icono" aria-hidden="true" />
+          ) : (
+            <Archive className="icono" aria-hidden="true" />
+          )}
+          {borra ? 'Eliminar' : 'Archivar'}
+        </>
+      }
+      titulo={borra ? 'Eliminar consorcio' : 'Archivar consorcio'}
+      variante="boton--peligro"
+      claseBoton="menu-puntos__item"
+    >
       <form action={accionEliminarConsorcio}>
         <input type="hidden" name="consorcio" value={consorcioId} />
         <p className="ayuda">

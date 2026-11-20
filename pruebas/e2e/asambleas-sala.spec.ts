@@ -43,7 +43,7 @@ test('sin quórum, quien dirige cancela desde la sala y quien esperaba lo ve sin
   })
 
   // Sin nadie acreditado no hay quórum: se cancela desde la sala.
-  await page.getByRole('button', { name: 'Cancelar por falta de quórum' }).click()
+  await page.getByRole('button', { name: 'Cancelar', exact: true }).click()
   await page.getByRole('button', { name: 'Confirmar cancelación' }).click()
   await expect(page).toHaveURL(/hecho=asamblea-cancelada/)
   await expect(page.getByText('Cancelada', { exact: true }).first()).toBeVisible()
@@ -87,7 +87,7 @@ test('constituir con doble clic envía una sola vez', async ({ browser }, info) 
     await confirmarUnaVez(
       deBruno,
       propio.asambleaId,
-      'Verificar quórum y constituir',
+      'Constituir',
       'Constituyendo…',
       /asambleas\//,
       // La acción no navega: el fin es el aviso de éxito.

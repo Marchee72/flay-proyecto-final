@@ -1,8 +1,16 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Building2, MessageSquareWarning, TrendingUp, TriangleAlert } from 'lucide-react'
+import {
+  Archive,
+  ArrowRight,
+  Building2,
+  MessageSquareWarning,
+  TrendingUp,
+  TriangleAlert,
+} from 'lucide-react'
 
 import { misAdministradoras } from '@/aplicacion/administradoras/mis-administradoras'
+import { previaDeEliminarConsorcio } from '@/aplicacion/consorcios/archivar-consorcio'
 import { TIPOS_DE_UNIDAD_ASIGNABLES } from '@/aplicacion/consorcios/tipos-de-unidad'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
@@ -17,6 +25,8 @@ import { Marco } from '../marco'
 
 import { BotonModal } from '../modal'
 import { accionRestaurarConsorcio } from './acciones'
+import { MenuPuntos } from './menu-puntos'
+import { ModalEliminarConsorcio } from './modal-eliminar-consorcio'
 import { WizardConsorcio } from './nuevo/wizard'
 
 export const metadata: Metadata = { title: 'Consorcios — Flay' }
@@ -68,6 +78,41 @@ export default async function ConsorciosPage({
         ] as const
       }),
     ),
+  )
+
+  // Archivar o eliminar es del nivel de la administradora: sin ella no se pide la
+  // previa, y si la previa no autoriza (o falla) la tarjeta queda sin menú.
+  const previas = new Map(
+    administradoras.length === 0
+      ? []
+      : await Promise.all(
+          visibles.map(
+            async (consorcio) =>
+              [
+                consorcio.id,
+                await previaDeEliminarConsorcio(HABILITACIONES, RELOJ, {
+                  usuarioId,
+                  consorcioId: consorcio.id,
+                }).catch(() => null),
+              ] as const,
+          ),
+        ),
+  )
+
+  const accionesDeArchivado = (id: string) => (
+    <div className="acciones">
+      <Link className="boton boton--terciario" href={`/consorcios/${id}`}>
+        Abrir
+      </Link>
+      {administradoras.length > 0 && (
+        <form action={accionRestaurarConsorcio}>
+          <input type="hidden" name="consorcio" value={id} />
+          <button className="boton boton--fantasma" type="submit">
+            Restaurar
+          </button>
+        </form>
+      )}
+    </div>
   )
 
   return (
@@ -136,63 +181,69 @@ export default async function ConsorciosPage({
             </div>
           ) : (
             <div className="rejilla">
-              {visibles.map((consorcio) => (
-                <article
-                  className="tarjeta tarjeta-consorcio"
-                  key={consorcio.id}
-                  aria-label={consorcio.nombre}
-                >
-                  <div className="tarjeta-consorcio__encabezado">
-                    <span className="tarjeta-consorcio__insignia" aria-hidden="true">
-                      <Building2 className="icono" aria-hidden="true" />
-                    </span>
-                    <div>
-                      <h2>
-                        <Link href={`/consorcios/${consorcio.id}`}>{consorcio.nombre}</Link>
-                      </h2>
-                      <p className="apagado">
-                        {consorcio.direccion} · {consorcio.localidad}
-                      </p>
+              {visibles.map((consorcio) => {
+                const previa = previas.get(consorcio.id)
+                return (
+                  <article
+                    className="tarjeta tarjeta-consorcio tarjeta--oscura"
+                    key={consorcio.id}
+                    aria-label={consorcio.nombre}
+                  >
+                    <div className="tarjeta-consorcio__encabezado">
+                      <span className="tarjeta-consorcio__insignia" aria-hidden="true">
+                        <Building2 className="icono" aria-hidden="true" />
+                      </span>
+                      <div>
+                        <h2>
+                          <Link href={`/consorcios/${consorcio.id}`}>{consorcio.nombre}</Link>
+                        </h2>
+                        <p className="apagado">
+                          {consorcio.direccion} · {consorcio.localidad}
+                        </p>
+                      </div>
+                      {previa && (
+                        <MenuPuntos nombre={`Más acciones de ${consorcio.nombre}`}>
+                          <ModalEliminarConsorcio consorcioId={consorcio.id} previa={previa} />
+                        </MenuPuntos>
+                      )}
                     </div>
-                  </div>
-                  <Senales
-                    senal={senales.por.get(consorcio.id)}
-                    meta={senales.meta}
-                    ultimoPeriodo={ultimoLiquidado.get(consorcio.id) ?? null}
-                  />
-                  <div className="fila-acciones">
-                    <Link className="boton boton--primario" href={`/consorcios/${consorcio.id}`}>
-                      Entrar
-                    </Link>
-                  </div>
-                </article>
-              ))}
+                    <Senales
+                      senal={senales.por.get(consorcio.id)}
+                      meta={senales.meta}
+                      ultimoPeriodo={ultimoLiquidado.get(consorcio.id) ?? null}
+                    />
+                    <div className="fila-acciones">
+                      <Link className="boton boton--primario" href={`/consorcios/${consorcio.id}`}>
+                        Entrar
+                        <ArrowRight className="icono" aria-hidden="true" />
+                      </Link>
+                    </div>
+                  </article>
+                )
+              })}
             </div>
           )}
         </>
       )}
 
       {archivados.length > 0 && (
-        <details className="tarjeta">
-          <summary>Archivados ({archivados.length})</summary>
+        <details className="tarjeta archivados">
+          <summary>
+            Archivados <span className="archivados__n">{archivados.length}</span>
+          </summary>
           <ul>
             {archivados.map((a) => (
               <li key={a.id}>
-                <strong>{a.nombre}</strong>{' '}
-                <span className="apagado">archivado el {fechaEnArParaMostrar(a.archivadoEn!)}</span>
-                <div className="acciones">
-                  <Link className="boton boton--terciario" href={`/consorcios/${a.id}`}>
-                    Abrir
-                  </Link>
-                  {administradoras.length > 0 && (
-                    <form action={accionRestaurarConsorcio}>
-                      <input type="hidden" name="consorcio" value={a.id} />
-                      <button className="boton boton--fantasma" type="submit">
-                        Restaurar
-                      </button>
-                    </form>
-                  )}
-                </div>
+                <span className="archivados__icono" aria-hidden="true">
+                  <Archive className="icono" aria-hidden="true" />
+                </span>
+                <span className="archivados__texto">
+                  <strong>{a.nombre}</strong>
+                  <span className="apagado">
+                    archivado el {fechaEnArParaMostrar(a.archivadoEn!)}
+                  </span>
+                </span>
+                {accionesDeArchivado(a.id)}
               </li>
             ))}
           </ul>

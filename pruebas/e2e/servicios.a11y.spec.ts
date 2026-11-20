@@ -336,10 +336,11 @@ test('consorcio archivado: aviso de solo lectura sin infracciones A/AA', async (
   await sinInfracciones(page)
 })
 
-test('resumen: modal Eliminar consorcio abierto sin infracciones A/AA', async ({ page }) => {
+test('consorcios: modal Archivar consorcio abierto sin infracciones A/AA', async ({ page }) => {
   await entrar(page, administrador.correo)
-  await page.goto(`/consorcios/${administrador.consorcioId}`)
-  await page.getByRole('button', { name: 'Eliminar', exact: true }).click()
+  await page.goto('/consorcios')
+  await page.getByRole('button', { name: 'Más acciones de San Martin 7890' }).click()
+  await page.getByRole('button', { name: /^(Archivar|Eliminar)$/ }).click()
   await expect(page.getByRole('dialog')).toBeVisible()
   await sinInfracciones(page)
 })

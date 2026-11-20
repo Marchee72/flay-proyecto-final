@@ -77,7 +77,7 @@ test.afterAll(async () => {
   await prisma.$disconnect()
 })
 
-test('archivar desde el resumen, entrar en solo lectura, ver el consorcista sus expensas y restaurar', async ({
+test('archivar desde la tarjeta, entrar en solo lectura, ver el consorcista sus expensas y restaurar', async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'telefono', 'teléfono 390×844; una sola vez')
@@ -89,9 +89,10 @@ test('archivar desde el resumen, entrar en solo lectura, ver el consorcista sus 
   await expect(page.getByRole('button', { name: 'Nuevo espacio' })).toBeVisible()
   await page.goto(`/consorcios/${escenario.consorcioId}/periodos`)
   await expect(page.getByRole('columnheader', { name: 'Acciones' })).toBeVisible()
-  await page.goto(`/consorcios/${escenario.consorcioId}`)
+  await page.goto('/consorcios')
 
-  await page.getByRole('button', { name: 'Eliminar', exact: true }).click()
+  await page.getByRole('button', { name: 'Más acciones de Archivable 100' }).click()
+  await page.getByRole('button', { name: 'Archivar', exact: true }).click()
   const dialogo = page.getByRole('dialog')
   await expect(dialogo).toContainText('Tiene historia: se va a archivar')
   await dialogo.getByRole('button', { name: 'Archivar', exact: true }).click()
@@ -147,8 +148,9 @@ test('con una asamblea convocada el modal muestra el bloqueo y no deja archivar'
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'telefono', 'teléfono 390×844; una sola vez')
   await entrar(page, bloqueado.correo)
-  await page.goto(`/consorcios/${bloqueado.consorcioId}`)
-  await page.getByRole('button', { name: 'Eliminar', exact: true }).click()
+  await page.goto('/consorcios')
+  await page.getByRole('button', { name: 'Más acciones de Con asamblea 200' }).click()
+  await page.getByRole('button', { name: 'Archivar', exact: true }).click()
   const dialogo = page.getByRole('dialog')
   await expect(dialogo).toContainText('Hay una asamblea convocada o en curso')
   await expect(dialogo.getByRole('button', { name: 'Archivar', exact: true })).toBeDisabled()

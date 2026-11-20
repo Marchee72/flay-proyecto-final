@@ -177,7 +177,7 @@ export async function accionEliminarConsorcio(datos: FormData): Promise<void> {
     resultado = await eliminarConsorcio(HABILITACIONES, RELOJ, { usuarioId, consorcioId })
   } catch (error) {
     if (error instanceof ErrorDeAplicacion)
-      redirect(conError(`/consorcios/${consorcioId}`, error.mensajeParaUsuario))
+      redirect(conError('/consorcios', error.mensajeParaUsuario))
     throw error
   }
   revalidatePath('/consorcios', 'layout')

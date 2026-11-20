@@ -21,8 +21,8 @@ export function ModalEliminar({
         <p className="ayuda">
           {archiva
             ? `Tiene ${espacio.reservasEnHistorial} reservas en su historial: se va a archivar y lo vas a encontrar en Eliminados, desde donde podés restaurarlo.`
-            : 'Este espacio no tiene reservas: se va a borrar definitivamente.'}{' '}
-          A quienes tengan reservas futuras se les avisa.
+            : 'Este espacio no tiene reservas: se va a borrar definitivamente.'}
+          {archiva && ' A quienes tengan reservas futuras se les avisa.'}
         </p>
         <button className="boton boton--peligro" type="submit">
           {etiqueta}

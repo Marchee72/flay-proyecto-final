@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 import {
   entrar,
@@ -44,6 +44,31 @@ test.beforeAll(async () => {
   await prisma.espacioComun.create({
     data: { consorcioId: escenario.consorcioId, nombre: 'SUM', capacidadMaxima: 40 },
   })
+  // Espacios del administrador: uno vacío, uno con historia y uno archivado (RN-22).
+  const unidadAdmin = await sembrarUnidadPropia(administrador)
+  const [, conHistoria, archivado] = await Promise.all(
+    ['Terraza', 'Quincho', 'Parrilla vieja'].map((nombre) =>
+      prisma.espacioComun.create({
+        data: {
+          consorcioId: administrador.consorcioId,
+          nombre,
+          archivadoEn: nombre === 'Parrilla vieja' ? new Date() : null,
+        },
+      }),
+    ),
+  )
+  for (const espacioId of [conHistoria.id, archivado.id])
+    await prisma.reserva.create({
+      data: {
+        consorcioId: administrador.consorcioId,
+        espacioId,
+        unidadId: unidadAdmin,
+        solicitadaPor: administrador.usuarioId,
+        desde: new Date('2026-03-01T15:00:00Z'),
+        hasta: new Date('2026-03-01T18:00:00Z'),
+        estado: 'confirmada',
+      },
+    })
   const extraccion = await prisma.extraccionComprobante.create({
     data: {
       consorcioId: administrador.consorcioId,
@@ -197,3 +222,35 @@ for (const pantalla of DEL_ADMINISTRADOR) {
     expect(resumen, resumen.join('\n')).toEqual([])
   })
 }
+
+const TAGS_AXE = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
+const sinInfracciones = async (page: Page) => {
+  const { violations } = await new AxeBuilder({ page }).withTags(TAGS_AXE).analyze()
+  const resumen = violations.map((v) => `${v.id} (${v.nodes.length}): ${v.help}`)
+  expect(resumen, resumen.join(', ')).toEqual([])
+}
+
+test('espacios: sección Eliminados desplegada sin infracciones A/AA', async ({ page }) => {
+  await entrar(page, administrador.correo)
+  await page.goto(`/consorcios/${administrador.consorcioId}/espacios`)
+  await page.getByText('Eliminados (1)').click()
+  await expect(page.getByRole('button', { name: 'Restaurar' })).toBeVisible()
+  await sinInfracciones(page)
+})
+
+for (const [espacio, boton] of [
+  ['Terraza', 'Eliminar'],
+  ['Quincho', 'Archivar'],
+] as const)
+  test(`espacios: modal ${boton} abierto sin infracciones A/AA`, async ({ page }) => {
+    await entrar(page, administrador.correo)
+    await page.goto(`/consorcios/${administrador.consorcioId}/espacios`)
+    await page
+      .getByRole('article', { name: espacio })
+      .getByRole('button', { name: 'Eliminar' })
+      .click()
+    await expect(
+      page.getByRole('dialog').getByRole('button', { name: boton, exact: true }),
+    ).toBeVisible()
+    await sinInfracciones(page)
+  })

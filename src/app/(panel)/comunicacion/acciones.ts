@@ -17,7 +17,7 @@ import {
 } from '@/aplicacion/comunicacion/documentos'
 import { descartarNovedad, publicarNovedad } from '@/aplicacion/comunicacion/novedades'
 import { aplicarSugerencia, descartarSugerencia } from '@/aplicacion/comunicacion/sugerencias'
-import { ALMACEN, ASISTENCIA, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
+import { ASISTENCIA, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { irAIngresar } from '@/app/ir-a-ingresar'
 import { MANEJADORES } from '@/aplicacion/pendientes/manejadores'
@@ -150,7 +150,7 @@ export async function accionEliminarDocumento(datos: FormData): Promise<void> {
   const consorcioId = texto(datos, 'consorcio')
   const documentoId = texto(datos, 'documento')
   try {
-    await eliminarDocumento(ALMACEN, HABILITACIONES, RELOJ, { usuarioId, consorcioId, documentoId })
+    await eliminarDocumento(HABILITACIONES, RELOJ, { usuarioId, consorcioId, documentoId })
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
     redirect(

@@ -30,7 +30,7 @@ export function manejadorIndexacion(
   return async (carga) => {
     const { documentoId } = CARGA.parse(carga)
     const documento = await prismaBase.documentoConsorcio.findUnique({ where: { id: documentoId } })
-    if (!documento) return
+    if (!documento || documento.archivadoEn) return
 
     await prismaBase.documentoConsorcio.update({
       where: { id: documentoId },

@@ -132,6 +132,22 @@ describe('consulta documental', () => {
     expect(Array.isArray(guardada.fragmentosCitados)).toBe(true)
   })
 
+  it('la consulta documental no cita un archivado, y restaurado vuelve sin reindexar', async () => {
+    const documentoId = await indexar(consorcioId, 'Reglamento', true)
+    const pregunta = '¿Cuántas personas entran en el salón de usos múltiples?'
+    await prismaBase.documentoConsorcio.update({
+      where: { id: documentoId },
+      data: { archivadoEn: new Date() },
+    })
+    const r = await preguntar(vecino, consorcioId, pregunta)
+    expect(r.modo).not.toBe('respuesta')
+    await prismaBase.documentoConsorcio.update({
+      where: { id: documentoId },
+      data: { archivadoEn: null },
+    })
+    expect((await preguntar(vecino, consorcioId, pregunta)).modo).toBe('respuesta')
+  })
+
   it('diez preguntas sin respuesta en el reglamento dan sin respaldo, cero invenciones (SC-015)', async () => {
     await indexar(consorcioId, 'Reglamento', true)
     const sinRespuesta = [

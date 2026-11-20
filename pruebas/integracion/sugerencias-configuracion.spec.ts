@@ -226,6 +226,15 @@ describe('sugerencias de configuración', () => {
     expect(await prismaBase.sugerenciaConfiguracion.count()).toBe(0)
   })
 
+  it('documento archivado: termina sin lanzar y sin escribir', async () => {
+    await prismaBase.documentoConsorcio.update({
+      where: { id: documentoId },
+      data: { archivadoEn: new Date() },
+    })
+    await expect(analizar()).resolves.toBeUndefined()
+    expect(await prismaBase.sugerenciaConfiguracion.count()).toBe(0)
+  })
+
   it('la indexación encola el análisis solo para reglamento, acta y contrato', async () => {
     const reglamento = await sembrarDocumento('reglamento_interno', 'pendiente')
     const poliza = await sembrarDocumento('poliza', 'pendiente')

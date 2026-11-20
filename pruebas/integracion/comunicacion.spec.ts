@@ -5,6 +5,8 @@ import {
   DocumentoDeActa,
   eliminarDocumento,
   listarDocumentos,
+  listarDocumentosArchivados,
+  restaurarDocumento,
   verDocumento,
 } from '@/aplicacion/comunicacion/documentos'
 import { NoEncontrado, RolInsuficiente } from '@/compartido/errores'
@@ -331,40 +333,53 @@ describe('documentos', () => {
     expect(pedidos.map((p) => p.enLinea)).toEqual([true, undefined])
   })
 
-  describe('eliminar', () => {
+  describe('eliminar (archiva)', () => {
     const quien = (usuarioId: string) => ({ usuarioId, consorcioId })
-    const almacenSinFallas = (borrados: string[] = []) => ({
-      async eliminar(clave: string) {
-        borrados.push(clave)
-      },
-    })
+    const archivar = (documentoId: string, usuarioId = administrador) =>
+      eliminarDocumento(repo, RELOJ, { ...quien(usuarioId), documentoId })
 
-    it('el administrador elimina: se van la fila, los fragmentos y el objeto (RF-19)', async () => {
-      const borrados: string[] = []
+    it('eliminar archiva y conserva el archivo y los fragmentos (RF-19, RN-22)', async () => {
       const { documentoId } = await cargar('Reglamento', true)
       await prismaBase.fragmentoDocumento.create({
         data: { documentoId, numeroFragmento: 1, contenido: 'Art. 1' },
       })
-      await eliminarDocumento(almacenSinFallas(borrados), repo, RELOJ, {
-        ...quien(administrador),
-        documentoId,
+      await archivar(documentoId)
+      const fila = await prismaBase.documentoConsorcio.findUniqueOrThrow({
+        where: { id: documentoId },
       })
-      expect(await prismaBase.documentoConsorcio.count({ where: { id: documentoId } })).toBe(0)
-      expect(await prismaBase.fragmentoDocumento.count({ where: { documentoId } })).toBe(0)
-      expect(borrados).toHaveLength(1)
+      expect(fila.archivadoEn).toEqual(RELOJ.ahora())
+      expect(await prismaBase.fragmentoDocumento.count({ where: { documentoId } })).toBe(1)
+      expect(await listarDocumentos(repo, RELOJ, quien(administrador))).toEqual([])
+      expect(await listarDocumentosArchivados(repo, RELOJ, quien(administrador))).toMatchObject([
+        { id: documentoId, titulo: 'Reglamento', archivadoEn: RELOJ.ahora().toISOString() },
+      ])
     })
 
-    it('consorcista y consejo no eliminan', async () => {
+    it('consorcista y consejo no archivan ni ven archivados', async () => {
       const { documentoId } = await cargar('Reglamento', true)
       for (const usuarioId of [vecino, consejo]) {
+        await expect(archivar(documentoId, usuarioId)).rejects.toBeInstanceOf(RolInsuficiente)
         await expect(
-          eliminarDocumento(almacenSinFallas(), repo, RELOJ, { ...quien(usuarioId), documentoId }),
+          listarDocumentosArchivados(repo, RELOJ, quien(usuarioId)),
         ).rejects.toBeInstanceOf(RolInsuficiente)
       }
-      expect(await prismaBase.documentoConsorcio.count({ where: { id: documentoId } })).toBe(1)
+      const fila = await prismaBase.documentoConsorcio.findUniqueOrThrow({
+        where: { id: documentoId },
+      })
+      expect(fila.archivadoEn).toBeNull()
     })
 
-    it('el acta firmada no se elimina', async () => {
+    it('el administrador ve el archivado; el consorcista no', async () => {
+      const { documentoId } = await cargar('Reglamento', true)
+      await archivar(documentoId)
+      const almacen = { resolverLecturaAutorizada: async (c: string) => `https://a.test/${c}` }
+      const ver = (usuarioId: string) =>
+        verDocumento(almacen as never, repo, RELOJ, { ...quien(usuarioId), documentoId })
+      await expect(ver(administrador)).resolves.toMatchObject({ titulo: 'Reglamento' })
+      await expect(ver(vecino)).rejects.toBeInstanceOf(NoEncontrado)
+    })
+
+    it('el acta firmada no se archiva', async () => {
       const { documentoId } = await cargar('Acta 2026', true)
       const asamblea = await prismaBase.asamblea.create({
         data: {
@@ -386,47 +401,47 @@ describe('documentos', () => {
       await prismaBase.actaAsamblea.create({
         data: { consorcioId, asambleaId: asamblea.id, documentoId },
       })
-      await expect(
-        eliminarDocumento(almacenSinFallas(), repo, RELOJ, {
-          ...quien(administrador),
-          documentoId,
-        }),
-      ).rejects.toBeInstanceOf(DocumentoDeActa)
-      expect(await prismaBase.documentoConsorcio.count({ where: { id: documentoId } })).toBe(1)
-    })
-
-    it('si el almacén falla, la fila igual se borra', async () => {
-      const { documentoId } = await cargar('Reglamento', true)
-      const roto = {
-        async eliminar() {
-          throw new Error('almacén caído')
-        },
-      }
-      await eliminarDocumento(roto, repo, RELOJ, { ...quien(administrador), documentoId })
-      expect(await prismaBase.documentoConsorcio.count({ where: { id: documentoId } })).toBe(0)
-    })
-
-    it('eliminar dos veces: la segunda es no encontrado', async () => {
-      const { documentoId } = await cargar('Reglamento', true)
-      const datos = { ...quien(administrador), documentoId }
-      await eliminarDocumento(almacenSinFallas(), repo, RELOJ, datos)
-      await expect(
-        eliminarDocumento(almacenSinFallas(), repo, RELOJ, datos),
-      ).rejects.toBeInstanceOf(NoEncontrado)
-    })
-
-    it('el trabajo de indexación de un documento borrado termina sin lanzar', async () => {
-      const { documentoId } = await cargar('Reglamento', true)
-      await eliminarDocumento(almacenSinFallas(), repo, RELOJ, {
-        ...quien(administrador),
-        documentoId,
+      await expect(archivar(documentoId)).rejects.toBeInstanceOf(DocumentoDeActa)
+      const fila = await prismaBase.documentoConsorcio.findUniqueOrThrow({
+        where: { id: documentoId },
       })
-      const manejador = manejadorIndexacion(
-        almacenSinFallas() as never,
-        {} as never,
-        async () => [],
-      )
+      expect(fila.archivadoEn).toBeNull()
+    })
+
+    it('archivar dos veces: la segunda es no encontrado', async () => {
+      const { documentoId } = await cargar('Reglamento', true)
+      await archivar(documentoId)
+      await expect(archivar(documentoId)).rejects.toBeInstanceOf(NoEncontrado)
+    })
+
+    it('restaurar lo devuelve a la lista sin reindexar; uno vigente es no encontrado', async () => {
+      const { documentoId } = await cargar('Reglamento', true)
+      await prismaBase.fragmentoDocumento.create({
+        data: { documentoId, numeroFragmento: 1, contenido: 'Art. 1' },
+      })
+      const datos = { ...quien(administrador), documentoId }
+      await expect(restaurarDocumento(repo, RELOJ, datos)).rejects.toBeInstanceOf(NoEncontrado)
+      await archivar(documentoId)
+      await expect(
+        restaurarDocumento(repo, RELOJ, { ...quien(vecino), documentoId }),
+      ).rejects.toBeInstanceOf(RolInsuficiente)
+      const trabajosAntes = await prismaBase.trabajoPendiente.count()
+      await restaurarDocumento(repo, RELOJ, datos)
+      expect(await listarDocumentos(repo, RELOJ, quien(administrador))).toMatchObject([
+        { id: documentoId, fragmentos: 1 },
+      ])
+      expect(await prismaBase.trabajoPendiente.count()).toBe(trabajosAntes)
+    })
+
+    it('indexar un archivado termina sin lanzar y sin escribir', async () => {
+      const { documentoId } = await cargar('Reglamento', true)
+      await archivar(documentoId)
+      const manejador = manejadorIndexacion({} as never, {} as never, async () => [])
       await expect(manejador({ documentoId })).resolves.toBeUndefined()
+      const fila = await prismaBase.documentoConsorcio.findUniqueOrThrow({
+        where: { id: documentoId },
+      })
+      expect(fila.estadoIndexacion).toBe('pendiente')
     })
   })
 

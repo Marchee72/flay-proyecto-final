@@ -76,6 +76,7 @@ export async function buscarFragmentos(
     JOIN "DocumentoConsorcio" d ON d.id = f.documento_id
     WHERE d.consorcio_id = ${activo}::uuid
       AND d.estado_indexacion = 'indexado'
+      AND d.archivado_en IS NULL
       AND f.vector IS NOT NULL
       AND (${!opciones.soloVisibles} OR d.visible_consorcistas)
     ORDER BY f.vector <=> ${aVector(vectorDeLaPregunta)}::vector

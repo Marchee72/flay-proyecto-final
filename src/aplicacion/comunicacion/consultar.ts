@@ -62,7 +62,7 @@ export async function consultarDocumentacion(
         modo: 'degradado',
         motivo,
         documentos: await prisma.documentoConsorcio.findMany({
-          where: soloVisibles ? { visibleConsorcistas: true } : {},
+          where: { archivadoEn: null, ...(soloVisibles ? { visibleConsorcistas: true } : {}) },
           select: { id: true, titulo: true },
           orderBy: { titulo: 'asc' },
         }),

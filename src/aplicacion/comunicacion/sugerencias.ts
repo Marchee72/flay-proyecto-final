@@ -365,9 +365,9 @@ export function manejadorSugerencias(lector: LectorDeConfiguracion): Manejador {
     const { documentoId } = CARGA.parse(carga)
     const documento = await prismaBase.documentoConsorcio.findUnique({
       where: { id: documentoId },
-      select: { consorcioId: true, tipo: true },
+      select: { consorcioId: true, tipo: true, archivadoEn: true },
     })
-    if (!documento || !TIPOS_ANALIZABLES.includes(documento.tipo)) return
+    if (!documento || documento.archivadoEn || !TIPOS_ANALIZABLES.includes(documento.tipo)) return
 
     const fragmentos = await prismaBase.fragmentoDocumento.findMany({
       where: { documentoId },

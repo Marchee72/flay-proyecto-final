@@ -14,7 +14,7 @@ import { prisma, prismaBase } from '@/infraestructura/prisma'
  * Documentacion del consorcio (`RF-19`, `CU-15`, `FR-016`): reglamento,
  * actas, contratos. El consorcista solo ve lo marcado visible (SC-016). La
  * indexacion es diferida (`FR-030`): el documento nace `pendiente` con su
- * trabajo, y la carga no espera. La baja esta diferida (§ 9.11).
+ * trabajo, y la carga no espera. La baja archiva (RN-22).
  */
 
 export const TIPOS_DOCUMENTO: readonly { valor: TipoDocumento; etiqueta: string }[] = [
@@ -171,7 +171,7 @@ export async function buscarConfiguracion(
     },
     async () => {
       const documento = await prisma.documentoConsorcio.findFirst({
-        where: { id: datos.documentoId },
+        where: { id: datos.documentoId, archivadoEn: null },
         select: { id: true, tipo: true, estadoIndexacion: true },
       })
       if (!documento) throw new NoEncontrado()
@@ -216,7 +216,7 @@ export async function analisisDeConfiguracion(
     },
     async () => {
       const documento = await prisma.documentoConsorcio.findFirst({
-        where: { id: datos.documentoId },
+        where: { id: datos.documentoId, archivadoEn: null },
         select: { id: true, tipo: true, estadoIndexacion: true },
       })
       if (!documento) throw new NoEncontrado()
@@ -262,7 +262,7 @@ export async function reindexarDocumento(
     },
     async () => {
       const documento = await prisma.documentoConsorcio.findFirst({
-        where: { id: datos.documentoId },
+        where: { id: datos.documentoId, archivadoEn: null },
         select: { id: true },
       })
       if (!documento) throw new NoEncontrado()
@@ -292,7 +292,7 @@ export async function listarDocumentos(
     async (acceso) => {
       const administra = acceso.roles.includes('administrador')
       const documentos = await prisma.documentoConsorcio.findMany({
-        where: visiblesPara(acceso.roles),
+        where: { ...visiblesPara(acceso.roles), archivadoEn: null },
         orderBy: [{ tipo: 'asc' }, { fechaDocumento: 'desc' }, { creadoEn: 'desc' }],
         include: {
           _count: {
@@ -328,8 +328,13 @@ export async function verDocumento(
     reloj,
     { usuarioId: datos.usuarioId, consorcioId: datos.consorcioId, accion: 'ver documentos' },
     async (acceso) => {
+      // El administrador ve también el archivado (RN-22); el resto, solo lo vigente.
       const documento = await prisma.documentoConsorcio.findFirst({
-        where: { id: datos.documentoId, ...visiblesPara(acceso.roles) },
+        where: {
+          id: datos.documentoId,
+          ...visiblesPara(acceso.roles),
+          ...(acceso.roles.includes('administrador') ? {} : { archivadoEn: null }),
+        },
       })
       if (!documento) throw new NoEncontrado()
       // Dos enlaces: uno en línea para el visor y otro como adjunto para «Descargar».
@@ -343,13 +348,11 @@ export async function verDocumento(
 }
 
 /**
- * Baja del documento (`RF-19`): solo el administrador, y no el acta firmada de
- * una asamblea. Los fragmentos caen en cascada. El objeto se borra *después* de
- * la fila: si el almacén falla queda un objeto huérfano, que es mejor que un
- * documento listado sin archivo.
+ * Baja del documento (`RF-19`, `RN-22`): solo el administrador, y no el acta
+ * firmada de una asamblea. Archiva: el objeto y los fragmentos se conservan, y
+ * el documento sale de la lista, de la consulta y de los trabajos de cola.
  */
 export async function eliminarDocumento(
-  almacen: Pick<AlmacenObjetos, 'eliminar'>,
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
   datos: { usuarioId: string; consorcioId: string; documentoId: string },
@@ -365,19 +368,67 @@ export async function eliminarDocumento(
     },
     async () => {
       const documento = await prisma.documentoConsorcio.findFirst({
-        where: { id: datos.documentoId },
-        select: { id: true, claveAlmacenamiento: true },
+        where: { id: datos.documentoId, archivadoEn: null },
+        select: { id: true },
       })
       if (!documento) throw new NoEncontrado()
       if (await prisma.actaAsamblea.findFirst({ where: { documentoId: documento.id } })) {
         throw new DocumentoDeActa()
       }
-      await prisma.documentoConsorcio.delete({ where: { id: documento.id } })
-      try {
-        await almacen.eliminar(documento.claveAlmacenamiento)
-      } catch {
-        console.error('[documentos] objeto huérfano', documento.claveAlmacenamiento)
-      }
+      await prisma.documentoConsorcio.update({
+        where: { id: documento.id },
+        data: { archivadoEn: reloj.ahora() },
+      })
+    },
+  )
+}
+
+/** Devuelve un documento archivado a la lista; sus fragmentos siguen ahí, no se reindexa. */
+export async function restaurarDocumento(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: { usuarioId: string; consorcioId: string; documentoId: string },
+): Promise<void> {
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    {
+      usuarioId: datos.usuarioId,
+      consorcioId: datos.consorcioId,
+      rolesPermitidos: ['administrador'],
+      accion: 'restaurar documentos',
+    },
+    async () => {
+      const { count } = await prisma.documentoConsorcio.updateMany({
+        where: { id: datos.documentoId, archivadoEn: { not: null } },
+        data: { archivadoEn: null },
+      })
+      if (count === 0) throw new NoEncontrado()
+    },
+  )
+}
+
+export async function listarDocumentosArchivados(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: { usuarioId: string; consorcioId: string },
+): Promise<{ id: string; titulo: string; tipo: string; archivadoEn: string }[]> {
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    {
+      usuarioId: datos.usuarioId,
+      consorcioId: datos.consorcioId,
+      rolesPermitidos: ['administrador'],
+      accion: 'ver documentos archivados',
+    },
+    async () => {
+      const archivados = await prisma.documentoConsorcio.findMany({
+        where: { archivadoEn: { not: null } },
+        orderBy: { archivadoEn: 'desc' },
+        select: { id: true, titulo: true, tipo: true, archivadoEn: true },
+      })
+      return archivados.map((d) => ({ ...d, archivadoEn: d.archivadoEn!.toISOString() }))
     },
   )
 }

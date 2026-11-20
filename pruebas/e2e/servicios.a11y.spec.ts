@@ -263,6 +263,16 @@ for (const pantalla of DEL_ADMINISTRADOR) {
 
 const TAGS_AXE = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
 const sinInfracciones = async (page: Page) => {
+  // El dialogo entra con una animacion de 200 ms (`modal-entrar`): axe a mitad de camino
+  // mide un contraste mezclado con el fondo. Se espera a que todas terminen.
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+        .map((a) => a.finished.catch(() => undefined)),
+    ),
+  )
   const { violations } = await new AxeBuilder({ page }).withTags(TAGS_AXE).analyze()
   const resumen = violations.map((v) => `${v.id} (${v.nodes.length}): ${v.help}`)
   expect(resumen, resumen.join(', ')).toEqual([])

@@ -178,7 +178,7 @@ comprensibles (RNF-10), auditoría registrada si toca datos económicos, documen
 
 ## Lo que no se adivina leyendo el código
 
-Treinta y tres decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
+Treinta y cinco decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
 
 1. **El orden de las semillas y las pruebas.** `npm run test:integracion` **vacía** las tablas de
    negocio, semilla incluida: en una base compartida no hay forma de distinguir lo sembrado de lo
@@ -456,6 +456,30 @@ Treinta y tres decisiones que costaron una vuelta y conviene no volver a tomar d
     pintan). Los azules/violetas son más oscuros que los de la maqueta para pasar AA con texto blanco.
     **Las e2e corren contra `npm run build` y con `CI=1`** (`FLAY_ALMACEN=memoria`): sin eso, la
     página de un documento sembrado a mano da «no encontrado».
+
+35. **Un consorcio archivado se consulta, no se opera, y el candado vive en la base (RN-22).** Eliminar un
+    consorcio, un espacio o un documento **decide por sí mismo** entre borrar y archivar: con historia
+    archiva (`archivadoEn`), sin movimiento borra, y un documento siempre se archiva y conserva su
+    archivo. Todo lo restaura quien tenga permiso desde la sección Eliminados/Archivados. El disparador
+    `fn_consorcio_no_archivado` (`consorcio_no_archivado`, `BEFORE INSERT OR UPDATE OR DELETE`) rechaza
+    cualquier escritura sobre filas de un consorcio archivado, así que ninguna ruta de código se lo
+    saltea. **Cuatro tablas con `consorcio_id` quedan afuera, a propósito:** `Habilitacion` (restaurar y
+    quitar accesos tiene que seguir andando), `Notificacion` (el aviso de que se archivó nace con el
+    archivado), `ConsultaDocumental` y `ConversacionAsistente` (consultar es leer, pero deja rastro). La
+    prueba de `information_schema` de `archivado-base.spec.ts` obliga a decidir para **toda tabla nueva con
+    `consorcio_id`**: o lleva el candado o entra a esa lista con su razón. El error de la base se
+    traduce una sola vez: `traducirArchivado` (`src/compartido/errores.ts`) lo vuelve `ConsorcioArchivado`
+    y lo usan `conAutorizacion`, `traducirErrorDeBase` y la cola (`drenar` marca el trabajo despachado
+    **sin reintento**, no tiene sentido reintentar). Archivar un consorcio se bloquea con un intento de
+    pago sin resolver dentro de las **72 h** que la conciliación todavía mira —`iniciado`, o `rechazado`/
+    `vencido` **con** `preferenciaId` (nota 29)—, o con una asamblea `convocada`/`en_curso`; cancela y avisa
+    las reservas futuras. `eliminarConsorcio` toma `FOR UPDATE` sobre la fila de `Consorcio` e
+    `iniciarPagoEnLinea` `FOR SHARE`: o el intento nace antes y bloquea, o espera al commit y rebota
+    contra el candado. **Toda lectura de lo vigente filtra `archivadoEn: null`** (espacios, documentos,
+    consorcios al alcance, consulta asistida), **y la historia no** (reservas pasadas, el historial
+    con sus espacios archivados, el acta y su documento). La interfaz esconde los controles de escritura
+    con `!activo.archivadoEn` donde se puede; donde no, el candado es la garantía y la acción
+    devuelve un mensaje legible, nunca una pantalla de error.
 
 ## Notas
 

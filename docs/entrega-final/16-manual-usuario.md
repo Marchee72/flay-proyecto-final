@@ -2,7 +2,7 @@
 
 > **Requisito de la cátedra (Última entrega, punto 16):** *"Elaboración de los manuales de usuario."*
 
-> ✅ **Estado: completo y definitivo.** Este documento constituye el cuerpo normativo y operativo de manuales de usuario del sistema Flay — Tu consorcio online. Su contenido ha sido desarrollado de forma exhaustiva para cada rol operativo (Administrador, Operador/Consejo de Propietarios y Consorcista), fundamentado en la arquitectura de software desplegada, las pantallas reales implementadas en Next.js 15 dentro de `src/app/(panel)` y `src/app/(sesion)`, las reglas de negocio vinculantes (RN-01 a RN-21) y la validación empírica sobre los consorcios piloto "Las Heras 2140" (12 unidades funcionales) y "Belgrano 1250" (96 unidades funcionales), administrados por la organización Grupo Delta en la ciudad de Rosario.
+> ✅ **Estado: completo y definitivo.** Este documento constituye el cuerpo normativo y operativo de manuales de usuario del sistema Flay — Tu consorcio online. Su contenido ha sido desarrollado de forma exhaustiva para cada rol operativo (Administrador, Operador/Consejo de Propietarios y Consorcista), fundamentado en la arquitectura de software desplegada, las pantallas reales implementadas en Next.js 15 dentro de `src/app/(panel)` y `src/app/(sesion)`, las reglas de negocio vinculantes (RN-01 a RN-22) y la validación empírica sobre los consorcios piloto "Las Heras 2140" (12 unidades funcionales) y "Belgrano 1250" (96 unidades funcionales), administrados por la organización Grupo Delta en la ciudad de Rosario.
 
 ---
 
@@ -185,6 +185,15 @@ Si el consorcio sufre modificaciones reglamentarias (ejemplo: subdivisión o ane
 2. Presione **Actualizar coeficientes**.
 3. Ingrese la nueva tabla de coeficientes que sume exactamente 100,00000000 % e indique la fecha de vigencia.
 4. Conforme a la regla **RN-02**, la vigencia anterior cerrará exactamente el día anterior a las 23:59:59 UTC de la nueva vigencia. Las liquidaciones ya emitidas en el pasado conservarán inalterados sus coeficientes históricos en `DetalleLiquidacion`.
+
+
+#### Eliminar, archivar y restaurar un consorcio (RN-22):
+1. Ingrese al resumen del consorcio y presione **Eliminar**. El cuadro de confirmación informa el resultado antes de actuar:
+   - **Sin movimiento** (ningún período, gasto, liquidación, pago, reclamo, reserva, asamblea, documento ni novedad): se **borra definitivamente**, junto con sus unidades, espacios y proveedores.
+   - **Con historia:** se **archiva**. Se cancelan y avisan las reservas futuras, y el consorcio pasa a **solo lectura** para todos.
+   - **Bloqueado:** no se puede archivar mientras haya un pago en línea sin resolver (se mira hasta 72 horas después de su vencimiento) ni una asamblea convocada o en curso; el botón queda deshabilitado y el cuadro dice qué hay que resolver primero.
+2. El consorcio archivado sale de la lista principal y del selector, y aparece en **Archivados (n)** al pie de `/consorcios`. Sigue pudiendo abrirse por enlace: muestra un aviso fijo con la fecha de archivado y oculta los botones que operan (registrar pago, liquidar, cargar gasto, nuevo espacio, invitar usuarios, etc.). Donde un botón siguiera visible, la acción responde «Este consorcio está archivado: se puede consultar, pero no operar» y no cambia nada. Los consorcistas conservan su historial, expensas y pagos para consultar.
+3. **Restaurar** (en Archivados) lo devuelve al uso normal; solo lo hace quien pertenece al nivel de administradora del consorcio.
 
 ---
 
@@ -470,6 +479,11 @@ El módulo de espacios comunes (`/espacios`) parametriza las dependencias de uso
 
 El **Horario de uso** (apertura y cierre) es optativo: vacío, el espacio se reserva a cualquier hora; cargado, se rechaza toda reserva que empiece antes de la apertura o termine después del cierre, y la tarjeta del espacio lo muestra (*de 10:00 a 23:00*). Si el cierre es anterior a la apertura, el horario cruza la medianoche: *de 20:00 a 02:00* admite una reserva de las 22 a la 1. Cambiar el horario de un espacio cancela las reservas futuras que quedan afuera y les avisa a quienes las hicieron. La casilla **Rechazar reservas de unidades con deuda vencida** viene marcada; desmarcada, ese espacio se reserva aunque la unidad deba expensas.
 
+#### Eliminar, archivar y restaurar un espacio:
+1. En la tarjeta del espacio presione **Eliminar**. El cuadro de confirmación dice qué va a pasar: si el espacio nunca tuvo reservas se **borra definitivamente**; si tiene reservas (pasadas o futuras) se **archiva**, y a quienes tengan reservas futuras se les avisa que quedaron canceladas.
+2. Un espacio archivado deja de ofrecerse para reservar, pero sus reservas pasadas se siguen viendo en el historial, rotulado «(archivado)».
+3. Despliegue **Eliminados (n)** al pie de `/espacios` y presione **Restaurar** para volver a usarlo. Las reservas canceladas no se reviven. Si crea un espacio con el nombre de uno archivado, el sistema ofrece restaurar el archivado.
+
 #### Control de reservas y regla de no morosidad (`/reservas`):
 - Los consorcistas solicitan turnos desde su interfaz móvil.
 - **Precondición mandatoria del sistema:** Flay examina automáticamente el estado de deuda de la unidad funcional. Si la unidad registra saldo impago vencido de expensas, el sistema inhabilita la confirmación del turno mostrando el mensaje: *«Una unidad con deuda vencida no puede reservar hasta regularizar»*, salvo que el espacio tenga desmarcada la casilla **Rechazar reservas de unidades con deuda vencida**.
@@ -494,6 +508,7 @@ El **Horario de uso** (apertura y cierre) es optativo: vacío, el espacio se res
    - *Reservado:* Accesible exclusivamente por el Administrador y el Consejo de Propietarios (ejemplo: auditorías contables o dictámenes jurídicos).
 4. Al confirmar la subida directa a la nube, el sistema pone en marcha el proceso de **indexación vectorial semántica** en segundo plano, preparando el documento para responder consultas inteligentes.
 5. Al abrir un documento se lo ve en línea (PDF) y puede descargarse aparte. El Administrador puede **Eliminar** el documento desde esa pantalla; el acta firmada de una asamblea no se puede eliminar.
+6. **Eliminar** un documento siempre lo **archiva**: sale de la lista y de las respuestas de la consulta con inteligencia artificial, pero el archivo se conserva. Desde **Eliminados (n)**, al pie de `/documentos`, el Administrador lo **Restaura**; si todavía no se había indexado, vuelve a ponerse en cola. Un documento archivado muestra un aviso y la opción Restaurar al abrirlo.
 
 **Configuración que menciona el documento.** Cuando termina de procesarse un reglamento, un acta o un contrato, Flay lo lee en busca de lo que fija sobre la configuración del consorcio: espacios comunes nuevos o cambios en los existentes (horario, anticipación, duración), vencimientos y tasa de mora, reglas de asamblea e instrucciones de pago. Lo que encuentra y difiere de lo cargado aparece en la página del documento, bajo **Configuración que menciona este documento**: una tarjeta por cambio, con el valor de ahora al lado del propuesto y el párrafo del documento que lo respalda. En el listado, la fila avisa *«2 sugerencias»*. **Nada se aplica sin su clic:** **Aplicar** pasa el cambio por la misma validación que la pantalla de configuración correspondiente, y si cancelaría reservas confirmadas lo advierte y pide confirmación; **Descartar** lo deja como historia, plegada en *Ya revisadas*. Para los documentos cargados antes de esta función, el botón **Buscar configuración** de la página del documento los vuelve a leer.
 
@@ -999,6 +1014,7 @@ El contenido de este manual implementa y garantiza la trazabilidad con los reque
    - `RN-13`: Nómina de deudores confidencial para Administrador y Consejo; consorcistas solo ven el agregado.
    - `RN-14`: Prohibición de impacto económico directo de servicios automáticos sin confirmación humana explícita.
    - `RN-15`: Auditoría obligatoria e inviolable por disparadores de base de datos sobre operaciones económicas.
+   - `RN-22`: Un consorcio, espacio o documento con historia no se borra: se archiva y se restaura; el consorcio archivado queda en solo lectura.
 
 4. **Fuentes documentales del proyecto:**
    - [`CLAUDE.md`](file:///C:/Users/march/source/repos/proyecto-final/CLAUDE.md): Directivas técnicas e invariantes de desarrollo.

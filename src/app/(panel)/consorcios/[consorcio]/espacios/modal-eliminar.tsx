@@ -3,25 +3,29 @@
 import { BotonModal } from '../../../modal'
 import { accionEliminarEspacio } from '../reservas/acciones'
 
-/** Eliminar un espacio comun (`RF-15`): confirmacion en modal; solo prospera sin reservas en el historial. */
+/** Eliminar un espacio comun (`RF-15`): confirmacion en modal; sin reservas se borra, con reservas se archiva (`RN-22`). */
 export function ModalEliminar({
   consorcioId,
   espacio,
 }: {
   consorcioId: string
-  espacio: { id: string; nombre: string }
+  espacio: { id: string; nombre: string; reservasEnHistorial: number }
 }) {
+  const archiva = espacio.reservasEnHistorial > 0
+  const etiqueta = archiva ? 'Archivar' : 'Eliminar'
   return (
     <BotonModal etiqueta="Eliminar" titulo={`Eliminar ${espacio.nombre}`} variante="boton--peligro">
       <form action={accionEliminarEspacio}>
         <input type="hidden" name="consorcio" value={consorcioId} />
         <input type="hidden" name="espacio" value={espacio.id} />
         <p className="ayuda">
-          Se elimina para siempre, junto con su historial de reservas. A quienes tengan reservas
-          futuras se les avisa. Si querés conservar el historial, deshabilitalo en su lugar.
+          {archiva
+            ? `Tiene ${espacio.reservasEnHistorial} reservas en su historial: se va a archivar y lo vas a encontrar en Eliminados, desde donde podés restaurarlo.`
+            : 'Este espacio no tiene reservas: se va a borrar definitivamente.'}{' '}
+          A quienes tengan reservas futuras se les avisa.
         </p>
         <button className="boton boton--peligro" type="submit">
-          Eliminar espacio
+          {etiqueta}
         </button>
       </form>
     </BotonModal>

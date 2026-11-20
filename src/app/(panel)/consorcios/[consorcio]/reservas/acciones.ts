@@ -15,6 +15,7 @@ import {
   editarEspacio,
   eliminarEspacio,
   habilitarEspacio,
+  restaurarEspacio,
 } from '@/aplicacion/reservas/espacios'
 import { cancelarReserva, reservar } from '@/aplicacion/reservas/reservar'
 import { errorDeHorario, minutosDesdeHora } from '@/aplicacion/reservas/horario-reglas'
@@ -167,8 +168,9 @@ export async function accionEliminarEspacio(datos: FormData): Promise<void> {
   if (!usuarioId) return irAIngresar()
 
   const consorcioId = texto(datos, 'consorcio')
+  let resultado: 'borrado' | 'archivado'
   try {
-    await eliminarEspacio(HABILITACIONES, RELOJ, {
+    resultado = await eliminarEspacio(HABILITACIONES, RELOJ, {
       usuarioId,
       consorcioId,
       espacioId: texto(datos, 'espacio'),
@@ -178,7 +180,31 @@ export async function accionEliminarEspacio(datos: FormData): Promise<void> {
     redirect(conError(`/consorcios/${consorcioId}/espacios`, error.mensajeParaUsuario))
   }
   revalidatePath('/consorcios/[consorcio]/espacios', 'page')
-  redirect(conHecho(`/consorcios/${consorcioId}/espacios`, 'espacio-eliminado'))
+  redirect(
+    conHecho(
+      `/consorcios/${consorcioId}/espacios`,
+      resultado === 'archivado' ? 'espacio-archivado' : 'espacio-eliminado',
+    ),
+  )
+}
+
+export async function accionRestaurarEspacio(datos: FormData): Promise<void> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) return irAIngresar()
+
+  const consorcioId = texto(datos, 'consorcio')
+  try {
+    await restaurarEspacio(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      espacioId: texto(datos, 'espacio'),
+    })
+  } catch (error) {
+    if (!(error instanceof ErrorDeAplicacion)) throw error
+    redirect(conError(`/consorcios/${consorcioId}/espacios`, error.mensajeParaUsuario))
+  }
+  revalidatePath('/consorcios/[consorcio]/espacios', 'page')
+  redirect(conHecho(`/consorcios/${consorcioId}/espacios`, 'espacio-restaurado'))
 }
 
 export async function accionHabilitarEspacio(datos: FormData): Promise<void> {

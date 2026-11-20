@@ -3006,48 +3006,89 @@ td select {
   /* Siempre en una fila: si no entran, desplazan adentro, nunca abajo. */
   flex-wrap: nowrap;
   overflow-x: auto;
-  gap: var(--e2);
+  gap: 2px;
   margin: 0;
-  padding: 0 0 var(--e1);
+  /* Una sola barra: el paso actual es el segmento oscuro. */
+  padding: 4px;
+  border-radius: var(--pastilla);
+  background: var(--gris-palido);
   list-style: none;
-  counter-reset: paso;
   font-size: var(--t-menor);
   font-weight: 600;
 }
 .modal__pasos li {
   /* Las 3 se reparten todo el ancho del dialogo en partes iguales. */
   flex: 1 1 0;
-  justify-content: center;
+  display: flex;
+  min-width: 0;
 }
-.modal__pasos li {
+/* Cada paso es un botón: se puede ir de uno a otro en cualquier momento. */
+.modal__paso {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: var(--e2);
-  padding: var(--e1) var(--e3) var(--e1) var(--e1);
+  width: 100%;
+  min-height: 40px;
+  padding: 0 var(--e3) 0 var(--e1);
+  border: 0;
   border-radius: var(--pastilla);
-  background: var(--gris-palido);
+  background: transparent;
   color: var(--tinta-apagada);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
-.modal__pasos li::before {
-  counter-increment: paso;
-  content: counter(paso);
+.modal__paso:hover {
+  background: rgb(255 255 255 / 60%);
+}
+.modal__paso:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.modal__paso:disabled:hover {
+  background: transparent;
+}
+.modal__paso-ok {
+  display: none;
+  width: 16px;
+  height: 16px;
+}
+.modal__paso-n {
+  position: relative;
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  min-width: var(--toque);
-  min-height: var(--toque);
+  width: 28px;
+  height: 28px;
   border-radius: var(--pastilla);
   background: var(--superficie);
-  border: 1px solid var(--linea);
+  font-size: 13px;
   font-weight: 700;
 }
-.modal__pasos [aria-current='step'] {
+/* Paso completo: segmento verde pálido con un tilde (el color dice «hecho»). */
+.modal__pasos li[data-estado='hecho'] .modal__paso,
+.modal__pasos li[data-estado='hecho'] .modal__paso:hover {
+  background: var(--verde-palido);
+  color: var(--verde);
+}
+.modal__pasos li[data-estado='hecho'] .modal__paso-n {
+  background: var(--verde);
+  color: #ffffff;
+}
+.modal__pasos li[data-estado='hecho'] .modal__paso-num {
+  display: none;
+}
+.modal__pasos li[data-estado='hecho'] .modal__paso-ok {
+  display: block;
+}
+.modal__pasos [aria-current='step'] .modal__paso {
   background: var(--grafito);
   color: var(--tinta-clara);
 }
-.modal__pasos [aria-current='step']::before {
+.modal__pasos [aria-current='step'] .modal__paso-n {
   background: var(--lima);
-  border-color: var(--lima);
   color: var(--grafito);
 }
 /* A 390px casi pantalla completa, sin desplazar la pagina a lo ancho

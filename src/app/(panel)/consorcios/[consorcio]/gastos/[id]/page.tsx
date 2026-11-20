@@ -46,10 +46,11 @@ export default async function GastoPage({
     )
   }
 
-  // Adjuntar es del administrador (RNF-03): sin permiso no hay boton.
-  const administra = (await rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id)).includes(
-    'administrador',
-  )
+  // Adjuntar es del administrador (RNF-03): sin permiso no hay boton. Un
+  // consorcio archivado no se opera (RN-22): tampoco.
+  const administra =
+    !activo.archivadoEn &&
+    (await rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id)).includes('administrador')
 
   // Editar y eliminar solo con el periodo abierto (RF-04); el resto, a ajuste.
   const editable = administra && gasto.periodoAbierto

@@ -293,10 +293,9 @@ for (const [espacio, boton] of [
   test(`espacios: modal ${boton} abierto sin infracciones A/AA`, async ({ page }) => {
     await entrar(page, administrador.correo)
     await page.goto(`/consorcios/${administrador.consorcioId}/espacios`)
-    await page
-      .getByRole('article', { name: espacio })
-      .getByRole('button', { name: 'Eliminar' })
-      .click()
+    const tarjeta = page.getByRole('article', { name: espacio })
+    await tarjeta.getByRole('button', { name: `Más acciones de ${espacio}` }).click()
+    await tarjeta.getByRole('button', { name: boton, exact: true }).click()
     await expect(
       page.getByRole('dialog').getByRole('button', { name: boton, exact: true }),
     ).toBeVisible()

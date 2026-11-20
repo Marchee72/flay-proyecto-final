@@ -5,11 +5,12 @@ import { CalendarRange, DoorOpen } from 'lucide-react'
 import { fechaEnArParaMostrar } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
-import { listarEspacios } from '@/aplicacion/reservas/espacios'
+import { listarEspacios, listarEspaciosArchivados } from '@/aplicacion/reservas/espacios'
 import { horarioParaMostrar } from '@/aplicacion/reservas/horario-reglas'
 
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
-import { accionHabilitarEspacio } from '../reservas/acciones'
+import { MenuPuntos } from '../../menu-puntos'
+import { accionHabilitarEspacio, accionRestaurarEspacio } from '../reservas/acciones'
 import { ModalDeshabilitar } from './modal-deshabilitar'
 import { ModalEliminar } from './modal-eliminar'
 import { ModalEspacio } from './modal-espacio'
@@ -34,6 +35,13 @@ export default async function EspaciosPage({ params }: { params: Promise<{ conso
     ])
     // Solo se dibuja lo que el rol puede disparar (RNF-03).
     const administra = roles.includes('administrador')
+    const archivados =
+      administra && !activo.archivadoEn
+        ? await listarEspaciosArchivados(HABILITACIONES, RELOJ, {
+            usuarioId,
+            consorcioId: activo.id,
+          })
+        : []
 
     return (
       <>
@@ -42,7 +50,7 @@ export default async function EspaciosPage({ params }: { params: Promise<{ conso
           Las reglas del reglamento interno, en datos: lo que el sistema aplica al reservar.
         </p>
 
-        {administra && (
+        {administra && !activo.archivadoEn && (
           <div className="fila-acciones">
             <ModalEspacio consorcioId={activo.id} />
             <Link
@@ -68,7 +76,14 @@ export default async function EspaciosPage({ params }: { params: Promise<{ conso
                 key={e.id}
                 aria-label={e.nombre}
               >
-                <h2>{e.nombre}</h2>
+                <div className="tarjeta-espacio__cabeza">
+                  <h2>{e.nombre}</h2>
+                  {administra && !activo.archivadoEn && (
+                    <MenuPuntos nombre={`Más acciones de ${e.nombre}`}>
+                      <ModalEliminar consorcioId={activo.id} espacio={e} />
+                    </MenuPuntos>
+                  )}
+                </div>
                 {!e.activo && (
                   <p className="etiqueta etiqueta--vencido">
                     Deshabilitado
@@ -90,8 +105,8 @@ export default async function EspaciosPage({ params }: { params: Promise<{ conso
                   <dt>Horario</dt>
                   <dd>{e.horario ? horarioParaMostrar(e.horario) : 'Cualquier hora'}</dd>
                 </dl>
-                {administra && (
-                  <div className="fila-acciones">
+                {administra && !activo.archivadoEn && (
+                  <div className="fila-acciones espacio__acciones">
                     <ModalEspacio consorcioId={activo.id} espacio={e} />
                     {e.activo ? (
                       <ModalDeshabilitar consorcioId={activo.id} espacio={e} />
@@ -105,12 +120,35 @@ export default async function EspaciosPage({ params }: { params: Promise<{ conso
                         </button>
                       </form>
                     )}
-                    <ModalEliminar consorcioId={activo.id} espacio={e} />
                   </div>
                 )}
               </article>
             ))}
           </div>
+        )}
+
+        {archivados.length > 0 && (
+          <details className="tarjeta">
+            <summary>Eliminados ({archivados.length})</summary>
+            <ul>
+              {archivados.map((a) => (
+                <li key={a.id}>
+                  <strong>{a.nombre}</strong>{' '}
+                  <span className="apagado">
+                    archivado el {fechaEnArParaMostrar(a.archivadoEn)}, {a.reservasEnHistorial}{' '}
+                    reservas en el historial
+                  </span>
+                  <form action={accionRestaurarEspacio}>
+                    <input type="hidden" name="consorcio" value={activo.id} />
+                    <input type="hidden" name="espacio" value={a.id} />
+                    <button className="boton boton--fantasma" type="submit">
+                      Restaurar
+                    </button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
       </>
     )

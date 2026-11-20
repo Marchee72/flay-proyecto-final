@@ -196,9 +196,6 @@ function FormularioAcreditar({
           onChange={(e) => setNombre(e.target.value)}
           placeholder="Nombre y apellido"
         />
-        <p className="ayuda">
-          Si no es el titular con cuenta, vota por carga manual de quien dirige.
-        </p>
       </div>
       <div className="campo direccion__campo-como">
         <label htmlFor="acreditar-como">Como</label>
@@ -222,6 +219,9 @@ function FormularioAcreditar({
         clase="boton boton--fantasma"
         deshabilitado={!unidadActiva}
       />
+      <p className="ayuda direccion__ayuda">
+        Si no es el titular con cuenta, vota por carga manual de quien dirige.
+      </p>
     </form>
   )
 }
@@ -308,7 +308,10 @@ export function Direccion({
 
   if (pasoActivo === 'acreditacion') {
     return (
-      <section className="tarjeta direccion" aria-labelledby="direccion-titulo">
+      <section
+        className="tarjeta direccion direccion--acreditacion"
+        aria-labelledby="direccion-titulo"
+      >
         <h2 id="direccion-titulo">
           {vista.constituida ? 'Acreditar llegada tardía' : 'Paso 1 · Acreditación y constitución'}
         </h2>
@@ -369,46 +372,48 @@ export function Direccion({
                 y secretario/a (actualmente hay {conUsuario.length}).
               </p>
             )}
-            <form
-              action={async (datos) => {
-                await notificarResultado(accionConstituir(datos))
-              }}
-            >
-              <Ocultos vista={vista} />
-              <p className="ayuda">
-                {sinAutoridades && 'Primero designá presidente y secretario/a. '}
-                En primera convocatoria hace falta más del 50 % de los coeficientes. Desde las{' '}
-                {momentoParaMostrar(vista.segundaConvocatoria).slice(-5)} se constituye en segunda,
-                con los presentes.
-              </p>
-              <BotonEnviar
-                texto="Verificar quórum y constituir"
-                enviando="Constituyendo…"
-                deshabilitado={sinAutoridades}
-              />
-            </form>
-            <BotonModal
-              etiqueta="Cancelar por falta de quórum"
-              titulo="Cancelar la asamblea"
-              variante="boton--peligro"
-            >
-              <form action={accionCancelar}>
+            <p className="ayuda">
+              {sinAutoridades && 'Primero designá presidente y secretario/a. '}
+              En primera convocatoria hace falta más del 50 % de los coeficientes. Desde las{' '}
+              {momentoParaMostrar(vista.segundaConvocatoria).slice(-5)} se constituye en segunda,
+              con los presentes.
+            </p>
+            <div className="direccion__acciones">
+              <form
+                action={async (datos) => {
+                  await notificarResultado(accionConstituir(datos))
+                }}
+              >
                 <Ocultos vista={vista} />
-                <div className="campo">
-                  <label htmlFor="cancelar-motivo">Motivo</label>
-                  <textarea
-                    id="cancelar-motivo"
-                    name="motivo"
-                    rows={3}
-                    required
-                    defaultValue="No se alcanzó el quórum."
-                  />
-                </div>
-                <div className="fila-acciones">
-                  <BotonEnviar texto="Confirmar cancelación" enviando="Cancelando…" />
-                </div>
+                <BotonEnviar
+                  texto="Constituir"
+                  enviando="Constituyendo…"
+                  deshabilitado={sinAutoridades}
+                />
               </form>
-            </BotonModal>
+              <BotonModal
+                etiqueta="Cancelar"
+                titulo="Cancelar la asamblea por falta de quórum"
+                variante="boton--peligro"
+              >
+                <form action={accionCancelar}>
+                  <Ocultos vista={vista} />
+                  <div className="campo">
+                    <label htmlFor="cancelar-motivo">Motivo</label>
+                    <textarea
+                      id="cancelar-motivo"
+                      name="motivo"
+                      rows={3}
+                      required
+                      defaultValue="No se alcanzó el quórum."
+                    />
+                  </div>
+                  <div className="fila-acciones">
+                    <BotonEnviar texto="Confirmar cancelación" enviando="Cancelando…" />
+                  </div>
+                </form>
+              </BotonModal>
+            </div>
           </>
         )}
       </section>

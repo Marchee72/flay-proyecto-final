@@ -2,16 +2,17 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { EyeOff, FileText } from 'lucide-react'
 
-import { fechaParaMostrar, plural } from '@/compartido/formato'
+import { fechaEnArParaMostrar, fechaParaMostrar, plural } from '@/compartido/formato'
 import {
   ETIQUETA_INDEXACION,
   listarDocumentos,
+  listarDocumentosArchivados,
   TIPOS_DOCUMENTO,
 } from '@/aplicacion/comunicacion/documentos'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 
-import { accionReindexar } from '../../../comunicacion/acciones'
+import { accionReindexar, accionRestaurarDocumento } from '../../../comunicacion/acciones'
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
 import { EnVivo } from '../../../en-vivo'
 import { IconoIA } from '../../../icono-ia'
@@ -51,6 +52,13 @@ export default async function DocumentosPage({
       rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id),
     ])
     const administra = roles.includes('administrador')
+    const archivados =
+      administra && !activo.archivadoEn
+        ? await listarDocumentosArchivados(HABILITACIONES, RELOJ, {
+            usuarioId,
+            consorcioId: activo.id,
+          })
+        : []
     const conSugerencias = documentos.filter((d) => !!d.sugerenciasPendientes)
     // El estado de indexacion solo lo ve el administrador; para el resto, basta con que haya documentos.
     const consultable = documentos.some((d) => (d.estadoIndexacion ?? 'indexado') === 'indexado')
@@ -103,7 +111,7 @@ export default async function DocumentosPage({
         >
           Abrir
         </Link>
-        {administra && (
+        {administra && !activo.archivadoEn && (
           <ModalEliminar consorcioId={activo.id} documentoId={d.id} titulo={d.titulo} />
         )}
       </div>
@@ -128,7 +136,9 @@ export default async function DocumentosPage({
                 Preguntarle a la documentación
               </Link>
             )}
-            {administra && <ModalDocumento consorcioId={activo.id} tipos={TIPOS_DOCUMENTO} />}
+            {administra && !activo.archivadoEn && (
+              <ModalDocumento consorcioId={activo.id} tipos={TIPOS_DOCUMENTO} />
+            )}
           </div>
         </div>
         {administra && (
@@ -178,6 +188,36 @@ export default async function DocumentosPage({
               </tbody>
             </table>
           </TablaDesplazable>
+        )}
+        {archivados.length > 0 && (
+          <details className="tarjeta">
+            <summary>Eliminados ({archivados.length})</summary>
+            <ul>
+              {archivados.map((a) => (
+                <li key={a.id}>
+                  <strong>{a.titulo}</strong>{' '}
+                  <span className="apagado">
+                    archivado el {fechaEnArParaMostrar(a.archivadoEn)}
+                  </span>
+                  <div className="acciones">
+                    <Link
+                      className="boton boton--terciario"
+                      href={`/consorcios/${activo.id}/documentos/${a.id}`}
+                    >
+                      Abrir
+                    </Link>
+                    <form action={accionRestaurarDocumento}>
+                      <input type="hidden" name="consorcio" value={activo.id} />
+                      <input type="hidden" name="documento" value={a.id} />
+                      <button className="boton boton--fantasma" type="submit">
+                        Restaurar
+                      </button>
+                    </form>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
       </>
     )

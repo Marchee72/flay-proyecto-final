@@ -114,7 +114,7 @@ que permite probar la liquidación sin base de datos.
 - **Presentación**: vistas y formularios. Sin reglas de negocio, sin acceso directo a la base.
 - **Aplicación**: orquesta casos de uso, verifica autorización por rol y por consorcio, abre
   transacciones, registra auditoría. Sin cálculos de negocio.
-- **Dominio**: RN-01 a RN-21 — prorrateo, intereses, imputación, asambleas.
+- **Dominio**: RN-01 a RN-22 — prorrateo, intereses, imputación, asambleas.
 - **Infraestructura**: repositorios, ORM, almacenamiento de objetos, correo, servicios externos.
 
 ### Stack
@@ -178,7 +178,7 @@ comprensibles (RNF-10), auditoría registrada si toca datos económicos, documen
 
 ## Lo que no se adivina leyendo el código
 
-Treinta y tres decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
+Treinta y cinco decisiones que costaron una vuelta y conviene no volver a tomar desde cero:
 
 1. **El orden de las semillas y las pruebas.** `npm run test:integracion` **vacía** las tablas de
    negocio, semilla incluida: en una base compartida no hay forma de distinguir lo sembrado de lo
@@ -456,6 +456,35 @@ Treinta y tres decisiones que costaron una vuelta y conviene no volver a tomar d
     pintan). Los azules/violetas son más oscuros que los de la maqueta para pasar AA con texto blanco.
     **Las e2e corren contra `npm run build` y con `CI=1`** (`FLAY_ALMACEN=memoria`): sin eso, la
     página de un documento sembrado a mano da «no encontrado».
+
+35. **Un consorcio archivado se consulta, no se opera, y el candado vive en la base (RN-22).** Eliminar un
+    consorcio, un espacio o un documento **decide por sí mismo** entre borrar y archivar: con historia
+    archiva (`archivadoEn`), sin movimiento borra, y un documento siempre se archiva y conserva su
+    archivo. Todo lo restaura quien tenga permiso desde la sección Eliminados/Archivados. El disparador
+    `fn_consorcio_no_archivado` (`consorcio_no_archivado`, `BEFORE INSERT OR UPDATE OR DELETE`) rechaza
+    cualquier escritura sobre filas de un consorcio archivado, así que ninguna ruta de código se lo
+    saltea. **Cuatro tablas con `consorcio_id` quedan afuera, a propósito:** `Habilitacion` (restaurar y
+    quitar accesos tiene que seguir andando), `Notificacion` (el aviso de que se archivó nace con el
+    archivado), `ConsultaDocumental` y `ConversacionAsistente` (consultar es leer, pero deja rastro). La
+    prueba de `information_schema` de `archivado-base.spec.ts` obliga a decidir para **toda tabla nueva con
+    `consorcio_id`**: o lleva el candado o entra a esa lista con su razón. El error de la base se
+    traduce una sola vez: `traducirArchivado` (`src/compartido/errores.ts`) lo vuelve `ConsorcioArchivado`
+    y lo usan `conAutorizacion`, `traducirErrorDeBase` y la cola (`drenar` marca el trabajo despachado
+    **sin reintento**, no tiene sentido reintentar). Archivar un consorcio se bloquea con un intento de
+    pago sin resolver dentro de las **72 h** que la conciliación todavía mira —`iniciado`, o `rechazado`/
+    `vencido` **con** `preferenciaId` (nota 29)—, con una asamblea `convocada`/`en_curso` o con un acta
+    `a_firmar`; cancela y avisa las reservas futuras. `eliminarConsorcio` toma `FOR UPDATE` sobre la
+    fila de `Consorcio`, e `iniciarPagoEnLinea` y `reservar` `FOR SHARE`: o lo nuevo nace antes y el
+    archivado lo ve, o espera al commit y rebota contra el candado. Las tablas hijas **sin**
+    `consorcio_id` que se escriben sin tocar a su padre (`Comprobante`, `Ocupacion`, `SugerenciaReclamo`,
+    `FragmentoDocumento`) llevan `fn_consorcio_no_archivado_por_padre`; `DetalleLiquidacion` no, a
+    propósito (el PDF de la expensa escribe su clave), y `archivado-base.spec.ts` obliga a clasificar
+    toda tabla sin `consorcio_id`. Las vistas de cartera (bandeja, panel, asistente en «todos») usan
+    `vigentes()`: un archivado no es cartera, aunque por enlace se siga leyendo. **Toda lectura de lo vigente filtra `archivadoEn: null`** (espacios, documentos,
+    consorcios al alcance, consulta asistida), **y la historia no** (reservas pasadas, el historial
+    con sus espacios archivados, el acta y su documento). La interfaz esconde los controles de escritura
+    con `!activo.archivadoEn` donde se puede; donde no, el candado es la garantía y la acción
+    devuelve un mensaje legible, nunca una pantalla de error.
 
 ## Notas
 

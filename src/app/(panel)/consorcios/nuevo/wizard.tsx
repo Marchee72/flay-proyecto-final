@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useRef, useState } from 'react'
-import { Trash2, TriangleAlert } from 'lucide-react'
+import { Check, Trash2, TriangleAlert } from 'lucide-react'
 
 import { importe } from '@/compartido/dinero'
 import { ajustePorRedondeo, decimalesDelPadron, filasDesdePegado } from '@/compartido/padron'
@@ -147,15 +147,40 @@ export function WizardConsorcio({
     setPaso(2)
   }
 
+  // Los pasos son botones solo hacia atrás: adelante se pasa con «Continuar», que
+  // valida (RNF-10). Los ya completados llevan su marca.
+  const pasosDelAlta = (
+    <ol className="modal__pasos" aria-label="Pasos del alta">
+      {PASOS.map((etiqueta, indice) => (
+        <li
+          key={etiqueta}
+          aria-current={indice === paso ? 'step' : undefined}
+          data-estado={indice < paso ? 'hecho' : indice === paso ? 'actual' : 'pendiente'}
+        >
+          <button
+            type="button"
+            className="modal__paso"
+            disabled={indice > paso}
+            onClick={() => {
+              setErrorPaso('')
+              setPaso(indice)
+            }}
+          >
+            <span className="modal__paso-n" aria-hidden="true">
+              <span className="modal__paso-num">{indice + 1}</span>
+              <Check className="icono modal__paso-ok" />
+            </span>
+            {etiqueta}
+            {indice < paso && <span className="oculto"> (completo)</span>}
+          </button>
+        </li>
+      ))}
+    </ol>
+  )
+
   return (
     <form action={accion} noValidate>
-      <ol className="modal__pasos" aria-label="Pasos del alta">
-        {PASOS.map((etiqueta, indice) => (
-          <li key={etiqueta} aria-current={indice === paso ? 'step' : undefined}>
-            {etiqueta}
-          </li>
-        ))}
-      </ol>
+      {pasosDelAlta}
 
       <div hidden={paso !== 0}>
         <h3 ref={paso === 0 ? tituloPasoRef : undefined} tabIndex={-1}>

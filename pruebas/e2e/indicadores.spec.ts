@@ -39,9 +39,12 @@ test('el administrador ve el panel, la morosidad de su consorcio y la alerta', a
 
   await expect(page.getByRole('heading', { name: 'Indicadores', level: 1 })).toBeVisible()
   // La expensa sembrada esta vencida y sin pagar: 100 % de morosidad.
-  await expect(page.locator('.kpi__cifra')).toHaveText(/100\.00 %/)
-  const fila = page.getByRole('row', { name: /San Martin 7890/ })
-  await expect(fila).toContainText('100.00 %')
+  await expect(page.locator('.tablero-ind__cifra').first()).toHaveText(/100\.00 %/)
+  // Todos los indicadores a la vez, del consorcio elegido.
+  await expect(page.getByRole('heading', { name: 'I-1 Morosidad', level: 2 })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'I-5 Carga administrativa', level: 2 }),
+  ).toBeVisible()
   expect(await desbordaALoAncho(page)).toBe(false)
 
   await page.getByRole('link', { name: 'I-1 Morosidad' }).click()

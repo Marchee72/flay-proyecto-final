@@ -34,13 +34,19 @@ export const HECHO = {
   'espacio-guardado': 'Espacio guardado.',
   'horario-cancelo-reservas':
     'Espacio guardado. Las reservas que quedaron fuera del nuevo horario se cancelaron y se avisó a quienes las hicieron.',
-  'espacio-eliminado': 'Espacio eliminado.',
+  'consorcio-eliminado': 'Consorcio eliminado definitivamente.',
+  'consorcio-archivado': 'Consorcio archivado. Lo encontrás en Archivados.',
+  'consorcio-restaurado': 'Consorcio restaurado.',
+  'espacio-eliminado': 'Espacio eliminado definitivamente.',
+  'espacio-archivado': 'Espacio archivado. Lo encontrás en Eliminados.',
+  'espacio-restaurado': 'Espacio restaurado.',
   'espacio-alta': 'Espacio habilitado; vuelve a admitir reservas.',
   'espacio-baja': 'Espacio dado de baja; las reservas futuras quedaron canceladas y avisadas.',
   'novedad-publicada': 'Novedad publicada y avisada.',
   'documento-cargado':
     'Documento cargado. Se procesa en segundo plano; cuando diga «Procesado» ya entra en las consultas.',
-  'documento-eliminado': 'Documento eliminado.',
+  'documento-archivado': 'Documento archivado. Lo encontrás en Eliminados.',
+  'documento-restaurado': 'Documento restaurado.',
   'documento-reindexado': 'El documento se volvió a encolar para indexar.',
   'sugerencia-aplicada': 'Configuración aplicada.',
   'sugerencia-aplicada-con-cancelaciones':

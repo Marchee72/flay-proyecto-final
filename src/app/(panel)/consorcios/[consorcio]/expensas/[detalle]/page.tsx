@@ -124,13 +124,17 @@ export default async function ExpensaPage({
     const roles = await rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id)
     const consorcio =
       roles.includes('administrador') &&
+      !activo.archivadoEn &&
       (await verConsorcio(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }))
 
-    const disponibilidadPago = await consultarDisponibilidadPagoEnLinea(HABILITACIONES, RELOJ, {
-      usuarioId,
-      consorcioId: activo.id,
-      detalleLiquidacionId: detalle,
-    })
+    // Archivado (RN-22): nadie paga, ni en línea ni registrando; se mira la historia.
+    const disponibilidadPago: DisponibilidadPagoEnLinea = activo.archivadoEn
+      ? { pagable: false }
+      : await consultarDisponibilidadPagoEnLinea(HABILITACIONES, RELOJ, {
+          usuarioId,
+          consorcioId: activo.id,
+          detalleLiquidacionId: detalle,
+        })
 
     const propsExp: PropsExpensa = {
       base: activo.id,

@@ -13,11 +13,12 @@ import {
   cargarDocumento,
   eliminarDocumento,
   reindexarDocumento,
+  restaurarDocumento,
   TIPOS_DOCUMENTO,
 } from '@/aplicacion/comunicacion/documentos'
 import { descartarNovedad, publicarNovedad } from '@/aplicacion/comunicacion/novedades'
 import { aplicarSugerencia, descartarSugerencia } from '@/aplicacion/comunicacion/sugerencias'
-import { ALMACEN, ASISTENCIA, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
+import { ASISTENCIA, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { irAIngresar } from '@/app/ir-a-ingresar'
 import { MANEJADORES } from '@/aplicacion/pendientes/manejadores'
@@ -89,11 +90,17 @@ export async function accionPublicarNovedad(
 export async function accionDescartarNovedad(datos: FormData): Promise<void> {
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) return irAIngresar()
-  await descartarNovedad(HABILITACIONES, RELOJ, {
-    usuarioId,
-    consorcioId: texto(datos, 'consorcio'),
-    novedadId: texto(datos, 'novedad'),
-  })
+  const consorcioId = texto(datos, 'consorcio')
+  try {
+    await descartarNovedad(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      novedadId: texto(datos, 'novedad'),
+    })
+  } catch (error) {
+    if (!(error instanceof ErrorDeAplicacion)) throw error
+    redirect(conError(`/consorcios/${consorcioId}`, error.mensajeParaUsuario))
+  }
   revalidatePath('/consorcios/[consorcio]', 'layout')
 }
 
@@ -135,11 +142,16 @@ export async function accionReindexar(datos: FormData): Promise<void> {
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) return irAIngresar()
   const consorcioId = texto(datos, 'consorcio')
-  await reindexarDocumento(HABILITACIONES, RELOJ, {
-    usuarioId,
-    consorcioId,
-    documentoId: texto(datos, 'documento'),
-  })
+  try {
+    await reindexarDocumento(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      documentoId: texto(datos, 'documento'),
+    })
+  } catch (error) {
+    if (!(error instanceof ErrorDeAplicacion)) throw error
+    redirect(conError(`/consorcios/${consorcioId}/documentos`, error.mensajeParaUsuario))
+  }
   revalidatePath('/consorcios/[consorcio]/documentos', 'page')
   redirect(conHecho(`/consorcios/${consorcioId}/documentos`, 'documento-reindexado'))
 }
@@ -150,7 +162,7 @@ export async function accionEliminarDocumento(datos: FormData): Promise<void> {
   const consorcioId = texto(datos, 'consorcio')
   const documentoId = texto(datos, 'documento')
   try {
-    await eliminarDocumento(ALMACEN, HABILITACIONES, RELOJ, { usuarioId, consorcioId, documentoId })
+    await eliminarDocumento(HABILITACIONES, RELOJ, { usuarioId, consorcioId, documentoId })
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
     redirect(
@@ -158,7 +170,25 @@ export async function accionEliminarDocumento(datos: FormData): Promise<void> {
     )
   }
   revalidatePath('/consorcios/[consorcio]/documentos', 'page')
-  redirect(conHecho(`/consorcios/${consorcioId}/documentos`, 'documento-eliminado'))
+  redirect(conHecho(`/consorcios/${consorcioId}/documentos`, 'documento-archivado'))
+}
+
+export async function accionRestaurarDocumento(datos: FormData): Promise<void> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) return irAIngresar()
+  const consorcioId = texto(datos, 'consorcio')
+  try {
+    await restaurarDocumento(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      documentoId: texto(datos, 'documento'),
+    })
+  } catch (error) {
+    if (!(error instanceof ErrorDeAplicacion)) throw error
+    redirect(conError(`/consorcios/${consorcioId}/documentos`, error.mensajeParaUsuario))
+  }
+  revalidatePath('/consorcios/[consorcio]/documentos', 'page')
+  redirect(conHecho(`/consorcios/${consorcioId}/documentos`, 'documento-restaurado'))
 }
 
 /**
@@ -276,10 +306,15 @@ export async function accionConsultar(
 export async function accionValorar(datos: FormData): Promise<void> {
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) return irAIngresar()
-  await valorarConsulta(HABILITACIONES, RELOJ, {
-    usuarioId,
-    consorcioId: texto(datos, 'consorcio'),
-    consultaId: texto(datos, 'consulta'),
-    util: texto(datos, 'util') === 'si',
-  })
+  try {
+    await valorarConsulta(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId: texto(datos, 'consorcio'),
+      consultaId: texto(datos, 'consulta'),
+      util: texto(datos, 'util') === 'si',
+    })
+  } catch (error) {
+    // La valoracion es una ayuda: en un consorcio archivado no se guarda y no hay nada que mostrar.
+    if (!(error instanceof ErrorDeAplicacion)) throw error
+  }
 }

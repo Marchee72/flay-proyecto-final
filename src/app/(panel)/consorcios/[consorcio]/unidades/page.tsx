@@ -11,6 +11,7 @@ import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { irAIngresar } from '@/app/ir-a-ingresar'
+import { consorciosAlAlcance } from '../../../con-consorcio'
 import { divisionDe, pisoDe, sumarCoeficientes } from '@/aplicacion/consorcios/unidades'
 
 import { CargadorDePadron } from './cargador'
@@ -56,7 +57,9 @@ export default async function UnidadesPage({
   }
 
   // El consejo ve el padron pero no lo carga ni lo edita (RNF-03): sin permiso no hay editor.
-  const administra = (await rolesEn(HABILITACIONES, RELOJ, usuarioId, id)).includes('administrador')
+  const archivado = !!(await consorciosAlAlcance(usuarioId)).find((c) => c.id === id)?.archivadoEn
+  const administra =
+    !archivado && (await rolesEn(HABILITACIONES, RELOJ, usuarioId, id)).includes('administrador')
 
   if (administra && parametros.editar && consorcio.unidades.length > 0) {
     return (
@@ -137,7 +140,7 @@ export default async function UnidadesPage({
       <h1>Unidades</h1>
       <p className="apagado">El padrón vigente: designación, tipo y coeficiente de cada unidad.</p>
 
-      {administra && consorcio.unidades.length > 0 && (
+      {administra && !archivado && consorcio.unidades.length > 0 && (
         <div className="fila-acciones">
           <Link
             className="boton boton--primario"

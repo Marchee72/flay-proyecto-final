@@ -291,7 +291,7 @@ puede «Actualizar los indicadores».
 
 | Página | Qué muestra |
 |---|---|
-| I-6 Panel de la cartera (`/indicadores`) | Morosidad de la cartera y un renglón por consorcio administrado: último período, morosidad, unidades en mora, reclamos abiertos, críticos, desvíos de gasto. |
+| I-6 Tablero del consorcio (`/indicadores`) | Solo el consorcio seleccionado, con todos los indicadores a la vez: cifras de morosidad, unidades en mora, reclamos abiertos y desvíos de gasto, y un gráfico por indicador (línea, dona, dispersión, barras y área) con enlace al detalle. |
 | I-1 Morosidad | Por período: liquidado, deuda vencida, unidades en mora, morosidad %. Meta 12 %. |
 | I-2 Gasto por rubro | Por período y rubro: importe, promedio móvil de los 12 anteriores, desvío. Nunca contra un valor fijo (inflación). |
 | I-3 Proveedores | Por proveedor y rubro: contrataciones, costo acumulado, costo promedio, reclamos resueltos, horas medias entre asignación y resolución. |

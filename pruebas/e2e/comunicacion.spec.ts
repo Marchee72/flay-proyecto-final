@@ -126,8 +126,8 @@ test('el administrador elimina un documento; el consorcista no ve el botón (RF-
   await entrar(page, administrador.correo)
   await page.goto(ruta)
   await page.getByRole('button', { name: 'Eliminar' }).click()
-  await page.getByRole('dialog').getByRole('button', { name: 'Eliminar' }).click()
-  await expect(page.getByRole('status').filter({ hasText: 'Documento eliminado.' })).toBeVisible()
+  await page.getByRole('dialog').getByRole('button', { name: 'Archivar' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Documento archivado.' })).toBeVisible()
   await expect(page.getByRole('table')).not.toContainText('Póliza para eliminar')
 })
 

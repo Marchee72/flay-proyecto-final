@@ -3,7 +3,7 @@ import { Trash2 } from 'lucide-react'
 import { accionEliminarDocumento } from '../../../../comunicacion/acciones'
 import { BotonModal } from '../../../../modal'
 
-/** Baja del documento desde un modal de confirmación (`RF-19`): solo el administrador la ve. */
+/** Baja del documento (la archiva, `RN-22`) desde un modal de confirmación (`RF-19`): solo el administrador la ve. */
 export function ModalEliminar({
   consorcioId,
   documentoId,
@@ -26,10 +26,11 @@ export function ModalEliminar({
         <input type="hidden" name="consorcio" value={consorcioId} />
         <input type="hidden" name="documento" value={documentoId} />
         <p className="ayuda">
-          Se borra el archivo y deja de aparecer en las consultas. No se puede deshacer.
+          Se va a archivar: deja de mostrarse y de usarse en las consultas, pero el archivo se
+          conserva y podés restaurarlo desde Eliminados.
         </p>
         <button className="boton boton--peligro" type="submit">
-          Eliminar
+          Archivar
         </button>
       </form>
     </BotonModal>

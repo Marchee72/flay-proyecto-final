@@ -3,6 +3,7 @@ import { RolInsuficiente } from '@/compartido/errores'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
+import { vigentes } from '@/aplicacion/consorcios/mis-consorcios'
 import { prismaBase } from '@/infraestructura/prisma'
 import {
   desempenoProveedores,
@@ -285,10 +286,10 @@ export async function verPanel(
   reloj: Reloj,
   datos: { usuarioId: string },
 ): Promise<PanelConsolidado> {
-  const alcanzables = await repositorio.consorciosDe(datos.usuarioId, reloj.hoy())
-  // Solo los consorcios donde es administrador: el panel es del que decide.
+  // Solo los consorcios donde es administrador: el panel es del que decide. Un
+  // archivado ya no es cartera (RN-22).
   const administrados: string[] = []
-  for (const consorcioId of alcanzables) {
+  for (const { id: consorcioId } of await vigentes(repositorio, reloj, datos.usuarioId)) {
     const acceso = await repositorio.accesoVigente(datos.usuarioId, consorcioId, reloj.hoy())
     if (acceso?.roles.includes('administrador')) administrados.push(consorcioId)
   }

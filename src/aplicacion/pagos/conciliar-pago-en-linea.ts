@@ -20,7 +20,7 @@ import { prisma, prismaBase } from '@/infraestructura/prisma'
  */
 
 /** Un pago con tarjeta en revision puede aprobarse despues de que vence la preferencia. */
-const HORAS_MARGEN_ACREDITACION = 72
+export const HORAS_MARGEN_ACREDITACION = 72
 
 export type EstadoConciliacion = 'aprobado' | 'rechazado' | 'vencido' | 'esperando'
 export interface ResultadoConciliacion {

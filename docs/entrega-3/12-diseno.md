@@ -25,7 +25,7 @@ flowchart TD
         direction TB
         PRES["<b>Capa de presentacion</b><br/>Vistas renderizadas en servidor<br/>Manejo de formularios y validacion de entrada"]
         APP["<b>Capa de aplicacion</b><br/>Casos de uso · Orquestacion<br/>Autorizacion por rol y consorcio · Transacciones"]
-        DOM["<b>Capa de dominio</b><br/>Reglas de negocio RN-01 a RN-21<br/>Liquidacion · Prorrateo · Intereses · Imputacion"]
+        DOM["<b>Capa de dominio</b><br/>Reglas de negocio RN-01 a RN-22<br/>Liquidacion · Prorrateo · Intereses · Imputacion"]
         INFRA["<b>Capa de infraestructura</b><br/>Repositorios · Mapeador objeto-relacional<br/>Adaptadores de servicios externos"]
         PRES --> APP --> DOM
         APP --> INFRA
@@ -56,7 +56,7 @@ flowchart TD
 |---|---|---|
 | Presentación | Renderizar vistas, recibir formularios, validar formato de entrada, presentar errores comprensibles | No contiene reglas de negocio ni consulta la base directamente |
 | Aplicación | Orquestar casos de uso, **verificar autorización por rol y por consorcio**, abrir y cerrar transacciones, registrar auditoría | No implementa cálculos de negocio |
-| Dominio | Reglas RN-01 a RN-21, cálculo de prorrateo, intereses e imputación. **No conoce la base de datos ni el entorno web** | No accede a infraestructura: depende de interfaces que la infraestructura implementa |
+| Dominio | Reglas RN-01 a RN-22, cálculo de prorrateo, intereses e imputación. **No conoce la base de datos ni el entorno web** | No accede a infraestructura: depende de interfaces que la infraestructura implementa |
 | Infraestructura | Persistencia, almacenamiento de archivos, envío de correo, invocación de servicios externos | No decide nada del negocio |
 
 La regla de dependencia es unidireccional hacia el dominio: el dominio define las interfaces que
@@ -917,7 +917,7 @@ a otro.
 | Cifrado en reposo | Provisto por la plataforma para base de datos y almacenamiento de objetos |
 | Minimización hacia terceros | A los servicios externos de procesamiento se envía únicamente el comprobante, el texto del reclamo saneado de datos de contacto, la documentación reglamentaria, agregados de asambleas y salidas operativas del asistente conversacional (CU-16, RF-27) proyectadas y saneadas en la capa de aplicación (solo designaciones de unidad, estados, fechas e importes). **Nunca nombres y apellidos de personas físicas, correos, teléfonos, documentos de identidad, nóminas de usuarios ni enlaces firmados** |
 | Copias de respaldo | Diarias, con retención de 30 días y restauración probada antes de la puesta en marcha | 
-| Retención | Bitácora de auditoría 24 meses, luego se anonimiza la dirección IP |
+| Retención | Datos económicos, documentación y bitácora de auditoría: diez años (CCyC art. 328, RN-22). La dirección IP de la bitácora se anonimiza a los 24 meses (Ley 25.326) |
 | Portabilidad | Exportación completa en formato abierto, conforme al contrato del punto 6.4.5 |
 | Tratamiento de datos personales | Conforme a la Ley 25.326, según el detalle del punto 5.3.2 y del punto 18 (RNF-13) |
 
@@ -925,7 +925,7 @@ a otro.
 
 | Medida | Definición |
 |---|---|
-| Cobertura | Toda operación que modifica un dato económico, más los accesos a datos sensibles (RN-15) |
+| Cobertura | Toda operación que modifica un dato económico, más los accesos a datos sensibles (RN-15), y las altas, bajas, archivados y restauraciones de consorcios, espacios comunes y documentos (RN-22) |
 | Mecanismo | Disparadores de base de datos: ninguna ruta de código puede omitir el registro |
 | Inalterabilidad | Tabla de solo agregado; el usuario de la aplicación carece de permisos de actualización y borrado (RNF-12) |
 | Contenido | Usuario, acción, entidad, estado anterior y posterior, dirección de origen y momento |

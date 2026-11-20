@@ -4,8 +4,9 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { conHecho } from '@/app/aviso-en-url'
+import { conError, conHecho } from '@/app/aviso-en-url'
 import { valoresDe, type ConValores } from '@/app/valores-de-formulario'
+import { eliminarConsorcio, restaurarConsorcio } from '@/aplicacion/consorcios/archivar-consorcio'
 import { altaConsorcio } from '@/aplicacion/consorcios/alta-consorcio'
 import { tipoDeUnidadDesdeFormulario } from '@/aplicacion/consorcios/tipos-de-unidad'
 import { cargarPadron, editarPadron } from '@/aplicacion/consorcios/unidades'
@@ -162,4 +163,42 @@ export async function accionEditarPadron(_previo: Resultado, datos: FormData): P
 
   revalidatePath('/consorcios/[consorcio]', 'layout')
   redirect(conHecho(`/consorcios/${consorcioId}/unidades`, 'padron-guardado'))
+}
+
+/**
+ * Eliminar un consorcio (RN-22): sin movimiento se borra, con historia se
+ * archiva. El caso de uso decide; la pantalla solo dice cual de las dos fue.
+ */
+export async function accionEliminarConsorcio(datos: FormData): Promise<void> {
+  const usuarioId = await quienOpera()
+  const consorcioId = String(datos.get('consorcio') ?? '')
+  let resultado: 'borrado' | 'archivado'
+  try {
+    resultado = await eliminarConsorcio(HABILITACIONES, RELOJ, { usuarioId, consorcioId })
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion)
+      redirect(conError('/consorcios', error.mensajeParaUsuario))
+    throw error
+  }
+  revalidatePath('/consorcios', 'layout')
+  redirect(
+    conHecho(
+      '/consorcios',
+      resultado === 'borrado' ? 'consorcio-eliminado' : 'consorcio-archivado',
+    ),
+  )
+}
+
+export async function accionRestaurarConsorcio(datos: FormData): Promise<void> {
+  const usuarioId = await quienOpera()
+  const consorcioId = String(datos.get('consorcio') ?? '')
+  try {
+    await restaurarConsorcio(HABILITACIONES, RELOJ, { usuarioId, consorcioId })
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion)
+      redirect(conError('/consorcios', error.mensajeParaUsuario))
+    throw error
+  }
+  revalidatePath('/consorcios', 'layout')
+  redirect(conHecho('/consorcios', 'consorcio-restaurado'))
 }

@@ -67,7 +67,8 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
     return <AvisoDeError error={error} />
   }
 
-  const administra = resumen.roles.includes('administrador')
+  const archivado = !!activo.archivadoEn
+  const administra = resumen.roles.includes('administrador') && !archivado
   const soloLoPropio = !resumen.roles.some((r) => r === 'administrador' || r === 'consejo')
 
   // Rubros: los primeros por nombre y el resto junto, con su parte del total.

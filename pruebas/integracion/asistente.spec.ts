@@ -8,7 +8,7 @@ import { cargarPadron } from '@/aplicacion/consorcios/unidades'
 import { registrarReclamo } from '@/aplicacion/reclamos/registrar'
 import { altaEspacio } from '@/aplicacion/reservas/espacios'
 import { reservar } from '@/aplicacion/reservas/reservar'
-import { NoEncontrado } from '@/compartido/errores'
+import { ConsorcioArchivado, NoEncontrado } from '@/compartido/errores'
 import type { Asistencia } from '@/dominio/contratos/asistencia'
 import {
   asistenciaDeterminista,
@@ -139,6 +139,29 @@ describe('alcance (RN-12, Principio I)', () => {
       expect(r.texto).toContain('SUM')
       expect(r.texto).not.toContain('Quincho')
       expect(r.enlaces[0].consorcioId).toBe(consorcioId)
+    }
+  })
+})
+
+describe('consorcio archivado (RN-22)', () => {
+  it('una lectura responde y una escritura confirmada rechaza con ConsorcioArchivado', async () => {
+    const p = await pedir(
+      administrador,
+      `deshabilitar_espacio espacioId=${espacioId} motivo=pintura`,
+    )
+    if (p.modo !== 'propuesta') throw new Error('se esperaba una propuesta')
+    await prismaBase.$executeRaw`UPDATE "Consorcio" SET archivado_en = now() WHERE id = ${consorcioId}::uuid`
+    try {
+      const r = await pedir(administrador, 'ver_espacios')
+      expect(r.modo === 'respuesta' && r.texto).toContain('SUM')
+      const rechazo = confirmar(administrador, p.propuestaId)
+      await expect(rechazo).rejects.toBeInstanceOf(ConsorcioArchivado)
+      // El chat lo muestra con estas palabras (`accionConfirmar` y la ruta lo devuelven tal cual).
+      await expect(rechazo).rejects.toMatchObject({
+        mensajeParaUsuario: 'Este consorcio está archivado: se puede consultar, pero no operar.',
+      })
+    } finally {
+      await prismaBase.$executeRaw`UPDATE "Consorcio" SET archivado_en = NULL`
     }
   })
 })
@@ -484,6 +507,20 @@ describe('modo cartera (FR-017, FR-018, RT-04)', () => {
     })
     await confirmar(administrador, p.propuestaId)
     expect((await novedades()).map((f) => f.consorcioId)).toEqual([consorcioId])
+  })
+
+  it('un consorcio archivado no entra al aviso de cartera ni al abanico (RN-22)', async () => {
+    await prismaBase.$executeRaw`UPDATE "Consorcio" SET archivado_en = now() WHERE id = ${otroConsorcioId}::uuid`
+    const p = await pedirCartera(administrador, aviso)
+    if (p.modo !== 'propuesta') throw new Error('se esperaba una propuesta')
+    expect(p.resumen).toMatch(/en los 1 consorcios/)
+    const r = await confirmar(administrador, p.propuestaId)
+    expect(r.resultado).toMatchObject({ texto: 'Publicada en los 1 consorcios.' })
+    expect((await novedades()).map((f) => f.consorcioId)).toEqual([consorcioId])
+
+    const lectura = await pedirCartera(administrador, 'ver_espacios')
+    if (lectura.modo !== 'respuesta') throw new Error('se esperaba una respuesta')
+    expect(lectura.enlaces.map((e) => e.consorcioId)).toEqual([consorcioId])
   })
 
   it('el consorcista no recibe el aviso a la cartera', async () => {

@@ -40,7 +40,7 @@ export default async function NovedadesPage({
       <>
         <h1>Novedades</h1>
         <p className="apagado">Lo que la administración le dice al consorcio.</p>
-        {destinatarios && (
+        {destinatarios && !activo.archivadoEn && (
           <div className="fila-acciones">
             <ModalNovedad
               consorcioId={activo.id}

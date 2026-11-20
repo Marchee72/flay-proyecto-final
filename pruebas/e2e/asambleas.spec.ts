@@ -87,7 +87,7 @@ test('acreditarse, votar en vivo, finalizar y firmar el acta', async ({ browser,
   await page.getByLabel('Secretario/a').selectOption({ label: '1B — Bruno Paz' })
   await page.getByRole('button', { name: 'Designar' }).click()
   await expect(page.getByText('Presidente y secretario designados.').first()).toBeVisible()
-  await page.getByRole('button', { name: 'Verificar quórum y constituir' }).click()
+  await page.getByRole('button', { name: 'Constituir' }).click()
   await expect(
     page.getByText('Asamblea constituida: ya se pueden tratar los puntos.').first(),
   ).toBeVisible()

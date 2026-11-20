@@ -1,6 +1,7 @@
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { estadoDeLaCola, type EstadoDeLaCola } from '@/aplicacion/comunicacion/despachar'
+import { vigentes } from '@/aplicacion/consorcios/mis-consorcios'
 import { prismaBase } from '@/infraestructura/prisma'
 
 export interface Bandeja {
@@ -28,7 +29,8 @@ export async function verBandeja(
 ): Promise<Bandeja> {
   const hoy = reloj.hoy()
   const administrados: string[] = []
-  for (const consorcioId of await repositorio.consorciosDe(datos.usuarioId, hoy)) {
+  // Un consorcio archivado no tiene pendientes (RN-22): se consulta, no se opera.
+  for (const { id: consorcioId } of await vigentes(repositorio, reloj, datos.usuarioId)) {
     const acceso = await repositorio.accesoVigente(datos.usuarioId, consorcioId, hoy)
     if (acceso?.roles.includes('administrador')) administrados.push(consorcioId)
   }

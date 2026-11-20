@@ -18,7 +18,7 @@ import {
   herramientasPara,
   parametrosParaModelo,
 } from '@/aplicacion/asistente/herramientas'
-import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
+import { misConsorcios, vigentes } from '@/aplicacion/consorcios/mis-consorcios'
 import { sinConsorcio } from '@/infraestructura/cliente-aislado'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 
@@ -185,7 +185,8 @@ export async function conversar(
 
       // 3) Herramientas ofrecidas por rol (solo UX; el caso de uso reautoriza). En
       // cartera el rol es la union de los de cada consorcio: el ancla es solo desde donde se abrio.
-      const alcance = datos.cartera ? await misConsorcios(repositorio, reloj, datos.usuarioId) : []
+      // Un archivado no entra al abanico ni a la lista del modelo (RN-22); nombrado, se sigue leyendo.
+      const alcance = datos.cartera ? await vigentes(repositorio, reloj, datos.usuarioId) : []
       const rolesPorConsorcio = new Map<string, readonly Rol[]>()
       if (datos.cartera) {
         const accesos = await Promise.all(

@@ -828,8 +828,188 @@ th a:not(.boton):hover,
 .tarjeta-consorcio .apagado {
   margin: var(--e1) 0 0;
 }
+/* Archivados: lista plegable, una fila por consorcio con ícono, nombre y acciones. */
+.archivados summary {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  min-height: var(--toque);
+  font-weight: 700;
+  cursor: pointer;
+}
+.archivados__n {
+  padding: 2px var(--e3);
+  border-radius: var(--pastilla);
+  background: var(--gris-palido);
+  color: var(--tinta-apagada);
+  font-size: var(--t-menor);
+  font-weight: 600;
+}
+.archivados ul {
+  list-style: none;
+  margin: var(--e2) 0 0;
+  padding: 0;
+}
+.archivados li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e3);
+  padding: var(--e3) 0;
+  border-top: 1px solid var(--linea-suave);
+}
+.archivados__icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--gris-palido);
+  color: var(--tinta-apagada);
+}
+.archivados__texto {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.archivados:not([open]) {
+  padding-block: var(--e1);
+}
+.archivados summary {
+  min-height: 40px;
+}
+/* Abrir y Restaurar: los dos con el mismo borde y ancho, pegados a la derecha. */
+.archivados .acciones {
+  display: flex;
+  gap: var(--e2);
+  margin-left: auto;
+}
+.archivados .acciones .boton {
+  min-width: 108px;
+  background: var(--superficie);
+  border-color: var(--linea);
+}
+.archivados .acciones .boton:hover {
+  background: var(--superficie-hundida);
+}
+.archivados .acciones form {
+  display: inline-flex;
+  margin: 0;
+}
+/* Sin esto, `form > .boton` baja Restaurar 16 px respecto de Abrir. */
+.archivados .acciones form > .boton {
+  margin-top: 0;
+}
+/* Tarjeta de espacio: nombre y menú arriba; Editar y Deshabilitar, iguales, al pie. */
+.tarjeta-espacio__cabeza {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--e3);
+}
+.tarjeta-espacio__cabeza h2 {
+  margin: 0;
+  min-width: 0;
+}
+.fila-acciones.espacio__acciones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--e2);
+}
+.espacio__acciones .boton {
+  width: 100%;
+  justify-content: center;
+}
+.espacio__acciones form {
+  display: flex;
+  margin: 0;
+}
+.espacio__acciones form > .boton {
+  margin-top: 0;
+}
+/* Menú de tres puntitos de la tarjeta: arriba a la derecha, el panel cae debajo. */
+.tarjeta-consorcio__encabezado {
+  position: relative;
+}
+.tarjeta-consorcio__encabezado > div:first-of-type {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.menu-puntos {
+  margin-left: auto;
+}
+.menu-puntos > summary {
+  list-style: none;
+}
+.menu-puntos > summary::-webkit-details-marker {
+  display: none;
+}
+.menu-puntos__panel {
+  position: absolute;
+  right: 0;
+  top: calc(var(--toque) + var(--e1));
+  z-index: 5;
+  min-width: 200px;
+  padding: var(--e1);
+  border-radius: 14px;
+  background: var(--grafito-claro);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 10%),
+    0 16px 40px rgb(21 24 27 / 40%);
+}
+/* Opción del menú: fila plana, a la izquierda; lo destructivo en rojo claro. */
+.menu-puntos__panel .menu-puntos__item {
+  width: 100%;
+  justify-content: flex-start;
+  border-color: transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--rojo-palido);
+}
+.menu-puntos__panel .menu-puntos__item:hover {
+  background: rgb(255 255 255 / 10%);
+}
+.menu-puntos > summary:focus-visible,
+.menu-puntos__panel .menu-puntos__item:focus-visible {
+  outline-color: var(--lima-alto);
+}
 .tarjeta-consorcio .fila-acciones {
   margin: auto 0 0;
+}
+/* Tarjeta oscura: insignia lima, señales claras y «Entrar» a todo el ancho. */
+.tarjeta-consorcio.tarjeta--oscura {
+  gap: var(--e4);
+}
+.tarjeta-consorcio.tarjeta--oscura .tarjeta-consorcio__insignia {
+  background: var(--lima-alto);
+  color: var(--grafito);
+}
+.tarjeta-consorcio.tarjeta--oscura h2 a {
+  color: #ffffff;
+}
+.tarjeta-consorcio.tarjeta--oscura .senales {
+  margin: 0;
+  color: var(--tinta-clara);
+}
+.tarjeta-consorcio.tarjeta--oscura .senales .senal--atencion {
+  color: var(--rojo-palido);
+}
+.tarjeta-consorcio.tarjeta--oscura .menu-puntos > summary {
+  color: #ffffff;
+}
+.tarjeta-consorcio.tarjeta--oscura .menu-puntos > summary:hover {
+  background: rgb(255 255 255 / 14%);
+}
+.tarjeta-consorcio.tarjeta--oscura .fila-acciones {
+  display: block;
+}
+.tarjeta-consorcio.tarjeta--oscura .fila-acciones .boton {
+  width: 100%;
+  justify-content: space-between;
+  padding: 0 var(--e4) 0 var(--e5);
 }
 
 /* Botones (guia §7.2): una altura (44) y una linea siempre. Si la etiqueta no
@@ -2826,48 +3006,89 @@ td select {
   /* Siempre en una fila: si no entran, desplazan adentro, nunca abajo. */
   flex-wrap: nowrap;
   overflow-x: auto;
-  gap: var(--e2);
+  gap: 2px;
   margin: 0;
-  padding: 0 0 var(--e1);
+  /* Una sola barra: el paso actual es el segmento oscuro. */
+  padding: 4px;
+  border-radius: var(--pastilla);
+  background: var(--gris-palido);
   list-style: none;
-  counter-reset: paso;
   font-size: var(--t-menor);
   font-weight: 600;
 }
 .modal__pasos li {
   /* Las 3 se reparten todo el ancho del dialogo en partes iguales. */
   flex: 1 1 0;
-  justify-content: center;
+  display: flex;
+  min-width: 0;
 }
-.modal__pasos li {
+/* Cada paso es un botón: se puede ir de uno a otro en cualquier momento. */
+.modal__paso {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: var(--e2);
-  padding: var(--e1) var(--e3) var(--e1) var(--e1);
+  width: 100%;
+  min-height: 40px;
+  padding: 0 var(--e3) 0 var(--e1);
+  border: 0;
   border-radius: var(--pastilla);
-  background: var(--gris-palido);
+  background: transparent;
   color: var(--tinta-apagada);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
-.modal__pasos li::before {
-  counter-increment: paso;
-  content: counter(paso);
+.modal__paso:hover {
+  background: rgb(255 255 255 / 60%);
+}
+.modal__paso:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.modal__paso:disabled:hover {
+  background: transparent;
+}
+.modal__paso-ok {
+  display: none;
+  width: 16px;
+  height: 16px;
+}
+.modal__paso-n {
+  position: relative;
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  min-width: var(--toque);
-  min-height: var(--toque);
+  width: 28px;
+  height: 28px;
   border-radius: var(--pastilla);
   background: var(--superficie);
-  border: 1px solid var(--linea);
+  font-size: 13px;
   font-weight: 700;
 }
-.modal__pasos [aria-current='step'] {
+/* Paso completo: segmento verde pálido con un tilde (el color dice «hecho»). */
+.modal__pasos li[data-estado='hecho'] .modal__paso,
+.modal__pasos li[data-estado='hecho'] .modal__paso:hover {
+  background: var(--verde-palido);
+  color: var(--verde);
+}
+.modal__pasos li[data-estado='hecho'] .modal__paso-n {
+  background: var(--verde);
+  color: #ffffff;
+}
+.modal__pasos li[data-estado='hecho'] .modal__paso-num {
+  display: none;
+}
+.modal__pasos li[data-estado='hecho'] .modal__paso-ok {
+  display: block;
+}
+.modal__pasos [aria-current='step'] .modal__paso {
   background: var(--grafito);
   color: var(--tinta-clara);
 }
-.modal__pasos [aria-current='step']::before {
+.modal__pasos [aria-current='step'] .modal__paso-n {
   background: var(--lima);
-  border-color: var(--lima);
   color: var(--grafito);
 }
 /* A 390px casi pantalla completa, sin desplazar la pagina a lo ancho
@@ -4798,6 +5019,59 @@ table.calendario th {
   gap: var(--e3);
   align-items: end;
 }
+.direccion__form-acreditar > .direccion__ayuda {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+/* Acreditación: una columna; con ancho de sobra, Buscar y Unidad a todo el ancho,
+   Presente con Como al lado y Acreditar debajo. Se mide el ancho de la tarjeta, no
+   el de la ventana: junto al panel de asistentes la tarjeta es angosta. */
+.direccion--acreditacion {
+  container-type: inline-size;
+}
+.direccion--acreditacion .direccion__form-acreditar {
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+.direccion--acreditacion .direccion__form-acreditar > .boton {
+  width: 100%;
+  justify-content: center;
+}
+/* Constituir y Cancelar: dos botones iguales, lado a lado, del mismo alto. */
+.direccion__acciones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--e3);
+  margin-top: var(--e3);
+}
+.direccion__acciones form {
+  display: flex;
+  margin: 0;
+}
+/* Sin esto, `form > .boton` baja Constituir 16 px y lo deja más corto que Cancelar. */
+.direccion__acciones form > .boton {
+  margin-top: 0;
+}
+.direccion__acciones .boton {
+  width: 100%;
+  justify-content: center;
+}
+@container (min-width: 520px) {
+  .direccion--acreditacion .direccion__form-acreditar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .direccion--acreditacion .direccion__campo-buscar,
+  .direccion--acreditacion .direccion__campo-unidad,
+  .direccion--acreditacion .direccion__form-acreditar > .boton {
+    grid-column: 1 / -1;
+  }
+  .direccion--acreditacion .direccion__campo-presente {
+    grid-column: span 2;
+  }
+  .direccion--acreditacion .direccion__campo-como {
+    grid-column: span 1;
+  }
+}
 .direccion .fila-de-filtros:not(.direccion__form-acreditar) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
@@ -5341,4 +5615,159 @@ table.documentos td form {
     grid-template-columns: 1fr;
     grid-template-areas: 'l' 'p' 'a';
   }
+}
+
+/* Acciones de una fila de tabla: botones cortos, en una sola línea y alineados. */
+.acciones-fila {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--e2);
+}
+.acciones-fila form {
+  display: flex;
+  margin: 0;
+}
+.acciones-fila .boton {
+  margin-top: 0;
+}
+/* Los tres del mismo tipo: íconos sin borde; lo destructivo, en rojo. */
+.acciones-fila .boton--icono {
+  border-color: transparent;
+  background: transparent;
+  border-radius: var(--radio-chico);
+}
+.acciones-fila .boton--icono:hover {
+  background: var(--gris-palido);
+}
+.acciones-fila .boton--icono.boton--peligro {
+  color: var(--rojo);
+}
+.acciones-fila .boton--icono.boton--peligro:hover {
+  background: var(--rojo-palido);
+}
+
+/* Tablero de indicadores: todos a la vez, cada uno con su gráfico. */
+.tablero-ind__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e3);
+  margin-bottom: var(--e4);
+}
+.tablero-ind__encabezado p {
+  margin: 0;
+}
+.tablero-ind__encabezado .fila-acciones {
+  margin: 0;
+}
+.tablero-ind__kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--e3);
+  margin: 0 0 var(--e4);
+  padding: 0;
+  list-style: none;
+}
+.tablero-ind__kpis li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e1);
+  padding: var(--e4) var(--e5);
+}
+.tablero-ind__icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: var(--e1);
+  border-radius: 10px;
+  background: var(--gris-palido);
+  color: var(--tinta-apagada);
+}
+/* El color solo dice estado: al día, atención, mora. */
+.tablero-ind__kpis li[data-estado='ok'] .tablero-ind__icono {
+  background: var(--verde-palido);
+  color: var(--verde);
+}
+.tablero-ind__kpis li[data-estado='atencion'] .tablero-ind__icono {
+  background: var(--ambar-palido);
+  color: var(--ambar);
+}
+.tablero-ind__kpis li[data-estado='mora'] .tablero-ind__icono {
+  background: var(--rojo-palido);
+  color: var(--rojo);
+}
+/* La morosidad, primera, en grafito con la cifra en lima. */
+.tablero-ind__kpis li:first-child {
+  background: var(--grafito);
+  color: #ffffff;
+}
+.tablero-ind__kpis li:first-child .kpi__rotulo,
+.tablero-ind__kpis li:first-child .kpi__detalle {
+  color: var(--tinta-clara-apagada);
+}
+.tablero-ind__kpis li:first-child .tablero-ind__cifra {
+  color: var(--lima-alto);
+}
+.tablero-ind__cifra {
+  font-size: var(--t-titulo1);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.tablero-ind {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--e3);
+}
+@media (min-width: 900px) {
+  .tablero-ind {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* Mosaico: la morosidad ancha, el gasto angosto, la carga a todo el ancho. */
+@media (min-width: 1000px) {
+  .tablero-ind {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .tablero-ind__tarjeta--morosidad {
+    grid-column: span 4;
+  }
+  .tablero-ind__tarjeta--gastos {
+    grid-column: span 2;
+  }
+  .tablero-ind__tarjeta--reclamos,
+  .tablero-ind__tarjeta--proveedores {
+    grid-column: span 3;
+  }
+  .tablero-ind__tarjeta--carga {
+    grid-column: span 6;
+  }
+}
+.tablero-ind__tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e2);
+  min-width: 0;
+}
+.tablero-ind__cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e3);
+}
+.tablero-ind__cabeza h2 {
+  margin: 0;
+  font-size: var(--t-titulo3);
+}
+.tablero-ind__tarjeta > p {
+  margin: 0;
+  font-size: var(--t-menor);
+}
+.tablero-ind__vacio {
+  margin: var(--e4) 0;
+  color: var(--tinta-apagada);
 }

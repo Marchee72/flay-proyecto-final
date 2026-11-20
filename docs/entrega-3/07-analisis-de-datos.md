@@ -49,6 +49,7 @@ sea.
 | RN-19 | La unidad que adeuda más expensas que el umbral del consorcio no vota, pero cuenta para el quórum | Se evalúa una vez al abrir la asamblea y se congela en el padrón |
 | RN-20 | Un poder vale para una sola asamblea, lo otorga el propietario vigente y un apoderado no representa más unidades que el tope del consorcio | Índice único parcial por unidad; tope contado bajo candado de transacción |
 | RN-21 | Con la regla de la totalidad, lo que aprueba solo la mayoría de los presentes queda provisorio quince días: se notifica a los ausentes, y la decisión cae si sus oposiciones impiden la mayoría sobre el total (CCyC art. 2060) | Estado derivado de la fecha y de las oposiciones; oposición validada por disparador |
+| RN-22 | Un consorcio, un espacio común o un documento con historia no se borra: se archiva, deja de mostrarse y se consulta en la sección de eliminados, desde donde se restaura. Solo se borra definitivamente lo que nunca tuvo movimiento: un espacio sin reservas, o un consorcio sin períodos, gastos, liquidaciones, pagos, reclamos, reservas, asambleas, documentos ni novedades. Un documento siempre se archiva, y su archivo se conserva. Un consorcio archivado queda en solo lectura para todos; no se archiva con pagos en línea sin confirmar, con una asamblea convocada o en curso ni con un acta esperando firmas, y al archivarlo se cancelan sus reservas futuras (CCyC arts. 328 y 2067) | Marca de archivado en las tres entidades; disparador que rechaza toda escritura sobre los datos de un consorcio archivado; altas, bajas y archivados registrados en la bitácora de auditoría |
 
 ## 7.3 Modelo conceptual
 
@@ -152,10 +153,9 @@ Un edificio o complejo sometido al régimen de propiedad horizontal.
 | direccion | texto(200) | NN | Domicilio |
 | localidad | texto(80) | NN | Localidad |
 | fecha_alta | fecha | NN | Inicio de la administración |
-| fecha_baja | fecha | | Fin de la administración; nulo si vigente |
+| archivado_en | marca temporal | | Fin de la administración: el consorcio queda archivado y en solo lectura (RN-22); nulo si vigente |
 | dia_vencimiento | entero | NN | Día del mes de vencimiento de las expensas, entre 1 y 28 |
 | tasa_interes_mora | decimal(6,4) | NN | Tasa mensual de interés por mora fijada en asamblea |
-| activo | booleano | NN | Estado |
 | instrucciones_pago | texto(1000) | | Cómo pagar por fuera de la pasarela: alias, CBU, horario de la administración |
 
 ### Unidad
@@ -454,10 +454,15 @@ disparador `fn_auditar()` para trazabilidad en `BitacoraAuditoria` (RN-15).
 | reservas_max_mes_unidad | entero | NN | Tope mensual por unidad |
 | requiere_deposito | booleano | NN | Si exige depósito de garantía |
 | importe_deposito | decimal(14,2) | | Importe del depósito |
-| activo | booleano | NN | Estado |
+| activo | booleano | NN | Habilitado para reservar; falso mientras está deshabilitado (reforma, daños) |
+| archivado_en | marca temporal | | Momento en que se archivó (RN-22); nulo si vigente |
 
 Estos atributos son la traducción a datos de las reglas del reglamento interno que hoy se aplican de
 memoria y de manera desigual, según el relevamiento del punto 1.5.4.
+
+Deshabilitar y archivar no son lo mismo. Deshabilitar es temporal y el espacio sigue a la vista;
+archivar lo saca de las pantallas y de las reservas, conserva su historial y su nombre sigue ocupado
+dentro del consorcio, de modo que un alta homónima ofrece restaurar el archivado (RN-22).
 
 | `Reserva` | Tipo | Restricción | Descripción |
 |---|---|---|---|
@@ -508,6 +513,7 @@ materializa RN-10 en la base de datos y no en el código de la aplicación.
 | fecha_documento | fecha | | Fecha del documento |
 | visible_consorcistas | booleano | NN | Si es accesible a los consorcistas |
 | estado_indexacion | enumerado | NN | pendiente, procesando, indexado, error |
+| archivado_en | marca temporal | | Momento en que se archivó (RN-22); nulo si vigente. Archivado, sale del listado y de la consulta asistida, pero el archivo se conserva |
 
 | `Notificacion` | Tipo | Restricción | Descripción |
 |---|---|---|---|

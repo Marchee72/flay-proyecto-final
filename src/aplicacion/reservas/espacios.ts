@@ -2,7 +2,7 @@ import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
-import { notificar } from '@/aplicacion/comunicacion/notificar'
+import { notificar, type Transaccion } from '@/aplicacion/comunicacion/notificar'
 import {
   dentroDelHorario,
   errorDeHorario,
@@ -37,8 +37,11 @@ export interface EspacioDelConsorcio {
   duracionMaximaHoras: number
   reservasMaxMesUnidad: number
   activo: boolean
+  archivado: boolean
   horario: HorarioDeUso | null
   rechazaConDeuda: boolean
+  /** Reservas de toda la historia (para avisar al archivar en vez de borrar). */
+  reservasEnHistorial: number
   /** Presente solo si esta deshabilitado y tiene el tramo registrado. */
   suspension: SuspensionVigente | null
 }
@@ -58,6 +61,12 @@ export interface DatosDeEspacio {
 export class EspacioInvalido extends ErrorDeAplicacion {
   constructor(mensaje: string) {
     super(mensaje, 'RF-15')
+  }
+}
+
+export class EspacioArchivadoConEseNombre extends ErrorDeAplicacion {
+  constructor() {
+    super('Ya hay un espacio archivado con ese nombre. Restauralo desde Eliminados.', 'RF-15')
   }
 }
 
@@ -106,7 +115,12 @@ function columnasDeReglas(datos: DatosDeEspacio) {
 export async function listarEspacios(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
-  datos: { usuarioId: string; consorcioId: string; incluirInactivos?: boolean },
+  datos: {
+    usuarioId: string
+    consorcioId: string
+    incluirInactivos?: boolean
+    incluirArchivados?: boolean
+  },
 ): Promise<EspacioDelConsorcio[]> {
   return conAutorizacion(
     repositorio,
@@ -116,7 +130,10 @@ export async function listarEspacios(
     // resolverse **dentro** del contexto de aislamiento, no al devolverla.
     async () => {
       const espacios = await prisma.espacioComun.findMany({
-        where: datos.incluirInactivos ? {} : { activo: true },
+        where: {
+          ...(datos.incluirInactivos ? {} : { activo: true }),
+          ...(datos.incluirArchivados ? {} : { archivadoEn: null }),
+        },
         orderBy: { nombre: 'asc' },
         select: {
           id: true,
@@ -127,9 +144,11 @@ export async function listarEspacios(
           duracionMaximaHoras: true,
           reservasMaxMesUnidad: true,
           activo: true,
+          archivadoEn: true,
           aperturaMinutos: true,
           cierreMinutos: true,
           rechazaConDeuda: true,
+          _count: { select: { reservas: true } },
           // El tramo en curso del deshabilitado: el mas reciente (abierto o con
           // fin planificado). Solo se usa cuando el espacio esta inactivo.
           suspensiones: {
@@ -139,21 +158,25 @@ export async function listarEspacios(
           },
         },
       })
-      return espacios.map(({ suspensiones, aperturaMinutos, cierreMinutos, ...e }) => ({
-        ...e,
-        horario:
-          aperturaMinutos != null && cierreMinutos != null
-            ? { apertura: aperturaMinutos, cierre: cierreMinutos }
-            : null,
-        suspension:
-          !e.activo && suspensiones[0]
-            ? {
-                desde: suspensiones[0].desde.toISOString(),
-                hasta: suspensiones[0].hasta?.toISOString() ?? null,
-                motivo: suspensiones[0].motivo,
-              }
-            : null,
-      }))
+      return espacios.map(
+        ({ suspensiones, aperturaMinutos, cierreMinutos, _count, archivadoEn, ...e }) => ({
+          ...e,
+          archivado: archivadoEn !== null,
+          reservasEnHistorial: _count.reservas,
+          horario:
+            aperturaMinutos != null && cierreMinutos != null
+              ? { apertura: aperturaMinutos, cierre: cierreMinutos }
+              : null,
+          suspension:
+            !e.activo && suspensiones[0]
+              ? {
+                  desde: suspensiones[0].desde.toISOString(),
+                  hasta: suspensiones[0].hasta?.toISOString() ?? null,
+                  motivo: suspensiones[0].motivo,
+                }
+              : null,
+        }),
+      )
     },
   )
 }
@@ -177,6 +200,7 @@ export async function altaEspacio(
       const existente = await prisma.espacioComun.findFirst({
         where: { nombre: datos.nombre.trim() },
       })
+      if (existente?.archivadoEn) throw new EspacioArchivadoConEseNombre()
       if (existente)
         throw new EspacioInvalido('Ya hay un espacio con ese nombre en este consorcio.')
       const espacio = await prisma.espacioComun.create({
@@ -269,7 +293,9 @@ export async function editarEspacio(
     },
     async () => {
       validarEspacio(datos)
-      const espacio = await prisma.espacioComun.findFirst({ where: { id: datos.espacioId } })
+      const espacio = await prisma.espacioComun.findFirst({
+        where: { id: datos.espacioId, archivadoEn: null },
+      })
       if (!espacio) throw new NoEncontrado()
       const nuevo = datos.horario
       const cambia =
@@ -357,7 +383,9 @@ export async function deshabilitarEspacio(
       if (fin && fin <= ahora) {
         throw new EspacioInvalido('La fecha de fin tiene que ser posterior a hoy.')
       }
-      const espacio = await prisma.espacioComun.findFirst({ where: { id: datos.espacioId } })
+      const espacio = await prisma.espacioComun.findFirst({
+        where: { id: datos.espacioId, archivadoEn: null },
+      })
       if (!espacio) throw new NoEncontrado()
       if (!espacio.activo) throw new EspacioInvalido('El espacio ya está deshabilitado.')
       return prisma.$transaction(async (tx) => {
@@ -425,7 +453,9 @@ export async function habilitarEspacio(
       accion: 'administrar espacios',
     },
     async () => {
-      const espacio = await prisma.espacioComun.findFirst({ where: { id: datos.espacioId } })
+      const espacio = await prisma.espacioComun.findFirst({
+        where: { id: datos.espacioId, archivadoEn: null },
+      })
       if (!espacio) throw new NoEncontrado()
       if (espacio.activo) throw new EspacioInvalido('El espacio ya está habilitado.')
       const ahora = reloj.ahora()
@@ -445,11 +475,88 @@ export async function habilitarEspacio(
 }
 
 /**
- * Elimina el espacio (RF-15) con sus reservas y tramos de deshabilitación.
- * A quienes tenían reservas futuras confirmadas se les avisa. Para conservar
- * el historial, deshabilitar.
+ * Elimina el espacio (RF-15, RN-22): sin reservas en toda su historia se borra;
+ * con historia se archiva (`archivadoEn`), porque la historia de uso no se
+ * pierde. A quienes tenían reservas futuras confirmadas se les cancela y avisa.
  */
 export async function eliminarEspacio(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: { usuarioId: string; consorcioId: string; espacioId: string },
+): Promise<'borrado' | 'archivado'> {
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    {
+      usuarioId: datos.usuarioId,
+      consorcioId: datos.consorcioId,
+      rolesPermitidos: ['administrador'],
+      accion: 'administrar espacios',
+    },
+    async () => {
+      const espacio = await prisma.espacioComun.findFirst({
+        where: { id: datos.espacioId, archivadoEn: null },
+      })
+      if (!espacio) throw new NoEncontrado()
+      return prisma.$transaction(async (tx) => {
+        if ((await tx.reserva.count({ where: { espacioId: espacio.id } })) === 0) {
+          // La auditoría (RN-15) deja constancia de la baja.
+          await tx.suspensionEspacio.deleteMany({ where: { espacioId: espacio.id } })
+          await tx.espacioComun.deleteMany({ where: { id: espacio.id } })
+          return 'borrado' as const
+        }
+        await cancelarReservasFuturas(
+          tx,
+          reloj.ahora(),
+          { espacioId: espacio.id },
+          'El espacio fue eliminado',
+          (nombre) => `El espacio ${nombre} fue eliminado y tu reserva quedó cancelada.`,
+        )
+        await tx.espacioComun.update({
+          where: { id: espacio.id },
+          data: { archivadoEn: reloj.ahora() },
+        })
+        return 'archivado' as const
+      })
+    },
+  )
+}
+
+/**
+ * Cancela y avisa las reservas confirmadas que todavía no terminaron (RN-22): al
+ * archivar un espacio, o todas las del consorcio al archivarlo.
+ */
+export async function cancelarReservasFuturas(
+  tx: Transaccion,
+  ahora: Date,
+  filtro: { espacioId?: string },
+  motivo: string,
+  cuerpo: (espacio: string) => string,
+): Promise<void> {
+  const futuras = await tx.reserva.findMany({
+    where: { ...filtro, estado: 'confirmada', hasta: { gt: ahora } },
+    select: { id: true, solicitadaPor: true, espacio: { select: { nombre: true } } },
+  })
+  if (futuras.length === 0) return
+  await tx.reserva.updateMany({
+    where: { id: { in: futuras.map((r) => r.id) } },
+    data: { estado: 'cancelada', motivoRechazo: motivo },
+  })
+  await notificar(
+    tx,
+    futuras.map((r) => ({
+      usuarioId: r.solicitadaPor,
+      tipo: 'reserva_rechazada' as const,
+      titulo: `Reserva cancelada: ${r.espacio.nombre}`,
+      cuerpo: cuerpo(r.espacio.nombre),
+      entidadTipo: 'Reserva',
+      entidadId: r.id,
+    })),
+  )
+}
+
+/** Devuelve un espacio archivado a la lista. Las reservas canceladas siguen canceladas. */
+export async function restaurarEspacio(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
   datos: { usuarioId: string; consorcioId: string; espacioId: string },
@@ -464,31 +571,46 @@ export async function eliminarEspacio(
       accion: 'administrar espacios',
     },
     async () => {
-      const espacio = await prisma.espacioComun.findFirst({ where: { id: datos.espacioId } })
-      if (!espacio) throw new NoEncontrado()
-      await prisma.$transaction(async (tx) => {
-        const futuras = await tx.reserva.findMany({
-          where: { espacioId: espacio.id, estado: 'confirmada', hasta: { gt: reloj.ahora() } },
-          select: { id: true, solicitadaPor: true },
-        })
-        if (futuras.length > 0) {
-          await notificar(
-            tx,
-            futuras.map((r) => ({
-              usuarioId: r.solicitadaPor,
-              tipo: 'reserva_rechazada' as const,
-              titulo: `Reserva cancelada: ${espacio.nombre}`,
-              cuerpo: `El espacio ${espacio.nombre} fue eliminado y tu reserva quedó cancelada.`,
-              entidadTipo: 'Reserva',
-              entidadId: r.id,
-            })),
-          )
-        }
-        // La auditoría (RN-15) deja constancia de cada baja.
-        await tx.reserva.deleteMany({ where: { espacioId: espacio.id } })
-        await tx.suspensionEspacio.deleteMany({ where: { espacioId: espacio.id } })
-        await tx.espacioComun.deleteMany({ where: { id: espacio.id } })
+      const { count } = await prisma.espacioComun.updateMany({
+        where: { id: datos.espacioId, archivadoEn: { not: null } },
+        data: { archivadoEn: null },
       })
+      if (count === 0) throw new NoEncontrado()
+    },
+  )
+}
+
+export async function listarEspaciosArchivados(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  datos: { usuarioId: string; consorcioId: string },
+): Promise<{ id: string; nombre: string; archivadoEn: string; reservasEnHistorial: number }[]> {
+  return conAutorizacion(
+    repositorio,
+    reloj,
+    {
+      usuarioId: datos.usuarioId,
+      consorcioId: datos.consorcioId,
+      rolesPermitidos: ['administrador'],
+      accion: 'administrar espacios',
+    },
+    async () => {
+      const archivados = await prisma.espacioComun.findMany({
+        where: { archivadoEn: { not: null } },
+        orderBy: { archivadoEn: 'desc' },
+        select: {
+          id: true,
+          nombre: true,
+          archivadoEn: true,
+          _count: { select: { reservas: true } },
+        },
+      })
+      return archivados.map((e) => ({
+        id: e.id,
+        nombre: e.nombre,
+        archivadoEn: e.archivadoEn!.toISOString(),
+        reservasEnHistorial: e._count.reservas,
+      }))
     },
   )
 }

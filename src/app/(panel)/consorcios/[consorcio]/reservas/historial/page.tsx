@@ -67,6 +67,7 @@ export default async function HistorialDeReservasPage({
         usuarioId,
         consorcioId: activo.id,
         incluirInactivos: true,
+        incluirArchivados: true,
       }),
       unidadesParaReservar(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id }),
       historialDeReservas(HABILITACIONES, RELOJ, {
@@ -108,7 +109,7 @@ export default async function HistorialDeReservasPage({
                 {espacios.map((e) => (
                   <option key={e.id} value={e.id}>
                     {e.nombre}
-                    {!e.activo && ' (deshabilitado)'}
+                    {e.archivado ? ' (archivado)' : !e.activo && ' (deshabilitado)'}
                   </option>
                 ))}
               </select>

@@ -70,7 +70,9 @@ export async function reservar(
     reloj,
     { usuarioId: datos.usuarioId, consorcioId: datos.consorcioId, accion: 'reservar' },
     async (acceso) => {
-      const espacio = await prisma.espacioComun.findFirst({ where: { id: datos.espacioId } })
+      const espacio = await prisma.espacioComun.findFirst({
+        where: { id: datos.espacioId, archivadoEn: null },
+      })
       if (!espacio || !espacio.activo) throw new NoEncontrado()
       const unidad = await prisma.unidad.findFirst({
         where: { id: datos.unidadId, bajaDesde: null },
@@ -152,6 +154,9 @@ export async function reservar(
       // 3) La base decide la superposicion (SC-005). 4) Aviso.
       try {
         return await prisma.$transaction(async (tx) => {
+          // Como `iniciarPagoEnLinea`: espera a un archivado en curso (RN-22), que
+          // si no cancelaría las futuras sin ver esta.
+          await tx.$queryRaw`SELECT 1 FROM "Consorcio" WHERE id = ${datos.consorcioId}::uuid FOR SHARE`
           const reserva = await tx.reserva.create({
             data: sinConsorcio({
               espacioId: espacio.id,

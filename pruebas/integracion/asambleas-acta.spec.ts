@@ -442,6 +442,13 @@ describe('firma', () => {
     ).toBe(3)
   })
 
+  it('un consorcio archivado no recibe el recordatorio ni rompe la tarea (RN-22)', async () => {
+    await prismaBase.$executeRaw`UPDATE "Consorcio" SET archivado_en = now() WHERE id = ${e.consorcioId}::uuid`
+    expect(await recordarFirmasPendientes(relojFijo('2026-12-10T12:00:00Z'))).toEqual({
+      avisadas: 0,
+    })
+  })
+
   it('otro consorcio no firma ni verifica', async () => {
     await expect(
       firmar(repo, DESPUES, deps, {

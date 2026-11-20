@@ -97,7 +97,7 @@ export async function vigenteDelConsorcio(
     },
   })
   const todos = await cliente.espacioComun.findMany({ orderBy: { nombre: 'asc' } })
-  const espacios = todos.filter((e) => e.activo)
+  const espacios = todos.filter((e) => e.activo && !e.archivadoEn)
   const tramos = await cliente.tramoVencimiento.findMany({ orderBy: { orden: 'asc' } })
 
   return {
@@ -115,7 +115,7 @@ export async function vigenteDelConsorcio(
           : null,
       rechazaConDeuda: e.rechazaConDeuda,
     })),
-    deshabilitados: todos.filter((e) => !e.activo).map((e) => e.nombre),
+    deshabilitados: todos.filter((e) => !e.activo || e.archivadoEn).map((e) => e.nombre),
     tramos:
       tramos.length > 0
         ? tramos.map((t) => ({
@@ -365,9 +365,9 @@ export function manejadorSugerencias(lector: LectorDeConfiguracion): Manejador {
     const { documentoId } = CARGA.parse(carga)
     const documento = await prismaBase.documentoConsorcio.findUnique({
       where: { id: documentoId },
-      select: { consorcioId: true, tipo: true },
+      select: { consorcioId: true, tipo: true, archivadoEn: true },
     })
-    if (!documento || !TIPOS_ANALIZABLES.includes(documento.tipo)) return
+    if (!documento || documento.archivadoEn || !TIPOS_ANALIZABLES.includes(documento.tipo)) return
 
     const fragmentos = await prismaBase.fragmentoDocumento.findMany({
       where: { documentoId },
@@ -499,7 +499,11 @@ export async function listarSugerencias(
     { usuarioId: datos.usuarioId, consorcioId: datos.consorcioId, ...SOLO_ADMINISTRADOR },
     async () => {
       const filas = await prisma.sugerenciaConfiguracion.findMany({
-        where: datos.documentoId ? { documentoId: datos.documentoId } : {},
+        where: {
+          ...(datos.documentoId ? { documentoId: datos.documentoId } : {}),
+          // La pendiente de un documento archivado ya no se ofrece (RN-22); la resuelta es historia.
+          OR: [{ estado: { not: 'pendiente' } }, { documento: { archivadoEn: null } }],
+        },
         include: { documento: { select: { titulo: true } } },
         orderBy: [
           { resueltaEn: { sort: 'desc', nulls: 'first' } },
@@ -551,7 +555,9 @@ export async function listarSugerencias(
 
 async function pendiente(sugerenciaId: string) {
   // Aislada: la de otro consorcio no existe (RN-12).
-  const fila = await prisma.sugerenciaConfiguracion.findFirst({ where: { id: sugerenciaId } })
+  const fila = await prisma.sugerenciaConfiguracion.findFirst({
+    where: { id: sugerenciaId, documento: { archivadoEn: null } },
+  })
   if (!fila) throw new NoEncontrado()
   if (fila.estado !== 'pendiente') throw new SugerenciaYaResuelta()
   return fila

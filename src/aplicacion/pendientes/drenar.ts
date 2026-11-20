@@ -1,5 +1,6 @@
 import type { TipoTrabajo } from '@prisma/client'
 
+import { ConsorcioArchivado, traducirArchivado } from '@/compartido/errores'
 import { prismaBase } from '@/infraestructura/prisma'
 
 /**
@@ -44,6 +45,17 @@ export async function drenar(
       })
       despachados++
     } catch (error) {
+      // Un consorcio archivado no admite escrituras: reintentar no cambia nada (RN-22).
+      if (traducirArchivado(error) instanceof ConsorcioArchivado) {
+        await prismaBase.trabajoPendiente.update({
+          where: { id: trabajo.id },
+          data: {
+            estado: 'despachado',
+            ultimoError: new ConsorcioArchivado().message.slice(0, 500),
+          },
+        })
+        continue
+      }
       fallidos++
       await prismaBase.trabajoPendiente.update({
         where: { id: trabajo.id },

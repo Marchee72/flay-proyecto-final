@@ -76,6 +76,12 @@ describe('bandeja global', () => {
     expect(deAmbos.consorcios[1].reclamos.map((r) => r.titulo)).toEqual(['Ascensor detenido'])
   })
 
+  it('un consorcio archivado sale de la bandeja (RN-22)', async () => {
+    await prismaBase.$executeRaw`UPDATE "Consorcio" SET archivado_en = now() WHERE id = ${consorcioB}::uuid`
+    const deAmbos = await verBandeja(repo, RELOJ, { usuarioId: adminDeAmbos })
+    expect(deAmbos.consorcios.map((c) => c.nombre)).toEqual(['Mitre 456'])
+  })
+
   it('el consorcista no tiene bandeja: lista vacia, sin lanzar', async () => {
     const vacia = await verBandeja(repo, RELOJ, { usuarioId: consorcista })
     expect(vacia.consorcios).toEqual([])

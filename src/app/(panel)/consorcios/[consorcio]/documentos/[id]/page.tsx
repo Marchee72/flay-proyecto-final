@@ -7,7 +7,10 @@ import { plural } from '@/compartido/formato'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { ALMACEN, HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 
-import { accionBuscarConfiguracion } from '../../../../comunicacion/acciones'
+import {
+  accionBuscarConfiguracion,
+  accionRestaurarDocumento,
+} from '../../../../comunicacion/acciones'
 import { AvisoDeError, conConsorcio, idONoEncontrado } from '../../../../con-consorcio'
 import { Volver } from '../../../../encabezado-consorcio'
 import { EnVivo } from '../../../../en-vivo'
@@ -41,7 +44,10 @@ export default async function DocumentoPage({
     const administra = roles.includes('administrador')
     const quien = { usuarioId, consorcioId: activo.id, documentoId: id }
     // Solo el administrador, y solo reglamentos, actas y contratos (RF-19, RN-14).
-    const analisis = administra ? await analisisDeConfiguracion(HABILITACIONES, RELOJ, quien) : null
+    const analisis =
+      administra && !documento.archivado
+        ? await analisisDeConfiguracion(HABILITACIONES, RELOJ, quien)
+        : null
     const pendientes = analisis
       ? (await listarSugerencias(HABILITACIONES, RELOJ, quien)).filter(
           (s) => s.estado === 'pendiente',
@@ -57,8 +63,22 @@ export default async function DocumentoPage({
           <a className="boton boton--fantasma" href={documento.descarga} download>
             Descargar
           </a>
-          {administra && <ModalEliminar consorcioId={activo.id} documentoId={id} />}
+          {administra && !documento.archivado && (
+            <ModalEliminar consorcioId={activo.id} documentoId={id} />
+          )}
         </div>
+        {documento.archivado && (
+          <div className="aviso">
+            <p>Este documento está archivado: no se muestra ni se usa en las consultas.</p>
+            <form action={accionRestaurarDocumento}>
+              <input type="hidden" name="consorcio" value={activo.id} />
+              <input type="hidden" name="documento" value={id} />
+              <button className="boton boton--fantasma" type="submit">
+                Restaurar
+              </button>
+            </form>
+          </div>
+        )}
         {analisis && (analisis.indexado || analisis.analizando) && (
           <section className="aviso aviso--ia panel-ia" aria-labelledby="titulo-panel-ia">
             <IconoIA />

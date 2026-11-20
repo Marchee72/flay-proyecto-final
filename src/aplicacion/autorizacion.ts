@@ -1,7 +1,7 @@
 import type { AccesoVigente, RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import type { Rol } from '@/dominio/identidad/rol'
-import { NoEncontrado, RolInsuficiente } from '@/compartido/errores'
+import { NoEncontrado, RolInsuficiente, traducirArchivado } from '@/compartido/errores'
 import { enConsorcio } from '@/infraestructura/cliente-aislado'
 
 /**
@@ -44,7 +44,11 @@ export async function conAutorizacion<T>(
     throw new RolInsuficiente(contexto.accion)
   }
 
-  return enConsorcio(contexto.consorcioId, () => trabajo(acceso))
+  try {
+    return await enConsorcio(contexto.consorcioId, () => trabajo(acceso))
+  } catch (error) {
+    throw traducirArchivado(error)
+  }
 }
 
 /**

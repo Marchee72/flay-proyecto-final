@@ -226,6 +226,15 @@ describe('sugerencias de configuración', () => {
     expect(await prismaBase.sugerenciaConfiguracion.count()).toBe(0)
   })
 
+  it('documento archivado: termina sin lanzar y sin escribir', async () => {
+    await prismaBase.documentoConsorcio.update({
+      where: { id: documentoId },
+      data: { archivadoEn: new Date() },
+    })
+    await expect(analizar()).resolves.toBeUndefined()
+    expect(await prismaBase.sugerenciaConfiguracion.count()).toBe(0)
+  })
+
   it('la indexación encola el análisis solo para reglamento, acta y contrato', async () => {
     const reglamento = await sembrarDocumento('reglamento_interno', 'pendiente')
     const poliza = await sembrarDocumento('poliza', 'pendiente')
@@ -358,6 +367,20 @@ describe('aplicar y descartar sugerencias (RN-14)', () => {
       administrador,
       RELOJ.ahora(),
     ])
+  })
+
+  it('la pendiente de un documento archivado no se lista ni se aplica (RN-22)', async () => {
+    const id = await sugerir('espacio_nuevo', { nombre: 'SUM' })
+    await prismaBase.documentoConsorcio.update({
+      where: { id: documentoId },
+      data: { archivadoEn: new Date() },
+    })
+    const datos = { usuarioId: administrador, consorcioId }
+    expect(await listarSugerencias(repo, RELOJ, datos)).toEqual([])
+    await expect(
+      aplicarSugerencia(repo, RELOJ, { ...datos, sugerenciaId: id }),
+    ).rejects.toBeInstanceOf(NoEncontrado)
+    expect((await estadoDe(id)).estado).toBe('pendiente')
   })
 
   it('aplicar un espacio_cambio mezcla con lo vigente: solo cambia lo sugerido', async () => {

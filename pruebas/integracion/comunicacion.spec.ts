@@ -26,6 +26,7 @@ import {
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
 
+import { almacenEnMemoria } from './asistencia-ayudas'
 import { relojFijo } from '../dominio/reloj-fijo'
 import {
   crearAdministradora,
@@ -343,7 +344,13 @@ describe('documentos', () => {
       await prismaBase.fragmentoDocumento.create({
         data: { documentoId, numeroFragmento: 1, contenido: 'Art. 1' },
       })
+      const { claveAlmacenamiento } = await prismaBase.documentoConsorcio.findUniqueOrThrow({
+        where: { id: documentoId },
+      })
+      const archivos = { [claveAlmacenamiento]: new Uint8Array([1]) }
+      const { bajar } = almacenEnMemoria(archivos)
       await archivar(documentoId)
+      await expect(bajar(claveAlmacenamiento)).resolves.toHaveLength(1)
       const fila = await prismaBase.documentoConsorcio.findUniqueOrThrow({
         where: { id: documentoId },
       })
@@ -414,8 +421,12 @@ describe('documentos', () => {
       await expect(archivar(documentoId)).rejects.toBeInstanceOf(NoEncontrado)
     })
 
-    it('restaurar lo devuelve a la lista sin reindexar; uno vigente es no encontrado', async () => {
+    it('restaurar un documento indexado lo devuelve a la lista sin reindexar', async () => {
       const { documentoId } = await cargar('Reglamento', true)
+      await prismaBase.documentoConsorcio.update({
+        where: { id: documentoId },
+        data: { estadoIndexacion: 'indexado' },
+      })
       await prismaBase.fragmentoDocumento.create({
         data: { documentoId, numeroFragmento: 1, contenido: 'Art. 1' },
       })
@@ -432,6 +443,29 @@ describe('documentos', () => {
       ])
       expect(await prismaBase.trabajoPendiente.count()).toBe(trabajosAntes)
     })
+
+    it.each(['pendiente', 'error'] as const)(
+      'restaurar un documento en %s vuelve a encolar su indexación',
+      async (estadoIndexacion) => {
+        const { documentoId } = await cargar('Reglamento', true)
+        await prismaBase.documentoConsorcio.update({
+          where: { id: documentoId },
+          data: { estadoIndexacion },
+        })
+        await archivar(documentoId)
+        const antes = await prismaBase.trabajoPendiente.count({
+          where: { tipo: 'indexar_documento' },
+        })
+        await restaurarDocumento(repo, RELOJ, { ...quien(administrador), documentoId })
+        expect(
+          await prismaBase.trabajoPendiente.count({ where: { tipo: 'indexar_documento' } }),
+        ).toBe(antes + 1)
+        const fila = await prismaBase.documentoConsorcio.findUniqueOrThrow({
+          where: { id: documentoId },
+        })
+        expect(fila.estadoIndexacion).toBe('pendiente')
+      },
+    )
 
     it('indexar un archivado termina sin lanzar y sin escribir', async () => {
       const { documentoId } = await cargar('Reglamento', true)

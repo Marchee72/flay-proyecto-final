@@ -383,7 +383,7 @@ export async function eliminarDocumento(
   )
 }
 
-/** Devuelve un documento archivado a la lista; sus fragmentos siguen ahí, no se reindexa. */
+/** Devuelve un documento archivado a la lista; si ya estaba indexado sus fragmentos siguen ahí y no se reindexa; si no, se reencola. */
 export async function restaurarDocumento(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
@@ -399,11 +399,22 @@ export async function restaurarDocumento(
       accion: 'restaurar documentos',
     },
     async () => {
-      const { count } = await prisma.documentoConsorcio.updateMany({
-        where: { id: datos.documentoId, archivadoEn: { not: null } },
-        data: { archivadoEn: null },
+      await prisma.$transaction(async (tx) => {
+        const documento = await tx.documentoConsorcio.findFirst({
+          where: { id: datos.documentoId, archivadoEn: { not: null } },
+          select: { id: true, estadoIndexacion: true },
+        })
+        if (!documento) throw new NoEncontrado()
+        // Archivado a medio indexar, el trabajo salió sin hacer nada: se encola de nuevo.
+        const falta = documento.estadoIndexacion !== 'indexado'
+        await tx.documentoConsorcio.update({
+          where: { id: documento.id },
+          data: falta
+            ? { archivadoEn: null, estadoIndexacion: 'pendiente', errorIndexacion: null }
+            : { archivadoEn: null },
+        })
+        if (falta) await encolarIndexacion(tx, documento.id)
       })
-      if (count === 0) throw new NoEncontrado()
     },
   )
 }

@@ -902,6 +902,34 @@ th a:not(.boton):hover,
 .archivados .acciones form > .boton {
   margin-top: 0;
 }
+/* Tarjeta de espacio: nombre y menú arriba; Editar y Deshabilitar, iguales, al pie. */
+.tarjeta-espacio__cabeza {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--e3);
+}
+.tarjeta-espacio__cabeza h2 {
+  margin: 0;
+  min-width: 0;
+}
+.fila-acciones.espacio__acciones {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--e2);
+}
+.espacio__acciones .boton {
+  width: 100%;
+  justify-content: center;
+}
+.espacio__acciones form {
+  display: flex;
+  margin: 0;
+}
+.espacio__acciones form > .boton {
+  margin-top: 0;
+}
 /* Menú de tres puntitos de la tarjeta: arriba a la derecha, el panel cae debajo. */
 .tarjeta-consorcio__encabezado {
   position: relative;
@@ -5546,4 +5574,159 @@ table.documentos td form {
     grid-template-columns: 1fr;
     grid-template-areas: 'l' 'p' 'a';
   }
+}
+
+/* Acciones de una fila de tabla: botones cortos, en una sola línea y alineados. */
+.acciones-fila {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--e2);
+}
+.acciones-fila form {
+  display: flex;
+  margin: 0;
+}
+.acciones-fila .boton {
+  margin-top: 0;
+}
+/* Los tres del mismo tipo: íconos sin borde; lo destructivo, en rojo. */
+.acciones-fila .boton--icono {
+  border-color: transparent;
+  background: transparent;
+  border-radius: var(--radio-chico);
+}
+.acciones-fila .boton--icono:hover {
+  background: var(--gris-palido);
+}
+.acciones-fila .boton--icono.boton--peligro {
+  color: var(--rojo);
+}
+.acciones-fila .boton--icono.boton--peligro:hover {
+  background: var(--rojo-palido);
+}
+
+/* Tablero de indicadores: todos a la vez, cada uno con su gráfico. */
+.tablero-ind__encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e3);
+  margin-bottom: var(--e4);
+}
+.tablero-ind__encabezado p {
+  margin: 0;
+}
+.tablero-ind__encabezado .fila-acciones {
+  margin: 0;
+}
+.tablero-ind__kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--e3);
+  margin: 0 0 var(--e4);
+  padding: 0;
+  list-style: none;
+}
+.tablero-ind__kpis li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e1);
+  padding: var(--e4) var(--e5);
+}
+.tablero-ind__icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: var(--e1);
+  border-radius: 10px;
+  background: var(--gris-palido);
+  color: var(--tinta-apagada);
+}
+/* El color solo dice estado: al día, atención, mora. */
+.tablero-ind__kpis li[data-estado='ok'] .tablero-ind__icono {
+  background: var(--verde-palido);
+  color: var(--verde);
+}
+.tablero-ind__kpis li[data-estado='atencion'] .tablero-ind__icono {
+  background: var(--ambar-palido);
+  color: var(--ambar);
+}
+.tablero-ind__kpis li[data-estado='mora'] .tablero-ind__icono {
+  background: var(--rojo-palido);
+  color: var(--rojo);
+}
+/* La morosidad, primera, en grafito con la cifra en lima. */
+.tablero-ind__kpis li:first-child {
+  background: var(--grafito);
+  color: #ffffff;
+}
+.tablero-ind__kpis li:first-child .kpi__rotulo,
+.tablero-ind__kpis li:first-child .kpi__detalle {
+  color: var(--tinta-clara-apagada);
+}
+.tablero-ind__kpis li:first-child .tablero-ind__cifra {
+  color: var(--lima-alto);
+}
+.tablero-ind__cifra {
+  font-size: var(--t-titulo1);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.tablero-ind {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--e3);
+}
+@media (min-width: 900px) {
+  .tablero-ind {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* Mosaico: la morosidad ancha, el gasto angosto, la carga a todo el ancho. */
+@media (min-width: 1000px) {
+  .tablero-ind {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .tablero-ind__tarjeta--morosidad {
+    grid-column: span 4;
+  }
+  .tablero-ind__tarjeta--gastos {
+    grid-column: span 2;
+  }
+  .tablero-ind__tarjeta--reclamos,
+  .tablero-ind__tarjeta--proveedores {
+    grid-column: span 3;
+  }
+  .tablero-ind__tarjeta--carga {
+    grid-column: span 6;
+  }
+}
+.tablero-ind__tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e2);
+  min-width: 0;
+}
+.tablero-ind__cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e3);
+}
+.tablero-ind__cabeza h2 {
+  margin: 0;
+  font-size: var(--t-titulo3);
+}
+.tablero-ind__tarjeta > p {
+  margin: 0;
+  font-size: var(--t-menor);
+}
+.tablero-ind__vacio {
+  margin: var(--e4) 0;
+  color: var(--tinta-apagada);
 }

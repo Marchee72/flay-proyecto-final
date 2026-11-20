@@ -54,10 +54,9 @@ test('borrar el vacío, archivar el que tiene historia y restaurarlo; el consorc
   await page.goto(`/consorcios/${admin.consorcioId}/espacios`)
 
   // Sin reservas: borrado definitivo.
-  await page
-    .getByRole('article', { name: 'Terraza vacía' })
-    .getByRole('button', { name: 'Eliminar' })
-    .click()
+  const tarjetaVacia = page.getByRole('article', { name: 'Terraza vacía' })
+  await tarjetaVacia.getByRole('button', { name: 'Más acciones de Terraza vacía' }).click()
+  await tarjetaVacia.getByRole('button', { name: 'Eliminar', exact: true }).click()
   const dialogo = page.getByRole('dialog')
   await expect(dialogo).toContainText('se va a borrar definitivamente')
   await dialogo.getByRole('button', { name: 'Eliminar', exact: true }).click()
@@ -68,10 +67,9 @@ test('borrar el vacío, archivar el que tiene historia y restaurarlo; el consorc
   await expect(page.getByText('Eliminados (', { exact: false })).toHaveCount(0)
 
   // Con reservas: se archiva.
-  await page
-    .getByRole('article', { name: 'Quincho usado' })
-    .getByRole('button', { name: 'Eliminar' })
-    .click()
+  const tarjetaUsada = page.getByRole('article', { name: 'Quincho usado' })
+  await tarjetaUsada.getByRole('button', { name: 'Más acciones de Quincho usado' }).click()
+  await tarjetaUsada.getByRole('button', { name: 'Archivar', exact: true }).click()
   await expect(dialogo).toContainText('Tiene 1 reservas en su historial: se va a archivar')
   await dialogo.getByRole('button', { name: 'Archivar', exact: true }).click()
   await expect(

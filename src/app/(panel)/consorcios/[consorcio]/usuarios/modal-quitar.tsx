@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { UserMinus } from 'lucide-react'
 
 import { BotonModal } from '../../../modal'
 import { accionQuitarAcceso, type Resultado } from './acciones'
@@ -21,7 +22,9 @@ export function ModalQuitar({
 }) {
   return (
     <BotonModal
-      etiqueta={`Quitar ${rol}`}
+      etiqueta={<UserMinus className="icono" aria-hidden="true" />}
+      nombre={`Quitar ${rol}`}
+      claseBoton="boton--icono"
       titulo={`Quitar acceso de ${rol}`}
       variante="boton--peligro"
     >

@@ -1,11 +1,16 @@
 'use client'
 
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Line,
   LineChart,
+  Pie,
+  PieChart,
   ReferenceLine,
   ResponsiveContainer,
   Scatter,
@@ -33,14 +38,16 @@ const paraDibujar = (valor: string | null): number | null => (valor === null ? n
 export function SerieDeMorosidad({
   serie,
   meta,
+  alto,
 }: {
+  alto?: number
   serie: { etiqueta: string; porcentaje: string | null }[]
   meta: string
 }) {
   const datos = serie.map((p) => ({ etiqueta: p.etiqueta, porcentaje: paraDibujar(p.porcentaje) }))
   return (
     <div className="grafico" aria-hidden="true">
-      <ResponsiveContainer width="100%" height={260}>
+      <ResponsiveContainer width="100%" height={alto ?? 260}>
         <LineChart data={datos} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e3e7" />
           <XAxis dataKey="etiqueta" stroke={GRIS} fontSize={12} />
@@ -72,7 +79,9 @@ export function SerieDeMorosidad({
 
 export function BarrasDeGasto({
   filas,
+  alto,
 }: {
+  alto?: number
   filas: { etiqueta: string; rubro: string; importe: string; desviado: boolean }[]
 }) {
   // Barras apiladas por rubro y periodo: un dato por periodo con una clave por rubro.
@@ -86,7 +95,7 @@ export function BarrasDeGasto({
   const colores = [LIMA, GRAFITO, AMBAR, '#5c8ac9', '#9c6ade', GRIS, '#c97a3a']
   return (
     <div className="grafico" aria-hidden="true">
-      <ResponsiveContainer width="100%" height={280}>
+      <ResponsiveContainer width="100%" height={alto ?? 280}>
         <BarChart data={datos} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e3e7" />
           <XAxis dataKey="etiqueta" stroke={GRIS} fontSize={12} />
@@ -103,7 +112,9 @@ export function BarrasDeGasto({
 
 export function DispersionDeProveedores({
   puntos,
+  alto,
 }: {
+  alto?: number
   puntos: { proveedor: string; costoPromedio: string | null; horas: string | null }[]
 }) {
   const datos = puntos
@@ -115,7 +126,7 @@ export function DispersionDeProveedores({
     }))
   return (
     <div className="grafico" aria-hidden="true">
-      <ResponsiveContainer width="100%" height={260}>
+      <ResponsiveContainer width="100%" height={alto ?? 260}>
         <ScatterChart margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e3e7" />
           <XAxis dataKey="horas" name="Horas de resolución" unit=" h" stroke={GRIS} fontSize={12} />
@@ -131,14 +142,16 @@ export function DispersionDeProveedores({
 export function BarrasDeResolucion({
   filas,
   metaHoras,
+  alto,
 }: {
+  alto?: number
   filas: { etiqueta: string; mediana: string; p90: string; fueraDeMeta: boolean }[]
   metaHoras: string
 }) {
   const datos = filas.map((f) => ({ ...f, mediana: Number(f.mediana), p90: Number(f.p90) }))
   return (
     <div className="grafico" aria-hidden="true">
-      <ResponsiveContainer width="100%" height={280}>
+      <ResponsiveContainer width="100%" height={alto ?? 280}>
         <BarChart data={datos} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e3e7" />
           <XAxis dataKey="etiqueta" stroke={GRIS} fontSize={12} />
@@ -166,14 +179,16 @@ export function BarrasDeResolucion({
 export function SerieDeCarga({
   serie,
   lineaBase,
+  alto,
 }: {
+  alto?: number
   serie: { etiqueta: string; horas: string | null }[]
   lineaBase: string
 }) {
   const datos = serie.map((p) => ({ etiqueta: p.etiqueta, horas: paraDibujar(p.horas) }))
   return (
     <div className="grafico" aria-hidden="true">
-      <ResponsiveContainer width="100%" height={240}>
+      <ResponsiveContainer width="100%" height={alto ?? 240}>
         <LineChart data={datos} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e3e7" />
           <XAxis dataKey="etiqueta" stroke={GRIS} fontSize={12} />
@@ -192,6 +207,95 @@ export function SerieDeCarga({
           />
           <Line type="monotone" dataKey="horas" stroke={GRAFITO} strokeWidth={2} dot={{ r: 3 }} />
         </LineChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+const PALETA = [LIMA, GRAFITO, AMBAR, '#5c8ac9', '#9c6ade', GRIS, '#c97a3a']
+
+/** Participación de cada rubro en el último período: una dona. */
+export function DonaDeGasto({
+  partes,
+  alto,
+}: {
+  partes: { rubro: string; importe: string }[]
+  alto?: number
+}) {
+  const datos = partes.map((p) => ({ rubro: p.rubro, importe: Number(p.importe) }))
+  return (
+    <div className="grafico" aria-hidden="true">
+      <ResponsiveContainer width="100%" height={alto ?? 240}>
+        <PieChart>
+          <Tooltip />
+          <Pie
+            data={datos}
+            dataKey="importe"
+            nameKey="rubro"
+            innerRadius="55%"
+            outerRadius="85%"
+            paddingAngle={2}
+          >
+            {datos.map((d, i) => (
+              <Cell key={d.rubro} fill={PALETA[i % PALETA.length]} />
+            ))}
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+/** Horas de apertura a liquidación como área, contra la línea de base. */
+export function AreaDeCarga({
+  serie,
+  lineaBase,
+  alto,
+}: {
+  serie: { etiqueta: string; horas: string | null }[]
+  lineaBase: string
+  alto?: number
+}) {
+  const datos = serie.map((p) => ({ etiqueta: p.etiqueta, horas: paraDibujar(p.horas) }))
+  return (
+    <div className="grafico" aria-hidden="true">
+      <ResponsiveContainer width="100%" height={alto ?? 220}>
+        <AreaChart data={datos} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0e3e7" />
+          <XAxis dataKey="etiqueta" stroke={GRIS} fontSize={12} />
+          <YAxis unit=" h" stroke={GRIS} fontSize={12} width={56} />
+          <Tooltip />
+          <ReferenceLine y={Number(lineaBase)} stroke={AMBAR} strokeDasharray="4 4" />
+          <Area type="monotone" dataKey="horas" stroke={GRAFITO} fill={LIMA} fillOpacity={0.35} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+/** Mediana y percentil 90 por rubro y urgencia, en barras horizontales (las etiquetas son largas). */
+export function BarrasHorizontalesDeResolucion({
+  filas,
+  metaHoras,
+  alto,
+}: {
+  filas: { etiqueta: string; mediana: string; p90: string }[]
+  metaHoras: string
+  alto?: number
+}) {
+  const datos = filas.map((f) => ({ ...f, mediana: Number(f.mediana), p90: Number(f.p90) }))
+  return (
+    <div className="grafico" aria-hidden="true">
+      <ResponsiveContainer width="100%" height={alto ?? Math.max(220, datos.length * 44 + 40)}>
+        <BarChart data={datos} layout="vertical" margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0e3e7" horizontal={false} />
+          <XAxis type="number" unit=" h" stroke={GRIS} fontSize={12} />
+          <YAxis type="category" dataKey="etiqueta" stroke={GRIS} fontSize={12} width={150} />
+          <Tooltip />
+          <ReferenceLine x={Number(metaHoras)} stroke={ROJO} strokeDasharray="4 4" />
+          <Bar dataKey="mediana" name="Mediana" fill={GRAFITO} />
+          <Bar dataKey="p90" name="Percentil 90" fill={LIMA} />
+        </BarChart>
       </ResponsiveContainer>
     </div>
   )

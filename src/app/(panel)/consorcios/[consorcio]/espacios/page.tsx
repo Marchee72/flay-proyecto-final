@@ -9,6 +9,7 @@ import { listarEspacios, listarEspaciosArchivados } from '@/aplicacion/reservas/
 import { horarioParaMostrar } from '@/aplicacion/reservas/horario-reglas'
 
 import { AvisoDeError, conConsorcio } from '../../../con-consorcio'
+import { MenuPuntos } from '../../menu-puntos'
 import { accionHabilitarEspacio, accionRestaurarEspacio } from '../reservas/acciones'
 import { ModalDeshabilitar } from './modal-deshabilitar'
 import { ModalEliminar } from './modal-eliminar'
@@ -75,7 +76,14 @@ export default async function EspaciosPage({ params }: { params: Promise<{ conso
                 key={e.id}
                 aria-label={e.nombre}
               >
-                <h2>{e.nombre}</h2>
+                <div className="tarjeta-espacio__cabeza">
+                  <h2>{e.nombre}</h2>
+                  {administra && !activo.archivadoEn && (
+                    <MenuPuntos nombre={`Más acciones de ${e.nombre}`}>
+                      <ModalEliminar consorcioId={activo.id} espacio={e} />
+                    </MenuPuntos>
+                  )}
+                </div>
                 {!e.activo && (
                   <p className="etiqueta etiqueta--vencido">
                     Deshabilitado
@@ -98,7 +106,7 @@ export default async function EspaciosPage({ params }: { params: Promise<{ conso
                   <dd>{e.horario ? horarioParaMostrar(e.horario) : 'Cualquier hora'}</dd>
                 </dl>
                 {administra && !activo.archivadoEn && (
-                  <div className="fila-acciones">
+                  <div className="fila-acciones espacio__acciones">
                     <ModalEspacio consorcioId={activo.id} espacio={e} />
                     {e.activo ? (
                       <ModalDeshabilitar consorcioId={activo.id} espacio={e} />
@@ -112,7 +120,6 @@ export default async function EspaciosPage({ params }: { params: Promise<{ conso
                         </button>
                       </form>
                     )}
-                    <ModalEliminar consorcioId={activo.id} espacio={e} />
                   </div>
                 )}
               </article>

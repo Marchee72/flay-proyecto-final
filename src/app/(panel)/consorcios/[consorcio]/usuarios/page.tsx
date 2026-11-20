@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Users } from 'lucide-react'
+import { KeyRound, Users } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
@@ -125,35 +125,42 @@ function Tabla({
                 <Invitacion usuario={usuario} consorcioId={consorcioId} />
               </td>
               <td>
-                {unidades.length === 0 ? (
-                  <span className="ayuda">Cargá el padrón primero.</span>
-                ) : (
-                  <ModalUnidad
-                    consorcioId={consorcioId}
-                    personaId={usuario.personaId}
-                    nombre={usuario.nombre}
-                    unidades={unidades}
-                    hoy={hoy}
-                  />
-                )}
-                {usuario.estado === 'activo' && (
-                  <form action={accionEnviarEnlaceDeClave}>
-                    <input type="hidden" name="consorcio" value={consorcioId} />
-                    <input type="hidden" name="destinatario" value={usuario.usuarioId} />
-                    <button className="boton boton--fantasma" type="submit">
-                      Enviar enlace para cambiar la clave
-                    </button>
-                  </form>
-                )}
-                {usuario.habilitaciones.map((habilitacion) => (
-                  <ModalQuitar
-                    key={habilitacion.id}
-                    consorcioId={consorcioId}
-                    habilitacionId={habilitacion.id}
-                    nombre={usuario.nombre}
-                    rol={ETIQUETA_ROL[habilitacion.rol] ?? habilitacion.rol}
-                  />
-                ))}
+                <div className="acciones-fila">
+                  {unidades.length === 0 ? (
+                    <span className="ayuda">Cargá el padrón primero.</span>
+                  ) : (
+                    <ModalUnidad
+                      consorcioId={consorcioId}
+                      personaId={usuario.personaId}
+                      nombre={usuario.nombre}
+                      unidades={unidades}
+                      hoy={hoy}
+                    />
+                  )}
+                  {usuario.estado === 'activo' && (
+                    <form action={accionEnviarEnlaceDeClave}>
+                      <input type="hidden" name="consorcio" value={consorcioId} />
+                      <input type="hidden" name="destinatario" value={usuario.usuarioId} />
+                      <button
+                        className="boton boton--fantasma boton--icono"
+                        type="submit"
+                        aria-label="Enviar enlace para cambiar la clave"
+                        title="Enviar enlace para cambiar la clave"
+                      >
+                        <KeyRound className="icono" aria-hidden="true" />
+                      </button>
+                    </form>
+                  )}
+                  {usuario.habilitaciones.map((habilitacion) => (
+                    <ModalQuitar
+                      key={habilitacion.id}
+                      consorcioId={consorcioId}
+                      habilitacionId={habilitacion.id}
+                      nombre={usuario.nombre}
+                      rol={ETIQUETA_ROL[habilitacion.rol] ?? habilitacion.rol}
+                    />
+                  ))}
+                </div>
               </td>
             </tr>
           ))}

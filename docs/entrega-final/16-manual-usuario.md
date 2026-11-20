@@ -516,7 +516,7 @@ El **Horario de uso** (apertura y cierre) es optativo: vacío, el espacio se res
 
 ### 16.2.10 Panel de indicadores de gestión y analítica de cartera
 
-El módulo de analítica estratégica (`/indicadores`) procesa la información de todos los consorcios administrados a través de vistas materializadas en PostgreSQL (`vm_morosidad`, `vm_gastos_rubro`, etc.), brindando métricas de alto nivel para la toma de decisiones directivas (RF-21, CU-11).
+El módulo de analítica estratégica (`/indicadores`) procesa la información del consorcio seleccionado a través de vistas materializadas en PostgreSQL (`vm_morosidad`, `vm_gastos_rubro`, etc.), brindando métricas de alto nivel para la toma de decisiones directivas (RF-21, CU-11).
 
 ```mermaid
 graph LR
@@ -557,7 +557,7 @@ graph LR
 | **I-3** | **Desempeño de proveedores** | Costo medio por factura e intervalo medio entre asignación y finalización. | Evaluación contractual: si un proveedor incrementa sus tarifas por encima del mercado o demora las obras, se fundamenta su reemplazo en asamblea. |
 | **I-4** | **Resolución de reclamos** | Mediana y percentil 90 ($P_{90}$) de días transcurridos desde `Abierto` hasta `Resuelto`. | Calidad del servicio de mantenimiento. Mide la capacidad de respuesta ante incidencias críticas (ejemplo: bombas de agua descompuestas). |
 | **I-5** | **Carga administrativa y precisión de IA** | Horas entre apertura y liquidación del mes; tasa de aceptación de propuestas automáticas. | Eficiencia operativa interna de Grupo Delta. Mide la capacidad liberada para captar nuevos consorcios (verificación del riesgo RN-01). |
-| **I-6** | **Panel consolidado de cartera** | Grilla consolidada de todos los consorcios administrados ordenada por nivel de atención. | Dónde debe poner el foco el Administrador cada mañana: consorcios con mayor cantidad de reclamos urgentes o atrasos de pago. |
+| **I-6** | **Tablero del consorcio** | Todos los indicadores del consorcio seleccionado a la vez, cada uno con su gráfico, y las cifras de morosidad, unidades en mora, reclamos abiertos y desvíos de gasto. | Dónde debe poner el foco el Administrador en ese edificio: atrasos de pago, reclamos urgentes y desvíos de gasto. |
 
 > [!TIP]
 > **Actualización de indicadores:** Las métricas se sirven desde vistas materializadas de alto rendimiento sin sobrecargar la base operativa. Para incorporar las transacciones más recientes del día, presione el botón **Actualizar ahora** (`accionRefrescar`), el cual invoca de manera asincrónica la rutina `POST /api/tareas/refrescar-vistas`.

@@ -1,5 +1,7 @@
 'use client'
 
+import { Archive, Trash2 } from 'lucide-react'
+
 import { BotonModal } from '../../../modal'
 import { accionEliminarEspacio } from '../reservas/acciones'
 
@@ -14,7 +16,21 @@ export function ModalEliminar({
   const archiva = espacio.reservasEnHistorial > 0
   const etiqueta = archiva ? 'Archivar' : 'Eliminar'
   return (
-    <BotonModal etiqueta="Eliminar" titulo={`Eliminar ${espacio.nombre}`} variante="boton--peligro">
+    <BotonModal
+      etiqueta={
+        <>
+          {archiva ? (
+            <Archive className="icono" aria-hidden="true" />
+          ) : (
+            <Trash2 className="icono" aria-hidden="true" />
+          )}
+          {etiqueta}
+        </>
+      }
+      titulo={`${etiqueta} ${espacio.nombre}`}
+      variante="boton--peligro"
+      claseBoton="menu-puntos__item"
+    >
       <form action={accionEliminarEspacio}>
         <input type="hidden" name="consorcio" value={consorcioId} />
         <input type="hidden" name="espacio" value={espacio.id} />

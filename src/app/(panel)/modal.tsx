@@ -25,6 +25,7 @@ export function BotonModal({
   variante = 'boton--primario',
   claseBoton,
   nombre,
+  pista,
   abrirAlMontar = false,
   children,
 }: {
@@ -34,6 +35,8 @@ export function BotonModal({
   claseBoton?: string
   /** Nombre accesible del disparador cuando la etiqueta es solo un icono. */
   nombre?: string
+  /** Texto al pasar el mouse sobre el disparador (botones de solo icono). */
+  pista?: string
   /** Abierto de entrada: el Resumen manda a `/gastos?abrir=1` y el modal ya esta ahi. */
   abrirAlMontar?: boolean
   children: ReactNode | ((cerrar: () => void) => ReactNode)
@@ -64,6 +67,7 @@ export function BotonModal({
         type="button"
         className={`boton ${variante}${claseBoton ? ` ${claseBoton}` : ''}`}
         aria-label={nombre}
+        title={pista ?? nombre}
         onClick={abrir}
       >
         {etiqueta}

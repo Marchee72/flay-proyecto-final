@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { House } from 'lucide-react'
 
 import { BotonModal } from '../../../modal'
 import { accionAsignarUnidad, type Resultado } from './acciones'
@@ -25,7 +26,9 @@ export function ModalUnidad({
 }) {
   return (
     <BotonModal
-      etiqueta="Asignar unidad"
+      etiqueta={<House className="icono" aria-hidden="true" />}
+      nombre="Asignar unidad"
+      claseBoton="boton--icono"
       titulo={`Asignar unidad a ${nombre}`}
       variante="boton--fantasma"
     >

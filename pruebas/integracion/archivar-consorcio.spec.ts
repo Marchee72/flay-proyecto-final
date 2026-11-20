@@ -12,7 +12,7 @@ import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { iniciarPagoEnLinea } from '@/aplicacion/pagos/iniciar-pago-en-linea'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
-import { ConsorcioArchivado, RolInsuficiente } from '@/compartido/errores'
+import { ConsorcioArchivado, NoEncontrado, RolInsuficiente } from '@/compartido/errores'
 import { procesadorDePrueba } from '@/infraestructura/pagos/procesador-de-prueba'
 import { prismaBase } from '@/infraestructura/prisma'
 
@@ -40,6 +40,7 @@ let jefa: string
 const quien = () => ({ usuarioId: jefa, consorcioId })
 
 beforeEach(async () => {
+  detalleId = undefined
   await prepararEscenario()
   jefa = (await crearUsuario('Jefa')).id
   const { administradoraId } = await prismaBase.consorcio.findUniqueOrThrow({
@@ -73,16 +74,25 @@ const gasto = async () => {
   })
 }
 
-const intento = async (datos: { estado: 'iniciado' | 'vencido'; venceEn: Date }) => {
-  const { liquidacionId } = await emitirMes(1)
-  const detalle = await prismaBase.detalleLiquidacion.findFirstOrThrow({
-    where: { liquidacionId, unidadId: unidadA },
-  })
+let detalleId: string | undefined
+const intento = async (datos: {
+  estado: 'iniciado' | 'vencido'
+  venceEn: Date
+  preferenciaId?: string
+}) => {
+  if (!detalleId) {
+    const { liquidacionId } = await emitirMes(1)
+    detalleId = (
+      await prismaBase.detalleLiquidacion.findFirstOrThrow({
+        where: { liquidacionId, unidadId: unidadA },
+      })
+    ).id
+  }
   return prismaBase.intentoDePago.create({
     data: {
       consorcioId,
       unidadId: unidadA,
-      detalleLiquidacionId: detalle.id,
+      detalleLiquidacionId: detalleId,
       importe: '500.00',
       iniciadoPor: inquilino,
       ...datos,
@@ -174,14 +184,41 @@ describe('eliminar un consorcio (RN-22)', () => {
 
     await prismaBase.intentoDePago.update({
       where: { id: abierto.id },
-      data: { estado: 'vencido' },
+      data: { estado: 'aprobado' },
     })
     expect(await eliminarConsorcio(repo, RELOJ, quien())).toBe('archivado')
   })
 
-  it('un intento iniciado vencido hace más de 72 h no bloquea', async () => {
-    await intento({ estado: 'iniciado', venceEn: new Date(RELOJ.ahora().getTime() - 73 * HORA) })
+  // Un intento reemplazado queda `vencido`, pero la conciliación lo sigue
+  // confirmando hasta `venceEn` + 72 h (nota 29): si ya cobró, archivar lo perdería.
+  it('un intento vencido con preferencia, dentro de las 72 h, bloquea', async () => {
+    await intento({
+      estado: 'vencido',
+      preferenciaId: 'pref-1',
+      venceEn: new Date(RELOJ.ahora().getTime() - HORA),
+    })
+    expect((await previaDeEliminarConsorcio(repo, RELOJ, quien())).pagosEnCurso).toBe(1)
+    await expect(eliminarConsorcio(repo, RELOJ, quien())).rejects.toBeInstanceOf(
+      ConsorcioConPagosEnCurso,
+    )
+  })
+
+  it('no bloquean: vencido sin preferencia, ni nada pasadas las 72 h', async () => {
+    const haceUnaHora = new Date(RELOJ.ahora().getTime() - HORA)
+    const hace73 = new Date(RELOJ.ahora().getTime() - 73 * HORA)
+    await intento({ estado: 'vencido', venceEn: haceUnaHora })
+    await intento({ estado: 'vencido', preferenciaId: 'pref-2', venceEn: hace73 })
+    await intento({ estado: 'iniciado', venceEn: hace73 })
+    expect((await previaDeEliminarConsorcio(repo, RELOJ, quien())).pagosEnCurso).toBe(0)
     expect(await eliminarConsorcio(repo, RELOJ, quien())).toBe('archivado')
+  })
+
+  it('la previa de un consorcio archivado no lo encuentra', async () => {
+    await gasto()
+    await eliminarConsorcio(repo, RELOJ, quien())
+    await expect(previaDeEliminarConsorcio(repo, RELOJ, quien())).rejects.toBeInstanceOf(
+      NoEncontrado,
+    )
   })
 
   it('asamblea convocada bloquea', async () => {

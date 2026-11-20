@@ -59,15 +59,19 @@ async function comoAdministradora<T>(
   )
 }
 
-/** Cuenta el movimiento (§ 3.1) y lo que bloquea archivar. Corre con el consorcio activo. */
+/**
+ * Cuenta el movimiento (§ 3.1) y lo que bloquea archivar. Corre con el consorcio
+ * activo; uno archivado no se encuentra (se restaura, no se vuelve a eliminar).
+ */
 async function previa(
   cliente: Transaccion | typeof prisma,
   consorcioId: string,
   ahora: Date,
 ): Promise<PreviaDeEliminarConsorcio> {
-  const { _count: movimiento } = await cliente.consorcio.findUniqueOrThrow({
+  const consorcio = await cliente.consorcio.findUnique({
     where: { id: consorcioId },
     select: {
+      archivadoEn: true,
       _count: {
         select: {
           periodos: true,
@@ -83,10 +87,18 @@ async function previa(
       },
     },
   })
+  if (!consorcio || consorcio.archivadoEn) throw new NoEncontrado()
+  const movimiento = consorcio._count
+  // Lo que la conciliación todavía puede confirmar (nota 29): uno con preferencia,
+  // aunque esté `rechazado` o `vencido` por otro más nuevo, hasta `venceEn` + 72 h.
+  // El `iniciado` cuenta siempre: puede estar creando su preferencia ahora mismo.
   const pagosEnCurso = await cliente.intentoDePago.count({
     where: {
-      estado: { in: ['iniciado', 'rechazado'] },
       venceEn: { gt: new Date(ahora.getTime() - VENTANA_CONCILIACION_MS) },
+      OR: [
+        { estado: 'iniciado' },
+        { estado: { in: ['rechazado', 'vencido'] }, preferenciaId: { not: null } },
+      ],
     },
   })
   const asambleasEnCurso = await cliente.asamblea.count({
@@ -144,11 +156,7 @@ export async function eliminarConsorcio(
     prisma.$transaction(async (tx) => {
       // Contra `iniciarPagoEnLinea`, que toma la misma fila en modo compartido:
       // ningún intento se cuela entre contar los pagos en curso y archivar.
-      const [fila] = await tx.$queryRaw<{ archivado: boolean }[]>`
-        SELECT archivado_en IS NOT NULL AS archivado FROM "Consorcio"
-        WHERE id = ${datos.consorcioId}::uuid FOR UPDATE`
-      if (!fila || fila.archivado) throw new NoEncontrado()
-
+      await tx.$queryRaw`SELECT 1 FROM "Consorcio" WHERE id = ${datos.consorcioId}::uuid FOR UPDATE`
       const ahora = reloj.ahora()
       const estado = await previa(tx, datos.consorcioId, ahora)
       if (estado.accion === 'borrar') {

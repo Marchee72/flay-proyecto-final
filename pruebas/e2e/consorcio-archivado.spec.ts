@@ -106,7 +106,7 @@ test('archivar desde la tarjeta, entrar en solo lectura, ver el consorcista sus 
   await page.goto('/consorcios')
   await expect(page.getByRole('article', { name: 'Archivable 100' })).toHaveCount(0)
   await expect(page.getByText('Todavía no hay ningún consorcio')).toHaveCount(0)
-  await page.getByText('Archivados (1)').click()
+  await page.locator('summary', { hasText: 'Archivados' }).click()
   await expect(page.getByText('Archivable 100')).toBeVisible()
   await page.getByRole('link', { name: 'Abrir' }).click()
   await expect(
@@ -136,11 +136,11 @@ test('archivar desde la tarjeta, entrar en solo lectura, ver el consorcista sus 
   await page.context().clearCookies()
   await entrar(page, administrador.correo)
   await page.goto('/consorcios')
-  await page.getByText('Archivados (1)').click()
+  await page.locator('summary', { hasText: 'Archivados' }).click()
   await page.getByRole('button', { name: 'Restaurar' }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Consorcio restaurado.' })).toBeVisible()
   await expect(page.getByRole('article', { name: 'Archivable 100' })).toBeVisible()
-  await expect(page.getByText('Archivados (', { exact: false })).toHaveCount(0)
+  await expect(page.locator('summary', { hasText: 'Archivados' })).toHaveCount(0)
 })
 
 test('con una asamblea convocada el modal muestra el bloqueo y no deja archivar', async ({

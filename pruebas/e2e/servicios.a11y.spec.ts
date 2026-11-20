@@ -324,7 +324,7 @@ test('documentos: modal Archivar abierto sin infracciones A/AA', async ({ page }
 test('consorcios: sección Archivados desplegada sin infracciones A/AA', async ({ page }) => {
   await entrar(page, administrador.correo)
   await page.goto('/consorcios')
-  await page.getByText('Archivados (1)').click()
+  await page.locator('summary', { hasText: 'Archivados' }).click()
   await expect(page.getByRole('button', { name: 'Restaurar' })).toBeVisible()
   await sinInfracciones(page)
 })

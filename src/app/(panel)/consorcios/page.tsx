@@ -98,10 +98,12 @@ export default async function ConsorciosPage({
       )}
 
       {consorcios.length === 0 ? (
-        <div className="vacio">
-          <Building2 aria-hidden="true" />
-          <p>Todavía no hay ningún consorcio a tu alcance.</p>
-        </div>
+        archivados.length > 0 ? null : (
+          <div className="vacio">
+            <Building2 aria-hidden="true" />
+            <p>Todavía no hay ningún consorcio a tu alcance.</p>
+          </div>
+        )
       ) : (
         <>
           <Filtros>

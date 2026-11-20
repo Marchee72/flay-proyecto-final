@@ -152,7 +152,13 @@ export default async function LiquidarPeriodoPage({
           consecuencia de que esta lista esté bien. El reparto por unidad es
           detalle y va debajo, en la misma página. */}
       <div className="fila-acciones">
-        <BotonLiquidar consorcioId={activo.id} periodoId={id} totalRevisado={previa.totalGeneral} />
+        {!activo.archivadoEn && (
+          <BotonLiquidar
+            consorcioId={activo.id}
+            periodoId={id}
+            totalRevisado={previa.totalGeneral}
+          />
+        )}
         {previa.estado === 'abierto' && (
           <Link
             className="boton boton--fantasma"

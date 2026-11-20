@@ -82,6 +82,13 @@ test('archivar desde el resumen, entrar en solo lectura, ver el consorcista sus 
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'telefono', 'teléfono 390×844; una sola vez')
   await entrar(page, administrador.correo)
+  // Antes de archivar, los controles existen: así «no hay altas» después no es vacío.
+  await page.goto(`/consorcios/${escenario.consorcioId}/gastos`)
+  await expect(page.getByRole('button', { name: 'Nuevo gasto' })).toBeVisible()
+  await page.goto(`/consorcios/${escenario.consorcioId}/espacios`)
+  await expect(page.getByRole('button', { name: 'Nuevo espacio' })).toBeVisible()
+  await page.goto(`/consorcios/${escenario.consorcioId}/periodos`)
+  await expect(page.getByRole('columnheader', { name: 'Acciones' })).toBeVisible()
   await page.goto(`/consorcios/${escenario.consorcioId}`)
 
   await page.getByRole('button', { name: 'Eliminar', exact: true }).click()
@@ -97,6 +104,7 @@ test('archivar desde el resumen, entrar en solo lectura, ver el consorcista sus 
   // La lista lo trae en Archivados y no en la grilla.
   await page.goto('/consorcios')
   await expect(page.getByRole('article', { name: 'Archivable 100' })).toHaveCount(0)
+  await expect(page.getByText('Todavía no hay ningún consorcio')).toHaveCount(0)
   await page.getByText('Archivados (1)').click()
   await expect(page.getByText('Archivable 100')).toBeVisible()
   await page.getByRole('link', { name: 'Abrir' }).click()
@@ -107,15 +115,14 @@ test('archivar desde el resumen, entrar en solo lectura, ver el consorcista sus 
   // Sin altas en Gastos ni Espacios.
   await page.goto(`/consorcios/${escenario.consorcioId}/gastos`)
   await expect(page.getByRole('heading', { name: 'Gastos', level: 1 })).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: /Registrar gasto|Nuevo gasto|Cargar gasto/ }),
-  ).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Nuevo gasto' })).toHaveCount(0)
   await expect(page.getByRole('link', { name: 'Carga asistida' })).toHaveCount(0)
+  await page.goto(`/consorcios/${escenario.consorcioId}/periodos`)
+  await expect(page.getByRole('heading', { name: 'Períodos', level: 1 })).toBeVisible()
+  await expect(page.getByRole('columnheader', { name: 'Acciones' })).toHaveCount(0)
   await page.goto(`/consorcios/${escenario.consorcioId}/espacios`)
   await expect(page.getByRole('heading', { name: 'Espacios comunes', level: 1 })).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: /Nuevo espacio|Agregar espacio|Alta/ }),
-  ).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Nuevo espacio' })).toHaveCount(0)
 
   // El consorcista sigue viendo sus expensas.
   await page.context().clearCookies()

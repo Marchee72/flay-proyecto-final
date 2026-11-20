@@ -154,9 +154,12 @@ describe('consorcio archivado (RN-22)', () => {
     try {
       const r = await pedir(administrador, 'ver_espacios')
       expect(r.modo === 'respuesta' && r.texto).toContain('SUM')
-      await expect(confirmar(administrador, p.propuestaId)).rejects.toBeInstanceOf(
-        ConsorcioArchivado,
-      )
+      const rechazo = confirmar(administrador, p.propuestaId)
+      await expect(rechazo).rejects.toBeInstanceOf(ConsorcioArchivado)
+      // El chat lo muestra con estas palabras (`accionConfirmar` y la ruta lo devuelven tal cual).
+      await expect(rechazo).rejects.toMatchObject({
+        mensajeParaUsuario: 'Este consorcio está archivado: se puede consultar, pero no operar.',
+      })
     } finally {
       await prismaBase.$executeRaw`UPDATE "Consorcio" SET archivado_en = NULL`
     }

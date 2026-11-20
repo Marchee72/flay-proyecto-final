@@ -68,7 +68,7 @@ export default async function PeriodosPage({ params }: { params: Promise<{ conso
                   <th scope="col" className="numero">
                     Liquidación
                   </th>
-                  {administra && <th scope="col">Acciones</th>}
+                  {administra && !activo.archivadoEn && <th scope="col">Acciones</th>}
                 </tr>
               </thead>
               <tbody>
@@ -109,7 +109,7 @@ export default async function PeriodosPage({ params }: { params: Promise<{ conso
                           '—'
                         )}
                       </td>
-                      {administra && (
+                      {administra && !activo.archivadoEn && (
                         <td>
                           {periodo.estado === 'abierto' && (
                             <BotonCerrar consorcioId={activo.id} periodoId={periodo.id} />
@@ -141,7 +141,7 @@ export default async function PeriodosPage({ params }: { params: Promise<{ conso
           </TablaDesplazable>
         )}
 
-        {administra && (
+        {administra && !activo.archivadoEn && (
           <p>
             <Link href={`/consorcios/${activo.id}/gastos?abrir=1`}>Cargar un gasto</Link>
           </p>

@@ -50,14 +50,16 @@ export default async function UsuariosPage({ params }: { params: Promise<{ conso
         </p>
       ) : (
         <>
-          <div className="fila-acciones">
-            <ModalInvitar
-              consorcioId={activo.id}
-              roles={ROLES_ASIGNABLES}
-              unidades={unidades}
-              hoy={RELOJ.hoy().toISOString().slice(0, 10)}
-            />
-          </div>
+          {!activo.archivadoEn && (
+            <div className="fila-acciones">
+              <ModalInvitar
+                consorcioId={activo.id}
+                roles={ROLES_ASIGNABLES}
+                unidades={unidades}
+                hoy={RELOJ.hoy().toISOString().slice(0, 10)}
+              />
+            </div>
+          )}
 
           <Tabla
             usuarios={usuarios}

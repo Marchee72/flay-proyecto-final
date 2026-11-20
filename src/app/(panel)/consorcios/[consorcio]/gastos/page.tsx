@@ -87,7 +87,7 @@ export default async function GastosPage({
         {/* Solo se dibuja lo que el rol puede disparar (RNF-03): registrar y la
             carga asistida son del administrador. */}
         <div className="fila-acciones">
-          {administra && (
+          {administra && !activo.archivadoEn && (
             <>
               <ModalGasto
                 consorcioId={activo.id}
@@ -163,7 +163,7 @@ export default async function GastosPage({
           <div className="vacio">
             <Receipt aria-hidden="true" />
             <p>No hay gastos que coincidan con el filtro.</p>
-            {administra && (
+            {administra && !activo.archivadoEn && (
               <div className="fila-acciones">
                 <ModalGasto
                   consorcioId={activo.id}

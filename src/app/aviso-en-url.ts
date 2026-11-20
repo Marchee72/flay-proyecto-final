@@ -34,6 +34,9 @@ export const HECHO = {
   'espacio-guardado': 'Espacio guardado.',
   'horario-cancelo-reservas':
     'Espacio guardado. Las reservas que quedaron fuera del nuevo horario se cancelaron y se avisó a quienes las hicieron.',
+  'consorcio-eliminado': 'Consorcio eliminado definitivamente.',
+  'consorcio-archivado': 'Consorcio archivado. Lo encontrás en Archivados.',
+  'consorcio-restaurado': 'Consorcio restaurado.',
   'espacio-eliminado': 'Espacio eliminado definitivamente.',
   'espacio-archivado': 'Espacio archivado. Lo encontrás en Eliminados.',
   'espacio-restaurado': 'Espacio restaurado.',

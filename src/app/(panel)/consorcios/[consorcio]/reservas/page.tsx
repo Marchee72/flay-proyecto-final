@@ -98,14 +98,16 @@ export default async function ReservasPage({
             </p>
           </div>
         ) : (
-          <div className="fila-acciones">
-            <ModalReserva
-              consorcioId={activo.id}
-              espacios={activos}
-              unidades={unidades}
-              espacioInicial={parametros.espacio}
-            />
-          </div>
+          !activo.archivadoEn && (
+            <div className="fila-acciones">
+              <ModalReserva
+                consorcioId={activo.id}
+                espacios={activos}
+                unidades={unidades}
+                espacioInicial={parametros.espacio}
+              />
+            </div>
+          )
         )}
 
         <Filtros>
@@ -167,15 +169,17 @@ export default async function ReservasPage({
                       </span>
                     </td>
                     <td>
-                      {r.estado === 'confirmada' && (r.propia || esAdministrador) && (
-                        <form action={accionCancelarReserva}>
-                          <input type="hidden" name="consorcio" value={activo.id} />
-                          <input type="hidden" name="reserva" value={r.id} />
-                          <button className="boton boton--terciario" type="submit">
-                            Cancelar
-                          </button>
-                        </form>
-                      )}
+                      {r.estado === 'confirmada' &&
+                        (r.propia || esAdministrador) &&
+                        !activo.archivadoEn && (
+                          <form action={accionCancelarReserva}>
+                            <input type="hidden" name="consorcio" value={activo.id} />
+                            <input type="hidden" name="reserva" value={r.id} />
+                            <button className="boton boton--terciario" type="submit">
+                              Cancelar
+                            </button>
+                          </form>
+                        )}
                     </td>
                   </tr>
                 ))}

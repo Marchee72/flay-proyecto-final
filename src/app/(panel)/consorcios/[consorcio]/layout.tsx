@@ -1,4 +1,7 @@
 import { cookies } from 'next/headers'
+import { Archive } from 'lucide-react'
+
+import { fechaEnArParaMostrar } from '@/compartido/formato'
 
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
@@ -44,7 +47,16 @@ export default async function ConsorcioLayout({
 
   return (
     <Marco consorcio={{ consorcios, activoId: activo.id, base: `/consorcios/${activo.id}`, roles }}>
-      {recordado !== activo.id && <RecordarConsorcio id={activo.id} />}
+      {recordado !== activo.id && !activo.archivadoEn && <RecordarConsorcio id={activo.id} />}
+      {activo.archivadoEn && (
+        <p className="aviso" role="status">
+          <Archive className="icono" aria-hidden="true" />
+          <span>
+            Este consorcio está archivado desde el {fechaEnArParaMostrar(activo.archivadoEn)}. Podés
+            consultar su historia, pero no operar.
+          </span>
+        </p>
+      )}
       {children}
     </Marco>
   )

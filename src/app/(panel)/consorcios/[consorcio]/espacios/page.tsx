@@ -34,12 +34,13 @@ export default async function EspaciosPage({ params }: { params: Promise<{ conso
     ])
     // Solo se dibuja lo que el rol puede disparar (RNF-03).
     const administra = roles.includes('administrador')
-    const archivados = administra
-      ? await listarEspaciosArchivados(HABILITACIONES, RELOJ, {
-          usuarioId,
-          consorcioId: activo.id,
-        })
-      : []
+    const archivados =
+      administra && !activo.archivadoEn
+        ? await listarEspaciosArchivados(HABILITACIONES, RELOJ, {
+            usuarioId,
+            consorcioId: activo.id,
+          })
+        : []
 
     return (
       <>
@@ -48,7 +49,7 @@ export default async function EspaciosPage({ params }: { params: Promise<{ conso
           Las reglas del reglamento interno, en datos: lo que el sistema aplica al reservar.
         </p>
 
-        {administra && (
+        {administra && !activo.archivadoEn && (
           <div className="fila-acciones">
             <ModalEspacio consorcioId={activo.id} />
             <Link
@@ -96,7 +97,7 @@ export default async function EspaciosPage({ params }: { params: Promise<{ conso
                   <dt>Horario</dt>
                   <dd>{e.horario ? horarioParaMostrar(e.horario) : 'Cualquier hora'}</dd>
                 </dl>
-                {administra && (
+                {administra && !activo.archivadoEn && (
                   <div className="fila-acciones">
                     <ModalEspacio consorcioId={activo.id} espacio={e} />
                     {e.activo ? (

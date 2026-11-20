@@ -17,12 +17,15 @@ import {
 import { importe } from '@/compartido/dinero'
 import { fechaParaMostrar, importeParaMostrar } from '@/compartido/formato'
 import { listarNovedades } from '@/aplicacion/comunicacion/novedades'
+import { misAdministradoras } from '@/aplicacion/administradoras/mis-administradoras'
+import { previaDeEliminarConsorcio } from '@/aplicacion/consorcios/archivar-consorcio'
 import { verResumenConsorcio } from '@/aplicacion/consorcios/resumen'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 
 import { DescartarNovedad } from '../../comunicacion/descartar-novedad'
 import { UrgenciaDeReclamo } from './reclamos/etiquetas'
 import { AvisoDeError, conConsorcio } from '../../con-consorcio'
+import { ModalEliminarConsorcio } from './modal-eliminar-consorcio'
 
 export const metadata: Metadata = { title: 'Resumen — Flay' }
 
@@ -67,7 +70,17 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
     return <AvisoDeError error={error} />
   }
 
-  const administra = resumen.roles.includes('administrador')
+  const archivado = !!activo.archivadoEn
+  const administra = resumen.roles.includes('administrador') && !archivado
+  // Eliminar es del nivel de la administradora, no del rol en el consorcio: si la
+  // previa no autoriza, el boton no se dibuja (el caso de uso vuelve a autorizar).
+  const previaDeEliminar =
+    !archivado && (await misAdministradoras(HABILITACIONES, RELOJ, usuarioId)).length > 0
+      ? await previaDeEliminarConsorcio(HABILITACIONES, RELOJ, {
+          usuarioId,
+          consorcioId: activo.id,
+        }).catch(() => null)
+      : null
   const soloLoPropio = !resumen.roles.some((r) => r === 'administrador' || r === 'consejo')
 
   // Rubros: los primeros por nombre y el resto junto, con su parte del total.
@@ -114,20 +127,27 @@ export default async function ResumenPage({ params }: { params: Promise<{ consor
             {resumen.periodoAbierto && ` · período abierto ${resumen.periodoAbierto.etiqueta}`}
           </p>
         </div>
-        {administra && (
+        {(administra || previaDeEliminar) && (
           <div className="cabecera-pagina__acciones">
-            <Link className="boton boton--fantasma" href={`${base}/pagos?abrir=1`}>
-              <Wallet className="icono" aria-hidden="true" />
-              Registrar pago
-            </Link>
-            <Link className="boton boton--fantasma" href={`${base}/periodos`}>
-              <CalendarDays className="icono" aria-hidden="true" />
-              {resumen.periodoAbierto ? 'Liquidar' : 'Períodos'}
-            </Link>
-            <Link className="boton boton--primario" href={`${base}/gastos?abrir=1`}>
-              <Plus className="icono" aria-hidden="true" />
-              Cargar gasto
-            </Link>
+            {administra && (
+              <>
+                <Link className="boton boton--fantasma" href={`${base}/pagos?abrir=1`}>
+                  <Wallet className="icono" aria-hidden="true" />
+                  Registrar pago
+                </Link>
+                <Link className="boton boton--fantasma" href={`${base}/periodos`}>
+                  <CalendarDays className="icono" aria-hidden="true" />
+                  {resumen.periodoAbierto ? 'Liquidar' : 'Períodos'}
+                </Link>
+                <Link className="boton boton--primario" href={`${base}/gastos?abrir=1`}>
+                  <Plus className="icono" aria-hidden="true" />
+                  Cargar gasto
+                </Link>
+              </>
+            )}
+            {previaDeEliminar && (
+              <ModalEliminarConsorcio consorcioId={activo.id} previa={previaDeEliminar} />
+            )}
           </div>
         )}
       </div>

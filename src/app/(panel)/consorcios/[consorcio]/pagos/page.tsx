@@ -138,7 +138,7 @@ export default async function PagosPage({
         <p className="apagado">Estado de cuenta por unidad.</p>
 
         <div className="fila-acciones">
-          {roles.includes('administrador') && (
+          {roles.includes('administrador') && !activo.archivadoEn && (
             <ModalPago
               consorcioId={activo.id}
               unidades={cuentas.map((cuenta) => ({
@@ -156,7 +156,7 @@ export default async function PagosPage({
               abrir={parametros.abrir === '1'}
             />
           )}
-          {roles.includes('administrador') && estadoPasarela && (
+          {roles.includes('administrador') && !activo.archivadoEn && estadoPasarela && (
             <ModalConfiguracionPasarela
               consorcioId={activo.id}
               configurada={estadoPasarela.configurado}

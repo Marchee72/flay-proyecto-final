@@ -37,7 +37,7 @@ export default async function ProveedoresPage({
         <h1>Proveedores</h1>
         <p className="apagado">Quiénes le facturan al consorcio y en qué rubro suelen hacerlo.</p>
 
-        {administra && (
+        {administra && !activo.archivadoEn && (
           <div className="fila-acciones">
             <BotonModal etiqueta="Nuevo proveedor" titulo="Nuevo proveedor">
               <FormularioProveedor consorcioId={activo.id} rubros={opcionesRubro} />
@@ -59,7 +59,7 @@ export default async function ProveedoresPage({
                   <th scope="col">Razón social</th>
                   <th scope="col">CUIT</th>
                   <th scope="col">Rubro habitual</th>
-                  {administra && (
+                  {administra && !activo.archivadoEn && (
                     <th scope="col">
                       <span className="oculto">Acciones</span>
                     </th>
@@ -72,7 +72,7 @@ export default async function ProveedoresPage({
                     <td>{proveedor.razonSocial}</td>
                     <td>{proveedor.cuit}</td>
                     <td>{proveedor.rubroHabitual ?? '—'}</td>
-                    {administra && (
+                    {administra && !activo.archivadoEn && (
                       <td>
                         <BotonModal
                           etiqueta={

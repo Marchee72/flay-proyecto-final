@@ -22,10 +22,30 @@ let administrador: Escenario
 let reclamoId: string
 let extraccionId: string
 let documentoId: string
+let consorcioArchivadoId: string
 
 test.beforeAll(async () => {
   escenario = await sembrarEscenario('consorcista')
   administrador = await sembrarEscenario('administrador', 'San Martin 7890')
+  // Nivel de administradora y un consorcio archivado, para Archivados y el modal de eliminar (RN-22).
+  await prisma.habilitacionAdministradora.create({
+    data: {
+      usuarioId: administrador.usuarioId,
+      administradoraId: administrador.administradoraId,
+      vigenciaDesde: new Date('2026-01-01'),
+    },
+  })
+  const consorcioArchivado = await prisma.consorcio.create({
+    data: {
+      administradoraId: administrador.administradoraId,
+      nombre: 'Edificio archivado',
+      direccion: 'Rioja 1',
+      localidad: 'Rosario',
+      cuit: `33-${Date.now() % 100_000_000}-4`,
+      archivadoEn: new Date(),
+    },
+  })
+  consorcioArchivadoId = consorcioArchivado.id
   const unidadId = await sembrarUnidadPropia(escenario)
   const reclamo = await prisma.reclamo.create({
     data: {
@@ -147,6 +167,10 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
+  await prisma.consorcio.deleteMany({ where: { id: consorcioArchivadoId } })
+  await prisma.habilitacionAdministradora.deleteMany({
+    where: { administradoraId: administrador.administradoraId },
+  })
   await limpiarServicios(escenario)
   await limpiarServicios(administrador)
   await limpiarEscenario(escenario)
@@ -284,5 +308,28 @@ test('documentos: modal Archivar abierto sin infracciones A/AA', async ({ page }
   await expect(
     page.getByRole('dialog').getByRole('button', { name: 'Archivar', exact: true }),
   ).toBeVisible()
+  await sinInfracciones(page)
+})
+
+test('consorcios: sección Archivados desplegada sin infracciones A/AA', async ({ page }) => {
+  await entrar(page, administrador.correo)
+  await page.goto('/consorcios')
+  await page.getByText('Archivados (1)').click()
+  await expect(page.getByRole('button', { name: 'Restaurar' })).toBeVisible()
+  await sinInfracciones(page)
+})
+
+test('consorcio archivado: aviso de solo lectura sin infracciones A/AA', async ({ page }) => {
+  await entrar(page, administrador.correo)
+  await page.goto(`/consorcios/${consorcioArchivadoId}`)
+  await expect(page.getByText('Este consorcio está archivado desde el')).toBeVisible()
+  await sinInfracciones(page)
+})
+
+test('resumen: modal Eliminar consorcio abierto sin infracciones A/AA', async ({ page }) => {
+  await entrar(page, administrador.correo)
+  await page.goto(`/consorcios/${administrador.consorcioId}`)
+  await page.getByRole('button', { name: 'Eliminar', exact: true }).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
   await sinInfracciones(page)
 })

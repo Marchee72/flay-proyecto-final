@@ -52,12 +52,13 @@ export default async function DocumentosPage({
       rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id),
     ])
     const administra = roles.includes('administrador')
-    const archivados = administra
-      ? await listarDocumentosArchivados(HABILITACIONES, RELOJ, {
-          usuarioId,
-          consorcioId: activo.id,
-        })
-      : []
+    const archivados =
+      administra && !activo.archivadoEn
+        ? await listarDocumentosArchivados(HABILITACIONES, RELOJ, {
+            usuarioId,
+            consorcioId: activo.id,
+          })
+        : []
     const conSugerencias = documentos.filter((d) => !!d.sugerenciasPendientes)
     // El estado de indexacion solo lo ve el administrador; para el resto, basta con que haya documentos.
     const consultable = documentos.some((d) => (d.estadoIndexacion ?? 'indexado') === 'indexado')
@@ -110,7 +111,7 @@ export default async function DocumentosPage({
         >
           Abrir
         </Link>
-        {administra && (
+        {administra && !activo.archivadoEn && (
           <ModalEliminar consorcioId={activo.id} documentoId={d.id} titulo={d.titulo} />
         )}
       </div>
@@ -135,7 +136,9 @@ export default async function DocumentosPage({
                 Preguntarle a la documentación
               </Link>
             )}
-            {administra && <ModalDocumento consorcioId={activo.id} tipos={TIPOS_DOCUMENTO} />}
+            {administra && !activo.archivadoEn && (
+              <ModalDocumento consorcioId={activo.id} tipos={TIPOS_DOCUMENTO} />
+            )}
           </div>
         </div>
         {administra && (

@@ -51,9 +51,11 @@ export default async function ReclamosPage({
         <h1>Reclamos</h1>
         <p className="apagado">Pedidos de intervención, con su historial de estados.</p>
 
-        <div className="fila-acciones">
-          <ModalReclamo consorcioId={activo.id} unidades={unidades} urgencias={URGENCIAS} />
-        </div>
+        {!activo.archivadoEn && (
+          <div className="fila-acciones">
+            <ModalReclamo consorcioId={activo.id} unidades={unidades} urgencias={URGENCIAS} />
+          </div>
+        )}
 
         <Filtros>
           <form className="fila-de-filtros" role="search" aria-label="Filtrar reclamos">

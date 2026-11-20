@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { guardarCredencialesPago } from '@/aplicacion/administradoras/credenciales-pago'
 import {
+  ConsorcioConActaSinFirmar,
   ConsorcioConAsambleaEnCurso,
   ConsorcioConPagosEnCurso,
   eliminarConsorcio,
@@ -12,6 +13,7 @@ import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
 import { iniciarPagoEnLinea } from '@/aplicacion/pagos/iniciar-pago-en-linea'
 import { periodoPara } from '@/aplicacion/periodos/periodos'
+import { reservar } from '@/aplicacion/reservas/reservar'
 import { ConsorcioArchivado, NoEncontrado, RolInsuficiente } from '@/compartido/errores'
 import { procesadorDePrueba } from '@/infraestructura/pagos/procesador-de-prueba'
 import { prismaBase } from '@/infraestructura/prisma'
@@ -100,7 +102,7 @@ const intento = async (datos: {
   })
 }
 
-const asamblea = async (estados: ('convocada' | 'en_curso' | 'finalizada')[]) => {
+const asamblea = async (estados: ('convocada' | 'en_curso' | 'finalizada')[]): Promise<string> => {
   const { id } = await prismaBase.asamblea.create({
     data: {
       consorcioId,
@@ -117,6 +119,7 @@ const asamblea = async (estados: ('convocada' | 'en_curso' | 'finalizada')[]) =>
       data: { estado, ...(estado === 'en_curso' ? { constituidaEn: new Date() } : {}) },
     })
   }
+  return id
 }
 
 describe('eliminar un consorcio (RN-22)', () => {
@@ -134,6 +137,7 @@ describe('eliminar un consorcio (RN-22)', () => {
       accion: 'borrar',
       pagosEnCurso: 0,
       asambleasEnCurso: 0,
+      actasSinFirmar: 0,
       reservasFuturas: 0,
     })
     expect(await eliminarConsorcio(repo, RELOJ, quien())).toBe('borrado')
@@ -174,6 +178,7 @@ describe('eliminar un consorcio (RN-22)', () => {
       accion: 'archivar',
       pagosEnCurso: 1,
       asambleasEnCurso: 0,
+      actasSinFirmar: 0,
       reservasFuturas: 0,
     })
     const error = await eliminarConsorcio(repo, RELOJ, quien()).catch((e) => e)
@@ -227,6 +232,21 @@ describe('eliminar un consorcio (RN-22)', () => {
     expect(error).toBeInstanceOf(ConsorcioConAsambleaEnCurso)
     expect(error.mensajeParaUsuario).toBe(
       'Hay una asamblea convocada o en curso; podés archivar cuando termine.',
+    )
+  })
+
+  it('un acta esperando firmas bloquea', async () => {
+    const asambleaId = await asamblea(['convocada', 'en_curso', 'finalizada'])
+    const acta = await prismaBase.actaAsamblea.create({ data: { consorcioId, asambleaId } })
+    await prismaBase.actaAsamblea.update({
+      where: { id: acta.id },
+      data: { estado: 'a_firmar', hashContenido: 'a'.repeat(64), claveContenido: 'actas/x.pdf' },
+    })
+    expect((await previaDeEliminarConsorcio(repo, RELOJ, quien())).actasSinFirmar).toBe(1)
+    const error = await eliminarConsorcio(repo, RELOJ, quien()).catch((e) => e)
+    expect(error).toBeInstanceOf(ConsorcioConActaSinFirmar)
+    expect(error.mensajeParaUsuario).toBe(
+      'Hay un acta de asamblea esperando firmas; podés archivar cuando esté firmada.',
     )
   })
 
@@ -320,6 +340,30 @@ describe('eliminar un consorcio (RN-22)', () => {
     )
     await expect(iniciado).rejects.toBeInstanceOf(ConsorcioArchivado)
     expect(await prismaBase.intentoDePago.count({ where: { consorcioId } })).toBe(0)
+  })
+
+  it('una reserva que llega mientras se archiva espera al candado y no nace', async () => {
+    const espacio = await prismaBase.espacioComun.create({ data: { consorcioId, nombre: 'SUM' } })
+    let reservada!: Promise<unknown>
+    await prismaBase.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT 1 FROM "Consorcio" WHERE id = ${consorcioId}::uuid FOR UPDATE`
+        reservada = reservar(repo, RELOJ, {
+          usuarioId: inquilino,
+          consorcioId,
+          espacioId: espacio.id,
+          unidadId: unidadA,
+          desde: new Date(RELOJ.ahora().getTime() + 48 * HORA),
+          hasta: new Date(RELOJ.ahora().getTime() + 50 * HORA),
+        })
+        reservada.catch(() => {})
+        await new Promise((listo) => setTimeout(listo, 1500))
+        await tx.$executeRaw`UPDATE "Consorcio" SET archivado_en = now() WHERE id = ${consorcioId}::uuid`
+      },
+      { timeout: 10_000 },
+    )
+    await expect(reservada).rejects.toBeInstanceOf(ConsorcioArchivado)
+    expect(await prismaBase.reserva.count({ where: { consorcioId } })).toBe(0)
   })
 
   it('solo el nivel administradora', async () => {

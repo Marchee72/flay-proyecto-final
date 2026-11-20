@@ -154,6 +154,9 @@ export async function reservar(
       // 3) La base decide la superposicion (SC-005). 4) Aviso.
       try {
         return await prisma.$transaction(async (tx) => {
+          // Como `iniciarPagoEnLinea`: espera a un archivado en curso (RN-22), que
+          // si no cancelaría las futuras sin ver esta.
+          await tx.$queryRaw`SELECT 1 FROM "Consorcio" WHERE id = ${datos.consorcioId}::uuid FOR SHARE`
           const reserva = await tx.reserva.create({
             data: sinConsorcio({
               espacioId: espacio.id,

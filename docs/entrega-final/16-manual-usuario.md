@@ -191,7 +191,7 @@ Si el consorcio sufre modificaciones reglamentarias (ejemplo: subdivisión o ane
 1. Ingrese al resumen del consorcio y presione **Eliminar**. El cuadro de confirmación informa el resultado antes de actuar:
    - **Sin movimiento** (ningún período, gasto, liquidación, pago, reclamo, reserva, asamblea, documento ni novedad): se **borra definitivamente**, junto con sus unidades, espacios y proveedores.
    - **Con historia:** se **archiva**. Se cancelan y avisan las reservas futuras, y el consorcio pasa a **solo lectura** para todos.
-   - **Bloqueado:** no se puede archivar mientras haya un pago en línea sin resolver (se mira hasta 72 horas después de su vencimiento) ni una asamblea convocada o en curso; el botón queda deshabilitado y el cuadro dice qué hay que resolver primero.
+   - **Bloqueado:** no se puede archivar mientras haya un pago en línea sin resolver (se mira hasta 72 horas después de su vencimiento), una asamblea convocada o en curso ni un acta de asamblea esperando firmas; el botón queda deshabilitado y el cuadro dice qué hay que resolver primero.
 2. El consorcio archivado sale de la lista principal y del selector, y aparece en **Archivados (n)** al pie de `/consorcios`. Sigue pudiendo abrirse por enlace: muestra un aviso fijo con la fecha de archivado y oculta los botones que operan (registrar pago, liquidar, cargar gasto, nuevo espacio, invitar usuarios, etc.). Donde un botón siguiera visible, la acción responde «Este consorcio está archivado: se puede consultar, pero no operar» y no cambia nada. Los consorcistas conservan su historial, expensas y pagos para consultar.
 3. **Restaurar** (en Archivados) lo devuelve al uso normal; solo lo hace quien pertenece al nivel de administradora del consorcio.
 

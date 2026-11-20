@@ -1,5 +1,6 @@
 import { conAutorizacionDeAdministradora } from '@/aplicacion/autorizacion'
 import type { Transaccion } from '@/aplicacion/comunicacion/notificar'
+import { HORAS_MARGEN_ACREDITACION } from '@/aplicacion/pagos/conciliar-pago-en-linea'
 import { cancelarReservasFuturas } from '@/aplicacion/reservas/espacios'
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
@@ -18,6 +19,7 @@ export interface PreviaDeEliminarConsorcio {
   accion: 'borrar' | 'archivar'
   pagosEnCurso: number
   asambleasEnCurso: number
+  actasSinFirmar: number
   reservasFuturas: number
 }
 
@@ -33,8 +35,11 @@ export class ConsorcioConAsambleaEnCurso extends ErrorDeAplicacion {
   }
 }
 
-/** La ventana de conciliación de un intento después de vencer (nota 29). */
-const VENTANA_CONCILIACION_MS = 72 * 3_600_000
+export class ConsorcioConActaSinFirmar extends ErrorDeAplicacion {
+  constructor() {
+    super('Hay un acta de asamblea esperando firmas; podés archivar cuando esté firmada.', 'RN-22')
+  }
+}
 
 type Datos = { usuarioId: string; consorcioId: string }
 
@@ -94,7 +99,7 @@ async function previa(
   // El `iniciado` cuenta siempre: puede estar creando su preferencia ahora mismo.
   const pagosEnCurso = await cliente.intentoDePago.count({
     where: {
-      venceEn: { gt: new Date(ahora.getTime() - VENTANA_CONCILIACION_MS) },
+      venceEn: { gt: new Date(ahora.getTime() - HORAS_MARGEN_ACREDITACION * 3_600_000) },
       OR: [
         { estado: 'iniciado' },
         { estado: { in: ['rechazado', 'vencido'] }, preferenciaId: { not: null } },
@@ -104,6 +109,8 @@ async function previa(
   const asambleasEnCurso = await cliente.asamblea.count({
     where: { estado: { in: ['convocada', 'en_curso'] } },
   })
+  // Un acta en firma tiene que poder cerrarse (nota 30); archivada, no se firmaría nunca.
+  const actasSinFirmar = await cliente.actaAsamblea.count({ where: { estado: 'a_firmar' } })
   const reservasFuturas = await cliente.reserva.count({
     where: { estado: 'confirmada', hasta: { gt: ahora } },
   })
@@ -111,6 +118,7 @@ async function previa(
     accion: Object.values(movimiento).some((n) => n > 0) ? 'archivar' : 'borrar',
     pagosEnCurso,
     asambleasEnCurso,
+    actasSinFirmar,
     reservasFuturas,
   }
 }
@@ -165,6 +173,7 @@ export async function eliminarConsorcio(
       }
       if (estado.pagosEnCurso > 0) throw new ConsorcioConPagosEnCurso(estado.pagosEnCurso)
       if (estado.asambleasEnCurso > 0) throw new ConsorcioConAsambleaEnCurso()
+      if (estado.actasSinFirmar > 0) throw new ConsorcioConActaSinFirmar()
       await cancelarReservasFuturas(
         tx,
         ahora,

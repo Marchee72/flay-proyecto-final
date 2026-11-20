@@ -45,8 +45,20 @@ export default async function ConsorcioLayout({
   const roles = await rolesEn(HABILITACIONES, RELOJ, usuarioId, activo.id)
   const recordado = (await cookies()).get(NOMBRE_GALLETA_CONSORCIO)?.value
 
+  // Los archivados salen del selector (RN-22); si el activo es uno, queda marcado.
+  const opciones = consorcios
+    .filter((c) => !c.archivadoEn || c.id === activo.id)
+    .map((c) => (c.archivadoEn ? { ...c, nombre: `${c.nombre} (archivado)` } : c))
+
   return (
-    <Marco consorcio={{ consorcios, activoId: activo.id, base: `/consorcios/${activo.id}`, roles }}>
+    <Marco
+      consorcio={{
+        consorcios: opciones,
+        activoId: activo.id,
+        base: `/consorcios/${activo.id}`,
+        roles,
+      }}
+    >
       {recordado !== activo.id && !activo.archivadoEn && <RecordarConsorcio id={activo.id} />}
       {activo.archivadoEn && (
         <p className="aviso" role="status">

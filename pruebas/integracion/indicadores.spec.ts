@@ -85,6 +85,7 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
+  await prismaBase.$executeRaw`UPDATE "Consorcio" SET archivado_en = NULL`
   await prismaBase.$executeRaw`DELETE FROM "Notificacion"`
   await prismaBase.trabajoPendiente.deleteMany({})
   await prismaBase.$executeRaw`DELETE FROM "PagoImputacion"`
@@ -198,6 +199,21 @@ describe('I-1 morosidad (SC-009, SC-022)', () => {
     await expect(verPanel(repo, RELOJ, { usuarioId: consorcista })).rejects.toThrow(
       'Tu rol no permite',
     )
+  })
+})
+
+describe('I-6 panel de la cartera (RN-22)', () => {
+  it('un consorcio archivado no suma a la cartera ni aparece en el panel', async () => {
+    await emitirMes(otroConsorcioId, 1, '1000.00')
+    await refrescarVistas()
+    const antes = await verPanel(repo, RELOJ, { usuarioId: administrador })
+    expect(antes.consorcios.map((c) => c.id).sort()).toEqual([consorcioId, otroConsorcioId].sort())
+    expect(antes.morosidadCartera).not.toBeNull()
+
+    await prismaBase.$executeRaw`UPDATE "Consorcio" SET archivado_en = now() WHERE id = ${otroConsorcioId}::uuid`
+    const despues = await verPanel(repo, RELOJ, { usuarioId: administrador })
+    expect(despues.consorcios.map((c) => c.id)).toEqual([consorcioId])
+    expect(despues.morosidadCartera).toBeNull()
   })
 })
 

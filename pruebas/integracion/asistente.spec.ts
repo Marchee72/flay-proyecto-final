@@ -509,6 +509,20 @@ describe('modo cartera (FR-017, FR-018, RT-04)', () => {
     expect((await novedades()).map((f) => f.consorcioId)).toEqual([consorcioId])
   })
 
+  it('un consorcio archivado no entra al aviso de cartera ni al abanico (RN-22)', async () => {
+    await prismaBase.$executeRaw`UPDATE "Consorcio" SET archivado_en = now() WHERE id = ${otroConsorcioId}::uuid`
+    const p = await pedirCartera(administrador, aviso)
+    if (p.modo !== 'propuesta') throw new Error('se esperaba una propuesta')
+    expect(p.resumen).toMatch(/en los 1 consorcios/)
+    const r = await confirmar(administrador, p.propuestaId)
+    expect(r.resultado).toMatchObject({ texto: 'Publicada en los 1 consorcios.' })
+    expect((await novedades()).map((f) => f.consorcioId)).toEqual([consorcioId])
+
+    const lectura = await pedirCartera(administrador, 'ver_espacios')
+    if (lectura.modo !== 'respuesta') throw new Error('se esperaba una respuesta')
+    expect(lectura.enlaces.map((e) => e.consorcioId)).toEqual([consorcioId])
+  })
+
   it('el consorcista no recibe el aviso a la cartera', async () => {
     const r = await pedirCartera(vecino.id, aviso)
     expect(r.modo).not.toBe('propuesta')

@@ -111,6 +111,7 @@ los dos nuevos).
 |---|---|
 | Intento de pago en línea abierto (no confirmado y dentro de `venceEn` + 72 h, la ventana de conciliación de la nota 29) | **Bloquea.** El modal lo dice: «Hay n pagos en línea sin confirmar; podés archivar cuando terminen». Sin esto, un pago ya cobrado por la pasarela rebotaría contra el candado y quedaría sin registrar. |
 | Asamblea convocada o en curso | **Bloquea.** No se congela una votación a medio camino. |
+| Acta de asamblea esperando firmas (`a_firmar`) | **Bloquea.** Archivada, el acta no se firmaría nunca y el recordatorio diario rebotaría contra el candado. |
 | Reservas futuras confirmadas | **Se cancelan con aviso**, en la misma transacción, antes de marcar `archivado_en`. |
 | Deuda impaga, período abierto | **No bloquean.** Quedan como historia: el consorcista ve lo que debía, pero ya no puede pagarlo por el sistema. |
 

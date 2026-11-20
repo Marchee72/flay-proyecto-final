@@ -19,12 +19,19 @@ export const DIAS_PARA_FIRMAR = 10
 export async function recordarFirmasPendientes(reloj: Reloj): Promise<{ avisadas: number }> {
   const limite = new Date(reloj.ahora().getTime() - DIAS_PARA_FIRMAR * DIA_MS)
   const vencidas = await prismaBase.actaAsamblea.findMany({
-    where: { estado: 'a_firmar', recordatorioEnviadoEn: null, enviadaAFirmarEn: { lt: limite } },
+    where: {
+      estado: 'a_firmar',
+      recordatorioEnviadoEn: null,
+      enviadaAFirmarEn: { lt: limite },
+      // Un consorcio archivado no se escribe (RN-22): marcar el recordatorio rebotaría.
+      consorcio: { archivadoEn: null },
+    },
     select: { id: true, consorcioId: true },
   })
 
   let avisadas = 0
   for (const { id, consorcioId } of vencidas) {
+    // Cada acta por su cuenta: una que falla no deja sin aviso a las que siguen.
     await enConsorcio(consorcioId, async () => {
       const acta = await prisma.actaAsamblea.findFirst({
         where: { id, estado: 'a_firmar', recordatorioEnviadoEn: null },
@@ -55,7 +62,7 @@ export async function recordarFirmasPendientes(reloj: Reloj): Promise<{ avisadas
         })
       })
       avisadas += 1
-    })
+    }).catch((error) => console.error('[recordatorio de firmas]', id, error))
   }
   return { avisadas }
 }

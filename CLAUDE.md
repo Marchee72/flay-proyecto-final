@@ -472,10 +472,15 @@ Treinta y cinco decisiones que costaron una vuelta y conviene no volver a tomar 
     y lo usan `conAutorizacion`, `traducirErrorDeBase` y la cola (`drenar` marca el trabajo despachado
     **sin reintento**, no tiene sentido reintentar). Archivar un consorcio se bloquea con un intento de
     pago sin resolver dentro de las **72 h** que la conciliación todavía mira —`iniciado`, o `rechazado`/
-    `vencido` **con** `preferenciaId` (nota 29)—, o con una asamblea `convocada`/`en_curso`; cancela y avisa
-    las reservas futuras. `eliminarConsorcio` toma `FOR UPDATE` sobre la fila de `Consorcio` e
-    `iniciarPagoEnLinea` `FOR SHARE`: o el intento nace antes y bloquea, o espera al commit y rebota
-    contra el candado. **Toda lectura de lo vigente filtra `archivadoEn: null`** (espacios, documentos,
+    `vencido` **con** `preferenciaId` (nota 29)—, con una asamblea `convocada`/`en_curso` o con un acta
+    `a_firmar`; cancela y avisa las reservas futuras. `eliminarConsorcio` toma `FOR UPDATE` sobre la
+    fila de `Consorcio`, e `iniciarPagoEnLinea` y `reservar` `FOR SHARE`: o lo nuevo nace antes y el
+    archivado lo ve, o espera al commit y rebota contra el candado. Las tablas hijas **sin**
+    `consorcio_id` que se escriben sin tocar a su padre (`Comprobante`, `Ocupacion`, `SugerenciaReclamo`,
+    `FragmentoDocumento`) llevan `fn_consorcio_no_archivado_por_padre`; `DetalleLiquidacion` no, a
+    propósito (el PDF de la expensa escribe su clave), y `archivado-base.spec.ts` obliga a clasificar
+    toda tabla sin `consorcio_id`. Las vistas de cartera (bandeja, panel, asistente en «todos») usan
+    `vigentes()`: un archivado no es cartera, aunque por enlace se siga leyendo. **Toda lectura de lo vigente filtra `archivadoEn: null`** (espacios, documentos,
     consorcios al alcance, consulta asistida), **y la historia no** (reservas pasadas, el historial
     con sus espacios archivados, el acta y su documento). La interfaz esconde los controles de escritura
     con `!activo.archivadoEn` donde se puede; donde no, el candado es la garantía y la acción

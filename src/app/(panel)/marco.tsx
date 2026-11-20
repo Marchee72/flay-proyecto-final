@@ -53,7 +53,9 @@ export async function Marco({
   ])
   const recordado = (await cookies()).get(NOMBRE_GALLETA_CONSORCIO)?.value
   const anclaId =
-    consorcio?.activoId ?? alAlcance.find((c) => c.id === recordado)?.id ?? alAlcance[0]?.id
+    consorcio?.activoId ??
+    alAlcance.find((c) => c.id === recordado)?.id ??
+    (alAlcance.find((c) => !c.archivadoEn) ?? alAlcance[0])?.id
 
   return (
     <div className="marco">

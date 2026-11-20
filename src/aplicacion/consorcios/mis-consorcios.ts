@@ -31,6 +31,15 @@ export async function misConsorcios(
   return filas.map((f) => ({ ...f, archivadoEn: f.archivadoEn?.toISOString() ?? null }))
 }
 
+/** Los consorcios al alcance que no están archivados: la cartera que se opera (RN-22). */
+export async function vigentes(
+  repositorio: RepositorioHabilitaciones,
+  reloj: Reloj,
+  usuarioId: string,
+) {
+  return (await misConsorcios(repositorio, reloj, usuarioId)).filter((c) => !c.archivadoEn)
+}
+
 /**
  * Los roles que el usuario tiene sobre un consorcio, para que la pantalla no
  * ofrezca lo que el rol no puede hacer (RNF-03). **No autoriza nada**: la

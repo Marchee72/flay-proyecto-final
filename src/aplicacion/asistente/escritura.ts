@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
+import { vigentes } from '@/aplicacion/consorcios/mis-consorcios'
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { momentoParaMostrar } from '@/compartido/formato'
 import { publicarNovedad } from '@/aplicacion/comunicacion/novedades'
@@ -50,9 +50,12 @@ const PublicarNovedad = z.object({
   vigenteHasta: z.string().optional(),
 })
 
-/** Los consorcios donde la persona es administradora: es el alcance real de un aviso de cartera. */
+/**
+ * Los consorcios vigentes donde la persona es administradora: es el alcance real
+ * de un aviso de cartera. Un archivado no se opera (RN-22).
+ */
 async function consorciosAdministrados(ctx: ContextoHerramienta) {
-  const alcance = await misConsorcios(ctx.repositorio, ctx.reloj, ctx.usuarioId)
+  const alcance = await vigentes(ctx.repositorio, ctx.reloj, ctx.usuarioId)
   const hoy = ctx.reloj.hoy()
   const accesos = await Promise.all(
     alcance.map((c) => ctx.repositorio.accesoVigente(ctx.usuarioId, c.id, hoy)),

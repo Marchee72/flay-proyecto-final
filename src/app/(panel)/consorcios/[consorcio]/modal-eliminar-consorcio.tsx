@@ -10,6 +10,8 @@ function bloqueo(previa: PreviaDeEliminarConsorcio): string | null {
     return `Hay ${previa.pagosEnCurso} pagos en línea sin confirmar; podés archivar cuando terminen.`
   if (previa.asambleasEnCurso > 0)
     return 'Hay una asamblea convocada o en curso; podés archivar cuando termine.'
+  if (previa.actasSinFirmar > 0)
+    return 'Hay un acta de asamblea esperando firmas; podés archivar cuando esté firmada.'
   return null
 }
 

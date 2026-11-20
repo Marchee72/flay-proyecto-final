@@ -31,7 +31,7 @@ export function MenuPuntos({ nombre, children }: { nombre: string; children: Rea
 
   return (
     <details ref={menu} className="menu-puntos">
-      <summary className="boton boton--terciario boton--icono" aria-label={nombre}>
+      <summary role="button" className="boton boton--terciario boton--icono" aria-label={nombre}>
         <Ellipsis className="icono" aria-hidden="true" />
       </summary>
       <div className="menu-puntos__panel">{children}</div>

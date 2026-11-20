@@ -98,6 +98,20 @@ test.beforeAll(async () => {
     },
   })
   documentoId = documento.id
+  // Un documento archivado, para la sección Eliminados (RN-22).
+  await prisma.documentoConsorcio.create({
+    data: {
+      consorcioId: administrador.consorcioId,
+      tipo: 'otro',
+      titulo: 'Póliza archivada',
+      claveAlmacenamiento: `documentos/${administrador.consorcioId}/a11y/poliza.pdf`,
+      tipoContenido: 'application/pdf',
+      visibleConsorcistas: true,
+      cargadoPor: administrador.usuarioId,
+      estadoIndexacion: 'indexado',
+      archivadoEn: new Date(),
+    },
+  })
   await prisma.sugerenciaConfiguracion.createMany({
     data: [
       {
@@ -254,3 +268,21 @@ for (const [espacio, boton] of [
     ).toBeVisible()
     await sinInfracciones(page)
   })
+
+test('documentos: sección Eliminados desplegada sin infracciones A/AA', async ({ page }) => {
+  await entrar(page, administrador.correo)
+  await page.goto(`/consorcios/${administrador.consorcioId}/documentos`)
+  await page.getByText('Eliminados (1)').click()
+  await expect(page.getByRole('button', { name: 'Restaurar' })).toBeVisible()
+  await sinInfracciones(page)
+})
+
+test('documentos: modal Archivar abierto sin infracciones A/AA', async ({ page }) => {
+  await entrar(page, administrador.correo)
+  await page.goto(`/consorcios/${administrador.consorcioId}/documentos`)
+  await page.getByRole('button', { name: 'Eliminar «Reglamento interno»' }).click()
+  await expect(
+    page.getByRole('dialog').getByRole('button', { name: 'Archivar', exact: true }),
+  ).toBeVisible()
+  await sinInfracciones(page)
+})

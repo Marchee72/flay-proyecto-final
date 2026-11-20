@@ -322,7 +322,13 @@ export async function verDocumento(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
   datos: { usuarioId: string; consorcioId: string; documentoId: string },
-): Promise<{ titulo: string; tipoContenido: string; vista: string; descarga: string }> {
+): Promise<{
+  titulo: string
+  tipoContenido: string
+  vista: string
+  descarga: string
+  archivado: boolean
+}> {
   return conAutorizacion(
     repositorio,
     reloj,
@@ -342,7 +348,13 @@ export async function verDocumento(
         almacen.resolverLecturaAutorizada(documento.claveAlmacenamiento, 600, { enLinea: true }),
         almacen.resolverLecturaAutorizada(documento.claveAlmacenamiento, 600),
       ])
-      return { titulo: documento.titulo, tipoContenido: documento.tipoContenido, vista, descarga }
+      return {
+        titulo: documento.titulo,
+        tipoContenido: documento.tipoContenido,
+        vista,
+        descarga,
+        archivado: documento.archivadoEn !== null,
+      }
     },
   )
 }

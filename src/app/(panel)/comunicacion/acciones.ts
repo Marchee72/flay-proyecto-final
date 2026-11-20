@@ -13,6 +13,7 @@ import {
   cargarDocumento,
   eliminarDocumento,
   reindexarDocumento,
+  restaurarDocumento,
   TIPOS_DOCUMENTO,
 } from '@/aplicacion/comunicacion/documentos'
 import { descartarNovedad, publicarNovedad } from '@/aplicacion/comunicacion/novedades'
@@ -158,7 +159,25 @@ export async function accionEliminarDocumento(datos: FormData): Promise<void> {
     )
   }
   revalidatePath('/consorcios/[consorcio]/documentos', 'page')
-  redirect(conHecho(`/consorcios/${consorcioId}/documentos`, 'documento-eliminado'))
+  redirect(conHecho(`/consorcios/${consorcioId}/documentos`, 'documento-archivado'))
+}
+
+export async function accionRestaurarDocumento(datos: FormData): Promise<void> {
+  const usuarioId = await usuarioDeLaSesion()
+  if (!usuarioId) return irAIngresar()
+  const consorcioId = texto(datos, 'consorcio')
+  try {
+    await restaurarDocumento(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      documentoId: texto(datos, 'documento'),
+    })
+  } catch (error) {
+    if (!(error instanceof ErrorDeAplicacion)) throw error
+    redirect(conError(`/consorcios/${consorcioId}/documentos`, error.mensajeParaUsuario))
+  }
+  revalidatePath('/consorcios/[consorcio]/documentos', 'page')
+  redirect(conHecho(`/consorcios/${consorcioId}/documentos`, 'documento-restaurado'))
 }
 
 /**

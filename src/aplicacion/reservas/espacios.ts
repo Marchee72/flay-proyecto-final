@@ -2,7 +2,7 @@ import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
-import { notificar } from '@/aplicacion/comunicacion/notificar'
+import { notificar, type Transaccion } from '@/aplicacion/comunicacion/notificar'
 import {
   dentroDelHorario,
   errorDeHorario,
@@ -505,27 +505,13 @@ export async function eliminarEspacio(
           await tx.espacioComun.deleteMany({ where: { id: espacio.id } })
           return 'borrado' as const
         }
-        const futuras = await tx.reserva.findMany({
-          where: { espacioId: espacio.id, estado: 'confirmada', hasta: { gt: reloj.ahora() } },
-          select: { id: true, solicitadaPor: true },
-        })
-        if (futuras.length > 0) {
-          await tx.reserva.updateMany({
-            where: { id: { in: futuras.map((r) => r.id) } },
-            data: { estado: 'cancelada', motivoRechazo: 'El espacio fue eliminado' },
-          })
-          await notificar(
-            tx,
-            futuras.map((r) => ({
-              usuarioId: r.solicitadaPor,
-              tipo: 'reserva_rechazada' as const,
-              titulo: `Reserva cancelada: ${espacio.nombre}`,
-              cuerpo: `El espacio ${espacio.nombre} fue eliminado y tu reserva quedó cancelada.`,
-              entidadTipo: 'Reserva',
-              entidadId: r.id,
-            })),
-          )
-        }
+        await cancelarReservasFuturas(
+          tx,
+          reloj.ahora(),
+          { espacioId: espacio.id },
+          'El espacio fue eliminado',
+          (nombre) => `El espacio ${nombre} fue eliminado y tu reserva quedó cancelada.`,
+        )
         await tx.espacioComun.update({
           where: { id: espacio.id },
           data: { archivadoEn: reloj.ahora() },
@@ -533,6 +519,39 @@ export async function eliminarEspacio(
         return 'archivado' as const
       })
     },
+  )
+}
+
+/**
+ * Cancela y avisa las reservas confirmadas que todavía no terminaron (RN-22): al
+ * archivar un espacio, o todas las del consorcio al archivarlo.
+ */
+export async function cancelarReservasFuturas(
+  tx: Transaccion,
+  ahora: Date,
+  filtro: { espacioId?: string },
+  motivo: string,
+  cuerpo: (espacio: string) => string,
+): Promise<void> {
+  const futuras = await tx.reserva.findMany({
+    where: { ...filtro, estado: 'confirmada', hasta: { gt: ahora } },
+    select: { id: true, solicitadaPor: true, espacio: { select: { nombre: true } } },
+  })
+  if (futuras.length === 0) return
+  await tx.reserva.updateMany({
+    where: { id: { in: futuras.map((r) => r.id) } },
+    data: { estado: 'cancelada', motivoRechazo: motivo },
+  })
+  await notificar(
+    tx,
+    futuras.map((r) => ({
+      usuarioId: r.solicitadaPor,
+      tipo: 'reserva_rechazada' as const,
+      titulo: `Reserva cancelada: ${r.espacio.nombre}`,
+      cuerpo: cuerpo(r.espacio.nombre),
+      entidadTipo: 'Reserva',
+      entidadId: r.id,
+    })),
   )
 }
 

@@ -166,16 +166,21 @@ export async function iniciarPagoEnLinea(
       const finDelTramo = deuda.vigenteHasta ? finDelDiaArgentino(deuda.vigenteHasta) : null
       const venceEn = finDelTramo && finDelTramo < en24h ? finDelTramo : en24h
 
-      // Crear intento de pago con aislamiento por consorcio
-      const intento = await prisma.intentoDePago.create({
-        data: sinConsorcio({
-          unidadId: detalle.unidadId,
-          detalleLiquidacionId: detalle.id,
-          importe: importeACobrar,
-          iniciadoPor: datos.usuarioId,
-          venceEn,
-          estado: 'iniciado',
-        }),
+      // El candado compartido sobre el consorcio espera a un `eliminarConsorcio`
+      // en curso (RN-22): o el intento nace antes y bloquea el archivado, o el
+      // consorcio ya esta archivado y el candado de la base rechaza el intento.
+      const intento = await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT 1 FROM "Consorcio" WHERE id = ${datos.consorcioId}::uuid FOR SHARE`
+        return tx.intentoDePago.create({
+          data: sinConsorcio({
+            unidadId: detalle.unidadId,
+            detalleLiquidacionId: detalle.id,
+            importe: importeACobrar,
+            iniciadoPor: datos.usuarioId,
+            venceEn,
+            estado: 'iniciado',
+          }),
+        })
       })
 
       const urlPublica =

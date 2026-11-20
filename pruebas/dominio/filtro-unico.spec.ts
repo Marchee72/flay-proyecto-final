@@ -21,6 +21,8 @@ const PERMITIDOS: Record<string, string> = {
     'lee del consorcio, por su propio identificador, el dia de vencimiento y la tasa de mora',
   'src/aplicacion/consorcios/alta-consorcio.ts':
     'crea el consorcio: trabaja por encima del aislamiento, no hay contexto todavia',
+  'src/aplicacion/consorcios/archivar-consorcio.ts':
+    'archiva, restaura o borra el consorcio, direccionado por su propio identificador (como alta-consorcio)',
   'src/aplicacion/consorcios/registrar-ocupacion.ts': 'otorga la habilitacion del consorcista',
   'src/aplicacion/identidad/invitar-persona.ts': 'otorga la habilitacion de la persona invitada',
   'src/aplicacion/indicadores/indicadores.ts':

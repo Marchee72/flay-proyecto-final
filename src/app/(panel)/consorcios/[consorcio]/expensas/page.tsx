@@ -217,9 +217,21 @@ function MisUnidades({
   // puede ver, y son pocas por unidad.
   const periodosEmitidos = [...new Map(todas.map((f) => [f.expensa.periodoId, f.expensa.periodo]))]
   const filas = periodo ? todas.filter((f) => f.expensa.periodoId === periodo) : todas
+  const conDeudaAnterior = unidades.filter((u) => u.deudaAnteriorAlIngreso !== null)
 
   return (
     <>
+      {conDeudaAnterior.map((unidad) => (
+        <p key={unidad.unidadId} className="aviso">
+          <Siren className="icono" aria-hidden="true" />
+          <span>
+            La unidad {unidad.designacion} tiene deuda anterior al ingreso del inquilino por{' '}
+            {importeParaMostrar(unidad.deudaAnteriorAlIngreso!)}. Para saldarla, corresponde
+            comunicarse con el propietario.
+          </span>
+        </p>
+      ))}
+
       {todas.length > 0 && (
         <Filtros>
           <form method="get" className="fila-de-filtros">

@@ -5,6 +5,10 @@ import { conversar, type EventoAsistente } from '@/aplicacion/asistente/conversa
 import { herramientasPara } from '@/aplicacion/asistente/herramientas'
 import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
+import { registrarGasto } from '@/aplicacion/gastos/registrar-gasto'
+import { liquidarPeriodo } from '@/aplicacion/liquidacion/liquidar'
+import { cerrarPeriodo } from '@/aplicacion/liquidacion/periodos'
+import { periodoPara } from '@/aplicacion/periodos/periodos'
 import { registrarReclamo } from '@/aplicacion/reclamos/registrar'
 import { altaEspacio } from '@/aplicacion/reservas/espacios'
 import { reservar } from '@/aplicacion/reservas/reservar'
@@ -117,11 +121,6 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await prismaBase.$executeRaw`DELETE FROM "Notificacion"`
-  await prismaBase.trabajoPendiente.deleteMany({})
-  await prismaBase.$executeRaw`DELETE FROM "Reserva"`
-  await prismaBase.$executeRaw`DELETE FROM "Ocupacion"`
-  await prismaBase.$executeRaw`DELETE FROM "CoeficienteHistorico"`
-  await prismaBase.$executeRaw`DELETE FROM "Unidad"`
   await limpiar()
 })
 
@@ -631,5 +630,53 @@ describe('privacidad hacia el LLM (canario PII — RF-27, RNF-13)', () => {
     expect(r.ejecutada).toBe(true)
     const guardado = await prismaBase.reclamo.findUnique({ where: { id: reclamoId } })
     expect(guardado?.responsableId).toBe(administrador)
+  })
+
+  it('el asistente no le muestra al inquilino expensas anteriores a su ingreso (RN-23)', async () => {
+    const rubro = await prismaBase.rubroGasto.upsert({
+      where: { nombre: 'Rubro de prueba' },
+      update: {},
+      create: { nombre: 'Rubro de prueba', clasificacion: 'ordinario' },
+    })
+
+    const emitir = async (mes: number) => {
+      const { periodoId } = await periodoPara(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        anio: 2026,
+        mes,
+      })
+      await registrarGasto(repo, RELOJ, {
+        usuarioId: administrador,
+        consorcioId,
+        periodoId,
+        rubroId: rubro.id,
+        importe: '1000.00',
+        fecha: new Date(`2026-${String(mes).padStart(2, '0')}-05`),
+        descripcion: `Gasto ${mes}`,
+      })
+      await cerrarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
+      await liquidarPeriodo(repo, RELOJ, { usuarioId: administrador, consorcioId, periodoId })
+    }
+
+    await emitir(7)
+    await emitir(8)
+
+    const inquilinoNuevo = await crearUsuario('Ines', 'Inquilina')
+    await registrarOcupacion(repo, RELOJ, {
+      usuarioId: administrador,
+      consorcioId,
+      unidadId: unidadA,
+      personaId: inquilinoNuevo.personaId,
+      tipo: 'inquilino',
+      desde: new Date('2026-08-01'),
+    })
+
+    vistos.length = 0
+    const r = await pedir(inquilinoNuevo.id, 'ver_expensas')
+    expect(r.modo).toBe('respuesta')
+    const todo = vistos.join('\n')
+    expect(todo).toContain('08/2026')
+    expect(todo).not.toContain('07/2026')
   })
 })

@@ -1,13 +1,19 @@
 import { ErrorDeAplicacion, NoEncontrado } from '@/compartido/errores'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 import type { Reloj } from '@/dominio/contratos/reloj'
+import { finDelAcceso } from '@/dominio/ocupaciones/vigencia'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 import {
+  ocupacionesDePersonaEn,
   ocupantesVigentes,
   registrarOcupacion as insertarOcupacion,
   type TipoDeOcupacion,
 } from '@/infraestructura/repositorios/ocupaciones'
+
+type ClienteBase =
+  | Parameters<Parameters<typeof prismaBase.$transaction>[0]>[0]
+  | typeof prismaBase
 
 export class InquilinoSuperpuesto extends ErrorDeAplicacion {
   constructor() {
@@ -30,10 +36,10 @@ export const comoInquilinoSuperpuesto = (error: unknown): unknown =>
  *    ademas del administrador, el propietario vigente de una unidad puede
  *    registrar al inquilino **de esa unidad** y de ninguna otra. Quien lo
  *    intenta sobre la del vecino recibe «no encontrado», nunca «prohibido».
- * 2. El alta crea la habilitacion de consorcista en la **misma transaccion**
- *    (FR-008c): si no, alguien dueño en tres consorcios necesita tres
- *    habilitaciones cargadas a mano y olvidarse de una deja a un propietario
- *    sin ver su propio edificio.
+ * 2. El alta sincroniza la habilitacion de consorcista en la **misma
+ *    transaccion** (FR-008c, RN-24): si no, alguien dueño en tres consorcios
+ *    necesita tres habilitaciones cargadas a mano y olvidarse de una deja a un
+ *    propietario sin ver su propio edificio.
  *
  * La superposicion de dos inquilinos vigentes **no se verifica aca**: la
  * rechaza la restriccion de exclusion de la base (regla RN-09, SC-005).
@@ -71,25 +77,32 @@ export async function registrarOcupacion(
         await exigirPropietarioDeLaUnidad(datos, reloj)
       }
 
-      const { ocupacionId } = await insertarOcupacion({
-        unidadId: datos.unidadId,
-        personaId: datos.personaId,
-        tipo: datos.tipo,
-        desde: datos.desde,
-        hasta: datos.hasta ?? null,
-      }).catch((error) => {
-        throw comoInquilinoSuperpuesto(error)
-      })
+      return prismaBase
+        .$transaction(async (tx) => {
+          const { ocupacionId } = await insertarOcupacion(
+            {
+              unidadId: datos.unidadId,
+              personaId: datos.personaId,
+              tipo: datos.tipo,
+              desde: datos.desde,
+              hasta: datos.hasta ?? null,
+            },
+            tx,
+          )
 
-      await habilitarComoConsorcista(datos.personaId, datos.consorcioId, datos.desde)
+          await sincronizarHabilitacion(datos.personaId, datos.consorcioId, tx)
 
-      return { ocupacionId }
+          return { ocupacionId }
+        })
+        .catch((error) => {
+          throw comoInquilinoSuperpuesto(error)
+        })
     },
   )
 }
 
 /** FR-008b: solo sobre su propia unidad, y solo para cargar un inquilino. */
-async function exigirPropietarioDeLaUnidad(
+export async function exigirPropietarioDeLaUnidad(
   datos: { usuarioId: string; unidadId: string; tipo: TipoDeOcupacion },
   reloj: Reloj,
 ): Promise<void> {
@@ -106,26 +119,55 @@ async function exigirPropietarioDeLaUnidad(
 }
 
 /**
- * FR-008c. Si la persona todavia no tiene usuario, no hay a quien habilitar:
- * la habilitacion nace cuando la invitan, con la ocupacion ya cargada.
+ * FR-008c, RN-24. Recalcula la `vigenciaHasta` de la habilitacion de
+ * consorcista de esa persona en ese consorcio a partir de todas sus
+ * ocupaciones: la crea si no existe, la reabre si estaba cerrada, o la cierra
+ * el dia en que termina la ultima. Si la persona no tiene usuario o no tiene
+ * ocupaciones en el consorcio, no hace nada. Nunca toca otros roles.
  */
-async function habilitarComoConsorcista(
+export async function sincronizarHabilitacion(
   personaId: string,
   consorcioId: string,
-  desde: Date,
+  cliente: ClienteBase = prismaBase,
 ): Promise<void> {
-  const usuario = await prismaBase.usuario.findUnique({
+  const usuario = await cliente.usuario.findUnique({
     where: { personaId },
     select: { id: true },
   })
-
   if (!usuario) return
 
-  await prismaBase.habilitacion.upsert({
+  const ocupaciones = await ocupacionesDePersonaEn(personaId, consorcioId, cliente)
+  if (ocupaciones.length === 0) return
+
+  const vigenciaHasta = finDelAcceso(ocupaciones.map((o) => o.hastaInclusivo))
+
+  const existente = await cliente.habilitacion.findUnique({
     where: {
       usuarioId_consorcioId_rol: { usuarioId: usuario.id, consorcioId, rol: 'consorcista' },
     },
-    update: {},
-    create: { usuarioId: usuario.id, consorcioId, rol: 'consorcista', vigenciaDesde: desde },
+    select: { id: true },
+  })
+
+  if (existente) {
+    await cliente.habilitacion.update({
+      where: { id: existente.id },
+      data: { vigenciaHasta },
+    })
+    return
+  }
+
+  const vigenciaDesde = ocupaciones.reduce(
+    (masAntigua, o) => (o.desde.getTime() < masAntigua.getTime() ? o.desde : masAntigua),
+    ocupaciones[0]!.desde,
+  )
+
+  await cliente.habilitacion.create({
+    data: {
+      usuarioId: usuario.id,
+      consorcioId,
+      rol: 'consorcista',
+      vigenciaDesde,
+      vigenciaHasta,
+    },
   })
 }

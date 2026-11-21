@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from '@prisma/client'
 
+import { hastaInclusivo, hastaSemiabierto } from '@/dominio/ocupaciones/vigencia'
 import { ordenarUnidades } from '@/dominio/unidades/division'
 import { prismaBase } from '@/infraestructura/prisma'
 
@@ -19,7 +20,7 @@ export interface OcupacionNueva {
   personaId: string
   tipo: TipoDeOcupacion
   desde: Date
-  /** Nulo: sin vencimiento. El rango queda abierto por la derecha. */
+  /** Nulo: sin vencimiento. Inclusivo (ultimo dia); se guarda semiabierto `[desde, hasta + 1)`. */
   hasta: Date | null
 }
 
@@ -31,19 +32,92 @@ export async function registrarOcupacion(
   ocupacion: OcupacionNueva,
   cliente: Prisma.TransactionClient | PrismaClient = prismaBase,
 ): Promise<{ ocupacionId: string }> {
+  const hastaExclusivo = ocupacion.hasta ? hastaSemiabierto(ocupacion.hasta) : null
   const [fila] = await cliente.$queryRaw<{ id: string }[]>`
     INSERT INTO "Ocupacion" ("unidad_id", "persona_id", "tipo", "vigencia", "actualizado_en")
     VALUES (
       ${ocupacion.unidadId}::uuid,
       ${ocupacion.personaId}::uuid,
       ${ocupacion.tipo}::"TipoOcupacion",
-      daterange(${ocupacion.desde}::date, ${ocupacion.hasta}::date, '[)'),
+      daterange(${ocupacion.desde}::date, ${hastaExclusivo}::date, '[)'),
       CURRENT_TIMESTAMP
     )
     RETURNING id
   `
 
   return { ocupacionId: fila.id }
+}
+
+/**
+ * Fija o corre el fin (inclusivo) de una ocupacion. Si se superpone con otro
+ * inquilino sobre la misma unidad, la base lo rechaza (RN-09).
+ */
+export async function terminarOcupacion(
+  ocupacionId: string,
+  hasta: Date,
+  cliente: Prisma.TransactionClient | PrismaClient = prismaBase,
+): Promise<void> {
+  const hastaExclusivo = hastaSemiabierto(hasta)
+  await cliente.$executeRaw`
+    UPDATE "Ocupacion"
+    SET "vigencia" = daterange(lower("vigencia"), ${hastaExclusivo}::date, '[)'),
+        "actualizado_en" = CURRENT_TIMESTAMP
+    WHERE "id" = ${ocupacionId}::uuid
+  `
+}
+
+/** Todas las ocupaciones de una persona en un consorcio, con `hasta` inclusivo (RN-24). */
+export async function ocupacionesDePersonaEn(
+  personaId: string,
+  consorcioId: string,
+  cliente: Prisma.TransactionClient | PrismaClient = prismaBase,
+): Promise<{ desde: Date; hastaInclusivo: Date | null }[]> {
+  const filas = await cliente.$queryRaw<{ desde: Date; hasta: Date | null }[]>`
+    SELECT lower(o."vigencia") AS desde, upper(o."vigencia") AS hasta
+    FROM "Ocupacion" o
+    JOIN "Unidad" un ON un."id" = o."unidad_id"
+    WHERE o."persona_id" = ${personaId}::uuid
+      AND un."consorcio_id" = ${consorcioId}::uuid
+  `
+  return filas.map((f) => ({
+    desde: f.desde,
+    hastaInclusivo: f.hasta ? hastaInclusivo(f.hasta) : null,
+  }))
+}
+
+/** Una ocupacion por su identificador, con `hasta` inclusivo. */
+export async function ocupacionPorId(ocupacionId: string): Promise<{
+  id: string
+  unidadId: string
+  personaId: string
+  tipo: TipoDeOcupacion
+  desde: Date
+  hastaInclusivo: Date | null
+} | null> {
+  const [fila] = await prismaBase.$queryRaw<
+    {
+      id: string
+      unidad_id: string
+      persona_id: string
+      tipo: TipoDeOcupacion
+      desde: Date
+      hasta: Date | null
+    }[]
+  >`
+    SELECT "id", "unidad_id", "persona_id", "tipo",
+           lower("vigencia") AS desde, upper("vigencia") AS hasta
+    FROM "Ocupacion"
+    WHERE "id" = ${ocupacionId}::uuid
+  `
+  if (!fila) return null
+  return {
+    id: fila.id,
+    unidadId: fila.unidad_id,
+    personaId: fila.persona_id,
+    tipo: fila.tipo,
+    desde: fila.desde,
+    hastaInclusivo: fila.hasta ? hastaInclusivo(fila.hasta) : null,
+  }
 }
 
 /** Personas con ocupacion vigente sobre la unidad a esa fecha, por tipo. */

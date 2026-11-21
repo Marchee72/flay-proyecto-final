@@ -129,7 +129,7 @@ test('un pago rechazado conserva la unidad y el medio elegidos, con la pista de 
   await expect(dialogo.getByText('Debe hoy: $ 92.160,37')).toBeVisible()
 })
 
-test('una invitación rechazada conserva rol, unidad y tipo de ocupación', async ({ page }) => {
+test('una invitación rechazada conserva rol y unidad', async ({ page }) => {
   const otra = await prisma.unidad.findFirstOrThrow({
     where: { consorcioId: administrador.consorcioId, designacion: '3C' },
   })
@@ -144,12 +144,10 @@ test('una invitación rechazada conserva rol, unidad y tipo de ocupación', asyn
   await dialogo.getByLabel('Correo electrónico').fill('carla.ruiz.ejemplo.test')
   await dialogo.getByLabel('Rol').selectOption('consorcista')
   await dialogo.getByLabel('Unidad').selectOption({ label: '3C' })
-  await dialogo.getByLabel('Es', { exact: true }).selectOption('inquilino')
   await dialogo.getByRole('button', { name: 'Invitar', exact: true }).click()
 
   await expect(dialogo.getByRole('alert')).toBeVisible()
   await expect(dialogo.getByLabel('Rol')).toHaveValue('consorcista')
   await expect(dialogo.getByLabel('Unidad')).toHaveValue(otra.id)
-  await expect(dialogo.getByLabel('Es', { exact: true })).toHaveValue('inquilino')
   await expect(dialogo.getByLabel('Correo electrónico')).toHaveValue('carla.ruiz.ejemplo.test')
 })

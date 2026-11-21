@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { NoEncontrado } from '@/compartido/errores'
-import { registrarOcupacion, sincronizarHabilitacion } from '@/aplicacion/consorcios/registrar-ocupacion'
+import {
+  registrarOcupacion,
+  sincronizarHabilitacion,
+} from '@/aplicacion/consorcios/registrar-ocupacion'
 import { misExpensas, verExpensa } from '@/aplicacion/liquidacion/ver-expensa'
 import { verEstadoDeCuenta } from '@/aplicacion/pagos/estado-de-cuenta'
 import { registrarPago } from '@/aplicacion/pagos/registrar'

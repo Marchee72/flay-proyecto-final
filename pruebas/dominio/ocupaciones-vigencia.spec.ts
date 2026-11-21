@@ -19,10 +19,14 @@ describe('ocupaciones/vigencia (RN-23, RN-24)', () => {
 
   it('el propietario ve todo; el inquilino desde el mes de ingreso', () => {
     expect(visibleDesde(['propietario'], [d('2026-03-15')])).toBeNull()
-    expect(visibleDesde(['inquilino', 'propietario'], [d('2026-03-15'), d('2020-01-01')])).toBeNull()
-    expect(visibleDesde(['inquilino'], [d('2026-03-15')])?.toISOString().slice(0, 10)).toBe(
-      '2026-03-01',
-    )
+    expect(
+      visibleDesde(['inquilino', 'propietario'], [d('2026-03-15'), d('2020-01-01')]),
+    ).toBeNull()
+    expect(
+      visibleDesde(['inquilino'], [d('2026-03-15')])
+        ?.toISOString()
+        .slice(0, 10),
+    ).toBe('2026-03-01')
     expect(
       visibleDesde(['inquilino', 'inquilino'], [d('2026-05-10'), d('2026-03-20')])
         ?.toISOString()
@@ -41,9 +45,11 @@ describe('ocupaciones/vigencia (RN-23, RN-24)', () => {
 
   it('finDelAcceso: abierto si alguna no tiene fin, si no el último', () => {
     expect(finDelAcceso([d('2026-05-31'), null])).toBeNull()
-    expect(finDelAcceso([d('2026-05-31'), d('2026-08-31')])?.toISOString().slice(0, 10)).toBe(
-      '2026-08-31',
-    )
+    expect(
+      finDelAcceso([d('2026-05-31'), d('2026-08-31')])
+        ?.toISOString()
+        .slice(0, 10),
+    ).toBe('2026-08-31')
     expect(() => finDelAcceso([])).toThrow()
   })
 

@@ -144,7 +144,9 @@ test.describe.serial('inquilinos por unidad (RF-03)', () => {
     await expect(page.getByRole('status').filter({ hasText: 'Inquilino asignado.' })).toBeVisible()
   })
 
-  test('el administrador ve la columna Inquilino en Unidades con las acciones', async ({ page }) => {
+  test('el administrador ve la columna Inquilino en Unidades con las acciones', async ({
+    page,
+  }) => {
     await entrar(page, admin.correo)
     await page.goto(`/consorcios/${duenio.consorcioId}/unidades`)
 

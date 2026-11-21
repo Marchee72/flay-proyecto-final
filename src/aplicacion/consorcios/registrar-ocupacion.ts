@@ -11,9 +11,7 @@ import {
   type TipoDeOcupacion,
 } from '@/infraestructura/repositorios/ocupaciones'
 
-type ClienteBase =
-  | Parameters<Parameters<typeof prismaBase.$transaction>[0]>[0]
-  | typeof prismaBase
+type ClienteBase = Parameters<Parameters<typeof prismaBase.$transaction>[0]>[0] | typeof prismaBase
 
 export class InquilinoSuperpuesto extends ErrorDeAplicacion {
   constructor() {

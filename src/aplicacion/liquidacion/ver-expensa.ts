@@ -113,10 +113,7 @@ export interface UnidadAlcanzable {
 }
 
 /** Las unidades que el usuario ocupa hoy, sea cual sea su rol, con su corte de visibilidad (RN-23). */
-export async function unidadesPropias(
-  usuarioId: string,
-  hoy: Date,
-): Promise<UnidadAlcanzable[]> {
+export async function unidadesPropias(usuarioId: string, hoy: Date): Promise<UnidadAlcanzable[]> {
   const usuario = await prismaBase.usuario.findUnique({
     where: { id: usuarioId },
     select: { personaId: true },
@@ -327,7 +324,9 @@ async function expensasDe(
   }
 
   const visibles = detalles.filter((d) => periodoVisible(d.liquidacion.periodo, corte))
-  const expensas = await Promise.all(visibles.map((detalle) => aVisible(almacen, detalle, hoy, deuda)))
+  const expensas = await Promise.all(
+    visibles.map((detalle) => aVisible(almacen, detalle, hoy, deuda)),
+  )
 
   return { expensas, deudaAnteriorAlIngreso }
 }

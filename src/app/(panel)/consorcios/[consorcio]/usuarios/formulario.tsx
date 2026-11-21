@@ -110,37 +110,22 @@ export function FormularioInvitar({
       </div>
 
       {rol === 'consorcista' && (
-        <>
-          <div className="campo">
-            <label htmlFor="unidad">Unidad</label>
-            <select
-              key={estado.valores?.unidad ?? 'inicial'}
-              id="unidad"
-              name="unidad"
-              defaultValue={estado.valores?.unidad ?? ''}
-            >
-              <option value="">Sin unidad por ahora</option>
-              {unidades.map((unidad) => (
-                <option key={unidad.id} value={unidad.id}>
-                  {unidad.designacion}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="campo">
-            <label htmlFor="tipoOcupacion">Es</label>
-            <select
-              key={estado.valores?.tipoOcupacion ?? 'inicial'}
-              id="tipoOcupacion"
-              name="tipoOcupacion"
-              defaultValue={estado.valores?.tipoOcupacion ?? 'propietario'}
-            >
-              <option value="propietario">Propietario</option>
-              <option value="inquilino">Inquilino</option>
-            </select>
-          </div>
-        </>
+        <div className="campo">
+          <label htmlFor="unidad">Unidad (como propietario)</label>
+          <select
+            key={estado.valores?.unidad ?? 'inicial'}
+            id="unidad"
+            name="unidad"
+            defaultValue={estado.valores?.unidad ?? ''}
+          >
+            <option value="">Sin unidad por ahora</option>
+            {unidades.map((unidad) => (
+              <option key={unidad.id} value={unidad.id}>
+                {unidad.designacion}
+              </option>
+            ))}
+          </select>
+        </div>
       )}
 
       <div className="campo">

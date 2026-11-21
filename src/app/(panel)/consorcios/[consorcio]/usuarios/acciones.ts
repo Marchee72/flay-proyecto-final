@@ -43,7 +43,6 @@ export async function accionInvitar(_previo: Resultado, datos: FormData): Promis
   const desde = String(datos.get('vigenciaDesde') ?? '')
   const rol = rolDesdeFormulario(datos.get('rol'))
   const unidadId = String(datos.get('unidad') ?? '')
-  const tipo = datos.get('tipoOcupacion') === 'inquilino' ? 'inquilino' : 'propietario'
   let resultado: { yaTeniaCuenta: boolean }
 
   try {
@@ -57,8 +56,8 @@ export async function accionInvitar(_previo: Resultado, datos: FormData): Promis
       consorcioNombre: consorcio.nombre,
       vigenciaDesde: desde ? new Date(`${desde}T00:00:00Z`) : RELOJ.hoy(),
       urlBase: await urlBase(),
-      // La unidad solo cuenta para un consorcista.
-      unidad: rol === 'consorcista' && unidadId ? { unidadId, tipo } : null,
+      // La unidad en Usuarios carga propietarios; los inquilinos se asignan desde la unidad.
+      unidad: rol === 'consorcista' && unidadId ? { unidadId, tipo: 'propietario' } : null,
     })
   } catch (error) {
     if (error instanceof ErrorDeAplicacion)
@@ -90,7 +89,7 @@ export async function accionAsignarUnidad(_previo: Resultado, datos: FormData): 
       consorcioId,
       unidadId,
       personaId: String(datos.get('persona') ?? ''),
-      tipo: datos.get('tipoOcupacion') === 'inquilino' ? 'inquilino' : 'propietario',
+      tipo: 'propietario',
       desde: desde ? new Date(`${desde}T00:00:00Z`) : RELOJ.hoy(),
     })
   } catch (error) {

@@ -1410,6 +1410,17 @@ td .boton--fantasma {
 td .boton--fantasma:hover {
   background: var(--gris-palido);
 }
+.celda-inquilino {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.celda-inquilino__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
 td.numero,
 th.numero {
   text-align: right;

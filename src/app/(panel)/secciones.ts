@@ -6,6 +6,7 @@ import {
   FileText,
   Gavel,
   Gauge,
+  House,
   Megaphone,
   BookOpen,
   MessageSquareWarning,
@@ -68,6 +69,12 @@ export const BLOQUES: Bloque[] = [
         titulo: 'Unidades',
         Icono: Building2,
         roles: ['administrador', 'consejo'],
+      },
+      {
+        ruta: 'mis-unidades',
+        titulo: 'Mis unidades',
+        Icono: House,
+        roles: ['consorcista'],
       },
       { ruta: 'proveedores', titulo: 'Proveedores', Icono: Truck },
       {

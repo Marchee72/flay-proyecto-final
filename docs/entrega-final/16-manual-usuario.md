@@ -201,14 +201,15 @@ Si el consorcio sufre modificaciones reglamentarias (ejemplo: subdivisión o ane
 
 Flay distingue conceptualmente entre una **Persona** (entidad humana con nombre, CUIT y contacto), una **Ocupación** (relación jurídica de propietario o inquilino sobre una unidad) y un **Usuario** (credencial digital de acceso al sistema).
 
-#### Carga de ocupaciones y regla RN-09
-1. Ingrese al consorcio y seleccione la pestaña **Unidades**.
-2. Al hacer clic sobre una unidad funcional, seleccione **Asignar ocupante**.
-3. Complete:
-   - **Tipo de ocupación:** Propietario o Inquilino.
-   - **Vigencia desde:** Fecha de toma de posesión o inicio del contrato de locación.
-   - **Vigencia hasta:** En contratos de alquiler, complete la fecha de vencimiento; en propietarios, deje el campo abierto.
-4. **Regla de integridad RN-09:** El motor de base de datos ejecuta una restricción de exclusión (`EXCLUDE USING gist`) que impide que una unidad tenga dos ocupaciones vigentes del mismo tipo en un mismo rango de fechas. Si se intenta cargar un segundo inquilino superpuesto, el sistema rechaza el formulario indicando el conflicto de fechas.
+#### Asignar y terminar un alquiler (RN-09, RN-23, RN-24)
+Tanto la administración (desde la columna **Inquilino** en **Unidades**, `/unidades`) como cada propietario vigente (desde **Mis unidades**, `/mis-unidades`, en el bloque **Administración**) pueden administrar los inquilinos de cada unidad funcional (departamentos, cocheras, locales o bauleras):
+1. En la fila de la unidad, presione **Asignar inquilino**.
+2. Complete **Nombre**, **Apellido**, **Correo**, **Desde** y, si el contrato tiene vencimiento, **Hasta** (último día inclusive; vacío queda sin fecha de fin). Presione **Asignar**.
+   - Si el correo no tenía cuenta en Flay, se crea un usuario invitado y se encola el correo con el enlace para elegir contraseña. Si ya tenía cuenta (en este u otro consorcio), se reutiliza sin enviar una nueva invitación.
+   - El sistema rechaza la asignación si las fechas se superponen con otro inquilino de la misma unidad (**RN-09**).
+3. Para finalizar un alquiler o modificar su fecha de cierre, presione **Terminar alquiler** junto al inquilino, indique el **Último día** y presione **Confirmar**.
+4. **Acceso automático (RN-24):** el acceso de consorcista sigue a las ocupaciones de la persona en el edificio. Al asignar con fecha de fin o al terminar un alquiler, el acceso se cierra al día siguiente de la última ocupación, salvo que conserve otra unidad vigente (por ejemplo, una cochera u otro departamento) o un rol de administrador o consejo. La cuenta no se elimina: si vuelve a alquilar más adelante, el acceso se reabre con la misma clave.
+5. **Qué ve el inquilino (RN-23):** en **Expensas** y en el **Estado de cuenta**, el inquilino accede únicamente a los períodos y movimientos desde el mes de su ingreso (el propietario sigue viendo toda la historia). Si la unidad arrastra deuda impaga de períodos anteriores a su ingreso, la pantalla de Expensas muestra un aviso informativo con el monto pendiente indicando que corresponde comunicarse con el propietario para saldarla; el aviso desaparece cuando esa deuda queda cancelada.
 
 #### Invitación de usuarios al portal web (`/usuarios`)
 Para habilitar el ingreso digital de un propietario, inquilino o colega de administración:

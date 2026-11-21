@@ -302,3 +302,84 @@ export async function propietariosVigentesDe(
     correo: f.correo,
   }))
 }
+
+export interface InquilinoDeUnidad {
+  ocupacionId: string
+  unidadId: string
+  nombre: string
+  correo: string | null
+  /** ISO `AAAA-MM-DD`. */
+  desde: string
+  /** ISO `AAAA-MM-DD`, inclusivo; nulo si sin fecha de fin. */
+  hasta: string | null
+}
+
+/**
+ * Inquilinos vigentes o futuros de esas unidades a esa fecha, ordenados por
+ * fecha de ingreso. Los ids tienen que venir de una consulta ya aislada: esto
+ * no filtra por consorcio.
+ */
+export async function inquilinosDe(
+  unidadIds: readonly string[],
+  hoy: Date,
+): Promise<InquilinoDeUnidad[]> {
+  if (unidadIds.length === 0) return []
+  const filas = await prismaBase.$queryRaw<
+    {
+      id: string
+      unidad_id: string
+      nombre: string
+      apellido: string
+      correo: string | null
+      desde: Date
+      hasta: Date | null
+    }[]
+  >`
+    SELECT o."id", o."unidad_id", p."nombre", p."apellido",
+           COALESCE(p."correo", u."correo") AS correo,
+           lower(o."vigencia") AS desde, upper(o."vigencia") AS hasta
+    FROM "Ocupacion" o
+    JOIN "Persona" p ON p."id" = o."persona_id"
+    LEFT JOIN "Usuario" u ON u."persona_id" = o."persona_id"
+    WHERE o."unidad_id" = ANY(${unidadIds}::uuid[])
+      AND o."tipo" = 'inquilino'
+      AND (upper(o."vigencia") IS NULL OR upper(o."vigencia") > ${hoy}::date)
+    ORDER BY lower(o."vigencia"), o."id"`
+  return filas.map((f) => ({
+    ocupacionId: f.id,
+    unidadId: f.unidad_id,
+    nombre: `${f.nombre} ${f.apellido}`.trim(),
+    correo: f.correo,
+    desde: f.desde.toISOString().slice(0, 10),
+    hasta: f.hasta ? hastaInclusivo(f.hasta).toISOString().slice(0, 10) : null,
+  }))
+}
+
+/**
+ * Ocupaciones vigentes del usuario sobre un conjunto ya aislado de unidades,
+ * con `hasta` inclusivo.
+ */
+export async function ocupacionesVigentesDeUsuario(
+  usuarioId: string,
+  unidadIds: readonly string[],
+  hoy: Date,
+): Promise<{ unidadId: string; tipo: TipoDeOcupacion; desde: string; hasta: string | null }[]> {
+  if (unidadIds.length === 0) return []
+  const filas = await prismaBase.$queryRaw<
+    { unidad_id: string; tipo: TipoDeOcupacion; desde: Date; hasta: Date | null }[]
+  >`
+    SELECT o."unidad_id", o."tipo",
+           lower(o."vigencia") AS desde, upper(o."vigencia") AS hasta
+    FROM "Ocupacion" o
+    JOIN "Usuario" u ON u."persona_id" = o."persona_id"
+    WHERE u."id" = ${usuarioId}::uuid
+      AND o."unidad_id" = ANY(${unidadIds}::uuid[])
+      AND o."vigencia" @> ${hoy}::date
+    ORDER BY lower(o."vigencia")`
+  return filas.map((f) => ({
+    unidadId: f.unidad_id,
+    tipo: f.tipo,
+    desde: f.desde.toISOString().slice(0, 10),
+    hasta: f.hasta ? hastaInclusivo(f.hasta).toISOString().slice(0, 10) : null,
+  }))
+}

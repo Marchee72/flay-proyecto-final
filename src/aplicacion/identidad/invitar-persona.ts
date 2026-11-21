@@ -32,6 +32,72 @@ import { reiniciarIntentos } from './iniciar-sesion'
 
 export const HORAS_DE_VIGENCIA_DE_LA_INVITACION = 72
 
+type TransaccionBase = Parameters<Parameters<typeof prismaBase.$transaction>[0]>[0]
+
+/**
+ * Busca o crea la cuenta de una persona por correo dentro de una transaccion.
+ * Reutiliza la `Persona` si ya estaba en el padron y el `Usuario` si ya tenia
+ * cuenta (en este u otro consorcio). Devuelve `credencialNueva` solo cuando se
+ * creo un usuario invitado nuevo al que corresponde enviarle invitacion.
+ */
+export async function asegurarCuenta(
+  tx: TransaccionBase,
+  reloj: Reloj,
+  datos: { nombre: string; apellido: string; correo: string },
+): Promise<{ personaId: string; usuarioId: string; credencialNueva: string | null }> {
+  const correo = datos.correo.trim().toLowerCase()
+
+  const usuarioExistente = await tx.usuario.findUnique({
+    where: { correo },
+    select: { id: true, personaId: true },
+  })
+  if (usuarioExistente) {
+    return {
+      personaId: usuarioExistente.personaId,
+      usuarioId: usuarioExistente.id,
+      credencialNueva: null,
+    }
+  }
+
+  // Una persona cargada antes en el padron (sin usuario) se reutiliza.
+  const persona =
+    (await tx.persona.findFirst({ where: { correo } })) ??
+    (await tx.persona.create({
+      data: { nombre: datos.nombre, apellido: datos.apellido, correo },
+    }))
+
+  const { credencial, hash } = nuevaCredencial()
+  const vence = new Date(reloj.ahora().getTime() + HORAS_DE_VIGENCIA_DE_LA_INVITACION * 3_600_000)
+
+  const creado = await tx.usuario.create({
+    data: {
+      personaId: persona.id,
+      correo,
+      estado: 'invitado',
+      invitacionHash: hash,
+      invitacionVence: vence,
+    },
+  })
+
+  return { personaId: persona.id, usuarioId: creado.id, credencialNueva: credencial }
+}
+
+/** Encola el correo de invitacion para un usuario recien creado. */
+export async function encolarInvitacion(datos: {
+  correo: string
+  nombre: string
+  consorcioNombre: string
+  urlBase: string
+  credencial: string
+}): Promise<void> {
+  await encolar('invitacion', {
+    destino: datos.correo.trim().toLowerCase(),
+    nombre: datos.nombre,
+    consorcio: datos.consorcioNombre,
+    enlaceDeAlta: `${datos.urlBase}/invitacion/${datos.credencial}`,
+  })
+}
+
 export class CorreoInvalido extends ErrorDeAplicacion {
   constructor(mensaje: string) {
     super(mensaje, 'RF-03')
@@ -151,53 +217,42 @@ async function altaDelInvitado(
     return { usuarioId: existente.id, yaTeniaCuenta: true }
   }
 
-  const { credencial, hash } = nuevaCredencial()
-  const vence = new Date(reloj.ahora().getTime() + HORAS_DE_VIGENCIA_DE_LA_INVITACION * 3_600_000)
-
-  const usuario = await prismaBase
+  const { usuarioId, credencialNueva } = await prismaBase
     .$transaction(async (tx) => {
-      // Una persona cargada antes en el padron (sin usuario) se reutiliza.
-      const persona =
-        (await tx.persona.findFirst({ where: { correo } })) ??
-        (await tx.persona.create({
-          data: { nombre: datos.nombre, apellido: datos.apellido, correo },
-        }))
-
-      const creado = await tx.usuario.create({
-        data: {
-          personaId: persona.id,
-          correo,
-          estado: 'invitado',
-          invitacionHash: hash,
-          invitacionVence: vence,
-        },
+      const cuenta = await asegurarCuenta(tx, reloj, {
+        nombre: datos.nombre,
+        apellido: datos.apellido,
+        correo,
       })
 
       await tx.habilitacion.create({
         data: {
-          usuarioId: creado.id,
+          usuarioId: cuenta.usuarioId,
           consorcioId: datos.consorcioId,
           rol: datos.rol,
           vigenciaDesde: datos.vigenciaDesde,
         },
       })
 
-      await ocupar(persona.id, tx)
+      await ocupar(cuenta.personaId, tx)
 
-      return creado
+      return cuenta
     })
     .catch((error) => {
       throw comoInquilinoSuperpuesto(error)
     })
 
-  await encolar('invitacion', {
-    destino: correo,
-    nombre: datos.nombre,
-    consorcio: datos.consorcioNombre,
-    enlaceDeAlta: `${datos.urlBase}/invitacion/${credencial}`,
-  })
+  if (credencialNueva) {
+    await encolarInvitacion({
+      correo,
+      nombre: datos.nombre,
+      consorcioNombre: datos.consorcioNombre,
+      urlBase: datos.urlBase,
+      credencial: credencialNueva,
+    })
+  }
 
-  return { usuarioId: usuario.id, yaTeniaCuenta: false }
+  return { usuarioId, yaTeniaCuenta: false }
 }
 
 export class InvitacionNoValida extends ErrorDeAplicacion {

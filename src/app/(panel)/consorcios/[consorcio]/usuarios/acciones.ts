@@ -14,8 +14,11 @@ import { enviarEnlaceDeClave } from '@/aplicacion/identidad/restablecer'
 import { quitarAcceso } from '@/aplicacion/identidad/quitar-acceso'
 import { rolDesdeFormulario } from '@/aplicacion/identidad/roles'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { importarOcupantes } from '@/aplicacion/importacion/importar-ocupantes'
 import { irAIngresar } from '@/app/ir-a-ingresar'
 import { urlBase } from '@/app/url-base'
+
+import type { EstadoImportacion } from '../../importador'
 
 /** Un archivo «use server» solo exporta funciones: el estado inicial va en el formulario. */
 export type Resultado = { mensaje: string } & ConValores
@@ -99,6 +102,35 @@ export async function accionAsignarUnidad(_previo: Resultado, datos: FormData): 
   }
 
   redirect(conHecho(`/consorcios/${consorcioId}/usuarios`, 'unidad-asignada'))
+}
+
+/** «Revisar» y «Confirmar» de propietarios e inquilinos desde planilla (RF-03). No invita. */
+export async function accionImportarOcupantes(
+  _previo: EstadoImportacion,
+  datos: FormData,
+): Promise<EstadoImportacion> {
+  const usuarioId = await quienOpera()
+  const consorcioId = String(datos.get('consorcio') ?? '')
+  const archivo = datos.get('archivo')
+  if (!(archivo instanceof File) || archivo.size === 0)
+    return { mensaje: 'Elegí un archivo .xlsx o .csv.' }
+
+  let resultado
+  try {
+    resultado = await importarOcupantes(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      bytes: new Uint8Array(await archivo.arrayBuffer()),
+      nombreArchivo: archivo.name,
+      confirmar: datos.get('confirmar') === '1',
+    })
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
+    throw error
+  }
+  if (resultado.estado !== 'cargado') return { mensaje: '', resultado }
+
+  redirect(conHecho(`/consorcios/${consorcioId}/usuarios`, 'ocupantes-importados'))
 }
 
 /** «Quitar» un rol: el acceso se cierra hoy mismo (RF-03, A3). */

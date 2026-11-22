@@ -24,6 +24,8 @@ export const HECHO = {
   'pago-registrado': 'Pago registrado e imputado a lo más viejo primero.',
   'pasarela-configurada': 'Credenciales de la pasarela de pagos guardadas.',
   'padron-guardado': 'Padrón guardado. Los cambios de coeficiente rigen desde hoy.',
+  'padron-importado': 'Padrón importado.',
+  'ocupantes-importados': 'Ocupantes importados.',
   'reclamo-registrado': 'Reclamo registrado. La administración lo va a asignar.',
   'reclamo-actualizado': 'Reclamo actualizado.',
   'reclamo-asignado': 'Reclamo asignado.',

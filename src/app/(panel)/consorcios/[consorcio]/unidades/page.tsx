@@ -16,6 +16,7 @@ import { consorciosAlAlcance } from '../../../con-consorcio'
 import { divisionDe, pisoDe, sumarCoeficientes } from '@/aplicacion/consorcios/unidades'
 
 import { CargadorDePadron } from './cargador'
+import { ImportadorDePadron } from '../../importador'
 import { CeldaInquilino } from '../ocupantes/celda-inquilino'
 import { Filtros } from '../../../filtros'
 import { Paginacion } from '../../../paginacion'
@@ -164,6 +165,9 @@ export default async function UnidadesPage({
       {consorcio.unidades.length === 0 ? (
         administra ? (
           <>
+            <h2>Importar desde archivo</h2>
+            <ImportadorDePadron consorcioId={consorcio.id} />
+            <h2>Cargar a mano</h2>
             <p className="apagado">
               El padrón se carga entero de una vez: unidad por unidad la suma nunca daría 100 y cada
               alta sería un rechazo.

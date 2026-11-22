@@ -12,7 +12,10 @@ import { tipoDeUnidadDesdeFormulario } from '@/aplicacion/consorcios/tipos-de-un
 import { cargarPadron, editarPadron } from '@/aplicacion/consorcios/unidades'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { importarPadron } from '@/aplicacion/importacion/importar-padron'
 import { irAIngresar } from '@/app/ir-a-ingresar'
+
+import type { EstadoImportacion } from './importador'
 
 /** Un archivo «use server» solo exporta funciones asincronicas. */
 export type Resultado = { mensaje: string } & ConValores
@@ -163,6 +166,39 @@ export async function accionEditarPadron(_previo: Resultado, datos: FormData): P
 
   revalidatePath('/consorcios/[consorcio]', 'layout')
   redirect(conHecho(`/consorcios/${consorcioId}/unidades`, 'padron-guardado'))
+}
+
+/**
+ * «Revisar» y «Confirmar» del padrón desde planilla (RF-02). Sin estado: el
+ * archivo viaja las dos veces y el caso de uso revalida al confirmar.
+ */
+export async function accionImportarPadron(
+  _previo: EstadoImportacion,
+  datos: FormData,
+): Promise<EstadoImportacion> {
+  const usuarioId = await quienOpera()
+  const consorcioId = String(datos.get('consorcio') ?? '')
+  const archivo = datos.get('archivo')
+  if (!(archivo instanceof File) || archivo.size === 0)
+    return { mensaje: 'Elegí un archivo .xlsx o .csv.' }
+
+  let resultado
+  try {
+    resultado = await importarPadron(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      bytes: new Uint8Array(await archivo.arrayBuffer()),
+      nombreArchivo: archivo.name,
+      confirmar: datos.get('confirmar') === '1',
+    })
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
+    throw error
+  }
+  if (resultado.estado !== 'cargado') return { mensaje: '', resultado }
+
+  revalidatePath('/consorcios/[consorcio]', 'layout')
+  redirect(conHecho(`/consorcios/${consorcioId}/unidades`, 'padron-importado'))
 }
 
 /**

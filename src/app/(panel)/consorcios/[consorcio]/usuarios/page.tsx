@@ -11,6 +11,7 @@ import { accionEnviarEnlaceDeClave, accionReenviar } from './acciones'
 import { ModalInvitar } from './modal-invitar'
 import { ModalQuitar } from './modal-quitar'
 import { ModalUnidad } from './modal-unidad'
+import { ModalImportarOcupantes } from '../../importador'
 import { conConsorcio } from '../../../con-consorcio'
 import { TablaDesplazable } from '../../../tabla-desplazable'
 
@@ -58,6 +59,7 @@ export default async function UsuariosPage({ params }: { params: Promise<{ conso
                 unidades={unidades}
                 hoy={RELOJ.hoy().toISOString().slice(0, 10)}
               />
+              {unidades.length > 0 && <ModalImportarOcupantes consorcioId={activo.id} />}
             </div>
           )}
 

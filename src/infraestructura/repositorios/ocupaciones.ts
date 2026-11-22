@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from '@prisma/client'
 
+import type { OcupacionExistente } from '@/dominio/importacion/ocupantes'
 import { hastaInclusivo, hastaSemiabierto } from '@/dominio/ocupaciones/vigencia'
 import { ordenarUnidades } from '@/dominio/unidades/division'
 import { prismaBase } from '@/infraestructura/prisma'
@@ -70,6 +71,36 @@ export async function registrarOcupaciones(
       ${lista.map((o) => o.desde.toISOString().slice(0, 10))}::text[]::date[],
       ${lista.map((o) => (o.hasta ? hastaSemiabierto(o.hasta).toISOString().slice(0, 10) : null))}::text[]::date[]
     ) AS o(id, unidad_id, persona_id, tipo, desde, hasta)`
+}
+
+/**
+ * Todas las ocupaciones (pasadas, vigentes y futuras) de esas unidades, con
+ * fechas `AAAA-MM-DD` y `hasta` inclusivo. Los ids tienen que venir de una
+ * consulta ya aislada: esto no filtra por consorcio.
+ */
+export async function ocupacionesDeUnidades(
+  unidadIds: readonly string[],
+): Promise<OcupacionExistente[]> {
+  if (unidadIds.length === 0) return []
+  const filas = await prismaBase.$queryRaw<
+    {
+      unidad_id: string
+      persona_id: string
+      tipo: TipoDeOcupacion
+      desde: Date
+      hasta: Date | null
+    }[]
+  >`
+    SELECT "unidad_id", "persona_id", "tipo", lower("vigencia") AS desde, upper("vigencia") AS hasta
+    FROM "Ocupacion"
+    WHERE "unidad_id" = ANY(${unidadIds}::uuid[])`
+  return filas.map((f) => ({
+    unidadId: f.unidad_id,
+    personaId: f.persona_id,
+    tipo: f.tipo,
+    desde: f.desde.toISOString().slice(0, 10),
+    hasta: f.hasta ? hastaInclusivo(f.hasta).toISOString().slice(0, 10) : null,
+  }))
 }
 
 /**

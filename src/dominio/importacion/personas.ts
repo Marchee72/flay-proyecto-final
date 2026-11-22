@@ -101,9 +101,9 @@ export function resolverPersonas(
   for (const { fila, persona } of filas) {
     const antes = errores.length
     if (persona.nombre.trim() === '')
-      errores.push({ fila, columna: 'Nombre', mensaje: 'falta el nombre del dueño.' })
+      errores.push({ fila, columna: 'Nombre', mensaje: 'falta el nombre.' })
     if (persona.apellido.trim() === '')
-      errores.push({ fila, columna: 'Apellido', mensaje: 'falta el apellido del dueño.' })
+      errores.push({ fila, columna: 'Apellido', mensaje: 'falta el apellido.' })
     if (persona.correo !== null) {
       const m = errorDeCorreo(persona.correo)
       if (m) errores.push({ fila, columna: 'Correo', mensaje: m })

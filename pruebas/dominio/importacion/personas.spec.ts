@@ -24,7 +24,7 @@ describe('resolverPersonas', () => {
     expect(errores(r)).toContainEqual({
       fila: 3,
       columna: 'Nombre',
-      mensaje: 'falta el nombre del dueño.',
+      mensaje: 'falta el nombre.',
     })
   })
 

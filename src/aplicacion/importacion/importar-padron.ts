@@ -29,7 +29,7 @@ export type ResultadoImportacion<R> =
   | { estado: 'revisado'; resumen: R; columnas: string[]; vista: FilaDeVista[] }
   | { estado: 'cargado'; resumen: R }
 
-const errorDeArchivo = (mensaje: string): { estado: 'errores'; errores: ErrorDeFila[] } => ({
+export const errorDeArchivo = (mensaje: string): { estado: 'errores'; errores: ErrorDeFila[] } => ({
   estado: 'errores',
   errores: [{ fila: null, mensaje }],
 })

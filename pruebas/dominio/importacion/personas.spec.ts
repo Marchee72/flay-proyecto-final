@@ -114,6 +114,33 @@ describe('resolverPersonas', () => {
     )
   })
 
+  describe('correo y DNI que no son de la misma persona', () => {
+    const MSG = 'El DNI y el correo de esta fila no corresponden a la misma persona; revisalos.'
+    const conocida: PersonaConocida = {
+      id: 'P1',
+      nombre: 'Ana',
+      apellido: 'Gómez',
+      dni: '11111111',
+      correo: 'a@b.com',
+    }
+    test('A: conocida por correo con otro DNI', () => {
+      const r = resolverPersonas(filas(p({ correo: 'a@b.com', dni: '22222222' })), [conocida])
+      expect(errores(r)).toEqual([{ fila: 2, columna: 'DNI', mensaje: MSG }])
+      expect(MSG).not.toContain('11111111')
+    })
+    test('B: dos filas con el mismo correo y distinto DNI', () => {
+      const r = resolverPersonas(
+        filas(p({ correo: 'a@b.com', dni: '11111111' }), p({ correo: 'a@b.com', dni: '22222222' })),
+        [],
+      )
+      expect(errores(r)).toEqual([{ fila: 3, columna: 'DNI', mensaje: MSG }])
+    })
+    test('C: conocida por DNI con otro correo', () => {
+      const r = resolverPersonas(filas(p({ correo: 'z@b.com', dni: '11111111' })), [conocida])
+      expect(errores(r)).toEqual([{ fila: 2, columna: 'DNI', mensaje: MSG }])
+    })
+  })
+
   test('sin correo ni DNI: nueva cada vez y cuenta en sinIdentificar', () => {
     const r = resolverPersonas(filas(p(), p()), [])
     if (!r.ok) throw new Error('debía ser válido')

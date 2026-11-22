@@ -64,6 +64,8 @@ export function identificadoresDePersonas(planilla: PlanillaLeida): {
 }
 
 interface Visto {
+  correo: string | null
+  dni: string | null
   ref: PersonaResuelta
   nombre: string
 }
@@ -86,7 +88,12 @@ export function resolverPersonas(
   const porDni = new Map<string, Visto>()
   const nombreDe = (n: string, a: string) => normalizarTexto(`${n} ${a}`)
   for (const c of conocidas) {
-    const v: Visto = { ref: { existente: c.id }, nombre: nombreDe(c.nombre, c.apellido) }
+    const v: Visto = {
+      ref: { existente: c.id },
+      nombre: nombreDe(c.nombre, c.apellido),
+      correo: c.correo ? clave(c.correo) : null,
+      dni: c.dni,
+    }
     if (c.correo) porCorreo.set(clave(c.correo), v)
     if (c.dni) porDni.set(c.dni, v)
   }
@@ -128,6 +135,19 @@ export function resolverPersonas(
       continue
     }
 
+    if (
+      visto &&
+      ((correo !== null && visto.correo !== null && correo !== visto.correo) ||
+        (dni !== null && visto.dni !== null && dni !== visto.dni))
+    ) {
+      errores.push({
+        fila,
+        columna: 'DNI',
+        mensaje: 'El DNI y el correo de esta fila no corresponden a la misma persona; revisalos.',
+      })
+      continue
+    }
+
     let ref: PersonaResuelta
     if (visto) ref = visto.ref
     else {
@@ -136,7 +156,9 @@ export function resolverPersonas(
       if (correo === null && dni === null) sinIdentificar++
     }
     porFila.set(fila, ref)
-    const v: Visto = { ref, nombre }
+    const v: Visto = visto ?? { ref, nombre, correo, dni }
+    v.correo ??= correo
+    v.dni ??= dni
     if (correo !== null) porCorreo.set(correo, v)
     if (dni !== null) porDni.set(dni, v)
   }

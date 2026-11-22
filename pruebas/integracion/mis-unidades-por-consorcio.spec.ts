@@ -1,6 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { misUnidadesPorConsorcio } from '@/aplicacion/consorcios/mis-unidades-por-consorcio'
+import { enConsorcio } from '@/infraestructura/cliente-aislado'
 import { prismaBase } from '@/infraestructura/prisma'
 import { repositorioHabilitaciones } from '@/infraestructura/repositorios/habilitaciones'
 
@@ -12,6 +13,12 @@ import {
   habilitarEnConsorcio,
   limpiar,
 } from './ayudas'
+
+// Se espia `enConsorcio` para contar cuantos consorcios se recorren.
+vi.mock('@/infraestructura/cliente-aislado', async (original) => {
+  const modulo = await original<typeof import('@/infraestructura/cliente-aislado')>()
+  return { ...modulo, enConsorcio: vi.fn(modulo.enConsorcio) }
+})
 
 /** RF-03: la entrada con unidades en varios edificios lee las propias, consorcio por consorcio. */
 
@@ -85,5 +92,18 @@ describe('misUnidadesPorConsorcio', () => {
     await ocupar(propia)
 
     expect((await leer()).has(b)).toBe(false)
+  })
+
+  it('sin ocupaciones vigentes no recorre ningun consorcio', async () => {
+    // Quien administra una cartera grande sin ser dueño de nada entra por `/`
+    // en cada ingreso: no puede pagar una lectura por consorcio.
+    const otro = await crearUsuario('Bruno', 'Paz')
+    await habilitarEnConsorcio(otro.id, a, 'administrador')
+    await habilitarEnConsorcio(otro.id, b, 'administrador')
+    vi.mocked(enConsorcio).mockClear()
+
+    const mapa = await misUnidadesPorConsorcio(repositorioHabilitaciones, RELOJ, otro.id)
+    expect(mapa.size).toBe(0)
+    expect(enConsorcio).not.toHaveBeenCalled()
   })
 })

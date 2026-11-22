@@ -3070,6 +3070,48 @@ td select {
 .modal form > .boton {
   margin: var(--e5) 0 0;
 }
+/* Asignar inquilino (RF-03): la persona a la izquierda, el contrato a la derecha. */
+.asig-lado {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: var(--e4);
+}
+.asig-panel {
+  padding: var(--e4);
+  border-radius: var(--radio);
+}
+.asig-panel--persona {
+  background: var(--superficie);
+  box-shadow: inset 0 0 0 1px var(--linea-suave);
+}
+.asig-panel--contrato {
+  background: var(--superficie-hundida);
+}
+.asig-panel__titulo {
+  margin: 0;
+  font-size: var(--t-menor);
+  font-weight: 700;
+  color: var(--tinta-apagada);
+}
+.asig-panel .campo {
+  min-width: 0;
+  margin-top: var(--e3);
+}
+.asig-panel .ayuda {
+  margin: var(--e2) 0 0;
+}
+.asig-pie {
+  margin-top: var(--e4);
+}
+.asig-pie .boton {
+  width: 100%;
+  margin: 0;
+}
+@media (max-width: 640px) {
+  .asig-lado {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 /* Sin esto, lo ancho —la tabla del padron, de 560px minimo— estira la pista
    de la grilla y el dialogo desborda a 390px (igual que `.disposicion > *`).
    Contenido, el `fieldset` trae `min-inline-size: min-content` de fabrica y

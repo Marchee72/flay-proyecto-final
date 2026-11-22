@@ -70,94 +70,102 @@ function FormularioAsignarInquilino({
       <input type="hidden" name="unidad" value={unidadId} />
       <input type="hidden" name="volver" value={volver} />
 
-      <div className="campo">
-        <label htmlFor={idDe('nombre')}>Nombre</label>
-        <input
-          id={idDe('nombre')}
-          name="nombre"
-          defaultValue={estado.valores?.nombre}
-          required
-          autoComplete="given-name"
-          aria-invalid={hayError || undefined}
-          aria-describedby={hayError ? idError : undefined}
-        />
-      </div>
+      <div className="asig-lado">
+        <div className="asig-panel asig-panel--persona">
+          <p className="asig-panel__titulo">Inquilino</p>
+          <div className="campo">
+            <label htmlFor={idDe('nombre')}>Nombre</label>
+            <input
+              id={idDe('nombre')}
+              name="nombre"
+              defaultValue={estado.valores?.nombre}
+              required
+              autoComplete="given-name"
+              aria-invalid={hayError || undefined}
+              aria-describedby={hayError ? idError : undefined}
+            />
+          </div>
 
-      <div className="campo">
-        <label htmlFor={idDe('apellido')}>Apellido</label>
-        <input
-          id={idDe('apellido')}
-          name="apellido"
-          defaultValue={estado.valores?.apellido}
-          required
-          autoComplete="family-name"
-          aria-invalid={hayError || undefined}
-          aria-describedby={hayError ? idError : undefined}
-        />
-      </div>
+          <div className="campo">
+            <label htmlFor={idDe('apellido')}>Apellido</label>
+            <input
+              id={idDe('apellido')}
+              name="apellido"
+              defaultValue={estado.valores?.apellido}
+              required
+              autoComplete="family-name"
+              aria-invalid={hayError || undefined}
+              aria-describedby={hayError ? idError : undefined}
+            />
+          </div>
 
-      <div className="campo">
-        <label htmlFor={idDe('correo')}>Correo</label>
-        <input
-          id={idDe('correo')}
-          name="correo"
-          type="email"
-          defaultValue={estado.valores?.correo}
-          required
-          autoComplete="email"
-          aria-invalid={hayError || errorCorreo !== null || undefined}
-          aria-describedby={errorCorreo ? idErrorCorreo : hayError ? idError : undefined}
-          onChange={(e) =>
-            setErrorCorreo(e.target.value === '' ? null : errorDeCorreo(e.target.value))
-          }
-          onBlur={(e) => setErrorCorreo(errorDeCorreo(e.target.value))}
-        />
-        {errorCorreo && (
-          <p className="error" id={idErrorCorreo}>
-            {errorCorreo}
+          <div className="campo">
+            <label htmlFor={idDe('correo')}>Correo</label>
+            <input
+              id={idDe('correo')}
+              name="correo"
+              type="email"
+              defaultValue={estado.valores?.correo}
+              required
+              autoComplete="email"
+              aria-invalid={hayError || errorCorreo !== null || undefined}
+              aria-describedby={errorCorreo ? idErrorCorreo : hayError ? idError : undefined}
+              onChange={(e) =>
+                setErrorCorreo(e.target.value === '' ? null : errorDeCorreo(e.target.value))
+              }
+              onBlur={(e) => setErrorCorreo(errorDeCorreo(e.target.value))}
+            />
+            {errorCorreo && (
+              <p className="error" id={idErrorCorreo}>
+                {errorCorreo}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="asig-panel asig-panel--contrato">
+          <p className="asig-panel__titulo">Contrato</p>
+          <div className="campo">
+            <label htmlFor={idDe('desde')}>Desde</label>
+            <input
+              id={idDe('desde')}
+              name="desde"
+              type="date"
+              value={desde}
+              onChange={(e) => setDesde(e.target.value)}
+              required
+              aria-invalid={hayError || undefined}
+              aria-describedby={hayError ? idError : undefined}
+            />
+          </div>
+
+          <div className="campo">
+            <label htmlFor={idDe('hasta')}>Hasta</label>
+            <input
+              id={idDe('hasta')}
+              name="hasta"
+              type="date"
+              value={hasta}
+              onChange={(e) => setHasta(e.target.value)}
+              aria-invalid={errorHasta !== null || hayError || undefined}
+              aria-describedby={
+                errorHasta
+                  ? `${idErrorHasta} ${idAyudaHasta}`
+                  : hayError
+                    ? `${idError} ${idAyudaHasta}`
+                    : idAyudaHasta
+              }
+            />
+            {errorHasta && (
+              <p className="error" id={idErrorHasta}>
+                {errorHasta}
+              </p>
+            )}
+          </div>
+          <p className="ayuda" id={idAyudaHasta}>
+            Fin del contrato. Vacío: sin fecha.
           </p>
-        )}
-      </div>
-
-      <div className="campo">
-        <label htmlFor={idDe('desde')}>Desde</label>
-        <input
-          id={idDe('desde')}
-          name="desde"
-          type="date"
-          value={desde}
-          onChange={(e) => setDesde(e.target.value)}
-          required
-          aria-invalid={hayError || undefined}
-          aria-describedby={hayError ? idError : undefined}
-        />
-      </div>
-
-      <div className="campo">
-        <label htmlFor={idDe('hasta')}>Hasta</label>
-        <input
-          id={idDe('hasta')}
-          name="hasta"
-          type="date"
-          value={hasta}
-          onChange={(e) => setHasta(e.target.value)}
-          aria-invalid={errorHasta !== null || hayError || undefined}
-          aria-describedby={
-            errorHasta
-              ? `${idErrorHasta} ${idAyudaHasta}`
-              : hayError
-                ? `${idError} ${idAyudaHasta}`
-                : idAyudaHasta
-          }
-        />
-        {errorHasta && (
-          <p className="error" id={idErrorHasta}>
-            {errorHasta}
-          </p>
-        )}
-        <p className="ayuda" id={idAyudaHasta}>
-          Fin del contrato. Vacío: sin fecha.
-        </p>
+        </div>
       </div>
 
       {hayError && (
@@ -166,9 +174,11 @@ function FormularioAsignarInquilino({
         </p>
       )}
 
-      <button className="boton boton--primario" type="submit" disabled={enviando}>
-        {enviando ? 'Asignando…' : 'Asignar'}
-      </button>
+      <div className="asig-pie">
+        <button className="boton boton--primario" type="submit" disabled={enviando}>
+          {enviando ? 'Asignando…' : 'Asignar'}
+        </button>
+      </div>
     </form>
   )
 }

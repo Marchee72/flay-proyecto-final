@@ -47,9 +47,9 @@ test('con unidades en dos edificios elige al entrar, aunque recuerde uno', async
   await page.goto('/')
   await expect(page).toHaveURL(/\/consorcios$/)
   await expect(page.getByText('Los edificios a los que tenés acceso. Elegí uno.')).toBeVisible()
-  await expect(page.getByRole('article', { name: 'Mitre 456' })).toContainText('Tus unidades: 3B')
+  await expect(page.getByRole('article', { name: 'Mitre 456' })).toContainText('3B es tu unidad')
   await expect(page.getByRole('article', { name: 'Sarmiento 789' })).toContainText(
-    'Tus unidades: 3B',
+    '3B es tu unidad',
   )
 })
 

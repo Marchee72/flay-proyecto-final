@@ -2,13 +2,12 @@ import type { Metadata } from 'next'
 import { House, Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
-import { fechaParaMostrar, plural } from '@/compartido/formato'
-import { verOcupantes } from '@/aplicacion/consorcios/inquilinos'
+import { fechaParaMostrar } from '@/compartido/formato'
+import { verOcupantes, type InquilinoDeUnidad } from '@/aplicacion/consorcios/inquilinos'
 import { TIPOS_DE_UNIDAD_ASIGNABLES } from '@/aplicacion/consorcios/tipos-de-unidad'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 
 import { conConsorcio } from '../../../con-consorcio'
-import { TablaDesplazable } from '../../../tabla-desplazable'
 import { CeldaInquilino } from '../ocupantes/celda-inquilino'
 
 export const metadata: Metadata = { title: 'Mis unidades — Flay' }
@@ -48,24 +47,26 @@ export default async function MisUnidadesPage({
         ) : (
           <>
             {vista.unidades.length > 0 && (
-              <TablaDesplazable>
-                <table>
-                  <caption className="ayuda">
-                    {plural(vista.unidades.length, 'unidad', 'unidades')}
-                  </caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Unidad</th>
-                      <th scope="col">Tipo</th>
-                      <th scope="col">Inquilino</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vista.unidades.map((unidad) => (
-                      <tr key={unidad.unidadId}>
-                        <td>{unidad.designacion}</td>
-                        <td>{etiquetaDeTipo(unidad.tipo)}</td>
-                        <td>
+              <div className="unidades-fichas">
+                {vista.unidades.map((unidad) => {
+                  const actual = inquilinoActual(unidad.inquilinos, hoy)
+                  return (
+                    <article key={unidad.unidadId} className="unidad-ficha">
+                      <div className="unidad-ficha__cuerpo">
+                        <span className="unidad-ficha__tipo">{etiquetaDeTipo(unidad.tipo)}</span>
+                        <h2 className="unidad-ficha__numero">
+                          <span className="oculto">Unidad </span>
+                          {unidad.designacion}
+                        </h2>
+                        <span
+                          className="unidad-ficha__estado"
+                          data-estado={actual ? 'alquilada' : 'libre'}
+                        >
+                          {actual ? 'Alquilada' : 'Sin inquilino'}
+                        </span>
+                      </div>
+                      {(gestiona || unidad.inquilinos.length > 0) && (
+                        <div className="unidad-ficha__pie">
                           <CeldaInquilino
                             consorcioId={activo.id}
                             unidad={unidad}
@@ -73,12 +74,12 @@ export default async function MisUnidadesPage({
                             volver="mis-unidades"
                             hoy={hoy}
                           />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </TablaDesplazable>
+                        </div>
+                      )}
+                    </article>
+                  )
+                })}
+              </div>
             )}
 
             {vista.alquilo.map((item) => (
@@ -105,3 +106,6 @@ export default async function MisUnidadesPage({
 
 const etiquetaDeTipo = (tipo: string) =>
   TIPOS_DE_UNIDAD_ASIGNABLES.find((candidato) => candidato.valor === tipo)?.etiqueta ?? tipo
+
+const inquilinoActual = (inquilinos: InquilinoDeUnidad[], hoy: string) =>
+  inquilinos.find((i) => i.desde <= hoy && (!i.hasta || i.hasta >= hoy))

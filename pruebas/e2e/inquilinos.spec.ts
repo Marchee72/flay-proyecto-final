@@ -74,8 +74,8 @@ test.describe.serial('inquilinos por unidad (RF-03)', () => {
     await entrar(page, duenio.correo)
     await page.goto(`/consorcios/${duenio.consorcioId}/mis-unidades`)
 
-    const fila3B = page.getByRole('row').filter({ hasText: '3B' })
-    await fila3B.getByRole('button', { name: 'Asignar inquilino' }).click()
+    const ficha3B = page.getByRole('article').filter({ hasText: '3B' })
+    await ficha3B.getByRole('button', { name: 'Asignar inquilino' }).click()
 
     const dialogo = page.getByRole('dialog', { name: 'Asignar inquilino en 3B' })
     await dialogo.getByLabel('Nombre').fill('Juan')
@@ -84,9 +84,9 @@ test.describe.serial('inquilinos por unidad (RF-03)', () => {
     await dialogo.getByRole('button', { name: 'Asignar', exact: true }).click()
 
     await expect(page.getByRole('status').filter({ hasText: 'Inquilino asignado.' })).toBeVisible()
-    await expect(fila3B).toContainText('Juan Pérez')
+    await expect(ficha3B).toContainText('Juan Pérez')
 
-    await fila3B.getByRole('button', { name: 'Terminar alquiler' }).click()
+    await ficha3B.getByRole('button', { name: 'Terminar alquiler' }).click()
     const dialogoFin = page.getByRole('dialog', { name: 'Terminar el alquiler de Juan Pérez' })
     await expect(dialogoFin).toContainText(
       'Juan Pérez deja de tener acceso al consorcio desde el día siguiente, salvo que ocupe otra unidad.',
@@ -102,8 +102,8 @@ test.describe.serial('inquilinos por unidad (RF-03)', () => {
     await entrar(page, duenio.correo)
     await page.goto(`/consorcios/${duenio.consorcioId}/mis-unidades`)
 
-    const fila3B = page.getByRole('row').filter({ hasText: '3B' })
-    await fila3B.getByRole('button', { name: 'Asignar inquilino' }).click()
+    const ficha3B = page.getByRole('article').filter({ hasText: '3B' })
+    await ficha3B.getByRole('button', { name: 'Asignar inquilino' }).click()
 
     const dialogo = page.getByRole('dialog', { name: 'Asignar inquilino en 3B' })
     await dialogo.getByLabel('Desde').fill('2026-09-10')
@@ -123,8 +123,8 @@ test.describe.serial('inquilinos por unidad (RF-03)', () => {
     await entrar(page, duenio.correo)
     await page.goto(`/consorcios/${duenio.consorcioId}/mis-unidades`)
 
-    const fila3B = page.getByRole('row').filter({ hasText: '3B' })
-    await fila3B.getByRole('button', { name: 'Asignar inquilino' }).click()
+    const ficha3B = page.getByRole('article').filter({ hasText: '3B' })
+    await ficha3B.getByRole('button', { name: 'Asignar inquilino' }).click()
 
     const dialogo = page.getByRole('dialog', { name: 'Asignar inquilino en 3B' })
     await dialogo.getByLabel('Nombre').fill('Marta')

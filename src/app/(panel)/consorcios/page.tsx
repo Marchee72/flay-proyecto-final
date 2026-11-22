@@ -209,8 +209,15 @@ export default async function ConsorciosPage({
                           {consorcio.direccion} · {consorcio.localidad}
                         </p>
                         {unidades.has(consorcio.id) && (
-                          <p className="apagado">
-                            Tus unidades: {unidades.get(consorcio.id)!.join(' · ')}
+                          <p className="unidades-destacadas">
+                            <span className="unidades-destacadas__lista">
+                              {unidades.get(consorcio.id)!.join(' · ')}
+                            </span>
+                            <span className="unidades-destacadas__pie">
+                              {unidades.get(consorcio.id)!.length === 1
+                                ? 'es tu unidad'
+                                : 'son tus unidades'}
+                            </span>
                           </p>
                         )}
                       </div>

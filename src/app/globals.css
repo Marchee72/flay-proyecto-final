@@ -379,7 +379,11 @@ th a:not(.boton):hover,
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* `position: relative` lo vuelve el bloque contenedor de lo absoluto de
+   adentro (`.oculto`, por ejemplo): sin eso, esos elementos se ubican contra
+   la pagina, escapan del recorte y le agregan una segunda barra de scroll. */
 .contenido {
+  position: relative;
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
@@ -827,6 +831,27 @@ th a:not(.boton):hover,
 }
 .tarjeta-consorcio .apagado {
   margin: var(--e1) 0 0;
+}
+/* RF-03: las unidades propias en el edificio, en lima sobre la tarjeta oscura. */
+.unidades-destacadas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--e2);
+  row-gap: 2px;
+  margin: var(--e3) 0 0;
+}
+.unidades-destacadas__lista {
+  color: var(--lima-alto);
+  font-weight: 700;
+  font-size: var(--t-titulo3);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.unidades-destacadas__pie {
+  color: var(--tinta-clara-apagada);
+  font-size: var(--t-menor);
 }
 /* Archivados: lista plegable, una fila por consorcio con ícono, nombre y acciones. */
 .archivados summary {
@@ -1409,6 +1434,65 @@ td .boton--fantasma {
 }
 td .boton--fantasma:hover {
   background: var(--gris-palido);
+}
+/* Mis unidades (RF-03): una ficha de grafito por unidad, con el número en lima
+   como protagonista y el estado del alquiler debajo. Las acciones van en un pie
+   claro, así los botones de siempre se leen sin tocarlos. */
+.unidades-fichas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: var(--e4);
+  margin-top: var(--e5);
+}
+.unidad-ficha {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--grafito);
+  color: var(--tinta-clara);
+  border-radius: var(--radio-grande);
+  box-shadow: var(--sombra-alta);
+}
+.unidad-ficha__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e2);
+  padding: var(--e5) var(--e5) var(--e4);
+}
+.unidad-ficha__tipo {
+  font-size: var(--t-menor);
+  color: var(--tinta-clara-apagada);
+}
+.unidad-ficha__numero {
+  margin: 0;
+  color: var(--lima-alto);
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+.unidad-ficha__estado {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  margin-top: var(--e2);
+  font-weight: 600;
+}
+.unidad-ficha__estado::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tinta-clara-apagada);
+}
+.unidad-ficha__estado[data-estado='alquilada']::before {
+  background: var(--lima-alto);
+}
+.unidad-ficha__pie {
+  padding: var(--e4) var(--e5);
+  background: var(--superficie);
+  color: var(--tinta);
 }
 .celda-inquilino {
   display: flex;

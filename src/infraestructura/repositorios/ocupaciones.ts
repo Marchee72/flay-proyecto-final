@@ -49,6 +49,30 @@ export async function registrarOcupacion(
 }
 
 /**
+ * Inserta muchas ocupaciones con **una** sentencia (`unnest`): la importación
+ * del padrón no entra en el tope de la transacción con una ida y vuelta por fila.
+ * La exclusión de la base sigue siendo la que rechaza superposiciones.
+ */
+export async function registrarOcupaciones(
+  lista: readonly (OcupacionNueva & { id: string })[],
+  cliente: Pick<Prisma.TransactionClient, '$executeRaw'>,
+): Promise<void> {
+  if (lista.length === 0) return
+  await cliente.$executeRaw`
+    INSERT INTO "Ocupacion" ("id", "unidad_id", "persona_id", "tipo", "vigencia", "actualizado_en")
+    SELECT o.id, o.unidad_id, o.persona_id, o.tipo::"TipoOcupacion",
+           daterange(o.desde, o.hasta, '[)'), CURRENT_TIMESTAMP
+    FROM unnest(
+      ${lista.map((o) => o.id)}::uuid[],
+      ${lista.map((o) => o.unidadId)}::uuid[],
+      ${lista.map((o) => o.personaId)}::uuid[],
+      ${lista.map((o) => o.tipo)}::text[],
+      ${lista.map((o) => o.desde.toISOString().slice(0, 10))}::text[]::date[],
+      ${lista.map((o) => (o.hasta ? hastaSemiabierto(o.hasta).toISOString().slice(0, 10) : null))}::text[]::date[]
+    ) AS o(id, unidad_id, persona_id, tipo, desde, hasta)`
+}
+
+/**
  * Fija o corre el fin (inclusivo) de una ocupacion. Si se superpone con otro
  * inquilino sobre la misma unidad, la base lo rechaza (RN-09).
  */

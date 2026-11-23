@@ -144,7 +144,7 @@ export async function importarPadron(
         // Otra carga creó la misma persona entre la lectura y la escritura.
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002')
           return errorDeArchivo(
-            'Otra carga usó el mismo correo o DNI recién; volvé a revisar el archivo.',
+            'Otra carga cambió el consorcio recién; volvé a revisar el archivo.',
           )
         throw error
       }

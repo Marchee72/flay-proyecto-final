@@ -134,7 +134,7 @@ export async function importarOcupantes(
       } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002')
           return errorDeArchivo(
-            'Otra carga usó el mismo correo o DNI recién; volvé a revisar el archivo.',
+            'Otra carga cambió el consorcio recién; volvé a revisar el archivo.',
           )
         // Otro inquilino entró entre la lectura y la escritura: lo frena la base (RN-09).
         const superpuesto = comoInquilinoSuperpuesto(error)

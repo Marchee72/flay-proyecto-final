@@ -189,7 +189,7 @@ Alternativa al pegado y a la carga manual para consorcios que ya tienen el padr�
 > [!IMPORTANT]
 > **Todo o nada.** Si una sola fila tiene un error, no se carga ninguna: el sistema lista **todos** los errores juntos, cada uno con su número de fila («Fila 7: …»), para corregirlos y volver a subir el archivo. Los coeficientes deben sumar **exactamente 100** (**RN-01**): si no cierran, el mensaje dice cuánto falta o sobra, y el sistema **nunca redondea** un coeficiente. Al confirmar se vuelve a validar contra el estado actual del consorcio, por si otra persona cargó el padrón mientras tanto.
 
-Importar el padrón registra a los propietarios como personas del consorcio, pero **no crea usuarios, no les da acceso al portal ni envía correos**: la invitación es un paso aparte y explícito (ver más abajo).
+Importar el padrón registra a los propietarios como personas del consorcio, pero **no crea usuarios, no les da acceso al portal ni envía correos**: la invitación es un paso aparte y explícito (ver más abajo). Si una persona de la planilla ya estaba registrada (mismo DNI o correo y mismo nombre), se reutiliza y el correo o DNI que traiga la fila no se modifica; por eso, al invitarla, puede que se pida el correo.
 
 #### Modificación de coeficientes hacia el futuro (RN-02)
 Si el consorcio sufre modificaciones reglamentarias (ejemplo: subdivisión o anexión de unidades):
@@ -229,7 +229,7 @@ Para cargar de una vez los vínculos de las unidades ya existentes: en **Usuario
 2. Complete un vínculo por fila: **Unidad** (designación exacta), **Vínculo** (`propietario` o `inquilino`), **Nombre** y **Apellido** (obligatorios), **DNI**, **Correo** y **Teléfono** (opcionales), **Desde** (opcional; `AAAA-MM-DD` o día/mes/año; vacío es hoy) y **Hasta** (opcional, último día inclusive; vacío no tiene fin, y no puede ser anterior a **Desde**). Mismos límites que el padrón: `.xlsx` o `.csv`, 500 KB, 2000 filas.
 3. Presione **Revisar**, controle la vista previa (cantidad de propietarios, de inquilinos y cuántos **ya estaban**) y presione **Confirmar**. El archivo sigue elegido entre ambos pasos.
 4. **Todo o nada y errores por fila:** cualquier error (unidad inexistente, fechas que se superponen con otro inquilino de la misma unidad, **RN-09**, una persona que ya está registrada con otro nombre, etc.) impide cargar cualquier fila, y se informan todos juntos con su número de fila.
-5. **Una persona se reconoce por su correo y, si no tiene, por su DNI.** Volver a subir el mismo archivo no duplica nada: lo ya cargado cuenta como «ya estaban». Una fila sin correo ni DNI crea una persona nueva cada vez, y la vista previa lo advierte.
+5. **Una persona se reconoce por su correo y, si no tiene, por su DNI.** Volver a subir el mismo archivo no duplica nada: lo ya cargado cuenta como «ya estaban», y eso no actualiza fechas: una fila repetida con otras fechas se ignora. Una fila sin correo ni DNI crea una persona nueva cada vez, y la vista previa lo advierte.
 
 > [!NOTE]
 > Importar ocupantes **no da acceso**: no crea usuarios ni habilitaciones ni envía correos. Las personas quedan **registradas sin acceso** hasta que se las invite.
@@ -252,7 +252,7 @@ Para habilitar el ingreso digital de un propietario, inquilino o colega de admin
    - Si el enlace expira o el destinatario no lo encuentra, presione el botón **Reenviar** para emitir un nuevo token y reactivar la cola.
 
 #### Invitar a los registrados sin acceso (RF-03)
-Debajo de la tabla de usuarios, la sección **Registrados sin acceso** lista a las personas con unidad vigente en el consorcio (propietarios e inquilinos, por ejemplo los que vienen de una importación) que todavía no tienen acceso al portal. La invitación es siempre un acto explícito de la administración:
+Debajo de la tabla de usuarios, la sección **Registrados sin acceso** lista a las personas con unidad vigente en el consorcio (propietarios e inquilinos, por ejemplo los que vienen de una importación) que todavía no tienen acceso a este consorcio. La invitación es siempre un acto explícito de la administración:
 1. **Individual:** presione **Invitar** en la fila de la persona. Si no tiene correo, la ventana lo pide (se valida mientras se escribe); si ya tiene cuenta en Flay, se le suma el acceso a este consorcio sin enviar otro correo.
 2. **En lote:** presione **Invitar a todos los que tienen correo**. Quienes no tienen correo se omiten y quedan en la lista.
 3. Cada invitación sigue el mecanismo de seguridad de **FR-006** (enlace temporal de 72 horas; la administración nunca elige la contraseña) y la persona pasa a la tabla como `Invitado`.

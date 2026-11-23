@@ -87,6 +87,35 @@ describe('leerPlanilla', () => {
     expect(e).toBeInstanceOf(ArchivoNoValido)
     expect(e.mensajeParaUsuario).toBe('El archivo pesa más de 500 KB.')
   })
+  test('xlsx: una celda lejana (XFD1048576) no cuelga el lector', async () => {
+    const libro = new ExcelJS.Workbook()
+    const hoja = libro.addWorksheet('Hoja1')
+    hoja.addRow(['D', 'C'])
+    hoja.getCell('XFD1048576').value = 'x'
+    const b = new Uint8Array(await libro.xlsx.writeBuffer())
+    const t0 = Date.now()
+    const r = await leerPlanilla(b, 'a.xlsx').catch((x) => x)
+    expect(Date.now() - t0).toBeLessThan(3000)
+    // la fila lejana conserva su número real
+    expect(r.filas).toEqual([{ numero: 1048576, celdas: ['', ''] }])
+  })
+  test('xlsx: más de 2000 filas se rechaza', async () => {
+    const filas: unknown[][] = [['D', 'C']]
+    for (let i = 0; i < 2003; i++) filas.push([`u${i}`, '1'])
+    await expect(leerPlanilla(await xlsx(filas), 'a.xlsx')).rejects.toMatchObject({
+      mensajeParaUsuario: 'El archivo tiene más de 2000 filas.',
+    })
+  })
+  test('xlsx: hipervínculo con texto enriquecido se lee como texto', async () => {
+    const r = await leerPlanilla(
+      await xlsx([
+        ['D', 'C'],
+        ['1A', { text: { richText: [{ text: 'a' }, { text: 'b' }] }, hyperlink: 'http://x' }],
+      ]),
+      'a.xlsx',
+    )
+    expect(r.filas[0]!.celdas[1]).toBe('ab')
+  })
   test('xlsx corrupto', async () => {
     await expect(leerPlanilla(bytes('no es un zip'), 'a.xlsx')).rejects.toMatchObject({
       mensajeParaUsuario: 'No pudimos leer el archivo. ¿Es un Excel válido?',

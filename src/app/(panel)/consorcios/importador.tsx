@@ -15,6 +15,7 @@ export type EstadoImportacion = { mensaje: string; resultado?: ResultadoImportac
 
 const INICIAL: EstadoImportacion = { mensaje: '' }
 const TOPE_DE_ERRORES = 50
+// Presentación no importa dominio (§ 12.1.2): copia de MAX_BYTES de `dominio/importacion/planilla`.
 // El servidor también lo rechaza; esto evita mandar algo que excede el cuerpo de la acción.
 const MAX_BYTES = 500 * 1024
 
@@ -46,6 +47,7 @@ export function Importador({
   const [enviadoCon, setEnviadoCon] = useState<File | null>(null)
   const [estado, despachar, enviando] = useActionState(accion, INICIAL)
   const [aviso, setAviso] = useState('')
+  const [confirmando, setConfirmando] = useState(false)
 
   const vigente = enviadoCon !== null && enviadoCon === archivo
   const resultado = vigente ? estado.resultado : undefined
@@ -62,7 +64,9 @@ export function Importador({
     const datos = new FormData()
     datos.set('archivo', archivo)
     datos.set('consorcio', consorcioId)
-    if (submitter?.getAttribute('name') === 'confirmar') datos.set('confirmar', '1')
+    const confirma = submitter?.getAttribute('name') === 'confirmar'
+    if (confirma) datos.set('confirmar', '1')
+    setConfirmando(confirma)
     setEnviadoCon(archivo)
     startTransition(() => despachar(datos))
   }
@@ -103,7 +107,7 @@ export function Importador({
         disabled={enviando}
       >
         <FileUp className="icono" aria-hidden="true" />
-        {enviando ? 'Revisando…' : 'Revisar'}
+        {enviando && !confirmando ? 'Revisando…' : 'Revisar'}
       </button>
 
       {resultado?.estado === 'revisado' && (
@@ -145,7 +149,7 @@ export function Importador({
             name="confirmar"
             disabled={enviando}
           >
-            Confirmar
+            {enviando && confirmando ? 'Cargando…' : 'Confirmar'}
           </button>
         </>
       )}

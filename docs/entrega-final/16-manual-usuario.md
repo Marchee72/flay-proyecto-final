@@ -179,6 +179,18 @@ El sistema ofrece tres modalidades de ingreso en el editor:
 #### Paso 3: Revisión y confirmación atómica
 El asistente muestra el resumen consolidado: cantidad de unidades activas, suma exacta del 100,00000000 % y datos de cabecera. Al presionar **Confirmar y crear consorcio**, la aplicación ejecuta una transacción de base de datos única que crea el consorcio, el lote de unidades y la tabla `CoeficienteHistorico` con vigencia desde las 00:00:00 UTC del día de creación.
 
+#### Importar el padrón desde un archivo Excel o CSV (RF-02)
+Alternativa al pegado y a la carga manual para consorcios que ya tienen el padrón en una planilla. Solo está disponible mientras el consorcio **no tiene unidades**: en **Unidades** (`/consorcios/[id]/unidades`), la sección **Importar desde archivo** aparece encima de **Cargar a mano**.
+1. Presione **Bajar plantilla**. El Excel trae la hoja **Padrón** (con una fila de ejemplo que se ignora) y una hoja **Instrucciones**. Las columnas se reconocen por su título (sin importar mayúsculas ni acentos): no las cambie ni agregue otras.
+2. Complete una unidad por fila: **Designación** (única, obligatoria), **Tipo** (opcional; vacío es departamento), **Coeficiente** (obligatorio, mayor que cero, hasta 8 decimales, con coma o punto) y, opcionalmente, los datos del propietario (**Nombre**, **Apellido**, **DNI**, **Correo**, **Teléfono**; si carga cualquier dato de la persona, Nombre y Apellido son obligatorios). Se acepta `.xlsx` (se lee la primera hoja) o `.csv`, hasta **500 KB** y **2000 filas**.
+3. Elija el archivo y presione **Revisar**. Nada se guarda todavía: el sistema muestra la **vista previa** («así se va a cargar») con la cantidad de unidades, la suma de coeficientes y la cantidad de dueños.
+4. Si la vista previa es correcta, presione **Confirmar**; el archivo sigue elegido, no hace falta volver a seleccionarlo. Se crea el padrón completo en una única transacción y la pantalla avisa «Padrón importado».
+
+> [!IMPORTANT]
+> **Todo o nada.** Si una sola fila tiene un error, no se carga ninguna: el sistema lista **todos** los errores juntos, cada uno con su número de fila («Fila 7: …»), para corregirlos y volver a subir el archivo. Los coeficientes deben sumar **exactamente 100** (**RN-01**): si no cierran, el mensaje dice cuánto falta o sobra, y el sistema **nunca redondea** un coeficiente. Al confirmar se vuelve a validar contra el estado actual del consorcio, por si otra persona cargó el padrón mientras tanto.
+
+Importar el padrón registra a los propietarios como personas del consorcio, pero **no crea usuarios, no les da acceso al portal ni envía correos**: la invitación es un paso aparte y explícito (ver más abajo).
+
 #### Modificación de coeficientes hacia el futuro (RN-02)
 Si el consorcio sufre modificaciones reglamentarias (ejemplo: subdivisión o anexión de unidades):
 1. Ingrese a **Consorcios** → Seleccione el edificio → **Ver unidades** (`/consorcios/[id]/unidades`).
@@ -211,6 +223,17 @@ Tanto la administración (desde la columna **Inquilino** en **Unidades**, `/unid
 4. **Acceso automático (RN-24):** el acceso de consorcista sigue a las ocupaciones de la persona en el edificio. Al asignar con fecha de fin o al terminar un alquiler, el acceso se cierra al día siguiente de la última ocupación, salvo que conserve otra unidad vigente (por ejemplo, una cochera u otro departamento) o un rol de administrador o consejo. La cuenta no se elimina: si vuelve a alquilar más adelante, el acceso se reabre con la misma clave.
 5. **Qué ve el inquilino (RN-23):** en **Expensas** y en el **Estado de cuenta**, el inquilino accede únicamente a los períodos y movimientos desde el mes de su ingreso (el propietario sigue viendo toda la historia). Si la unidad arrastra deuda impaga de períodos anteriores a su ingreso, la pantalla de Expensas muestra un aviso informativo con el monto pendiente indicando que corresponde comunicarse con el propietario para saldarla; el aviso desaparece cuando esa deuda queda cancelada.
 
+#### Importar propietarios e inquilinos desde un archivo (RF-03)
+Para cargar de una vez los vínculos de las unidades ya existentes: en **Usuarios** (`/usuarios`, disponible si el consorcio tiene padrón), presione **Importar ocupantes**.
+1. Presione **Bajar plantilla**: la hoja **Ocupantes** incluye una lista desplegable con las designaciones de las unidades del consorcio y otra con el vínculo.
+2. Complete un vínculo por fila: **Unidad** (designación exacta), **Vínculo** (`propietario` o `inquilino`), **Nombre** y **Apellido** (obligatorios), **DNI**, **Correo** y **Teléfono** (opcionales), **Desde** (opcional; `AAAA-MM-DD` o día/mes/año; vacío es hoy) y **Hasta** (opcional, último día inclusive; vacío no tiene fin, y no puede ser anterior a **Desde**). Mismos límites que el padrón: `.xlsx` o `.csv`, 500 KB, 2000 filas.
+3. Presione **Revisar**, controle la vista previa (cantidad de propietarios, de inquilinos y cuántos **ya estaban**) y presione **Confirmar**. El archivo sigue elegido entre ambos pasos.
+4. **Todo o nada y errores por fila:** cualquier error (unidad inexistente, fechas que se superponen con otro inquilino de la misma unidad, **RN-09**, una persona que ya está registrada con otro nombre, etc.) impide cargar cualquier fila, y se informan todos juntos con su número de fila.
+5. **Una persona se reconoce por su correo y, si no tiene, por su DNI.** Volver a subir el mismo archivo no duplica nada: lo ya cargado cuenta como «ya estaban». Una fila sin correo ni DNI crea una persona nueva cada vez, y la vista previa lo advierte.
+
+> [!NOTE]
+> Importar ocupantes **no da acceso**: no crea usuarios ni habilitaciones ni envía correos. Las personas quedan **registradas sin acceso** hasta que se las invite.
+
 #### Invitación de usuarios al portal web (`/usuarios`)
 Para habilitar el ingreso digital de un propietario, inquilino o colega de administración:
 1. Dentro del consorcio, diríjase a **Usuarios** (`/usuarios`) en el bloque **Administración** del menú lateral.
@@ -227,6 +250,15 @@ Para habilitar el ingreso digital de un propietario, inquilino o colega de admin
    - El sistema genera un token seguro criptográfico y encola un correo con un enlace temporal que expira a las **72 horas**.
    - En la tabla de usuarios, el estado figurará como `Invitado` con la leyenda: *«Correo en cola»* o *«Correo enviado; todavía no la usó»*.
    - Si el enlace expira o el destinatario no lo encuentra, presione el botón **Reenviar** para emitir un nuevo token y reactivar la cola.
+
+#### Invitar a los registrados sin acceso (RF-03)
+Debajo de la tabla de usuarios, la sección **Registrados sin acceso** lista a las personas con unidad vigente en el consorcio (propietarios e inquilinos, por ejemplo los que vienen de una importación) que todavía no tienen acceso al portal. La invitación es siempre un acto explícito de la administración:
+1. **Individual:** presione **Invitar** en la fila de la persona. Si no tiene correo, la ventana lo pide (se valida mientras se escribe); si ya tiene cuenta en Flay, se le suma el acceso a este consorcio sin enviar otro correo.
+2. **En lote:** presione **Invitar a todos los que tienen correo**. Quienes no tienen correo se omiten y quedan en la lista.
+3. Cada invitación sigue el mecanismo de seguridad de **FR-006** (enlace temporal de 72 horas; la administración nunca elige la contraseña) y la persona pasa a la tabla como `Invitado`.
+4. **El lote es reanudable.** Cada disparo trabaja hasta unos 20 segundos; si quedan personas, el aviso dice «Invitamos a N; quedan M: volvé a apretar para seguir». Basta con volver a presionar el botón. Si el correo de alguna persona ya pertenece a otra persona registrada o no es válido, el aviso cuenta cuántas **no se pudieron invitar** sin identificar a nadie, y el resto del lote sigue.
+
+En un consorcio archivado la sección se ve en modo consulta, sin botones de invitar.
 
 ---
 

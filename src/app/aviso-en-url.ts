@@ -59,6 +59,8 @@ export const HECHO = {
   invitado:
     'Invitación creada. El correo con el enlace sale en el próximo pedido; abajo se ve su estado.',
   'acceso-sumado': 'Ya tenía cuenta en Flay: le dimos acceso a este consorcio.',
+  'registrado-invitado': 'Invitación en cola.',
+  'registrados-invitados': 'Invitaciones en cola.',
   'unidad-asignada': 'Unidad asignada.',
   'inquilino-asignado': 'Inquilino asignado.',
   'alquiler-terminado': 'Fin del alquiler registrado.',

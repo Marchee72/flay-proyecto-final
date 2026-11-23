@@ -9,6 +9,7 @@ import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { invitarPersona } from '@/aplicacion/identidad/invitar-persona'
+import { invitarRegistrado, invitarRegistrados } from '@/aplicacion/identidad/registrados'
 import { reenviarInvitacion } from '@/aplicacion/identidad/reenviar-invitacion'
 import { enviarEnlaceDeClave } from '@/aplicacion/identidad/restablecer'
 import { quitarAcceso } from '@/aplicacion/identidad/quitar-acceso'
@@ -32,14 +33,7 @@ async function quienOpera(): Promise<string> {
 
 export async function accionInvitar(_previo: Resultado, datos: FormData): Promise<Resultado> {
   const invitadorId = await quienOpera()
-  const consorcioId = String(datos.get('consorcio') ?? '')
-
-  // El nombre del consorcio se busca; no se acepta del formulario, porque viaja
-  // en el cuerpo del correo que la invitacion manda.
-  const consorcio = (await misConsorcios(HABILITACIONES, RELOJ, invitadorId)).find(
-    (candidato) => candidato.id === consorcioId,
-  )
-
+  const consorcio = await consorcioDe(invitadorId, String(datos.get('consorcio') ?? ''))
   if (!consorcio)
     return { mensaje: new NoEncontrado().mensajeParaUsuario, valores: valoresDe(datos) }
 
@@ -131,6 +125,75 @@ export async function accionImportarOcupantes(
   if (resultado.estado !== 'cargado') return { mensaje: '', resultado }
 
   redirect(conHecho(`/consorcios/${consorcioId}/usuarios`, 'ocupantes-importados'))
+}
+
+/** El nombre del consorcio viaja en el correo: se busca, no se acepta del formulario. */
+async function consorcioDe(usuarioId: string, consorcioId: string) {
+  return (await misConsorcios(HABILITACIONES, RELOJ, usuarioId)).find((c) => c.id === consorcioId)
+}
+
+/** «Invitar» a un registrado sin acceso; pide el correo si la persona no lo tiene (RF-03). */
+export async function accionInvitarRegistrado(
+  _previo: Resultado,
+  datos: FormData,
+): Promise<Resultado> {
+  const usuarioId = await quienOpera()
+  const consorcio = await consorcioDe(usuarioId, String(datos.get('consorcio') ?? ''))
+  if (!consorcio)
+    return { mensaje: new NoEncontrado().mensajeParaUsuario, valores: valoresDe(datos) }
+
+  const correo = datos.get('correo')
+  let resultado: { yaTeniaCuenta: boolean }
+  try {
+    resultado = await invitarRegistrado(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId: consorcio.id,
+      consorcioNombre: consorcio.nombre,
+      urlBase: await urlBase(),
+      personaId: String(datos.get('persona') ?? ''),
+      correo: correo === null ? undefined : String(correo),
+    })
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion)
+      return { mensaje: error.mensajeParaUsuario, valores: valoresDe(datos) }
+    throw error
+  }
+
+  redirect(
+    conHecho(
+      `/consorcios/${consorcio.id}/usuarios`,
+      resultado.yaTeniaCuenta ? 'acceso-sumado' : 'registrado-invitado',
+    ),
+  )
+}
+
+/** «Invitar a todos los que tienen correo»: reanudable, corta a los 20 s (RF-03). */
+export async function accionInvitarRegistrados(datos: FormData): Promise<void> {
+  const usuarioId = await quienOpera()
+  const consorcioId = String(datos.get('consorcio') ?? '')
+  const ruta = `/consorcios/${consorcioId}/usuarios`
+  const consorcio = await consorcioDe(usuarioId, consorcioId)
+  if (!consorcio) redirect(conError(ruta, new NoEncontrado().mensajeParaUsuario))
+
+  let resultado: { invitados: number; quedan: number }
+  try {
+    resultado = await invitarRegistrados(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      consorcioNombre: consorcio.nombre,
+      urlBase: await urlBase(),
+    })
+  } catch (error) {
+    if (!(error instanceof ErrorDeAplicacion)) throw error
+    redirect(conError(ruta, error.mensajeParaUsuario))
+  }
+
+  const { invitados, quedan } = resultado
+  redirect(
+    quedan === 0
+      ? conHecho(ruta, 'registrados-invitados')
+      : conError(ruta, `Invitamos a ${invitados}; quedan ${quedan}: volvé a apretar para seguir.`),
+  )
 }
 
 /** «Quitar» un rol: el acceso se cierra hoy mismo (RF-03, A3). */

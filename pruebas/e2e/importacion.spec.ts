@@ -46,7 +46,13 @@ test.afterAll(async () => {
     await limpiarServicios(escenario)
     await limpiarEscenario(escenario)
   }
-  if (correos.length > 0) await prisma.persona.deleteMany({ where: { correo: { in: correos } } })
+  if (correos.length > 0) {
+    // Lo que dejó «Invitar»: la cuenta invitada y su correo en cola.
+    await prisma.$executeRaw`
+      DELETE FROM "TrabajoPendiente" WHERE tipo = 'invitacion' AND carga->>'destino' = ANY(${correos})`
+    await prisma.usuario.deleteMany({ where: { correo: { in: correos } } })
+    await prisma.persona.deleteMany({ where: { correo: { in: correos } } })
+  }
   await prisma.$disconnect()
 })
 
@@ -158,8 +164,7 @@ test('archivo con errores muestra «Fila N: …» y no carga', async ({ page }) 
   expect(await prisma.unidad.count({ where: { consorcioId: escenario.consorcioId } })).toBe(0)
 })
 
-test('importar ocupantes desde Usuarios y verlos en Unidades', async ({ page }) => {
-  // ponytail: «Registrados sin acceso» llega con la tarea 8; mientras, se ve en la columna Inquilino.
+test('importar ocupantes, verlos en «Registrados sin acceso» e invitarlos', async ({ page }) => {
   const escenario = await nuevo()
   await sembrarUnidadPropia(escenario)
   const apellido = `Paz ${unico()}`
@@ -183,11 +188,23 @@ test('importar ocupantes desde Usuarios y verlos en Unidades', async ({ page }) 
   await dialogo.getByRole('button', { name: 'Confirmar' }).click()
 
   await expect(page.getByRole('status').filter({ hasText: 'Ocupantes importados.' })).toBeVisible()
-  // Importar registra, no invita: no aparece entre quienes tienen acceso.
-  await expect(page.getByRole('row').filter({ hasText: correo })).toHaveCount(0)
+  // Importar registra, no invita: está entre los registrados, no entre quienes tienen acceso.
+  const acceso = page.getByRole('region', { name: 'Personas con acceso a este consorcio' })
+  const registrados = page.getByRole('region', { name: 'Registrados sin acceso' })
+  await expect(acceso.getByRole('row').filter({ hasText: correo })).toHaveCount(0)
+  await expect(registrados.getByRole('row').filter({ hasText: correo })).toContainText(
+    '3C · inquilino',
+  )
 
-  await page.goto(`/consorcios/${escenario.consorcioId}/unidades`)
-  await expect(page.getByRole('row').filter({ hasText: '3C' })).toContainText(`Luis ${apellido}`)
+  const nombre = `${apellido}, Luis`
+  await registrados.getByRole('button', { name: `Invitar a ${nombre}` }).click()
+  const invitar = page.getByRole('dialog', { name: `Invitar a ${nombre}` })
+  await expect(invitar).toContainText(correo)
+  await invitar.getByRole('button', { name: 'Invitar', exact: true }).click()
+
+  await expect(page.getByRole('status').filter({ hasText: 'Invitación en cola.' })).toBeVisible()
+  await expect(acceso.getByRole('row').filter({ hasText: correo })).toContainText('Invitado')
+  await expect(page.getByRole('heading', { name: 'Registrados sin acceso' })).toHaveCount(0)
 })
 
 test('consorcio archivado no muestra los botones de importar', async ({ page }) => {
@@ -202,6 +219,16 @@ test('consorcio archivado no muestra los botones de importar', async ({ page }) 
       vigenciaDesde: new Date('2026-01-01'),
     },
   })
+  // Un registrado sin acceso, con correo: la lista se ve, «Invitar» no.
+  const correo = `imp-${unico()}@ejemplo.test`
+  correos.push(correo)
+  const registrada = await prisma.persona.create({
+    data: { nombre: 'Eva', apellido: 'Ruiz', correo },
+  })
+  await prisma.$executeRaw`
+    INSERT INTO "Ocupacion" (unidad_id, persona_id, tipo, vigencia)
+    SELECT id, ${registrada.id}::uuid, 'inquilino'::"TipoOcupacion", daterange('2026-01-01', NULL)
+    FROM "Unidad" WHERE consorcio_id = ${conPadron.consorcioId}::uuid AND designacion = '3C'`
   await archivar(vacio)
   await archivar(conPadron)
 
@@ -214,4 +241,6 @@ test('consorcio archivado no muestra los botones de importar', async ({ page }) 
   await page.goto(`/consorcios/${conPadron.consorcioId}/usuarios`)
   await expect(page.getByRole('heading', { name: 'Usuarios', level: 1 })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Importar ocupantes' })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Registrados sin acceso' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Invitar/ })).toHaveCount(0)
 })

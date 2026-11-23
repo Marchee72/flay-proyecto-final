@@ -13,6 +13,7 @@ import {
 
 let vacio: Escenario
 let conPadron: Escenario
+let registradaId: string | undefined
 
 test.beforeAll(async () => {
   vacio = await sembrarEscenario('administrador', 'Importar vacío')
@@ -25,6 +26,7 @@ test.afterAll(async () => {
     await limpiarServicios(escenario)
     await limpiarEscenario(escenario)
   }
+  if (registradaId) await prisma.persona.deleteMany({ where: { id: registradaId } })
   await prisma.$disconnect()
 })
 
@@ -63,5 +65,26 @@ test('importar ocupantes, con la vista previa, sin infracciones A/AA', async ({ 
   })
   await dialogo.getByRole('button', { name: 'Revisar' }).click()
   await expect(dialogo.getByRole('button', { name: 'Confirmar' })).toBeVisible()
+  await esperarSinInfracciones(page)
+})
+
+test('registrados sin acceso, con el modal de invitar y su error, sin infracciones A/AA', async ({
+  page,
+}) => {
+  registradaId = (await prisma.persona.create({ data: { nombre: 'Eva', apellido: 'Ruiz' } })).id
+  await prisma.$executeRaw`
+    INSERT INTO "Ocupacion" (unidad_id, persona_id, tipo, vigencia)
+    SELECT id, ${registradaId}::uuid, 'inquilino'::"TipoOcupacion", daterange('2026-01-01', NULL)
+    FROM "Unidad" WHERE consorcio_id = ${conPadron.consorcioId}::uuid AND designacion = '3C'`
+
+  await entrar(page, conPadron.correo)
+  await page.goto(`/consorcios/${conPadron.consorcioId}/usuarios`)
+  await expect(page.getByRole('heading', { name: 'Registrados sin acceso' })).toBeVisible()
+  await esperarSinInfracciones(page)
+
+  await page.getByRole('button', { name: 'Invitar a Ruiz, Eva' }).click()
+  const dialogo = page.getByRole('dialog', { name: 'Invitar a Ruiz, Eva' })
+  await dialogo.getByRole('button', { name: 'Invitar', exact: true }).click()
+  await expect(dialogo.getByRole('alert')).toHaveText('Escribí el correo.')
   await esperarSinInfracciones(page)
 })

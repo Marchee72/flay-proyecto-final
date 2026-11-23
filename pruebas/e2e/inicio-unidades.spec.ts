@@ -47,10 +47,12 @@ test('con unidades en dos edificios elige al entrar, aunque recuerde uno', async
   await page.goto('/')
   await expect(page).toHaveURL(/\/consorcios$/)
   await expect(page.getByText('Los edificios a los que tenés acceso. Elegí uno.')).toBeVisible()
-  await expect(page.getByRole('article', { name: 'Mitre 456' })).toContainText('3B es tu unidad')
-  await expect(page.getByRole('article', { name: 'Sarmiento 789' })).toContainText(
-    '3B es tu unidad',
-  )
+  // La lista y el pie van en spans aparte: el texto del nodo no lleva espacio entre ellos.
+  for (const edificio of ['Mitre 456', 'Sarmiento 789']) {
+    const tarjeta = page.getByRole('article', { name: edificio })
+    await expect(tarjeta).toContainText('3B')
+    await expect(tarjeta).toContainText('es tu unidad')
+  }
 })
 
 test('en teléfono la lista no desborda', async ({ page }) => {

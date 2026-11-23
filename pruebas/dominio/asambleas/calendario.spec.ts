@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { enlaceGoogleCalendar, textoIcs, type EventoAsamblea } from '@/dominio/asambleas/calendario'
+import {
+  enlaceGoogleCalendar,
+  enlacesCalendario,
+  textoIcs,
+  type EventoAsamblea,
+} from '@/dominio/asambleas/calendario'
 
 /** Calendario de la asamblea (FR-007, research R-08): texto puro, sin dependencia. */
 
@@ -33,6 +38,26 @@ describe('enlace de Google Calendar', () => {
   it('respeta un fin explícito', () => {
     const url = new URL(enlaceGoogleCalendar({ ...evento, fin: new Date('2026-11-20T23:30:00Z') }))
     expect(url.searchParams.get('dates')).toBe('20261120T220000Z/20261120T233000Z')
+  })
+})
+
+describe('enlaces de Outlook y Yahoo', () => {
+  it('Outlook y Microsoft 365 usan el mismo formato con fechas ISO', () => {
+    const { outlook, microsoft365 } = enlacesCalendario(evento)
+    const url = new URL(outlook)
+    expect(url.origin).toBe('https://outlook.live.com')
+    expect(new URL(microsoft365).origin).toBe('https://outlook.office.com')
+    expect(url.searchParams.get('startdt')).toBe('2026-11-20T22:00:00.000Z')
+    expect(url.searchParams.get('enddt')).toBe('2026-11-21T00:00:00.000Z')
+    expect(url.searchParams.get('subject')).toBe(evento.titulo)
+    expect(url.searchParams.get('body')).toContain(evento.enlace)
+  })
+
+  it('Yahoo lleva las fechas en UTC y el lugar', () => {
+    const url = new URL(enlacesCalendario(evento).yahoo)
+    expect(url.searchParams.get('st')).toBe('20261120T220000Z')
+    expect(url.searchParams.get('et')).toBe('20261121T000000Z')
+    expect(url.searchParams.get('in_loc')).toBe(evento.lugar)
   })
 })
 

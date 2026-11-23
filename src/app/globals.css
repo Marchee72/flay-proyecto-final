@@ -963,6 +963,45 @@ th a:not(.boton):hover,
   flex: 1 1 auto;
   min-width: 0;
 }
+/* «Agregar al calendario»: botón con panel claro de enlaces, anclado a su propio contenedor. */
+.menu-calendario {
+  position: relative;
+}
+.menu-calendario > summary {
+  list-style: none;
+}
+.menu-calendario > summary::-webkit-details-marker {
+  display: none;
+}
+.menu-calendario__panel {
+  position: absolute;
+  right: 0;
+  top: calc(var(--toque) + var(--e1));
+  z-index: 5;
+  display: grid;
+  min-width: 240px;
+  padding: var(--e1);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  box-shadow: var(--sombra-alta);
+}
+.menu-calendario__panel a {
+  display: flex;
+  align-items: center;
+  min-height: var(--toque);
+  padding: 0 var(--e3);
+  border-radius: var(--radio-chico);
+  color: var(--tinta);
+  font-weight: 600;
+  text-decoration: none;
+}
+.menu-calendario__panel a:hover {
+  background: var(--superficie-hundida);
+}
+.menu-calendario__panel a:focus-visible {
+  outline: 3px solid var(--verde);
+  outline-offset: -3px;
+}
 .menu-puntos {
   margin-left: auto;
 }
@@ -1227,6 +1266,10 @@ form > .fila-acciones {
 }
 .fila-acciones form > .boton {
   margin-top: 0;
+}
+/* El pie de un asistente: Volver y Continuar siempre a la derecha. */
+.fila-acciones--pie {
+  justify-content: flex-end;
 }
 
 .campo {
@@ -3385,24 +3428,261 @@ td select {
   border-color: var(--lima);
   background: var(--verde-palido);
 }
-/* El archivo elegido, antes de subir: nombre, peso y quitar. */
-.archivo-elegido {
-  display: flex;
-  align-items: center;
-  gap: var(--e3);
-  padding: var(--e2) var(--e2) var(--e2) var(--e4);
-  border: 1px solid var(--linea);
-  border-radius: var(--radio-chico);
-  background: var(--superficie);
+/* Asistente «Nuevo consorcio», paso Datos: el nombre arriba y dos grupos cortos. */
+.alta-datos__nombre {
   margin-top: var(--e3);
 }
-.archivo-elegido__nombre {
-  flex: 1;
+.alta-datos__nombre input {
+  font-size: var(--t-titulo3);
+  font-weight: 600;
+}
+.alta-datos__grupos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--e4);
+  margin-top: var(--e4);
+}
+.alta-datos__grupo {
+  display: grid;
+  gap: var(--e3);
+  align-content: start;
+  padding: var(--e4);
+  border-radius: var(--radio);
+  background: var(--superficie-hundida);
+}
+.alta-datos__grupo .campo {
+  margin: 0;
+}
+.alta-datos__grupo h4 {
+  margin: 0;
+  font-size: var(--t-menor);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tinta-apagada);
+}
+@media (max-width: 640px) {
+  .alta-datos__grupos {
+    grid-template-columns: 1fr;
+  }
+}
+/* Asistente «Nuevo consorcio», paso Padrón: archivo y generador lado a lado, del
+   mismo alto y con el mismo rótulo arriba; la tabla manual queda plegada. */
+.alta-padron__lado {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--e4);
+  align-items: stretch;
+  margin-top: var(--e3);
+}
+.alta-padron__col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e2);
   min-width: 0;
+}
+.alta-padron__col[hidden] {
+  display: none;
+}
+.alta-padron__rotulo {
+  display: flex;
+  align-items: center;
+  gap: var(--e2);
+  margin: 0;
+  font-size: var(--t-menor);
+  font-weight: 700;
+}
+.alta-padron__rotulo span {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--grafito);
+  color: var(--lima-alto);
+  font-size: var(--t-ayuda);
+}
+.alta-padron__col .zona-soltar {
+  flex: 1;
+  min-height: 200px;
+  padding: var(--e4);
+}
+/* Con archivo elegido la zona sigue siendo la misma: solo cambia lo que dice. */
+.zona-soltar--lleno {
+  border-style: solid;
+  border-color: var(--linea-control);
+  background: var(--superficie-hundida);
+}
+.zona-soltar--lleno svg {
+  color: var(--tinta);
+}
+.zona-soltar__nombre {
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: var(--t-titulo3);
+}
+/* El generador no se usa con un archivo elegido: queda a la vista, atenuado. */
+.alta-padron__col[inert] {
+  opacity: 0.5;
+}
+.alta-padron__gen .fila-de-filtros {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto 1fr auto;
+  gap: var(--e2);
+  min-height: 200px;
+  margin: 0;
+  padding: var(--e4);
+  border: 2px solid var(--linea);
+  border-radius: var(--radio);
+  background: var(--superficie);
+}
+/* El rótulo B ya hace de título: la leyenda queda para lectores de pantalla. */
+.alta-padron__gen legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.alta-padron__gen .fila-de-filtros > .boton {
+  grid-column: 1 / -1;
+  justify-self: center;
+  align-self: end;
+}
+.alta-padron__gen .fila-de-filtros > .ayuda,
+.alta-padron__gen .fila-de-filtros > .error {
+  grid-column: 1 / -1;
+}
+/* Etiquetas en una sola línea: tres columnas; «Unidades por piso» y
+   «% del total para cocheras» toman dos. */
+.alta-padron__gen .fila-de-filtros {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.alta-padron__gen .fila-de-filtros > .campo:nth-of-type(2),
+.alta-padron__gen .fila-de-filtros > .campo:nth-of-type(4) {
+  grid-column: span 2;
+}
+.alta-padron__gen .campo label {
+  white-space: nowrap;
+}
+/* Asistente «Nuevo consorcio», paso Revisión: una tabla compacta de solo lectura;
+   solo el renglón que se corrige muestra campos. */
+.alta-revision {
+  font-size: var(--t-menor);
+}
+.alta-revision th,
+.alta-revision td {
+  padding: var(--e1) var(--e3);
+}
+.alta-revision__acciones {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--e1);
+  white-space: nowrap;
+}
+/* Compacta solo con puntero fino; en táctil quedan los 44 px (--toque). */
+@media (pointer: fine) {
+  .alta-revision__acciones .boton {
+    min-height: 32px;
+  }
+  .alta-revision__acciones .boton--icono {
+    min-width: 32px;
+  }
+}
+.alta-revision__editando {
+  background: var(--superficie-hundida);
+}
+/* El renglón que se corrige: la unidad en una línea y el dueño en una grilla de seis. */
+.alta-revision__form {
+  display: grid;
+  gap: var(--e2);
+  padding: var(--e2) 0;
+}
+.alta-revision__linea {
+  display: grid;
+  grid-template-columns: 110px 170px 120px 1fr;
+  gap: var(--e2);
+  align-items: end;
+}
+.alta-revision__dueno {
+  min-width: 0;
+  margin: 0;
+  padding: var(--e3) 0 0;
+  border: 0;
+  border-top: 1px solid var(--linea-suave);
+}
+.alta-revision__dueno-titulo {
+  padding: 0;
+  margin-bottom: var(--e2);
+  font-size: var(--t-ayuda);
   font-weight: 600;
+  color: var(--tinta-apagada);
+}
+/* Los datos del dueño, en tres columnas y alineados a la izquierda con los de arriba. */
+.alta-revision__dueno-panel {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--e2);
+}
+.alta-revision__dueno-panel > .campo:nth-of-type(4) {
+  grid-column: span 2;
+}
+.alta-revision__form .campo {
+  max-width: none;
+  margin: 0;
+  min-width: 0;
+}
+.alta-revision__form .campo label {
+  margin-bottom: 2px;
+  font-size: var(--t-ayuda);
+}
+.alta-revision__form .campo input,
+.alta-revision__form .campo select {
+  min-height: 34px;
+  padding: 0 var(--e2);
+  font-size: var(--t-menor);
+}
+.alta-revision__botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--e2);
+}
+/* Quitar y confirmar: cuadrados del alto de los campos de al lado. */
+.alta-revision__botones > .boton {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0;
+}
+@media (max-width: 640px) {
+  .alta-revision__linea,
+  .alta-revision__dueno-panel {
+    grid-template-columns: 1fr 1fr;
+  }
+  .alta-revision__dueno-panel > .campo:nth-of-type(4) {
+    grid-column: 1 / -1;
+  }
+  .alta-revision__form .campo input,
+  .alta-revision__form .campo select {
+    min-height: var(--toque);
+  }
+  .alta-revision__botones > .boton {
+    width: var(--toque);
+    height: var(--toque);
+    min-width: var(--toque);
+    min-height: var(--toque);
+  }
+}
+@media (max-width: 640px) {
+  .alta-padron__lado {
+    grid-template-columns: 1fr;
+  }
 }
 /* Titulo de una lista con su resumen a la derecha («2 en proceso»). */
 .encabezado-lista {
@@ -5513,6 +5793,52 @@ table.calendario th {
   border-radius: var(--radio);
   background: var(--superficie-hundida);
   border: 1px solid var(--linea);
+}
+/* Ya es hora de abrir: la barra pasa al grafito del armazón, con lima como el
+   gesto de marca (punto de estado y botón de abrir). */
+.borrador-barra--lista {
+  background: var(--grafito);
+  border-color: transparent;
+}
+.borrador-barra--lista .borrador-barra__texto {
+  color: var(--tinta-clara-apagada);
+}
+.borrador-barra--lista .borrador-barra__texto strong {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e2);
+  color: var(--lima-alto);
+  font-weight: 700;
+}
+.borrador-barra--lista .borrador-barra__texto strong::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--lima);
+  box-shadow: 0 0 10px var(--lima-alto);
+}
+.borrador-barra--lista .borrador-barra__separador {
+  background: rgb(255 255 255 / 20%);
+}
+.borrador-barra--lista .borrador-barra__borrar {
+  color: var(--tinta-clara);
+  border-color: rgb(255 255 255 / 25%);
+}
+.borrador-barra--lista .borrador-barra__borrar:hover {
+  background: rgb(255 255 255 / 10%);
+  border-color: rgb(255 255 255 / 25%);
+}
+.borrador-barra--lista .boton--primario {
+  background: var(--lima);
+  color: var(--grafito);
+  border-color: transparent;
+}
+.borrador-barra--lista .boton--primario:hover:not(:disabled) {
+  background: var(--lima-alto);
+}
+.borrador-barra--lista :focus-visible {
+  outline-color: var(--lima-alto);
 }
 .borrador-barra__texto {
   flex: 1 1 320px;

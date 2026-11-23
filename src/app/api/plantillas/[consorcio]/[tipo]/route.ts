@@ -1,7 +1,7 @@
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
-import { plantillaPara } from '@/aplicacion/importacion/plantilla'
+import { plantillaDePadronParaAlta, plantillaPara } from '@/aplicacion/importacion/plantilla'
 
 /**
  * `GET /api/plantillas/{consorcio}/{padron|ocupantes}.xlsx` (RF-02, RF-03):
@@ -20,11 +20,15 @@ export async function GET(
   if (tipo !== 'padron' && tipo !== 'ocupantes') return new Response(null, { status: 404 })
 
   try {
-    const { nombre, bytes } = await plantillaPara(HABILITACIONES, RELOJ, {
-      usuarioId,
-      consorcioId: consorcio,
-      tipo,
-    })
+    // «nuevo»: la plantilla del padrón para el asistente de alta, cuando aún no hay consorcio.
+    const { nombre, bytes } =
+      consorcio === 'nuevo' && tipo === 'padron'
+        ? await plantillaDePadronParaAlta()
+        : await plantillaPara(HABILITACIONES, RELOJ, {
+            usuarioId,
+            consorcioId: consorcio,
+            tipo,
+          })
     return new Response(bytes as BodyInit, {
       headers: {
         'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

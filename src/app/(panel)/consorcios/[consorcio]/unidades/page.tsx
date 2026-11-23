@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Building, Pencil, Siren } from 'lucide-react'
+import { ArrowLeft, Building, Download, Pencil, Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { importe } from '@/compartido/dinero'
@@ -77,8 +77,13 @@ export default async function UnidadesPage({
         <h1>Editar padrón</h1>
         <p className="apagado">
           Renombrar, cambiar el tipo o el coeficiente, agregar unidades o darlas de baja. Se guarda
-          todo junto y la suma tiene que seguir dando 100.{' '}
-          <Link href={`/consorcios/${consorcio.id}/unidades`}>Volver sin guardar</Link>.
+          todo junto y la suma tiene que seguir dando 100.
+        </p>
+        <p>
+          <Link className="boton boton--fantasma" href={`/consorcios/${consorcio.id}/unidades`}>
+            <ArrowLeft className="icono" aria-hidden="true" />
+            Volver sin guardar
+          </Link>
         </p>
         <CargadorDePadron
           consorcioId={consorcio.id}
@@ -159,6 +164,14 @@ export default async function UnidadesPage({
             <Pencil className="icono" aria-hidden="true" />
             Editar padrón
           </Link>
+          <a
+            className="boton boton--fantasma"
+            href={`/api/exportar/${consorcio.id}/padron.xlsx`}
+            download
+          >
+            <Download className="icono" aria-hidden="true" />
+            Descargar en Excel
+          </a>
         </div>
       )}
 

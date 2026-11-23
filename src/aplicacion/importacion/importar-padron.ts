@@ -9,6 +9,7 @@ import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { escribirPadron } from '@/aplicacion/consorcios/unidades'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
 import { ArchivoNoValido, leerPlanilla } from '@/infraestructura/planillas/leer-planilla'
+import { padronActual } from '@/infraestructura/planillas/plantillas'
 import { personasConocidas } from '@/infraestructura/repositorios/personas'
 import { registrarOcupaciones } from '@/infraestructura/repositorios/ocupaciones'
 
@@ -33,6 +34,87 @@ export const errorDeArchivo = (mensaje: string): { estado: 'errores'; errores: E
   estado: 'errores',
   errores: [{ fila: null, mensaje }],
 })
+
+/**
+ * Revisa un archivo de padrón antes de que exista el consorcio (asistente de alta):
+ * no escribe ni autoriza, solo devuelve los errores del archivo, o `[]` si está bien.
+ */
+export interface UnidadRevisada {
+  designacion: string
+  tipo: string
+  coeficiente: string
+  dueno: { nombre: string; apellido: string; dni: string; correo: string; telefono: string } | null
+}
+
+export type RevisionDeAlta =
+  | { estado: 'errores'; errores: ErrorDeFila[] }
+  | {
+      estado: 'revisado'
+      resumen: ResumenPadron
+      columnas: string[]
+      vista: FilaDeVista[]
+      unidades: UnidadRevisada[]
+    }
+
+export async function revisarArchivoDePadron(
+  bytes: Uint8Array,
+  nombreArchivo: string,
+): Promise<RevisionDeAlta> {
+  let planilla
+  try {
+    planilla = await leerPlanilla(bytes, nombreArchivo)
+  } catch (error) {
+    if (error instanceof ArchivoNoValido) return errorDeArchivo(error.mensajeParaUsuario)
+    throw error
+  }
+  const validacion = validarPadron(planilla, {
+    unidadesExistentes: 0,
+    archivado: false,
+    personasConocidas: [],
+  })
+  if (!validacion.ok) return { estado: 'errores', errores: validacion.errores }
+  const { unidades, resumen } = validacion.valor
+  return {
+    estado: 'revisado',
+    resumen,
+    columnas: ['Designación', 'Tipo', 'Coeficiente', 'Dueño'],
+    vista: unidades.map((u) => ({
+      fila: u.fila,
+      celdas: [
+        u.designacion,
+        u.tipo,
+        u.coeficiente,
+        u.persona ? `${u.persona.nombre} ${u.persona.apellido}`.trim() : '',
+      ],
+    })),
+    // Las unidades con su dueño completo: el asistente las deja corregir antes de crear.
+    unidades: unidades.map((u) => ({
+      designacion: u.designacion,
+      tipo: u.tipo,
+      coeficiente: u.coeficiente,
+      dueno: u.persona
+        ? {
+            nombre: u.persona.nombre,
+            apellido: u.persona.apellido,
+            dni: u.persona.dni ?? '',
+            correo: u.persona.correo ?? '',
+            telefono: u.persona.telefono ?? '',
+          }
+        : null,
+    })),
+  }
+}
+
+/** Una planilla en memoria con las filas del asistente: mismo camino de validación que un archivo. */
+export const planillaDeFilas = padronActual
+
+export async function erroresDelArchivoDePadron(
+  bytes: Uint8Array,
+  nombreArchivo: string,
+): Promise<ErrorDeFila[]> {
+  const revision = await revisarArchivoDePadron(bytes, nombreArchivo)
+  return revision.estado === 'errores' ? revision.errores : []
+}
 
 export async function importarPadron(
   repositorio: RepositorioHabilitaciones,

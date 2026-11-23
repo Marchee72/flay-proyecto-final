@@ -4,7 +4,11 @@ import { NoEncontrado } from '@/compartido/errores'
 import { momentoParaMostrar } from '@/compartido/formato'
 import type { AccesoVigente } from '@/dominio/contratos/repositorios'
 import type { Rol } from '@/dominio/identidad/rol'
-import { enlaceGoogleCalendar, type EventoAsamblea } from '@/dominio/asambleas/calendario'
+import {
+  enlaceGoogleCalendar,
+  enlacesCalendario,
+  type EventoAsamblea,
+} from '@/dominio/asambleas/calendario'
 import { notificar, type Transaccion } from '@/aplicacion/comunicacion/notificar'
 import { prisma } from '@/infraestructura/prisma'
 import {
@@ -105,6 +109,7 @@ export function eventoDe(
 }
 
 export const enlaceCalendario = (evento: EventoAsamblea) => enlaceGoogleCalendar(evento)
+export const enlacesDeCalendarios = (evento: EventoAsamblea) => enlacesCalendario(evento)
 
 /** Las unidades vigentes del consorcio activo (nota 23: sin las dadas de baja). */
 export async function unidadesVigentes(cliente: Transaccion | typeof prisma = prisma) {

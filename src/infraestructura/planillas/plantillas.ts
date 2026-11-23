@@ -99,6 +99,51 @@ export async function plantillaPadron(): Promise<Uint8Array> {
   return aBytes(libro)
 }
 
+/**
+ * El padrón vigente con sus dueños, con las mismas columnas que la plantilla.
+ * Una fila por dueño (un condominio repite la designación); una unidad sin dueño
+ * sale con las columnas de la persona vacías. Coeficiente como texto: nunca pasa
+ * por un double.
+ */
+export async function padronActual(
+  filas: readonly {
+    designacion: string
+    tipo: string
+    coeficiente: string
+    dueno: {
+      nombre: string
+      apellido: string
+      documento: string | null
+      correo: string | null
+      telefono: string | null
+    } | null
+  }[],
+): Promise<Uint8Array> {
+  const libro = new ExcelJS.Workbook()
+  const hoja = libro.addWorksheet('Padrón', { views: [{ state: 'frozen', ySplit: 1 }] })
+  hoja.addRow(COLUMNAS_PADRON.map((c) => c.titulo)).font = { bold: true }
+  filas.forEach((f) =>
+    hoja.addRow([
+      f.designacion,
+      f.tipo,
+      f.coeficiente,
+      f.dueno?.nombre ?? '',
+      f.dueno?.apellido ?? '',
+      f.dueno?.documento ?? '',
+      f.dueno?.correo ?? '',
+      f.dueno?.telefono ?? '',
+    ]),
+  )
+  COLUMNAS_PADRON.forEach((_, i) => (hoja.getColumn(i + 1).width = 20))
+  const iCoef = COLUMNAS_PADRON.findIndex((c) => c.clave === 'coeficiente') + 1
+  // Texto, igual que la plantilla: el coeficiente no puede pasar por un double.
+  hoja.getColumn(iCoef).numFmt = '@'
+  hoja.getColumn(iCoef).alignment = { horizontal: 'right' }
+  // El DNI también como texto: Excel le sacaría ceros y lo mostraría en notación científica.
+  hoja.getColumn(6).numFmt = '@'
+  return aBytes(libro)
+}
+
 export async function plantillaOcupantes(designaciones: readonly string[]): Promise<Uint8Array> {
   const libro = new ExcelJS.Workbook()
   const hoja = hojaDeDatos(

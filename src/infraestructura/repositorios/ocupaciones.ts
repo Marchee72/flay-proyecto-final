@@ -358,6 +358,52 @@ export async function propietariosVigentesDe(
   }))
 }
 
+export interface PropietarioParaPlanilla {
+  unidadId: string
+  nombre: string
+  apellido: string
+  documento: string | null
+  correo: string | null
+  telefono: string | null
+}
+
+/**
+ * Los propietarios vigentes con todos sus datos de contacto, para exportar el
+ * padrón a planilla. Los ids tienen que venir de una consulta ya aislada: esto
+ * no filtra por consorcio.
+ */
+export async function propietariosParaPlanilla(
+  unidadIds: readonly string[],
+  fecha: Date,
+): Promise<PropietarioParaPlanilla[]> {
+  if (unidadIds.length === 0) return []
+  const filas = await prismaBase.$queryRaw<
+    {
+      unidad_id: string
+      nombre: string
+      apellido: string
+      documento: string | null
+      correo: string | null
+      telefono: string | null
+    }[]
+  >`
+    SELECT o."unidad_id", p."nombre", p."apellido", p."documento", p."correo", p."telefono"
+    FROM "Ocupacion" o
+    JOIN "Persona" p ON p."id" = o."persona_id"
+    WHERE o."unidad_id" = ANY(${unidadIds}::uuid[])
+      AND o."tipo" = 'propietario'
+      AND o."vigencia" @> ${fecha}::date
+    ORDER BY p."apellido", p."nombre"`
+  return filas.map((f) => ({
+    unidadId: f.unidad_id,
+    nombre: f.nombre,
+    apellido: f.apellido,
+    documento: f.documento,
+    correo: f.correo,
+    telefono: f.telefono,
+  }))
+}
+
 export interface InquilinoDeUnidad {
   ocupacionId: string
   unidadId: string

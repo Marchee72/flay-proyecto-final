@@ -45,6 +45,10 @@ const PERMITIDOS: Record<string, string> = {
     'lee la cabecera del consorcio por su propio identificador para el encabezado del acta (como ver-consorcio)',
   'src/aplicacion/comunicacion/sugerencias.ts':
     'lee del consorcio, por su propio identificador, la configuracion vigente que compara con las sugerencias (como regla-vencimientos)',
+  'src/aplicacion/importacion/importar-padron.ts':
+    'lee la cabecera del consorcio por su propio identificador para saber si esta archivado (como ver-consorcio)',
+  'src/aplicacion/importacion/importar-ocupantes.ts':
+    'lee la cabecera del consorcio por su propio identificador para saber si esta archivado (como ver-consorcio)',
   'src/aplicacion/asistente/conversar.ts':
     'lee la cabecera del consorcio activo por su propio identificador, para situar al modelo (como ver-consorcio)',
 }

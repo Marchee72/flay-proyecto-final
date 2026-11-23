@@ -4,6 +4,7 @@ import { NoEncontrado } from '@/compartido/errores'
 import { cargarPadron } from '@/aplicacion/consorcios/unidades'
 import { CorreoInvalido } from '@/aplicacion/identidad/invitar-persona'
 import {
+  avisoDelLote,
   CorreoEnUso,
   invitarRegistrado,
   invitarRegistrados,
@@ -263,11 +264,52 @@ describe('invitarRegistrados (RF-03)', () => {
     expect(await invitarRegistrados(repo, RELOJ, { ...DATOS(), presupuestoMs: 0 })).toEqual({
       invitados: 1,
       quedan: 1,
+      fallidos: 0,
     })
-    expect(await invitarRegistrados(repo, RELOJ, DATOS())).toEqual({ invitados: 1, quedan: 0 })
-    expect(await invitarRegistrados(repo, RELOJ, DATOS())).toEqual({ invitados: 0, quedan: 0 })
+    expect(await invitarRegistrados(repo, RELOJ, DATOS())).toEqual({
+      invitados: 1,
+      quedan: 0,
+      fallidos: 0,
+    })
+    expect(await invitarRegistrados(repo, RELOJ, DATOS())).toEqual({
+      invitados: 0,
+      quedan: 0,
+      fallidos: 0,
+    })
 
     expect((await listar()).map((r) => r.personaId)).toEqual([eva.id])
     expect(await invitaciones()).toHaveLength(1)
+  })
+
+  it('quien tiene un correo de otra persona no frena el lote: se cuenta como fallido', async () => {
+    const luis = await persona('Luis', 'Paz', { correo: 'luis@ejemplo.test' })
+    const vecino = await crearUsuario('Beto', 'Gil')
+    // Importada con el correo de una cuenta ajena: invitarla sería fusionar personas.
+    const eva = await persona('Eva', 'Ruiz', { correo: vecino.correo })
+    await ocupa(luis.id, '1A')
+    await ocupa(eva.id, '1B', 'inquilino')
+
+    expect(await invitarRegistrados(repo, RELOJ, DATOS())).toEqual({
+      invitados: 1,
+      quedan: 0,
+      fallidos: 1,
+    })
+    expect((await listar()).map((r) => r.personaId)).toEqual([eva.id])
+    expect(await prismaBase.usuario.findUnique({ where: { personaId: eva.id } })).toBeNull()
+  })
+})
+
+describe('avisoDelLote (RF-03)', () => {
+  it('sin pendientes ni fallidos es un éxito; si no, dice cuántos quedan y cuántos fallaron', () => {
+    expect(avisoDelLote({ invitados: 3, quedan: 0, fallidos: 0 })).toBeNull()
+    expect(avisoDelLote({ invitados: 3, quedan: 2, fallidos: 0 })).toBe(
+      'Invitamos a 3; quedan 2: volvé a apretar para seguir.',
+    )
+    expect(avisoDelLote({ invitados: 3, quedan: 0, fallidos: 1 })).toBe(
+      'Invitamos a 3. 1 no se pudo invitar: su correo ya pertenece a otra persona registrada o no es válido.',
+    )
+    expect(avisoDelLote({ invitados: 1, quedan: 4, fallidos: 2 })).toBe(
+      'Invitamos a 1; quedan 4: volvé a apretar para seguir. 2 no se pudieron invitar: su correo ya pertenece a otra persona registrada o no es válido.',
+    )
   })
 })

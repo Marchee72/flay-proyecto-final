@@ -140,12 +140,37 @@ export async function invitarRegistrado(
   )
 }
 
+export interface ResultadoDelLote {
+  invitados: number
+  quedan: number
+  /** Los que no se pudieron invitar (correo en uso o no válido): siguen en la lista. */
+  fallidos: number
+}
+
+/**
+ * El aviso del lote, o `null` si salió todo. Sin nombres: no revela de quién
+ * es el correo que choca.
+ */
+export function avisoDelLote({ invitados, quedan, fallidos }: ResultadoDelLote): string | null {
+  if (quedan === 0 && fallidos === 0) return null
+  const partes = [
+    quedan > 0
+      ? `Invitamos a ${invitados}; quedan ${quedan}: volvé a apretar para seguir.`
+      : `Invitamos a ${invitados}.`,
+  ]
+  if (fallidos > 0)
+    partes.push(
+      `${fallidos === 1 ? '1 no se pudo invitar' : `${fallidos} no se pudieron invitar`}: su correo ya pertenece a otra persona registrada o no es válido.`,
+    )
+  return partes.join(' ')
+}
+
 /** «Invitar a todos los que tienen correo»: reanudable, corta por tiempo. */
 export async function invitarRegistrados(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
   datos: DatosDeInvitar & { presupuestoMs?: number },
-): Promise<{ invitados: number; quedan: number }> {
+): Promise<ResultadoDelLote> {
   return conAutorizacion(
     repositorio,
     reloj,
@@ -160,20 +185,22 @@ export async function invitarRegistrados(
       const presupuesto = datos.presupuestoMs ?? PRESUPUESTO_MS
       const inicio = Date.now()
       let invitados = 0
+      let fallidos = 0
 
       for (const [i, registrado] of candidatos.entries()) {
         // Siempre avanza al menos uno: volver a apretar nunca se queda en el lugar.
         if (i > 0 && Date.now() - inicio >= presupuesto)
-          return { invitados, quedan: candidatos.length - i }
+          return { invitados, quedan: candidatos.length - i, fallidos }
         try {
           await invitarUno(reloj, registrado, datos)
           invitados++
         } catch (error) {
-          // Un correo en uso no frena al resto: esa persona sigue en la lista.
+          // Un correo en uso no frena al resto: se cuenta y la persona sigue en la lista.
           if (!(error instanceof ErrorDeAplicacion)) throw error
+          fallidos++
         }
       }
-      return { invitados, quedan: 0 }
+      return { invitados, quedan: 0, fallidos }
     },
   )
 }

@@ -9,7 +9,12 @@ import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { invitarPersona } from '@/aplicacion/identidad/invitar-persona'
-import { invitarRegistrado, invitarRegistrados } from '@/aplicacion/identidad/registrados'
+import {
+  avisoDelLote,
+  invitarRegistrado,
+  invitarRegistrados,
+  type ResultadoDelLote,
+} from '@/aplicacion/identidad/registrados'
 import { reenviarInvitacion } from '@/aplicacion/identidad/reenviar-invitacion'
 import { enviarEnlaceDeClave } from '@/aplicacion/identidad/restablecer'
 import { quitarAcceso } from '@/aplicacion/identidad/quitar-acceso'
@@ -175,7 +180,7 @@ export async function accionInvitarRegistrados(datos: FormData): Promise<void> {
   const consorcio = await consorcioDe(usuarioId, consorcioId)
   if (!consorcio) redirect(conError(ruta, new NoEncontrado().mensajeParaUsuario))
 
-  let resultado: { invitados: number; quedan: number }
+  let resultado: ResultadoDelLote
   try {
     resultado = await invitarRegistrados(HABILITACIONES, RELOJ, {
       usuarioId,
@@ -188,12 +193,8 @@ export async function accionInvitarRegistrados(datos: FormData): Promise<void> {
     redirect(conError(ruta, error.mensajeParaUsuario))
   }
 
-  const { invitados, quedan } = resultado
-  redirect(
-    quedan === 0
-      ? conHecho(ruta, 'registrados-invitados')
-      : conError(ruta, `Invitamos a ${invitados}; quedan ${quedan}: volvé a apretar para seguir.`),
-  )
+  const aviso = avisoDelLote(resultado)
+  redirect(aviso === null ? conHecho(ruta, 'registrados-invitados') : conError(ruta, aviso))
 }
 
 /** «Quitar» un rol: el acceso se cierra hoy mismo (RF-03, A3). */

@@ -84,19 +84,6 @@ function FormularioUnidad({
       </div>
 
       <div className="campo">
-        <label htmlFor={idDe('tipo')}>Es</label>
-        <select
-          key={estado.valores?.tipoOcupacion ?? 'inicial'}
-          id={idDe('tipo')}
-          name="tipoOcupacion"
-          defaultValue={estado.valores?.tipoOcupacion ?? 'propietario'}
-        >
-          <option value="propietario">Propietario</option>
-          <option value="inquilino">Inquilino</option>
-        </select>
-      </div>
-
-      <div className="campo">
         <label htmlFor={idDe('desde')}>Desde</label>
         <input
           id={idDe('desde')}

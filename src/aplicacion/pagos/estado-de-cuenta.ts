@@ -2,19 +2,16 @@ import { NoEncontrado } from '@/compartido/errores'
 import { Decimal, importe } from '@/compartido/dinero'
 import { saldosDeUnidad } from '@/dominio/liquidacion/saldo'
 import { exigible } from '@/dominio/liquidacion/vencimientos'
+import { periodoVisible } from '@/dominio/ocupaciones/vigencia'
 import { ordenarUnidades } from '@/dominio/unidades/division'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
 
 import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { deudaDesdeDetalles, type DetalleParaDeuda } from '@/aplicacion/pagos/registrar'
-import { unidadesAlcanzables } from '@/aplicacion/liquidacion/ver-expensa'
+import { unidadesAlcanzables, unidadesPropias } from '@/aplicacion/liquidacion/ver-expensa'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
-import {
-  ocupaUnidad,
-  ocupantesVigentesDe,
-  type Ocupante,
-} from '@/infraestructura/repositorios/ocupaciones'
+import { ocupantesVigentesDe, type Ocupante } from '@/infraestructura/repositorios/ocupaciones'
 
 /**
  * Estado de cuenta de una unidad (`FR-028`) y morosidad del consorcio
@@ -43,7 +40,10 @@ export interface EstadoDeCuenta {
   movimientos: MovimientoDeCuenta[]
 }
 
-async function estadoDe(unidad: { id: string; designacion: string }): Promise<EstadoDeCuenta> {
+async function estadoDe(
+  unidad: { id: string; designacion: string },
+  visibleDesde: Date | null,
+): Promise<EstadoDeCuenta> {
   const [detalles, pagos] = await Promise.all([
     prismaBase.detalleLiquidacion.findMany({
       where: { unidadId: unidad.id, liquidacion: { estado: 'vigente' } },
@@ -85,6 +85,7 @@ async function estadoDe(unidad: { id: string; designacion: string }): Promise<Es
         `Expensas ${String(detalle.liquidacion.periodo.mes).padStart(2, '0')}/` +
         `${detalle.liquidacion.periodo.anio}`,
       importe: propioPorDetalle.get(detalle.id) ?? new Decimal(0),
+      visible: periodoVisible(detalle.liquidacion.periodo, visibleDesde),
     })),
     ...pagos.map((pago) => ({
       momento: pago.creadoEn,
@@ -95,6 +96,7 @@ async function estadoDe(unidad: { id: string; designacion: string }): Promise<Es
       importe: pago.imputaciones
         .reduce((total, i) => total.plus(importe(i.importeImputado.toFixed(2))), new Decimal(0))
         .negated(),
+      visible: visibleDesde === null || pago.fechaPago.getTime() >= visibleDesde.getTime(),
     })),
   ].sort((a, b) => a.momento.getTime() - b.momento.getTime())
 
@@ -102,6 +104,7 @@ async function estadoDe(unidad: { id: string; designacion: string }): Promise<Es
   const conSaldo = movimientos.map((movimiento) => {
     saldo = saldo.plus(movimiento.importe)
     return {
+      visible: movimiento.visible,
       fecha: movimiento.fecha,
       concepto: movimiento.concepto,
       importe: movimiento.importe.toFixed(DECIMALES_IMPORTE),
@@ -118,7 +121,14 @@ async function estadoDe(unidad: { id: string; designacion: string }): Promise<Es
     designacion: unidad.designacion,
     saldo: saldo.toFixed(DECIMALES_IMPORTE),
     saldoAFavor,
-    movimientos: conSaldo,
+    movimientos: conSaldo
+      .filter((m) => m.visible)
+      .map(({ fecha, concepto, importe: imp, saldo: sal }) => ({
+        fecha,
+        concepto,
+        importe: imp,
+        saldo: sal,
+      })),
   }
 }
 
@@ -143,11 +153,15 @@ export async function verEstadoDeCuenta(
       if (!unidad) throw new NoEncontrado()
 
       const privilegiado = acceso.roles.some((rol) => rol === 'administrador' || rol === 'consejo')
-      if (!privilegiado && !(await ocupaUnidad(datos.usuarioId, unidad.id, reloj.hoy()))) {
-        throw new NoEncontrado()
+      if (privilegiado) {
+        return estadoDe(unidad, null)
       }
 
-      return estadoDe(unidad)
+      const propias = await unidadesPropias(datos.usuarioId, reloj.hoy())
+      const propia = propias.find((u) => u.id === unidad.id)
+      if (!propia) throw new NoEncontrado()
+
+      return estadoDe(unidad, propia.visibleDesde)
     },
   )
 }
@@ -233,12 +247,19 @@ export async function resumenDeCuentas(
         detalles: Parameters<typeof saldosDeUnidad>[0][number][]
         crudos: DetalleParaDeuda[]
         saldoAFavor: Decimal
+        visibleDesde: Date | null
         ultimo: { momento: Date; fecha: string; concepto: string } | null
       }
       const porUnidad = new Map<string, Acumulado>(
-        ids.map((id) => [
-          id,
-          { detalles: [], crudos: [], saldoAFavor: new Decimal(0), ultimo: null },
+        unidades.map((unidad) => [
+          unidad.id,
+          {
+            detalles: [],
+            crudos: [],
+            saldoAFavor: new Decimal(0),
+            visibleDesde: unidad.visibleDesde,
+            ultimo: null,
+          },
         ]),
       )
 
@@ -280,19 +301,23 @@ export async function resumenDeCuentas(
             },
             imputaciones: detalle.imputaciones,
           })
-          anotar(acc, liquidacion.emitidaEn, fecha, concepto)
+          if (periodoVisible(liquidacion.periodo, acc.visibleDesde)) {
+            anotar(acc, liquidacion.emitidaEn, fecha, concepto)
+          }
         }
       }
 
       for (const pago of pagos) {
         const acc = porUnidad.get(pago.unidadId)!
         acc.saldoAFavor = acc.saldoAFavor.plus(importe(pago.saldoAFavor.toFixed(2)))
-        anotar(
-          acc,
-          pago.creadoEn,
-          pago.fechaPago.toISOString().slice(0, 10),
-          `Pago (${pago.medio})`,
-        )
+        if (acc.visibleDesde === null || pago.fechaPago.getTime() >= acc.visibleDesde.getTime()) {
+          anotar(
+            acc,
+            pago.creadoEn,
+            pago.fechaPago.toISOString().slice(0, 10),
+            `Pago (${pago.medio})`,
+          )
+        }
       }
 
       return unidades.map((unidad) => {

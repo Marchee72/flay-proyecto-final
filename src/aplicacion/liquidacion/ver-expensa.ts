@@ -7,6 +7,7 @@ import {
   recargoMaximo,
   recargoVigente,
 } from '@/dominio/liquidacion/vencimientos'
+import { periodoVisible, visibleDesde } from '@/dominio/ocupaciones/vigencia'
 import { ordenarUnidades } from '@/dominio/unidades/division'
 import type { AlmacenObjetos } from '@/dominio/contratos/almacen-objetos'
 import type { RepositorioHabilitaciones } from '@/dominio/contratos/repositorios'
@@ -14,6 +15,7 @@ import type { Reloj } from '@/dominio/contratos/reloj'
 import { conAutorizacion } from '@/aplicacion/autorizacion'
 import { deudaDeUnidad } from '@/aplicacion/pagos/registrar'
 import { prisma, prismaBase } from '@/infraestructura/prisma'
+import type { TipoDeOcupacion } from '@/infraestructura/repositorios/ocupaciones'
 
 /**
  * La expensa de una unidad, para quien tiene derecho a verla (`FR-018`,
@@ -95,14 +97,23 @@ export interface ExpensaVisible {
 export interface UnidadConExpensas {
   unidadId: string
   designacion: string
+  /**
+   * Saldo impago de períodos anteriores al ingreso del inquilino, como cadena.
+   * Nulo para el propietario o si no hay deuda previa (RN-23).
+   */
+  deudaAnteriorAlIngreso: string | null
   expensas: ExpensaVisible[]
 }
 
-/** Las unidades que el usuario ocupa hoy, sea cual sea su rol. */
-export async function unidadesPropias(
-  usuarioId: string,
-  hoy: Date,
-): Promise<{ id: string; designacion: string }[]> {
+export interface UnidadAlcanzable {
+  id: string
+  designacion: string
+  /** RN-23: primer día del mes de ingreso si solo es inquilino; nulo si propietario o admin/consejo. */
+  visibleDesde: Date | null
+}
+
+/** Las unidades que el usuario ocupa hoy, sea cual sea su rol, con su corte de visibilidad (RN-23). */
+export async function unidadesPropias(usuarioId: string, hoy: Date): Promise<UnidadAlcanzable[]> {
   const usuario = await prismaBase.usuario.findUnique({
     where: { id: usuarioId },
     select: { personaId: true },
@@ -110,19 +121,36 @@ export async function unidadesPropias(
   if (!usuario) return []
 
   // Ocupacion vigente hoy, de cualquier tipo: el inquilino tambien recibe la
-  // expensa, porque la ordinaria es suya (regla RN-05).
-  const ocupadas = await prismaBase.$queryRaw<{ unidad_id: string }[]>`
-    SELECT DISTINCT "unidad_id" FROM "Ocupacion"
+  // expensa, porque la ordinaria es suya (regla RN-05), pero cortada a su ingreso (RN-23).
+  const ocupadas = await prismaBase.$queryRaw<
+    { unidad_id: string; tipo: TipoDeOcupacion; desde: Date }[]
+  >`
+    SELECT "unidad_id", "tipo", lower("vigencia") AS desde FROM "Ocupacion"
     WHERE "persona_id" = ${usuario.personaId}::uuid AND "vigencia" @> ${hoy}::date
   `
+  if (ocupadas.length === 0) return []
+
+  const porUnidad = new Map<string, { tipos: TipoDeOcupacion[]; desdes: Date[] }>()
+  for (const fila of ocupadas) {
+    const grupo = porUnidad.get(fila.unidad_id) ?? { tipos: [], desdes: [] }
+    grupo.tipos.push(fila.tipo)
+    grupo.desdes.push(fila.desde)
+    porUnidad.set(fila.unidad_id, grupo)
+  }
 
   // El aislamiento vuelve a filtrar: una ocupacion sobre una unidad de otro
   // consorcio no aparece, aunque exista.
   const unidades = await prisma.unidad.findMany({
-    where: { id: { in: ocupadas.map((fila) => fila.unidad_id) } },
+    where: { id: { in: [...porUnidad.keys()] } },
     select: { id: true, designacion: true },
   })
-  return ordenarUnidades(unidades)
+  return ordenarUnidades(unidades).map((unidad) => {
+    const grupo = porUnidad.get(unidad.id)!
+    return {
+      ...unidad,
+      visibleDesde: visibleDesde(grupo.tipos, grupo.desdes),
+    }
+  })
 }
 
 /**
@@ -133,12 +161,12 @@ export async function unidadesAlcanzables(
   usuarioId: string,
   roles: readonly string[],
   hoy: Date,
-): Promise<{ id: string; designacion: string }[]> {
+): Promise<UnidadAlcanzable[]> {
   if (roles.includes('administrador') || roles.includes('consejo')) {
     const unidades = await prisma.unidad.findMany({
       select: { id: true, designacion: true },
     })
-    return ordenarUnidades(unidades)
+    return ordenarUnidades(unidades).map((unidad) => ({ ...unidad, visibleDesde: null }))
   }
 
   return unidadesPropias(usuarioId, hoy)
@@ -151,7 +179,7 @@ function expensasDeUnidades(
   repositorio: RepositorioHabilitaciones,
   reloj: Reloj,
   datos: DatosExpensas,
-  cuales: (roles: readonly string[]) => Promise<{ id: string; designacion: string }[]>,
+  cuales: (roles: readonly string[]) => Promise<UnidadAlcanzable[]>,
 ): Promise<UnidadConExpensas[]> {
   return conAutorizacion(
     repositorio,
@@ -161,11 +189,20 @@ function expensasDeUnidades(
       const unidades = await cuales(acceso.roles)
 
       return Promise.all(
-        unidades.map(async (unidad) => ({
-          unidadId: unidad.id,
-          designacion: unidad.designacion,
-          expensas: await expensasDe(almacen, unidad.id, reloj.hoy()),
-        })),
+        unidades.map(async (unidad) => {
+          const { expensas, deudaAnteriorAlIngreso } = await expensasDe(
+            almacen,
+            unidad.id,
+            reloj.hoy(),
+            unidad.visibleDesde,
+          )
+          return {
+            unidadId: unidad.id,
+            designacion: unidad.designacion,
+            deudaAnteriorAlIngreso,
+            expensas,
+          }
+        }),
       )
     },
   )
@@ -217,10 +254,13 @@ export async function verExpensa(
         },
       })
 
+      const unidad = detalle ? alcanzables.find((u) => u.id === detalle.unidadId) : undefined
+
       if (
         !detalle ||
         detalle.liquidacion.estado !== 'vigente' ||
-        !alcanzables.some((unidad) => unidad.id === detalle.unidadId)
+        !unidad ||
+        !periodoVisible(detalle.liquidacion.periodo, unidad.visibleDesde)
       ) {
         throw new NoEncontrado()
       }
@@ -253,7 +293,8 @@ async function expensasDe(
   almacen: AlmacenObjetos,
   unidadId: string,
   hoy: Date,
-): Promise<ExpensaVisible[]> {
+  corte: Date | null,
+): Promise<{ expensas: ExpensaVisible[]; deudaAnteriorAlIngreso: string | null }> {
   const detalles = await prismaBase.detalleLiquidacion.findMany({
     where: { unidadId, liquidacion: { estado: 'vigente' } },
     include: {
@@ -267,7 +308,27 @@ async function expensasDe(
   // toma su saldo de ahi, no de su `totalUnidad` (que incluye el arrastre).
   const deuda = await deudaDeUnidad(unidadId, hoy)
 
-  return Promise.all(detalles.map((detalle) => aVisible(almacen, detalle, hoy, deuda)))
+  let deudaAnteriorAlIngreso: string | null = null
+  if (corte !== null) {
+    const periodoPorDetalle = new Map(detalles.map((d) => [d.id, d.liquidacion.periodo]))
+    let acumulado = new Decimal(0)
+    for (const impago of deuda.impagos) {
+      const periodo = periodoPorDetalle.get(impago.detalleId)
+      if (periodo && !periodoVisible(periodo, corte)) {
+        acumulado = acumulado.plus(Decimal.max(importe(impago.saldo), 0))
+      }
+    }
+    if (acumulado.greaterThan(0)) {
+      deudaAnteriorAlIngreso = acumulado.toFixed(2)
+    }
+  }
+
+  const visibles = detalles.filter((d) => periodoVisible(d.liquidacion.periodo, corte))
+  const expensas = await Promise.all(
+    visibles.map((detalle) => aVisible(almacen, detalle, hoy, deuda)),
+  )
+
+  return { expensas, deudaAnteriorAlIngreso }
 }
 
 async function aVisible(

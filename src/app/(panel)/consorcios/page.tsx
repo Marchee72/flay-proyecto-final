@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 
 import { misAdministradoras } from '@/aplicacion/administradoras/mis-administradoras'
+import { administraAlguno } from '@/aplicacion/consorcios/administra-alguno'
 import { previaDeEliminarConsorcio } from '@/aplicacion/consorcios/archivar-consorcio'
 import { TIPOS_DE_UNIDAD_ASIGNABLES } from '@/aplicacion/consorcios/tipos-de-unidad'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
@@ -19,7 +20,7 @@ import { verPanel, type PanelConsolidado } from '@/aplicacion/indicadores/indica
 import { listarPeriodos } from '@/aplicacion/periodos/periodos'
 import { fechaEnArParaMostrar, plural } from '@/compartido/formato'
 
-import { consorciosAlAlcance } from '../con-consorcio'
+import { consorciosAlAlcance, unidadesPorConsorcio } from '../con-consorcio'
 import { Filtros } from '../filtros'
 import { Marco } from '../marco'
 
@@ -39,7 +40,7 @@ export default async function ConsorciosPage({
   const usuarioId = await usuarioDeLaSesion()
   if (!usuarioId) return irAIngresar()
 
-  const [alAlcance, administradoras, senales] = await Promise.all([
+  const [alAlcance, administradoras, senales, unidades, administra] = await Promise.all([
     consorciosAlAlcance(usuarioId),
     misAdministradoras(HABILITACIONES, RELOJ, usuarioId),
     // Las senales son del que administra (`verPanel` lanza si no administra
@@ -48,6 +49,9 @@ export default async function ConsorciosPage({
       (panel) => ({ meta: panel.meta, por: new Map(panel.consorcios.map((c) => [c.id, c])) }),
       () => ({ meta: '0', por: new Map<string, PanelConsolidado['consorcios'][number]>() }),
     ),
+    // RF-03: que unidades tiene en cada edificio, para elegir donde entrar.
+    unidadesPorConsorcio(usuarioId),
+    administraAlguno(HABILITACIONES, RELOJ, usuarioId),
   ])
   // Los archivados (RN-22) no van en la grilla: tienen su seccion, de solo lectura.
   const consorcios = alAlcance.filter((c) => !c.archivadoEn)
@@ -118,7 +122,11 @@ export default async function ConsorciosPage({
   return (
     <Marco>
       <h1>Consorcios</h1>
-      <p className="apagado">Los edificios que administrás. Elegí uno para trabajar sobre él.</p>
+      <p className="apagado">
+        {administra
+          ? 'Los edificios que administrás. Elegí uno para trabajar sobre él.'
+          : 'Los edificios a los que tenés acceso. Elegí uno.'}
+      </p>
 
       {/* Sin administradora al alcance no hay alta posible: el boton no se
           dibuja, en vez de abrir un dialogo para decir que no. */}
@@ -200,6 +208,18 @@ export default async function ConsorciosPage({
                         <p className="apagado">
                           {consorcio.direccion} · {consorcio.localidad}
                         </p>
+                        {unidades.has(consorcio.id) && (
+                          <p className="unidades-destacadas">
+                            <span className="unidades-destacadas__lista">
+                              {unidades.get(consorcio.id)!.join(' · ')}
+                            </span>
+                            <span className="unidades-destacadas__pie">
+                              {unidades.get(consorcio.id)!.length === 1
+                                ? 'es tu unidad'
+                                : 'son tus unidades'}
+                            </span>
+                          </p>
+                        )}
                       </div>
                       {previa && (
                         <MenuPuntos nombre={`Más acciones de ${consorcio.nombre}`}>

@@ -339,7 +339,7 @@ model CoeficienteHistorico {
 }
 
 /// Vinculo entre una persona y una unidad (FR-008). El tipo no es un rol: es la
-/// naturaleza del vinculo, y decide a quien se le cobra la expensa.
+/// naturaleza del vinculo, y decide que ve cada uno y quien administra al inquilino.
 ///
 /// La vigencia va como **rango de fechas** de la base, no como dos columnas: es
 /// lo que permite la restriccion de exclusion que impide dos inquilinos

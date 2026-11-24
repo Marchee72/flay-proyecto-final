@@ -27,6 +27,7 @@ import { propietariosVigentesDe } from '@/infraestructura/repositorios/ocupacion
 import {
   cargarAsamblea,
   enlaceCalendario,
+  enlacesDeCalendarios,
   eventoDe,
   puedeDirigir,
   ROLES_ORGANIZADORES,
@@ -137,6 +138,7 @@ export interface VistaAsamblea {
   presidente: { id: string; nombre: string } | null
   secretario: { id: string; nombre: string } | null
   enlaceGoogleCalendar: string
+  enlacesCalendario: { google: string; outlook: string; microsoft365: string; yahoo: string }
   puntos: PuntoVista[]
   padron: UnidadVista[]
   quorum: { coeficientePresente: string; unidadesPresentes: number; unidadesTotales: number }
@@ -508,6 +510,7 @@ export async function verAsamblea(
         presidente: conNombre(asamblea.presidenteId),
         secretario: conNombre(asamblea.secretarioId),
         enlaceGoogleCalendar: enlaceCalendario(evento),
+        enlacesCalendario: enlacesDeCalendarios(evento),
         puntos,
         observacionesAbiertas:
           asamblea.estado === 'en_curso' &&

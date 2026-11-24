@@ -9,13 +9,22 @@ import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
 import { registrarOcupacion } from '@/aplicacion/consorcios/registrar-ocupacion'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { invitarPersona } from '@/aplicacion/identidad/invitar-persona'
+import {
+  avisoDelLote,
+  invitarRegistrado,
+  invitarRegistrados,
+  type ResultadoDelLote,
+} from '@/aplicacion/identidad/registrados'
 import { reenviarInvitacion } from '@/aplicacion/identidad/reenviar-invitacion'
 import { enviarEnlaceDeClave } from '@/aplicacion/identidad/restablecer'
 import { quitarAcceso } from '@/aplicacion/identidad/quitar-acceso'
 import { rolDesdeFormulario } from '@/aplicacion/identidad/roles'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { importarOcupantes } from '@/aplicacion/importacion/importar-ocupantes'
 import { irAIngresar } from '@/app/ir-a-ingresar'
 import { urlBase } from '@/app/url-base'
+
+import type { EstadoImportacion } from '../../importador'
 
 /** Un archivo «use server» solo exporta funciones: el estado inicial va en el formulario. */
 export type Resultado = { mensaje: string } & ConValores
@@ -29,21 +38,13 @@ async function quienOpera(): Promise<string> {
 
 export async function accionInvitar(_previo: Resultado, datos: FormData): Promise<Resultado> {
   const invitadorId = await quienOpera()
-  const consorcioId = String(datos.get('consorcio') ?? '')
-
-  // El nombre del consorcio se busca; no se acepta del formulario, porque viaja
-  // en el cuerpo del correo que la invitacion manda.
-  const consorcio = (await misConsorcios(HABILITACIONES, RELOJ, invitadorId)).find(
-    (candidato) => candidato.id === consorcioId,
-  )
-
+  const consorcio = await consorcioDe(invitadorId, String(datos.get('consorcio') ?? ''))
   if (!consorcio)
     return { mensaje: new NoEncontrado().mensajeParaUsuario, valores: valoresDe(datos) }
 
   const desde = String(datos.get('vigenciaDesde') ?? '')
   const rol = rolDesdeFormulario(datos.get('rol'))
   const unidadId = String(datos.get('unidad') ?? '')
-  const tipo = datos.get('tipoOcupacion') === 'inquilino' ? 'inquilino' : 'propietario'
   let resultado: { yaTeniaCuenta: boolean }
 
   try {
@@ -57,8 +58,8 @@ export async function accionInvitar(_previo: Resultado, datos: FormData): Promis
       consorcioNombre: consorcio.nombre,
       vigenciaDesde: desde ? new Date(`${desde}T00:00:00Z`) : RELOJ.hoy(),
       urlBase: await urlBase(),
-      // La unidad solo cuenta para un consorcista.
-      unidad: rol === 'consorcista' && unidadId ? { unidadId, tipo } : null,
+      // La unidad en Usuarios carga propietarios; los inquilinos se asignan desde la unidad.
+      unidad: rol === 'consorcista' && unidadId ? { unidadId, tipo: 'propietario' } : null,
     })
   } catch (error) {
     if (error instanceof ErrorDeAplicacion)
@@ -90,7 +91,7 @@ export async function accionAsignarUnidad(_previo: Resultado, datos: FormData): 
       consorcioId,
       unidadId,
       personaId: String(datos.get('persona') ?? ''),
-      tipo: datos.get('tipoOcupacion') === 'inquilino' ? 'inquilino' : 'propietario',
+      tipo: 'propietario',
       desde: desde ? new Date(`${desde}T00:00:00Z`) : RELOJ.hoy(),
     })
   } catch (error) {
@@ -100,6 +101,100 @@ export async function accionAsignarUnidad(_previo: Resultado, datos: FormData): 
   }
 
   redirect(conHecho(`/consorcios/${consorcioId}/usuarios`, 'unidad-asignada'))
+}
+
+/** «Revisar» y «Confirmar» de propietarios e inquilinos desde planilla (RF-03). No invita. */
+export async function accionImportarOcupantes(
+  _previo: EstadoImportacion,
+  datos: FormData,
+): Promise<EstadoImportacion> {
+  const usuarioId = await quienOpera()
+  const consorcioId = String(datos.get('consorcio') ?? '')
+  const archivo = datos.get('archivo')
+  if (!(archivo instanceof File) || archivo.size === 0)
+    return { mensaje: 'Elegí un archivo .xlsx o .csv.' }
+
+  let resultado
+  try {
+    resultado = await importarOcupantes(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      bytes: new Uint8Array(await archivo.arrayBuffer()),
+      nombreArchivo: archivo.name,
+      confirmar: datos.get('confirmar') === '1',
+    })
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion) return { mensaje: error.mensajeParaUsuario }
+    throw error
+  }
+  if (resultado.estado !== 'cargado') return { mensaje: '', resultado }
+
+  redirect(conHecho(`/consorcios/${consorcioId}/usuarios`, 'ocupantes-importados'))
+}
+
+/** El nombre del consorcio viaja en el correo: se busca, no se acepta del formulario. */
+async function consorcioDe(usuarioId: string, consorcioId: string) {
+  return (await misConsorcios(HABILITACIONES, RELOJ, usuarioId)).find((c) => c.id === consorcioId)
+}
+
+/** «Invitar» a un registrado sin acceso; pide el correo si la persona no lo tiene (RF-03). */
+export async function accionInvitarRegistrado(
+  _previo: Resultado,
+  datos: FormData,
+): Promise<Resultado> {
+  const usuarioId = await quienOpera()
+  const consorcio = await consorcioDe(usuarioId, String(datos.get('consorcio') ?? ''))
+  if (!consorcio)
+    return { mensaje: new NoEncontrado().mensajeParaUsuario, valores: valoresDe(datos) }
+
+  const correo = datos.get('correo')
+  let resultado: { yaTeniaCuenta: boolean }
+  try {
+    resultado = await invitarRegistrado(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId: consorcio.id,
+      consorcioNombre: consorcio.nombre,
+      urlBase: await urlBase(),
+      personaId: String(datos.get('persona') ?? ''),
+      correo: correo === null ? undefined : String(correo),
+    })
+  } catch (error) {
+    if (error instanceof ErrorDeAplicacion)
+      return { mensaje: error.mensajeParaUsuario, valores: valoresDe(datos) }
+    throw error
+  }
+
+  redirect(
+    conHecho(
+      `/consorcios/${consorcio.id}/usuarios`,
+      resultado.yaTeniaCuenta ? 'acceso-sumado' : 'registrado-invitado',
+    ),
+  )
+}
+
+/** «Invitar a todos los que tienen correo»: reanudable, corta a los 20 s (RF-03). */
+export async function accionInvitarRegistrados(datos: FormData): Promise<void> {
+  const usuarioId = await quienOpera()
+  const consorcioId = String(datos.get('consorcio') ?? '')
+  const ruta = `/consorcios/${consorcioId}/usuarios`
+  const consorcio = await consorcioDe(usuarioId, consorcioId)
+  if (!consorcio) redirect(conError(ruta, new NoEncontrado().mensajeParaUsuario))
+
+  let resultado: ResultadoDelLote
+  try {
+    resultado = await invitarRegistrados(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId,
+      consorcioNombre: consorcio.nombre,
+      urlBase: await urlBase(),
+    })
+  } catch (error) {
+    if (!(error instanceof ErrorDeAplicacion)) throw error
+    redirect(conError(ruta, error.mensajeParaUsuario))
+  }
+
+  const aviso = avisoDelLote(resultado)
+  redirect(aviso === null ? conHecho(ruta, 'registrados-invitados') : conError(ruta, aviso))
 }
 
 /** «Quitar» un rol: el acceso se cierra hoy mismo (RF-03, A3). */

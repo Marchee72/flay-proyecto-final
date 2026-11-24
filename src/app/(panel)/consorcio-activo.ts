@@ -41,3 +41,12 @@ export function destinoEnOtroConsorcio(origen: string, elegido: string): string 
   const seccion = (dentro[1] ?? '').split('/')[1] ?? ''
   return `/consorcios/${elegido}${seccion ? `/${seccion}` : ''}`
 }
+
+/**
+ * Con unidades en dos o mas edificios se elige al entrar, aunque haya uno
+ * recordado (RF-03). La condicion es por unidades, no por rol: quien
+ * administra y ademas es dueño en dos edificios tambien elige.
+ */
+export function eligeAlEntrar(unidades: ReadonlyMap<string, readonly string[]>): boolean {
+  return [...unidades.values()].filter((designaciones) => designaciones.length > 0).length >= 2
+}

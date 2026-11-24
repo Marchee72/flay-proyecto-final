@@ -6,6 +6,7 @@ import type { ReactElement } from 'react'
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { esUuid } from '@/compartido/identificadores'
 import { misConsorcios } from '@/aplicacion/consorcios/mis-consorcios'
+import { misUnidadesPorConsorcio } from '@/aplicacion/consorcios/mis-unidades-por-consorcio'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
 import { irAIngresar } from '@/app/ir-a-ingresar'
@@ -25,6 +26,12 @@ export type ConsorcioAlcanzable = {
 export const consorciosAlAlcance = cache(
   (usuarioId: string): Promise<ConsorcioAlcanzable[]> =>
     misConsorcios(HABILITACIONES, RELOJ, usuarioId),
+)
+
+/** Las unidades propias por consorcio, una vez por pedido: las piden `/` y `/consorcios`. */
+export const unidadesPorConsorcio = cache(
+  (usuarioId: string): Promise<Map<string, string[]>> =>
+    misUnidadesPorConsorcio(HABILITACIONES, RELOJ, usuarioId),
 )
 
 /**

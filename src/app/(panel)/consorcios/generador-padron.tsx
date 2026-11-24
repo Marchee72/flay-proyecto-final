@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { importe } from '@/compartido/dinero'
 import { type FilaDePadron, padronPorPisos } from '@/compartido/padron'
@@ -17,10 +17,14 @@ export function GeneradorDePadron({
   prefijo,
   leyenda,
   alGenerar,
+  alCambiar,
 }: {
   prefijo: string
   leyenda: string
-  alGenerar: (filas: FilaDePadron[]) => void
+  /** Con botón «Generar padrón»: quien lo usa recibe las filas al apretarlo. */
+  alGenerar?: (filas: FilaDePadron[]) => void
+  /** Sin botón: cada cambio avisa lo que saldría (vacío si no alcanza) y el error a mostrar. */
+  alCambiar?: (filas: FilaDePadron[], error: string) => void
 }) {
   const [pisos, setPisos] = useState('')
   const [porPiso, setPorPiso] = useState('')
@@ -31,24 +35,37 @@ export function GeneradorDePadron({
   const hayCocheras = Number(cocheras) > 0
   const soloDigitos = (valor: string) => valor.replace(/\D/g, '')
 
-  const generar = () => {
+  const calcular = () => {
     const decimal = porcentaje.trim().replace(',', '.')
     const valido = /^\d+(\.\d{1,8})?$/.test(decimal)
     const generadas = padronPorPisos(Number(pisos), Number(porPiso), importe(OBJETIVO), {
       cantidad: hayCocheras ? Number(cocheras) : 0,
       porcentaje: importe(hayCocheras && valido ? decimal : '0'),
     })
+    const mensaje = hayCocheras
+      ? 'Indicá qué porcentaje del edificio suman las cocheras: más de 0 y menos de 100, con hasta ocho decimales.'
+      : 'Indicá cuántos pisos y cuántas unidades por piso.'
+    return { generadas, mensaje }
+  }
+
+  const generar = () => {
+    const { generadas, mensaje } = calcular()
     if (generadas.length === 0) {
-      setError(
-        hayCocheras
-          ? 'Indicá qué porcentaje del edificio suman las cocheras: más de 0 y menos de 100, con hasta ocho decimales.'
-          : 'Indicá cuántos pisos y cuántas unidades por piso.',
-      )
+      setError(mensaje)
       return
     }
     setError('')
-    alGenerar(generadas)
+    alGenerar?.(generadas)
   }
+
+  // Sin botón, quien usa el generador pide lo calculado al continuar. Un campo vacío
+  // no es un error: es que el padrón viene de otro lado (el archivo o la carga a mano).
+  useEffect(() => {
+    if (!alCambiar) return
+    const { generadas, mensaje } = calcular()
+    const tocado = [pisos, porPiso, cocheras, porcentaje].some((valor) => valor !== '')
+    alCambiar(generadas, tocado && generadas.length === 0 ? mensaje : '')
+  })
 
   return (
     <fieldset className="fila-de-filtros">
@@ -103,14 +120,16 @@ export function GeneradorDePadron({
         />
       </div>
 
-      <button
-        className="boton boton--fantasma"
-        type="button"
-        onClick={generar}
-        disabled={pisos === '' || porPiso === ''}
-      >
-        Generar padrón
-      </button>
+      {!alCambiar && (
+        <button
+          className="boton boton--fantasma"
+          type="button"
+          onClick={generar}
+          disabled={pisos === '' || porPiso === ''}
+        >
+          Generar padrón
+        </button>
+      )}
 
       <p className="ayuda" id={`${prefijo}ayuda-cocheras`}>
         Las cocheras salen como C1, C2… y se reparten parejo ese porcentaje; los departamentos, el

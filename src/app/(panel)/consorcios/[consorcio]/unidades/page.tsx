@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Building, Pencil, Siren } from 'lucide-react'
+import { ArrowLeft, Building, Download, Pencil, Siren } from 'lucide-react'
 
 import { ErrorDeAplicacion } from '@/compartido/errores'
 import { importe } from '@/compartido/dinero'
 import { coeficienteParaMostrar, fechaParaMostrar, plural } from '@/compartido/formato'
+import { verOcupantes } from '@/aplicacion/consorcios/inquilinos'
 import { rolesEn } from '@/aplicacion/consorcios/mis-consorcios'
 import { TIPOS_DE_UNIDAD_ASIGNABLES } from '@/aplicacion/consorcios/tipos-de-unidad'
 import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
@@ -15,6 +16,8 @@ import { consorciosAlAlcance } from '../../../con-consorcio'
 import { divisionDe, pisoDe, sumarCoeficientes } from '@/aplicacion/consorcios/unidades'
 
 import { CargadorDePadron } from './cargador'
+import { ImportadorDePadron } from '../../importador'
+import { CeldaInquilino } from '../ocupantes/celda-inquilino'
 import { Filtros } from '../../../filtros'
 import { Paginacion } from '../../../paginacion'
 import { TablaDesplazable } from '../../../tabla-desplazable'
@@ -44,8 +47,12 @@ export default async function UnidadesPage({
   const parametros = await searchParams
 
   let consorcio
+  let ocupantes
   try {
-    consorcio = await verConsorcio(HABILITACIONES, RELOJ, { usuarioId, consorcioId: id })
+    ;[consorcio, ocupantes] = await Promise.all([
+      verConsorcio(HABILITACIONES, RELOJ, { usuarioId, consorcioId: id }),
+      verOcupantes(HABILITACIONES, RELOJ, { usuarioId, consorcioId: id }),
+    ])
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
     return (
@@ -60,6 +67,9 @@ export default async function UnidadesPage({
   const archivado = !!(await consorciosAlAlcance(usuarioId)).find((c) => c.id === id)?.archivadoEn
   const administra =
     !archivado && (await rolesEn(HABILITACIONES, RELOJ, usuarioId, id)).includes('administrador')
+  const gestionaInquilinos = ocupantes.gestiona && !archivado
+  const ocupantesPorUnidad = new Map(ocupantes.unidades.map((u) => [u.unidadId, u]))
+  const hoy = RELOJ.hoy().toISOString().slice(0, 10)
 
   if (administra && parametros.editar && consorcio.unidades.length > 0) {
     return (
@@ -67,8 +77,13 @@ export default async function UnidadesPage({
         <h1>Editar padrón</h1>
         <p className="apagado">
           Renombrar, cambiar el tipo o el coeficiente, agregar unidades o darlas de baja. Se guarda
-          todo junto y la suma tiene que seguir dando 100.{' '}
-          <Link href={`/consorcios/${consorcio.id}/unidades`}>Volver sin guardar</Link>.
+          todo junto y la suma tiene que seguir dando 100.
+        </p>
+        <p>
+          <Link className="boton boton--fantasma" href={`/consorcios/${consorcio.id}/unidades`}>
+            <ArrowLeft className="icono" aria-hidden="true" />
+            Volver sin guardar
+          </Link>
         </p>
         <CargadorDePadron
           consorcioId={consorcio.id}
@@ -149,12 +164,23 @@ export default async function UnidadesPage({
             <Pencil className="icono" aria-hidden="true" />
             Editar padrón
           </Link>
+          <a
+            className="boton boton--fantasma"
+            href={`/api/exportar/${consorcio.id}/padron.xlsx`}
+            download
+          >
+            <Download className="icono" aria-hidden="true" />
+            Descargar en Excel
+          </a>
         </div>
       )}
 
       {consorcio.unidades.length === 0 ? (
         administra ? (
           <>
+            <h2>Importar desde archivo</h2>
+            <ImportadorDePadron consorcioId={consorcio.id} />
+            <h2>Cargar a mano</h2>
             <p className="apagado">
               El padrón se carga entero de una vez: unidad por unidad la suma nunca daría 100 y cada
               alta sería un rechazo.
@@ -232,6 +258,7 @@ export default async function UnidadesPage({
                     <tr>
                       <th scope="col">Designación</th>
                       <th scope="col">Tipo</th>
+                      <th scope="col">Inquilino</th>
                       <th scope="col" className="numero">
                         Coeficiente %
                       </th>
@@ -242,6 +269,21 @@ export default async function UnidadesPage({
                       <tr key={unidad.id}>
                         <td>{unidad.designacion}</td>
                         <td>{etiquetaDeTipo(unidad.tipo)}</td>
+                        <td>
+                          <CeldaInquilino
+                            consorcioId={consorcio.id}
+                            unidad={
+                              ocupantesPorUnidad.get(unidad.id) ?? {
+                                unidadId: unidad.id,
+                                designacion: unidad.designacion,
+                                inquilinos: [],
+                              }
+                            }
+                            gestiona={gestionaInquilinos}
+                            volver="unidades"
+                            hoy={hoy}
+                          />
+                        </td>
                         <td className="numero cifra">
                           {coeficienteParaMostrar(unidad.coeficiente)}
                         </td>
@@ -250,7 +292,7 @@ export default async function UnidadesPage({
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td colSpan={2}>
+                      <td colSpan={3}>
                         {parametros.piso || parametros.division ? 'Total del filtro' : 'Total'}
                       </td>
                       <td className="numero cifra">

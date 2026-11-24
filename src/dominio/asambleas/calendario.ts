@@ -42,6 +42,42 @@ export function enlaceGoogleCalendar(e: EventoAsamblea): string {
   return `https://calendar.google.com/calendar/render?${parametros.toString()}`
 }
 
+/** Outlook en la web: `outlook.live.com` (personal) y `outlook.office.com` (Microsoft 365), mismo formato. */
+const enlaceOutlookEn = (origen: string, e: EventoAsamblea): string => {
+  const parametros = new URLSearchParams({
+    path: '/calendar/action/compose',
+    rru: 'addevent',
+    subject: e.titulo,
+    startdt: e.inicio.toISOString(),
+    enddt: fin(e).toISOString(),
+    location: e.lugar,
+    body: detalle(e),
+  })
+  return `${origen}/calendar/0/deeplink/compose?${parametros.toString()}`
+}
+
+export function enlaceYahooCalendar(e: EventoAsamblea): string {
+  const parametros = new URLSearchParams({
+    v: '60',
+    title: e.titulo,
+    st: utc(e.inicio),
+    et: utc(fin(e)),
+    in_loc: e.lugar,
+    desc: detalle(e),
+  })
+  return `https://calendar.yahoo.com/?${parametros.toString()}`
+}
+
+/** Los calendarios con enlace de plantilla; Apple y el resto salen del `.ics`. */
+export function enlacesCalendario(e: EventoAsamblea) {
+  return {
+    google: enlaceGoogleCalendar(e),
+    outlook: enlaceOutlookEn('https://outlook.live.com', e),
+    microsoft365: enlaceOutlookEn('https://outlook.office.com', e),
+    yahoo: enlaceYahooCalendar(e),
+  }
+}
+
 /** Escape de texto de RFC 5545 § 3.3.11. */
 const escapar = (texto: string): string =>
   texto.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')

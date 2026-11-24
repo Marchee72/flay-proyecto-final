@@ -93,21 +93,28 @@ export async function cargarPadron(
         coeficiente: unidad.coeficiente,
       }))
 
-      await prisma.$transaction(async (tx) => {
-        await tx.unidad.createMany({ data: filas.map((fila) => sinConsorcio(fila)) })
-
-        await tx.coeficienteHistorico.createMany({
-          data: filas.map((fila) => ({
-            unidadId: fila.id,
-            coeficiente: fila.coeficiente,
-            vigenciaDesde: hoy,
-          })),
-        })
-      })
+      await prisma.$transaction((tx) => escribirPadron(tx, filas, hoy))
 
       return { cargadas: datos.unidades.length }
     },
   )
+}
+
+/** Las dos escrituras del alta del padrón, por lote, dentro de la transacción de quien llama. */
+export async function escribirPadron(
+  tx: Transaccion,
+  filas: readonly { id: string; designacion: string; tipo: TipoUnidad; coeficiente: string }[],
+  hoy: Date,
+): Promise<void> {
+  await tx.unidad.createMany({ data: filas.map((fila) => sinConsorcio(fila)) })
+
+  await tx.coeficienteHistorico.createMany({
+    data: filas.map((fila) => ({
+      unidadId: fila.id,
+      coeficiente: fila.coeficiente,
+      vigenciaDesde: hoy,
+    })),
+  })
 }
 
 export async function agregarUnidad(

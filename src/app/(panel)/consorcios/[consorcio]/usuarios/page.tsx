@@ -5,12 +5,15 @@ import { ErrorDeAplicacion } from '@/compartido/errores'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
 import { verConsorcio } from '@/aplicacion/consorcios/ver-consorcio'
 import { listarUsuarios, type UsuarioDelConsorcio } from '@/aplicacion/identidad/listar-usuarios'
+import { registradosSinAcceso, type Registrado } from '@/aplicacion/identidad/registrados'
 import { ROLES_ASIGNABLES } from '@/aplicacion/identidad/roles'
 
 import { accionEnviarEnlaceDeClave, accionReenviar } from './acciones'
 import { ModalInvitar } from './modal-invitar'
 import { ModalQuitar } from './modal-quitar'
 import { ModalUnidad } from './modal-unidad'
+import { RegistradosSinAcceso } from './registrados'
+import { ModalImportarOcupantes } from '../../importador'
 import { conConsorcio } from '../../../con-consorcio'
 import { TablaDesplazable } from '../../../tabla-desplazable'
 
@@ -23,6 +26,7 @@ export default async function UsuariosPage({ params }: { params: Promise<{ conso
   const { usuarioId, activo } = pantalla
   let usuarios: UsuarioDelConsorcio[] = []
   let unidades: { id: string; designacion: string }[] = []
+  let registrados: Registrado[] = []
   let denegado = ''
 
   try {
@@ -34,6 +38,10 @@ export default async function UsuariosPage({ params }: { params: Promise<{ conso
     unidades = (
       await verConsorcio(HABILITACIONES, RELOJ, { usuarioId, consorcioId: activo.id })
     ).unidades.map(({ id, designacion }) => ({ id, designacion }))
+    registrados = await registradosSinAcceso(HABILITACIONES, RELOJ, {
+      usuarioId,
+      consorcioId: activo.id,
+    })
   } catch (error) {
     if (!(error instanceof ErrorDeAplicacion)) throw error
     denegado = error.mensajeParaUsuario
@@ -58,6 +66,7 @@ export default async function UsuariosPage({ params }: { params: Promise<{ conso
                 unidades={unidades}
                 hoy={RELOJ.hoy().toISOString().slice(0, 10)}
               />
+              {unidades.length > 0 && <ModalImportarOcupantes consorcioId={activo.id} />}
             </div>
           )}
 
@@ -66,6 +75,12 @@ export default async function UsuariosPage({ params }: { params: Promise<{ conso
             consorcioId={activo.id}
             unidades={unidades}
             hoy={RELOJ.hoy().toISOString().slice(0, 10)}
+          />
+
+          <RegistradosSinAcceso
+            consorcioId={activo.id}
+            registrados={registrados}
+            puedeInvitar={!activo.archivadoEn}
           />
         </>
       )}

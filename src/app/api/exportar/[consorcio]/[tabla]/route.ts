@@ -9,6 +9,7 @@ import {
   type TablaExportable,
 } from '@/aplicacion/exportar/exportar'
 import { usuarioDeLaSesion } from '@/aplicacion/identidad/sesion'
+import { padronEnExcel } from '@/aplicacion/importacion/plantilla'
 
 /**
  * `GET /api/exportar/{consorcio}/{gastos|liquidaciones|pagos}.csv` (research
@@ -23,6 +24,27 @@ export async function GET(
   if (!usuarioId) return new Response('Iniciá sesión para exportar.', { status: 401 })
 
   const { consorcio, tabla: pedida } = await contexto.params
+
+  // El padrón vigente en Excel (no es una tabla del CSV abierto).
+  if (pedida === 'padron.xlsx') {
+    try {
+      const { nombre, bytes } = await padronEnExcel(HABILITACIONES, RELOJ, {
+        usuarioId,
+        consorcioId: consorcio,
+      })
+      return new Response(bytes as BodyInit, {
+        headers: {
+          'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'content-disposition': `attachment; filename="${nombre}"`,
+          'cache-control': 'no-store',
+        },
+      })
+    } catch (error) {
+      if (error instanceof ErrorDeAplicacion) return new Response(null, { status: 404 })
+      throw error
+    }
+  }
+
   const tabla = pedida.replace(/\.csv$/, '')
   if (!(TABLAS as readonly string[]).includes(tabla)) return new Response(null, { status: 404 })
 

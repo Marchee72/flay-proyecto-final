@@ -1,15 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import {
-  Ban,
-  CalendarPlus,
-  Download,
-  FileSignature,
-  Pencil,
-  Play,
-  Send,
-  Trash2,
-} from 'lucide-react'
+import { Ban, FileSignature, Pencil, Play, Send, Trash2 } from 'lucide-react'
 
 import { momentoParaMostrar } from '@/compartido/formato'
 import { HABILITACIONES, RELOJ } from '@/aplicacion/dependencias'
@@ -22,6 +13,7 @@ import { BotonModal } from '../../../../modal'
 import { EtiquetaEstado } from '../etiqueta-estado'
 import { accionAbrir, accionBorrar, accionCancelar, accionConvocar } from './acciones'
 import { Ocultos } from './comunes'
+import { MenuCalendario } from './menu-calendario'
 import { OrdenDelDia } from './orden-del-dia'
 import { Poderes } from './poderes'
 import { SalaEnVivo } from './sala-en-vivo'
@@ -84,24 +76,10 @@ export default async function AsambleaPage({
           </div>
           <div className="cabecera-pagina__acciones">
             {agendable && (
-              <>
-                <a
-                  className="boton boton--fantasma"
-                  href={vista.enlaceGoogleCalendar}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <CalendarPlus className="icono" aria-hidden="true" />
-                  Agregar a Google Calendar
-                </a>
-                <a
-                  className="boton boton--terciario"
-                  href={`/api/asambleas/${vista.id}/ics?consorcio=${activo.id}`}
-                >
-                  <Download className="icono" aria-hidden="true" />
-                  Descargar .ics
-                </a>
-              </>
+              <MenuCalendario
+                enlaces={vista.enlacesCalendario}
+                icsHref={`/api/asambleas/${vista.id}/ics?consorcio=${activo.id}`}
+              />
             )}
             {conActa && (
               <Link className="boton boton--primario" href={`${base}/${vista.id}/acta`}>
@@ -202,7 +180,7 @@ export default async function AsambleaPage({
                   }: cuentan en la base del cómputo pero nadie recibe el aviso.`}
               </p>
             )}
-            <div className="borrador-barra">
+            <div className={`borrador-barra${yaEsHora ? ' borrador-barra--lista' : ''}`}>
               <p className="borrador-barra__texto">
                 <strong>El día de la reunión:</strong>{' '}
                 {yaEsHora
